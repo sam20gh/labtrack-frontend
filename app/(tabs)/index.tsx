@@ -44,7 +44,9 @@ const HomeScreen = ({ navigation }: any) => {
       <View style={styles.heroSection}>
         <Title style={styles.heroTitle}>Welcome to LabTrack</Title>
         <Paragraph style={styles.heroSubtitle}>Your health, simplified.</Paragraph>
-        <Button mode="contained" onPress={() => navigation.navigate('Tests')} style={styles.orderButton}>Order a Test</Button>
+        <Button mode="contained" onPress={() => navigation.navigate('Tests')} style={styles.orderButton} labelStyle={styles.orderButtonText}>
+          Order a Test
+        </Button>
       </View>
 
       <Title style={styles.sectionTitle}>Recent Test Results</Title>
@@ -58,7 +60,6 @@ const HomeScreen = ({ navigation }: any) => {
                 <View style={[styles.statusIndicator, getStatusColor(result.status)]} />
                 <View style={styles.resultTextContainer}>
                   <Title style={styles.resultText}>{result.testName}</Title>
-                  <Paragraph style={styles.resultStatus}>{result.status}</Paragraph>
                 </View>
               </View>
             ))}
@@ -74,8 +75,9 @@ const styles = StyleSheet.create({
   appBar: { backgroundColor: '#fff' },
   heroSection: { alignItems: 'center', marginBottom: 20, padding: 20, backgroundColor: '#6200ea', borderRadius: 10 },
   heroTitle: { fontSize: 24, fontWeight: 'bold', color: 'white' },
+  orderButtonText: { color: '#6200ea' },
   heroSubtitle: { fontSize: 16, color: '#e0e0e0', marginBottom: 10 },
-  orderButton: { marginTop: 10, backgroundColor: 'white', color: '#6200ea' },
+  orderButton: { marginTop: 10, backgroundColor: 'white' },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', marginVertical: 10, color: '#333' },
   loader: { marginVertical: 20 },
   resultCard: { padding: 16, marginBottom: 16, borderRadius: 10, backgroundColor: 'white', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
