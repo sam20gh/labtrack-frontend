@@ -51,7 +51,7 @@ const Users = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 16, backgroundColor: '#f9f9f9' },
+    container: { flex: 1, padding: 16, backgroundColor: '#6aba47' },
     appBar: { backgroundColor: '#fff' },
     loader: { marginVertical: 20 },
     profileCard: { padding: 20, marginTop: 20, borderRadius: 10, backgroundColor: 'white', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
