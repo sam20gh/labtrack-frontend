@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Appbar, Avatar, Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
+import { API_URL } from '@/constants/config';
 
-const API_URL = 'http://192.168.1.105:5002/api/user'; // Replace with actual backend URL
+const USERS_URL = `${API_URL}/user`
 
-const UserScreen = ({ navigation }: any) => {
+const Users = ({ navigation }: any) => {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch(USERS_URL);
                 const data = await response.json();
                 setUserData(data);
             } catch (error) {
@@ -60,4 +61,4 @@ const styles = StyleSheet.create({
     userPhone: { fontSize: 16, textAlign: 'center', color: '#666' },
 });
 
-export default UserScreen;
+export default Users;

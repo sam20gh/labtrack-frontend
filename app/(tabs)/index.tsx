@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Appbar, Button, Card, Title, Paragraph, ActivityIndicator, Divider } from 'react-native-paper';
+import { View, ScrollView, StyleSheet, Text } from 'react-native';
+import { Appbar, Button, Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
+import { API_URL } from '@/constants/config'; // Using centralized API URL
 
-const API_URL = 'http://192.168.1.105:5002/api/test-results'; // Replace with actual backend URL
+const TEST_RESULTS_URL = `${API_URL}/test-results`;
 
 const HomeScreen = ({ navigation }: any) => {
-  const [testResults, setTestResults] = useState([]);
+  const [testResults, setTestResults] = useState<any[]>([]); // Ensuring it's an array
   const [loading, setLoading] = useState(true);
 
   // Fetch test results from API
   useEffect(() => {
     const fetchTestResults = async () => {
       try {
-        const response = await fetch(API_URL);
+        const response = await fetch(TEST_RESULTS_URL);
         const data = await response.json();
-        setTestResults(data);
+
+        // Ensure it's an array, handling cases where data might be an object
+        setTestResults(Array.isArray(data) ? data : data?.results || []);
       } catch (error) {
         console.error('Error fetching test results:', error);
       } finally {
@@ -26,7 +29,7 @@ const HomeScreen = ({ navigation }: any) => {
   }, []);
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'normal': return styles.normal;
       case 'high': return styles.high;
       case 'pending': return styles.pending;
@@ -38,7 +41,7 @@ const HomeScreen = ({ navigation }: any) => {
     <ScrollView style={styles.container}>
       <Appbar.Header style={styles.appBar}>
         <Appbar.Content title="LabTrack" />
-        <Appbar.Action icon="account-circle" onPress={() => navigation.navigate('Profile')} />
+        <Appbar.Action icon="account-circle" onPress={() => navigation.navigate('Users')} />
       </Appbar.Header>
 
       <View style={styles.heroSection}>
@@ -52,19 +55,21 @@ const HomeScreen = ({ navigation }: any) => {
       <Title style={styles.sectionTitle}>Recent Test Results</Title>
       {loading ? (
         <ActivityIndicator animating={true} size="large" style={styles.loader} />
-      ) : (
+      ) : testResults.length > 0 ? (
         <Card style={styles.resultCard}>
           <Card.Content>
             {testResults.map((result: any, index: number) => (
-              <View key={result.id} style={[styles.resultRow]}>
+              <View key={result.id || index} style={[styles.resultRow]}>
                 <View style={[styles.statusIndicator, getStatusColor(result.status)]} />
                 <View style={styles.resultTextContainer}>
-                  <Title style={styles.resultText}>{result.testName}</Title>
+                  <Title style={styles.resultText}>{result.testName || "Unknown Test"}</Title>
                 </View>
               </View>
             ))}
           </Card.Content>
         </Card>
+      ) : (
+        <Text style={styles.noResultsText}>No test results available</Text>
       )}
     </ScrollView>
   );
@@ -85,7 +90,7 @@ const styles = StyleSheet.create({
   statusIndicator: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
   resultTextContainer: { flex: 1 },
   resultText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  resultStatus: { fontSize: 14, color: '#666' },
+  noResultsText: { textAlign: 'center', fontSize: 16, color: '#666', marginVertical: 10 },
   normal: { backgroundColor: 'green' },
   high: { backgroundColor: 'red' },
   pending: { backgroundColor: 'yellow' },
