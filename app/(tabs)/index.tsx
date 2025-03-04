@@ -40,17 +40,11 @@ const HomeScreen = ({ navigation }: any) => {
 
   return (
 
-    <ScrollView style={styles.container}>
-
-      <Appbar.Header style={styles.appBar}>
-        <Appbar.Content title="LabTrack" />
-        <Appbar.Action icon="account-circle" onPress={() => navigation.navigate('Users')} />
-      </Appbar.Header>
-
-      <LinearGradient
-        colors={['#0097b2', '#307313']} // Adjust gradient colors as needed
-        style={styles.container}
-      >
+    <LinearGradient
+      colors={['#0097b2', '#307313']} // Adjust gradient colors as needed
+      style={styles.container}
+    >
+      <ScrollView style={styles.container}>
         <View style={styles.heroSection}>
           <Title style={styles.heroTitle}>Welcome to LabTrack</Title>
           <Paragraph style={styles.heroSubtitle}>Your health, simplified.</Paragraph>
@@ -78,24 +72,25 @@ const HomeScreen = ({ navigation }: any) => {
         ) : (
           <Text style={styles.noResultsText}>No test results available</Text>
         )}
-      </LinearGradient>
 
-    </ScrollView >
+
+      </ScrollView >
+    </LinearGradient>
 
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: 'transparent' },
+  container: { flex: 1, padding: 5, backgroundColor: 'transparent', width: '100%' },
   appBar: { backgroundColor: '#fff' },
-  heroSection: { alignItems: 'center', marginBottom: 20, padding: 20, backgroundColor: '#6200ea', borderRadius: 10 },
+  heroSection: { alignItems: 'center', marginBottom: 20, padding: 40, backgroundColor: '#6200ea', borderRadius: 10 },
   heroTitle: { fontSize: 24, fontWeight: 'bold', color: 'white' },
   orderButtonText: { color: '#6200ea' },
   heroSubtitle: { fontSize: 16, color: '#e0e0e0', marginBottom: 10 },
   orderButton: { marginTop: 10, backgroundColor: 'white' },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', marginVertical: 10, color: '#333' },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', marginVertical: 10, color: '#fff' },
   loader: { marginVertical: 20 },
-  resultCard: { padding: 16, marginBottom: 16, borderRadius: 10, backgroundColor: 'white', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
+  resultCard: { padding: 16, marginBottom: 16, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
   resultRow: { flexDirection: 'row', alignItems: 'center', padding: 10, marginBottom: 5, borderRadius: 5, backgroundColor: '#f5f5f5', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
   statusIndicator: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
   resultTextContainer: { flex: 1 },

@@ -1,109 +1,137 @@
-import { StyleSheet, Image, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { Card, Button as UIButton } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
+import { API_URL } from '@/constants/config';
+import { useNavigation } from '@react-navigation/native'; // Import navigation
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 
-export default function TabTwoScreen() {
+const SignupScreen = () => {
+  const navigation = useNavigation();
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    username: '',
+    email: '',
+    phone: '',
+    dob: new Date(),
+    password: '',
+    showDatePicker: false,
+  });
+  const [loading, setLoading] = useState(false);
+  const [userData, setUserData] = useState(null);
+
+  const handleChange = (name, value) => {
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleDateConfirm = (selectedDate) => {
+    setForm({ ...form, dob: selectedDate, showDatePicker: false });
+  };
+
+  const handleSignup = async () => {
+    setLoading(true);
+    setUserData(null);
+
+    const userData = {
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      username: form.username.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      dob: form.dob.toISOString(),
+      password: form.password,
+    };
+
+    console.log('Sending Data:', JSON.stringify(userData, null, 2)); // Log exact request data
+
+    try {
+      const response = await fetch(`${API_URL}/users/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+      setLoading(false);
+      console.log('Server Response:', data);
+
+      if (response.ok) {
+        Alert.alert('Success', 'User registered successfully!', [
+          {
+            text: 'Go to Profile',
+            onPress: () => navigation.navigate('UserProfile', { user: data.user }), // Navigate to user profile
+          },
+        ]);
+      } else {
+        Alert.alert('Error', data.message || 'Something went wrong');
+      }
+    } catch (error) {
+      setLoading(false);
+      Alert.alert('Error', 'Failed to connect to the server');
+    }
+  };
+
+
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <LinearGradient colors={['#0097b2', '#307313']} style={styles.container}>
+      <View style={styles.innerContainer}>
+        <Card style={styles.card}>
+          {loading ? (
+            <ActivityIndicator size="large" color="#307313" />
+          ) : userData ? (
+            <View>
+              <Text style={styles.successText}>Thank you for signing up!</Text>
+              <Text style={styles.userInfo}>Name: {userData.firstName} {userData.lastName}</Text>
+              <Text style={styles.userInfo}>Username: {userData.username}</Text>
+              <Text style={styles.userInfo}>Email: {userData.email}</Text>
+              <Text style={styles.userInfo}>Phone: {userData.phone}</Text>
+              <Text style={styles.userInfo}>DOB: {new Date(userData.dob).toDateString()}</Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.title}>Sign Up</Text>
+              <TextInput placeholder="First Name" value={form.firstName} onChangeText={(text) => handleChange('firstName', text)} style={styles.input} />
+              <TextInput placeholder="Last Name" value={form.lastName} onChangeText={(text) => handleChange('lastName', text)} style={styles.input} />
+              <TextInput placeholder="Username" value={form.username} onChangeText={(text) => handleChange('username', text)} style={styles.input} />
+              <TextInput placeholder="Email" value={form.email} keyboardType="email-address" onChangeText={(text) => handleChange('email', text)} style={styles.input} />
+              <TextInput placeholder="Phone Number" value={form.phone} keyboardType="phone-pad" onChangeText={(text) => handleChange('phone', text)} style={styles.input} />
+              <TextInput placeholder="Password" value={form.password} secureTextEntry onChangeText={(text) => handleChange('password', text)} style={styles.input} />
+
+              <TouchableOpacity onPress={() => setForm({ ...form, showDatePicker: true })}>
+                <Text style={styles.dateText}>{form.dob.toDateString()}</Text>
+              </TouchableOpacity>
+
+              <DateTimePickerModal
+                isVisible={form.showDatePicker}
+                mode="date"
+                onConfirm={handleDateConfirm}
+                onCancel={() => setForm({ ...form, showDatePicker: false })}
+              />
+
+              <UIButton mode="contained" style={styles.button} onPress={handleSignup}>
+                Sign Up
+              </UIButton>
+            </>
+          )}
+        </Card>
+      </View>
+    </LinearGradient>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  container: { flex: 1, padding: 16, backgroundColor: 'transparent' },
+  innerContainer: { padding: 20, flex: 1, justifyContent: 'center' },
+  card: { padding: 20, borderRadius: 10, backgroundColor: 'white', elevation: 3 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', color: '#333' },
+  input: { marginBottom: 10, borderWidth: 1, padding: 12, borderRadius: 5, borderColor: '#ccc', backgroundColor: '#f9f9f9' },
+  dateText: { padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5, textAlign: 'center', backgroundColor: '#f9f9f9' },
+  button: { marginTop: 20, paddingVertical: 10 },
+  successText: { fontSize: 20, fontWeight: 'bold', color: 'green', textAlign: 'center', marginBottom: 10 },
+  userInfo: { fontSize: 16, textAlign: 'center', color: '#333', marginBottom: 5 },
 });
+
+export default SignupScreen;
