@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { Card, Button as UIButton } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import { Card, Button, Avatar } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
-import { useRouter } from 'expo-router'; // Import navigation
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
 
 const LoginScreen = () => {
     const router = useRouter();
@@ -17,13 +18,10 @@ const LoginScreen = () => {
 
     const handleLogin = async () => {
         setLoading(true);
-
         const loginData = {
             username: form.username.trim(),
             password: form.password
         };
-
-        console.log('Sending Login Data:', JSON.stringify(loginData, null, 2));
 
         try {
             const response = await fetch(`${API_URL}/users/login`, {
@@ -33,48 +31,51 @@ const LoginScreen = () => {
             });
 
             const data = await response.json();
-            console.log('Full Server Response:', data);
             setLoading(false);
 
             if (response.ok) {
-                console.log('User Object Received:', data.user);
-
-                if (!data.user || !data.user._id) {
-                    console.error('User ID is missing in response!');
-                    Alert.alert('Error', 'User ID is missing. Please try again.');
+                if (!data.user || !data.user._id || !data.token) {
+                    Toast.show({ type: 'error', text1: 'Error', text2: 'Authentication failed' });
                     return;
                 }
 
-                // ✅ Clear old user ID before storing new one
-                await AsyncStorage.removeItem('userId');
+                // ✅ Store user ID and authentication token
+
                 await AsyncStorage.setItem('userId', data.user._id);
+                await AsyncStorage.setItem('authToken', data.token);
 
-                const storedUserId = await AsyncStorage.getItem('userId');
-                console.log('Stored User ID in AsyncStorage:', storedUserId);
+                console.log('Stored userId:', data.user._id);
+                console.log('Stored authToken:', data.token);
 
-                router.replace('/users'); // ✅ Redirect after storing user ID
+                router.replace('/users');
             } else {
-                console.warn('Login Failed:', data.message);
-                Alert.alert('Error', data.message || 'Invalid credentials');
+                Toast.show({ type: 'error', text1: 'Login Failed', text2: data.message || 'Invalid credentials' });
             }
         } catch (error) {
             setLoading(false);
-            console.error('Login Error:', error);
-            Alert.alert('Error', 'Failed to connect to the server');
+            Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to connect to the server' });
         }
     };
 
     return (
-        <LinearGradient colors={['#0097b2', '#307313']} style={styles.container}>
-            <View style={styles.innerContainer}>
-                <Card style={styles.card}>
-                    <Text style={styles.title}>Login</Text>
+        <View style={styles.container}>
+            <Card style={styles.card}>
+                <View style={styles.avatarContainer}>
+                    <Avatar.Icon size={80} icon="account-circle" color="#FF385C" backgroundColor="#FFF5F5" />
+                </View>
+                <Text style={styles.title}>Login</Text>
+                <View style={styles.inputContainer}>
+                    <Icon name="account" size={20} color="#FF385C" style={styles.icon} />
                     <TextInput
                         placeholder="Username"
                         value={form.username}
+                        autoCapitalize="none"
                         onChangeText={(text) => handleChange('username', text)}
                         style={styles.input}
                     />
+                </View>
+                <View style={styles.inputContainer}>
+                    <Icon name="lock" size={20} color="#FF385C" style={styles.icon} />
                     <TextInput
                         placeholder="Password"
                         value={form.password}
@@ -82,28 +83,29 @@ const LoginScreen = () => {
                         onChangeText={(text) => handleChange('password', text)}
                         style={styles.input}
                     />
-
-                    {loading ? (
-                        <ActivityIndicator size="large" color="#307313" />
-                    ) : (
-                        <UIButton mode="contained" style={styles.button} onPress={handleLogin}>
-                            Login
-                        </UIButton>
-                    )}
-                </Card>
-
-            </View>
-        </LinearGradient>
+                </View>
+                {loading ? (
+                    <ActivityIndicator size="large" color="#FF385C" />
+                ) : (
+                    <Button mode="contained" style={styles.button} onPress={handleLogin}>
+                        Login
+                    </Button>
+                )}
+            </Card>
+            <Toast />
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 16, backgroundColor: 'transparent' },
-    innerContainer: { padding: 20, flex: 1, justifyContent: 'center' },
-    card: { padding: 20, borderRadius: 10, backgroundColor: 'white', elevation: 3 },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', color: '#333' },
-    input: { marginBottom: 10, borderWidth: 1, padding: 12, borderRadius: 5, borderColor: '#ccc', backgroundColor: '#f9f9f9' },
-    button: { marginTop: 20, paddingVertical: 10 },
+    container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' },
+    card: { width: '90%', padding: 20, borderRadius: 10, backgroundColor: 'white', elevation: 3 },
+    avatarContainer: { alignItems: 'center', marginBottom: 15 },
+    title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20, color: '#333' },
+    inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', borderRadius: 5, paddingHorizontal: 10, backgroundColor: '#f9f9f9', marginBottom: 15 },
+    input: { flex: 1, paddingVertical: 12 },
+    icon: { marginRight: 10 },
+    button: { marginTop: 10, backgroundColor: '#FF385C' },
 });
 
 export default LoginScreen;
