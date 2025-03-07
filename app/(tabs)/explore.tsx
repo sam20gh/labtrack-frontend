@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   card: { width: '90%', padding: 20, borderRadius: 10, backgroundColor: 'white', elevation: 3 },
   avatarContainer: { alignItems: 'center', marginBottom: 15 },
   title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20, color: '#333' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', borderRadius: 5, paddingHorizontal: 10, backgroundColor: '#f9f9f9', marginBottom: 15 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#a4a2a2', borderRadius: 5, paddingHorizontal: 10, backgroundColor: '#f9f9f9', marginBottom: 15 },
   input: { flex: 1, paddingVertical: 12 },
   icon: { marginRight: 10 },
   button: { marginTop: 10, backgroundColor: '#FF385C' },

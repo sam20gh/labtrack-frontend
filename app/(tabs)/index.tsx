@@ -39,8 +39,6 @@ const HomeScreen = ({ navigation }: any) => {
   };
 
   return (
-
-
     <ScrollView style={styles.container}>
       <View style={styles.heroSection}>
         <Title style={styles.heroTitle}>Welcome to LabTrack</Title>
@@ -69,26 +67,32 @@ const HomeScreen = ({ navigation }: any) => {
       ) : (
         <Text style={styles.noResultsText}>No test results available</Text>
       )}
-
-
-    </ScrollView >
-
-
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 5, backgroundColor: '#fff', width: '100%' },
+  container: { flex: 1, padding: 5, backgroundColor: '#f3f3f3', width: '100%' },
   appBar: { backgroundColor: '#fff' },
-  heroSection: { alignItems: 'center', marginBottom: 20, padding: 40, backgroundColor: '#6200ea', borderRadius: 10 },
+  heroSection: { alignItems: 'center', marginBottom: 20, padding: 40, backgroundColor: '#109f5e', borderRadius: 10 },
   heroTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  orderButtonText: { color: '#6200ea' },
+  orderButtonText: { color: '#109f5e' },
   heroSubtitle: { fontSize: 16, color: '#e0e0e0', marginBottom: 10 },
   orderButton: { marginTop: 10, backgroundColor: 'white' },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', marginVertical: 10, color: '#000' },
   loader: { marginVertical: 20 },
-  resultCard: { padding: 16, marginBottom: 16, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#a1a1a1', shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
-  resultRow: { flexDirection: 'row', alignItems: 'center', padding: 10, marginBottom: 5, borderRadius: 5, backgroundColor: '#f5f5f5', shadowColor: '#a1a1a1', shadowOpacity: 0.05, shadowRadius: 5 },
+  resultCard: {
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    shadowColor: '#d1d1d1', // Lighter shadow color
+    shadowOpacity: 0.3, // Increase opacity for visibility
+    shadowRadius: 10, // More spread
+    shadowOffset: { width: 0, height: 4 }, // Adjust shadow direction
+    elevation: 5 // Android shadow
+  },
+  resultRow: { flexDirection: 'row', alignItems: 'center', padding: 10, marginBottom: 5, borderRadius: 5, backgroundColor: '#f5f5f5', shadowColor: '#bdbdbd', shadowOpacity: 0.05, shadowRadius: 5 },
   statusIndicator: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
   resultTextContainer: { flex: 1 },
   resultText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
