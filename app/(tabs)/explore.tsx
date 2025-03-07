@@ -1,137 +1,111 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { Card, Button as UIButton } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import { Card, Button, Avatar } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
-import { useNavigation } from '@react-navigation/native'; // Import navigation
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
 
-
-const SignupScreen = () => {
-  const navigation = useNavigation();
-  const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    username: '',
-    email: '',
-    phone: '',
-    dob: new Date(),
-    password: '',
-    showDatePicker: false,
-  });
+const LoginScreen = () => {
+  const router = useRouter();
+  const [form, setForm] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState(null);
 
   const handleChange = (name, value) => {
     setForm({ ...form, [name]: value });
   };
 
-  const handleDateConfirm = (selectedDate) => {
-    setForm({ ...form, dob: selectedDate, showDatePicker: false });
-  };
-
-  const handleSignup = async () => {
+  const handleLogin = async () => {
     setLoading(true);
-    setUserData(null);
-
-    const userData = {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
+    const loginData = {
       username: form.username.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      dob: form.dob.toISOString(),
-      password: form.password,
+      password: form.password
     };
 
-    console.log('Sending Data:', JSON.stringify(userData, null, 2)); // Log exact request data
-
     try {
-      const response = await fetch(`${API_URL}/users/signup`, {
+      const response = await fetch(`${API_URL}/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(loginData),
       });
 
       const data = await response.json();
       setLoading(false);
-      console.log('Server Response:', data);
 
       if (response.ok) {
-        Alert.alert('Success', 'User registered successfully!', [
-          {
-            text: 'Go to Profile',
-            onPress: () => navigation.navigate('UserProfile', { user: data.user }), // Navigate to user profile
-          },
-        ]);
+        if (!data.user || !data.user._id || !data.token) {
+          Toast.show({ type: 'error', text1: 'Error', text2: 'Authentication failed' });
+          return;
+        }
+
+        // ✅ Store user ID and authentication token
+
+        await AsyncStorage.setItem('userId', data.user._id);
+        await AsyncStorage.setItem('authToken', data.token);
+
+        console.log('Stored userId:', data.user._id);
+        console.log('Stored authToken:', data.token);
+
+        router.replace('/(tabs)/users');
       } else {
-        Alert.alert('Error', data.message || 'Something went wrong');
+        Toast.show({ type: 'error', text1: 'Login Failed', text2: data.message || 'Invalid credentials' });
       }
     } catch (error) {
       setLoading(false);
-      Alert.alert('Error', 'Failed to connect to the server');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to connect to the server' });
     }
   };
 
-
-
   return (
-    <LinearGradient colors={['#0097b2', '#307313']} style={styles.container}>
-      <View style={styles.innerContainer}>
-        <Card style={styles.card}>
-          {loading ? (
-            <ActivityIndicator size="large" color="#307313" />
-          ) : userData ? (
-            <View>
-              <Text style={styles.successText}>Thank you for signing up!</Text>
-              <Text style={styles.userInfo}>Name: {userData.firstName} {userData.lastName}</Text>
-              <Text style={styles.userInfo}>Username: {userData.username}</Text>
-              <Text style={styles.userInfo}>Email: {userData.email}</Text>
-              <Text style={styles.userInfo}>Phone: {userData.phone}</Text>
-              <Text style={styles.userInfo}>DOB: {new Date(userData.dob).toDateString()}</Text>
-            </View>
-          ) : (
-            <>
-              <Text style={styles.title}>Sign Up</Text>
-              <TextInput placeholder="First Name" value={form.firstName} onChangeText={(text) => handleChange('firstName', text)} style={styles.input} />
-              <TextInput placeholder="Last Name" value={form.lastName} onChangeText={(text) => handleChange('lastName', text)} style={styles.input} />
-              <TextInput placeholder="Username" value={form.username} onChangeText={(text) => handleChange('username', text)} style={styles.input} />
-              <TextInput placeholder="Email" value={form.email} keyboardType="email-address" onChangeText={(text) => handleChange('email', text)} style={styles.input} />
-              <TextInput placeholder="Phone Number" value={form.phone} keyboardType="phone-pad" onChangeText={(text) => handleChange('phone', text)} style={styles.input} />
-              <TextInput placeholder="Password" value={form.password} secureTextEntry onChangeText={(text) => handleChange('password', text)} style={styles.input} />
-
-              <TouchableOpacity onPress={() => setForm({ ...form, showDatePicker: true })}>
-                <Text style={styles.dateText}>{form.dob.toDateString()}</Text>
-              </TouchableOpacity>
-
-              <DateTimePickerModal
-                isVisible={form.showDatePicker}
-                mode="date"
-                onConfirm={handleDateConfirm}
-                onCancel={() => setForm({ ...form, showDatePicker: false })}
-              />
-
-              <UIButton mode="contained" style={styles.button} onPress={handleSignup}>
-                Sign Up
-              </UIButton>
-            </>
-          )}
-        </Card>
-      </View>
-    </LinearGradient>
+    <View style={styles.container}>
+      <Card style={styles.card}>
+        <View style={styles.avatarContainer}>
+          <Avatar.Icon size={80} icon="account-circle" color="#FF385C" backgroundColor="#FFF5F5" />
+        </View>
+        <Text style={styles.title}>Login</Text>
+        <View style={styles.inputContainer}>
+          <Icon name="account" size={20} color="#FF385C" style={styles.icon} />
+          <TextInput
+            placeholder="Username"
+            value={form.username}
+            autoCapitalize="none"
+            onChangeText={(text) => handleChange('username', text)}
+            style={styles.input}
+          />
+        </View>
+        <View style={styles.inputContainer}>
+          <Icon name="lock" size={20} color="#FF385C" style={styles.icon} />
+          <TextInput
+            placeholder="Password"
+            value={form.password}
+            secureTextEntry
+            onChangeText={(text) => handleChange('password', text)}
+            style={styles.input}
+          />
+        </View>
+        {loading ? (
+          <ActivityIndicator size="large" color="#FF385C" />
+        ) : (
+          <Button mode="contained" style={styles.button} onPress={handleLogin}>
+            Login
+          </Button>
+        )}
+      </Card>
+      <Toast />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: 'transparent' },
-  innerContainer: { padding: 20, flex: 1, justifyContent: 'center' },
-  card: { padding: 20, borderRadius: 10, backgroundColor: 'white', elevation: 3 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', color: '#333' },
-  input: { marginBottom: 10, borderWidth: 1, padding: 12, borderRadius: 5, borderColor: '#ccc', backgroundColor: '#f9f9f9' },
-  dateText: { padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5, textAlign: 'center', backgroundColor: '#f9f9f9' },
-  button: { marginTop: 20, paddingVertical: 10 },
-  successText: { fontSize: 20, fontWeight: 'bold', color: 'green', textAlign: 'center', marginBottom: 10 },
-  userInfo: { fontSize: 16, textAlign: 'center', color: '#333', marginBottom: 5 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' },
+  card: { width: '90%', padding: 20, borderRadius: 10, backgroundColor: 'white', elevation: 3 },
+  avatarContainer: { alignItems: 'center', marginBottom: 15 },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20, color: '#333' },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', borderRadius: 5, paddingHorizontal: 10, backgroundColor: '#f9f9f9', marginBottom: 15 },
+  input: { flex: 1, paddingVertical: 12 },
+  icon: { marginRight: 10 },
+  button: { marginTop: 10, backgroundColor: '#FF385C' },
 });
 
-export default SignupScreen;
+export default LoginScreen;

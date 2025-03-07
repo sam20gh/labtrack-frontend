@@ -47,7 +47,7 @@ const LoginScreen = () => {
                 console.log('Stored userId:', data.user._id);
                 console.log('Stored authToken:', data.token);
 
-                router.replace('/users');
+                router.replace('/(tabs)/users');
             } else {
                 Toast.show({ type: 'error', text1: 'Login Failed', text2: data.message || 'Invalid credentials' });
             }
