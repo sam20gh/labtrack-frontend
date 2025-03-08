@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Appbar, Button, Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
 import { API_URL } from '@/constants/config'; // Using centralized API URL
-import { LinearGradient } from 'expo-linear-gradient';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const TEST_RESULTS_URL = `${API_URL}/test-results`;
 
@@ -74,8 +74,12 @@ const HomeScreen = ({ navigation }: any) => {
           <Card.Content>
             {labInfo && (
               <View>
-                <Title style={styles.labTitle}>Lab: {labInfo.labName}</Title>
-                <Paragraph style={styles.labDate}>Date of Test: {labInfo.dateOfTest}</Paragraph>
+                <View style={styles.labInfoContainer}>
+                  <Icon name="hospital" size={16} color="#777" />
+                  <Text style={styles.labName}>{labInfo.labName}</Text>
+                  <Icon name="calendar" size={16} color="#777" style={styles.labIcon} />
+                  <Text style={styles.labDate}>{labInfo.dateOfTest}</Text>
+                </View>
                 <Paragraph style={styles.interpretation}>{labInfo.interpretation}</Paragraph>
               </View>
             )}
@@ -123,7 +127,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 5
   },
-  referenceRange: { fontSize: 12, fontStyle: 'italic', color: '#555', padding: 20 },
+  interpretation: { fontSize: 16, fontWeight: 'bold', color: '#333', marginTop: 5 },
+  labInfoContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
+  labName: { fontSize: 14, color: '#777', marginLeft: 5 },
+  labDate: { fontSize: 14, color: '#777', marginLeft: 5 },
+  labIcon: { marginLeft: 10 },
+  referenceRange: { fontSize: 12, fontStyle: 'italic', color: '#555', padding: 20, marginTop: 5 },
   resultRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, marginBottom: 5, borderRadius: 5, backgroundColor: '#f5f5f5', shadowColor: '#bdbdbd', shadowOpacity: 0.05, shadowRadius: 5 },
   statusIndicator: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
   resultTextContainer: { flex: 1 },
