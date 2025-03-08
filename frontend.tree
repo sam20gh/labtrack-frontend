@@ -1,0 +1,135 @@
+labtrack-frontend/
+├─ .expo/
+│  ├─ types/
+│  │  └─ router.d.ts
+│  ├─ web/
+│  │  └─ cache/
+│  │     └─ production/
+│  │        └─ images/
+│  │           └─ favicon/
+│  │              └─ favicon-24272cdaeff82cc5facdaccd982a6f05b60c4504704bbf94c19a6388659880bb-contain-transparent/
+│  │                 └─ favicon-48.png
+│  ├─ devices.json
+│  ├─ packager-info.json
+│  ├─ README.md
+│  └─ settings.json
+├─ android/
+│  ├─ app/
+│  │  ├─ src/
+│  │  │  ├─ debug/
+│  │  │  │  └─ AndroidManifest.xml
+│  │  │  └─ main/
+│  │  │     ├─ java/
+│  │  │     │  └─ com/
+│  │  │     │     └─ labtrack/
+│  │  │     │        └─ app/
+│  │  │     │           ├─ MainActivity.kt
+│  │  │     │           └─ MainApplication.kt
+│  │  │     ├─ res/
+│  │  │     │  ├─ drawable/
+│  │  │     │  │  ├─ ic_launcher_background.xml
+│  │  │     │  │  └─ rn_edit_text_material.xml
+│  │  │     │  ├─ drawable-hdpi/
+│  │  │     │  │  └─ splashscreen_logo.png
+│  │  │     │  ├─ drawable-mdpi/
+│  │  │     │  │  └─ splashscreen_logo.png
+│  │  │     │  ├─ drawable-xhdpi/
+│  │  │     │  │  └─ splashscreen_logo.png
+│  │  │     │  ├─ drawable-xxhdpi/
+│  │  │     │  │  └─ splashscreen_logo.png
+│  │  │     │  ├─ drawable-xxxhdpi/
+│  │  │     │  │  └─ splashscreen_logo.png
+│  │  │     │  ├─ mipmap-hdpi/
+│  │  │     │  │  ├─ ic_launcher_round.webp
+│  │  │     │  │  └─ ic_launcher.webp
+│  │  │     │  ├─ mipmap-mdpi/
+│  │  │     │  │  ├─ ic_launcher_round.webp
+│  │  │     │  │  └─ ic_launcher.webp
+│  │  │     │  ├─ mipmap-xhdpi/
+│  │  │     │  │  ├─ ic_launcher_round.webp
+│  │  │     │  │  └─ ic_launcher.webp
+│  │  │     │  ├─ mipmap-xxhdpi/
+│  │  │     │  │  ├─ ic_launcher_round.webp
+│  │  │     │  │  └─ ic_launcher.webp
+│  │  │     │  ├─ mipmap-xxxhdpi/
+│  │  │     │  │  ├─ ic_launcher_round.webp
+│  │  │     │  │  └─ ic_launcher.webp
+│  │  │     │  └─ values/
+│  │  │     │     ├─ colors.xml
+│  │  │     │     ├─ strings.xml
+│  │  │     │     └─ styles.xml
+│  │  │     └─ AndroidManifest.xml
+│  │  ├─ build.gradle
+│  │  ├─ debug.keystore
+│  │  └─ proguard-rules.pro
+│  ├─ gradle/
+│  │  └─ wrapper/
+│  │     ├─ gradle-wrapper.jar
+│  │     └─ gradle-wrapper.properties
+│  ├─ .gitignore
+│  ├─ build.gradle
+│  ├─ gradle.properties
+│  ├─ gradlew
+│  ├─ gradlew.bat
+│  └─ settings.gradle
+├─ app/
+│  ├─ (auth)/
+│  │  └─ loginscreen.tsx
+│  ├─ (tabs)/
+│  │  ├─ _layout.tsx
+│  │  ├─ explore.tsx
+│  │  ├─ index.tsx
+│  │  ├─ orders.tsx
+│  │  ├─ results.tsx
+│  │  └─ users.tsx
+│  ├─ _layout.tsx
+│  ├─ +not-found.tsx
+│  └─ TestDetails.tsx
+├─ assets/
+│  ├─ fonts/
+│  │  └─ SpaceMono-Regular.ttf
+│  ├─ images/
+│  │  ├─ adaptive-icon.png
+│  │  ├─ favicon.png
+│  │  ├─ partial-react-logo.png
+│  │  ├─ react-logo.png
+│  │  ├─ react-logo@2x.png
+│  │  ├─ react-logo@3x.png
+│  │  └─ splash-icon.png
+│  └─ icon.png
+├─ components/
+│  ├─ __tests__/
+│  │  ├─ __snapshots__/
+│  │  │  └─ ThemedText-test.tsx.snap
+│  │  └─ ThemedText-test.tsx
+│  ├─ ui/
+│  │  ├─ IconSymbol.ios.tsx
+│  │  ├─ IconSymbol.tsx
+│  │  ├─ TabBarBackground.ios.tsx
+│  │  └─ TabBarBackground.tsx
+│  ├─ Collapsible.tsx
+│  ├─ ExternalLink.tsx
+│  ├─ HapticTab.tsx
+│  ├─ Header.tsx
+│  ├─ HelloWave.tsx
+│  ├─ ParallaxScrollView.tsx
+│  ├─ ThemedText.tsx
+│  └─ ThemedView.tsx
+├─ constants/
+│  ├─ Colors.ts
+│  └─ config.ts
+├─ hooks/
+│  ├─ useColorScheme.ts
+│  ├─ useColorScheme.web.ts
+│  └─ useThemeColor.ts
+├─ scripts/
+│  └─ reset-project.js
+├─ .gitignore
+├─ app.json
+├─ app.zip
+├─ index.js
+├─ metro.config.js
+├─ package-lock.json
+├─ package.json
+├─ README.md
+└─ tsconfig.json

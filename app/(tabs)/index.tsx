@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Text } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Appbar, Button, Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
 import { API_URL } from '@/constants/config'; // Using centralized API URL
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +10,7 @@ const HomeScreen = ({ navigation }: any) => {
   const [testResults, setTestResults] = useState<any[]>([]); // Ensuring it's an array
   const [loading, setLoading] = useState(true);
   const [labInfo, setLabInfo] = useState<any>(null);
+  const [expandedTest, setExpandedTest] = useState<number | null>(null);
 
   // Fetch test results from API
   useEffect(() => {
@@ -29,7 +30,8 @@ const HomeScreen = ({ navigation }: any) => {
             id: index + 1,
             testName: key,
             status: value.status,
-            value: `${value.value} ${value.unit}`
+            value: `${value.value} ${value.unit}`,
+            referenceRange: value.reference_range
           }));
           setTestResults(parsedResults);
         } else {
@@ -78,13 +80,18 @@ const HomeScreen = ({ navigation }: any) => {
               </View>
             )}
             {testResults.map((result: any, index: number) => (
-              <View key={result.id || index} style={[styles.resultRow]}>
-                <View style={[styles.statusIndicator, getStatusColor(result.status)]} />
-                <View style={styles.resultTextContainer}>
-                  <Title style={styles.resultText}>{result.testName || "Unknown Test"}</Title>
+              <TouchableOpacity key={result.id || index} onPress={() => setExpandedTest(expandedTest === result.id ? null : result.id)}>
+                <View style={[styles.resultRow]}>
+                  <View style={[styles.statusIndicator, getStatusColor(result.status)]} />
+                  <View style={styles.resultTextContainer}>
+                    <Title style={styles.resultText}>{result.testName || "Unknown Test"}</Title>
+                  </View>
+                  <Text style={styles.resultValue}>{result.value}</Text>
                 </View>
-                <Text style={styles.resultValue}>{result.value}</Text>
-              </View>
+                {expandedTest === result.id && (
+                  <Text style={styles.referenceRange}>Reference Range: {result.referenceRange}</Text>
+                )}
+              </TouchableOpacity>
             ))}
           </Card.Content>
         </Card>
@@ -116,9 +123,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 5
   },
-  labTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
-  labDate: { fontSize: 16, marginBottom: 5 },
-  interpretation: { fontSize: 14, fontStyle: 'italic', marginBottom: 10 },
+  referenceRange: { fontSize: 12, fontStyle: 'italic', color: '#555', padding: 20 },
   resultRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, marginBottom: 5, borderRadius: 5, backgroundColor: '#f5f5f5', shadowColor: '#bdbdbd', shadowOpacity: 0.05, shadowRadius: 5 },
   statusIndicator: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
   resultTextContainer: { flex: 1 },
