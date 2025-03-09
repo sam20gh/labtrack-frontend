@@ -52,7 +52,7 @@ const TestDetails: React.FC = () => {
                 </Card.Content>
             </Card>
 
-            <Title style={styles.sectionTitle}>Test Results</Title>
+            <Title style={styles.sectionTitle}><Text>Test Results</Text></Title>
             <View style={styles.resultsContainer}>
                 {Object.entries(test.results).map(([key, value], index) => (
                     <View key={index} style={styles.resultItem}>

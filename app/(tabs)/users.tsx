@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { Appbar, Avatar, Card, Title, Paragraph, ActivityIndicator, Button } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
 import { useRouter } from 'expo-router';
@@ -11,7 +11,17 @@ const Users = () => {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
-    const [form, setForm] = useState({ firstName: '', lastName: '', username: '', email: '', dob: '' });
+    const [form, setForm] = useState({
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        phone: '',
+        dob: '',
+        height: '',
+        weight: ''
+    });
+
     const router = useRouter();
 
     useEffect(() => {
@@ -26,22 +36,22 @@ const Users = () => {
                     return;
                 }
 
-                console.log('Fetching data for userId:', userId);
-
                 const response = await fetch(`${API_URL}/users/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 const data = await response.json();
                 if (response.ok && data) {
-                    console.log('Fetched user data:', data);
                     setUserData(data);
                     setForm({
                         firstName: data.firstName || '',
                         lastName: data.lastName || '',
                         username: data.username || '',
                         email: data.email || '',
+                        phone: data.phone || '',
                         dob: data.dob || '',
+                        height: data.height || '',
+                        weight: data.weight || ''
                     });
                 } else {
                     Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'Failed to fetch user data' });
@@ -52,8 +62,6 @@ const Users = () => {
                 setLoading(false);
             }
         };
-
-
         fetchUserData();
     }, []);
 
@@ -66,20 +74,18 @@ const Users = () => {
     const handleSave = async () => {
         setLoading(true);
         try {
-            const token = await AsyncStorage.getItem('authToken'); // Retrieve token
+            const token = await AsyncStorage.getItem('authToken');
             if (!token) {
                 Toast.show({ type: 'error', text1: 'Error', text2: 'Unauthorized. Please log in again.' });
                 router.replace('/loginscreen');
                 return;
             }
 
-            console.log('Sending Token:', token); // ✅ Debugging: Log token before sending
-
             const response = await fetch(`${API_URL}/users/update`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // Ensure correct format
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(form),
             });
@@ -97,13 +103,12 @@ const Users = () => {
         }
         setLoading(false);
     };
+
     const handleLogout = async () => {
         await AsyncStorage.removeItem('userId');
         await AsyncStorage.removeItem('authToken');
-        Toast.show({ type: 'success', text1: 'Logged Out', text2: 'You have been logged out successfully.' });
         router.replace('/loginscreen');
     };
-
 
     return (
         <ScrollView style={styles.container}>
@@ -115,56 +120,33 @@ const Users = () => {
                         <View style={styles.avatarContainer}>
                             <Avatar.Image size={80} source={{ uri: userData.avatar || 'https://i.pravatar.cc/150' }} />
                         </View>
-                        <TextInput
-                            style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
-                            value={form.firstName}
-                            onChangeText={(text) => handleChange('firstName', text)}
-                            editable={editing}
-                            placeholder="First Name"
-                        />
-                        <TextInput
-                            style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
-                            value={form.lastName}
-                            onChangeText={(text) => handleChange('lastName', text)}
-                            editable={editing}
-                            placeholder="Last Name"
-                        />
-                        <TextInput
-                            style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
-                            value={form.username}
-                            onChangeText={(text) => handleChange('username', text)}
-                            editable={editing}
-                            placeholder="Username"
-                        />
-                        <TextInput
-                            style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
-                            value={form.email}
-                            onChangeText={(text) => handleChange('email', text)}
-                            editable={editing}
-                            placeholder="Email"
-                            keyboardType="email-address"
-                        />
-                        <TextInput
-                            style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
-                            value={form.dob}
-                            onChangeText={(text) => handleChange('dob', text)}
-                            editable={editing}
-                            placeholder="Date of Birth"
-                        />
+                        {Object.keys(form).map((key) => (
+                            <TextInput
+                                key={key}
+                                style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
+                                value={form[key]}
+                                onChangeText={(text) => handleChange(key, text)}
+                                editable={editing}
+                                placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+                            />
+                        ))}
                         {editing ? (
-                            <Button mode="contained" style={styles.saveButton} onPress={handleSave}>Save</Button>
+                            <Button mode="contained" style={styles.saveButton} onPress={handleSave}>
+                                <Text>Save</Text>
+                            </Button>
                         ) : (
-                            <Button mode="contained" style={styles.editButton} onPress={handleEditToggle}>Edit Profile</Button>
-                        )}{userData && (
-                            <Button
-                                mode="contained"
-                                style={styles.logoutButton}
-                                icon={() => <Icon name="logout" size={20} color="#fff" />}
-                                onPress={handleLogout}
-                            >
-                                Log Out
+                            <Button mode="contained" style={styles.editButton} onPress={handleEditToggle}>
+                                <Text>Edit Profile</Text>
                             </Button>
                         )}
+                        <Button
+                            mode="contained"
+                            style={styles.logoutButton}
+                            icon={() => <Icon name="logout" size={20} color="#fff" />}
+                            onPress={handleLogout}
+                        >
+                            Log Out
+                        </Button>
                     </Card.Content>
                 </Card>
             ) : (
@@ -185,8 +167,8 @@ const styles = StyleSheet.create({
     inputDisabled: { borderColor: '#ddd', backgroundColor: '#e9e9e9' },
     editButton: { marginTop: 10, backgroundColor: '#FF385C' },
     saveButton: { marginTop: 10, backgroundColor: '#4CAF50' },
+    logoutButton: { marginTop: 20, alignSelf: 'center', backgroundColor: '#FF385C' },
     noResultsText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#666' },
-    logoutButton: { marginTop: 10, backgroundColor: '#f98da1' },
 });
 
 export default Users;

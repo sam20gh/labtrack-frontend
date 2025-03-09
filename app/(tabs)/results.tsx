@@ -36,7 +36,7 @@ const ResultsPage = () => {
 
     return (
         <ScrollView style={styles.container}>
-            <Title style={styles.pageTitle}>🧪 All Test Results</Title>
+            <Title style={styles.pageTitle}><Text>🧪 All Test Results</Text></Title>
             {loading ? (
                 <ActivityIndicator animating={true} size="large" style={styles.loader} />
             ) : testResults.length > 0 ? (
@@ -48,8 +48,8 @@ const ResultsPage = () => {
                                     <Icon name="flask-outline" size={24} color="#6200ea" />
                                     <Title style={styles.testType}>{test.patient.test_type}</Title>
                                 </View>
-                                <Paragraph style={styles.labInfo}><Icon name="hospital" size={18} color="#666" /> Lab: {test.patient.lab_name}</Paragraph>
-                                <Paragraph style={styles.testDate}><Icon name="calendar" size={18} color="#666" /> Date: {test.patient.date_of_test}</Paragraph>
+                                <Paragraph style={styles.labInfo}><Icon name="hospital" size={18} color="#666" /> <Text>Lab:</Text> {test.patient.lab_name}</Paragraph>
+                                <Paragraph style={styles.testDate}><Icon name="calendar" size={18} color="#666" /><Text> Date:</Text> {test.patient.date_of_test}</Paragraph>
                                 <Paragraph style={styles.interpretation}>{test.interpretation}</Paragraph>
                             </Card.Content>
                         </Card>

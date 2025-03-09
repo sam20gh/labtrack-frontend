@@ -58,14 +58,14 @@ const HomeScreen = ({ navigation }: any) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.heroSection}>
-        <Title style={styles.heroTitle}>Welcome to LabTrack</Title>
-        <Paragraph style={styles.heroSubtitle}>Your health, simplified.</Paragraph>
+        <Title style={styles.heroTitle}><Text>Welcome to LabTrack</Text></Title>
+        <Paragraph style={styles.heroSubtitle}><Text>Your health, simplified.</Text></Paragraph>
         <Button mode="contained" onPress={() => navigation.navigate('Tests')} style={styles.orderButton}>
           <Text style={styles.orderButtonText}>Order a Test</Text>
         </Button>
       </View>
 
-      <Title style={styles.sectionTitle}>Recent Test Results</Title>
+      <Title style={styles.sectionTitle}><Text>Recent Test Results</Text></Title>
       {loading ? (
         <ActivityIndicator animating={true} size="large" style={styles.loader} />
       ) : testResults.length > 0 ? (

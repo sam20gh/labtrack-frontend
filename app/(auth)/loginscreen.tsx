@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Card, Button, Avatar } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
 import { useRouter } from 'expo-router';
@@ -39,8 +39,6 @@ const LoginScreen = () => {
                     return;
                 }
 
-                // ✅ Store user ID and authentication token
-
                 await AsyncStorage.setItem('userId', data.user._id);
                 await AsyncStorage.setItem('authToken', data.token);
 
@@ -79,6 +77,7 @@ const LoginScreen = () => {
                     <TextInput
                         placeholder="Password"
                         value={form.password}
+                        autoCapitalize="none"
                         secureTextEntry
                         onChangeText={(text) => handleChange('password', text)}
                         style={styles.input}
@@ -88,9 +87,12 @@ const LoginScreen = () => {
                     <ActivityIndicator size="large" color="#FF385C" />
                 ) : (
                     <Button mode="contained" style={styles.button} onPress={handleLogin}>
-                        Login
+                        <Text>Login</Text>
                     </Button>
                 )}
+                <TouchableOpacity onPress={() => router.push('/explore')} style={styles.registerLink}>
+                    <Text style={styles.registerText}>Don't have an account? Register</Text>
+                </TouchableOpacity>
             </Card>
             <Toast />
         </View>
@@ -106,6 +108,8 @@ const styles = StyleSheet.create({
     input: { flex: 1, paddingVertical: 12 },
     icon: { marginRight: 10 },
     button: { marginTop: 10, backgroundColor: '#FF385C' },
+    registerLink: { marginTop: 15, alignItems: 'center' },
+    registerText: { color: '#FF385C', textDecorationLine: 'underline' },
 });
 
 export default LoginScreen;

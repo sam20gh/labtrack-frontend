@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, Text } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -13,7 +13,7 @@ export default function TabLayout() {
 
   return (
     <>
-      <Header /> {/* Add Header component here */}
+      <Header />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: '#FF385C',
@@ -30,37 +30,37 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="home" color={color} />,
+            title: () => <Text>Home</Text>,
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={24} name="home" color={color} />,
           }}
         />
         <Tabs.Screen
           name="explore"
           options={{
-            title: 'Explore',
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="newspaper" color={color} />,
+            title: () => <Text>Explore</Text>,
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={24} name="newspaper" color={color} />,
           }}
         />
 
         <Tabs.Screen
           name="orders"
           options={{
-            title: 'Orders',
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="shopping" color={color} />,
+            title: () => <Text>Orders</Text>,
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={24} name="shopping" color={color} />,
           }}
         />
         <Tabs.Screen
           name="results"
           options={{
-            title: 'Results',
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="chart-line" color={color} />,
+            title: () => <Text>Results</Text>,
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={24} name="chart-line" color={color} />,
           }}
         />
         <Tabs.Screen
           name="users"
           options={{
-            title: 'Profile',
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account" color={color} />,
+            title: () => <Text>Profile</Text>,
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={24} name="account" color={color} />,
           }}
         />
       </Tabs>
