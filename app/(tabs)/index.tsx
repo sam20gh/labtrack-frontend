@@ -12,7 +12,6 @@ const HomeScreen = ({ navigation }: any) => {
   const [labInfo, setLabInfo] = useState<any>(null);
   const [expandedTest, setExpandedTest] = useState<number | null>(null);
 
-  // Fetch test results from API
   useEffect(() => {
     const fetchTestResults = async () => {
       try {
@@ -61,8 +60,8 @@ const HomeScreen = ({ navigation }: any) => {
       <View style={styles.heroSection}>
         <Title style={styles.heroTitle}>Welcome to LabTrack</Title>
         <Paragraph style={styles.heroSubtitle}>Your health, simplified.</Paragraph>
-        <Button mode="contained" onPress={() => navigation.navigate('Tests')} style={styles.orderButton} labelStyle={styles.orderButtonText}>
-          Order a Test
+        <Button mode="contained" onPress={() => navigation.navigate('Tests')} style={styles.orderButton}>
+          <Text style={styles.orderButtonText}>Order a Test</Text>
         </Button>
       </View>
 
@@ -105,6 +104,7 @@ const HomeScreen = ({ navigation }: any) => {
     </ScrollView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 5, backgroundColor: '#f3f3f3', width: '100%' },

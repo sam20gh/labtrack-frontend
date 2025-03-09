@@ -37,17 +37,11 @@ export default function TabLayout() {
         <Tabs.Screen
           name="explore"
           options={{
-            title: 'Login',
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="login" color={color} />,
+            title: 'Explore',
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="newspaper" color={color} />,
           }}
         />
-        <Tabs.Screen
-          name="users"
-          options={{
-            title: 'Profile',
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account" color={color} />,
-          }}
-        />
+
         <Tabs.Screen
           name="orders"
           options={{
@@ -60,6 +54,13 @@ export default function TabLayout() {
           options={{
             title: 'Results',
             tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="chart-line" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="users"
+          options={{
+            title: 'Profile',
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account" color={color} />,
           }}
         />
       </Tabs>

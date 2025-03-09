@@ -97,6 +97,12 @@ const Users = () => {
         }
         setLoading(false);
     };
+    const handleLogout = async () => {
+        await AsyncStorage.removeItem('userId');
+        await AsyncStorage.removeItem('authToken');
+        Toast.show({ type: 'success', text1: 'Logged Out', text2: 'You have been logged out successfully.' });
+        router.replace('/loginscreen');
+    };
 
 
     return (
@@ -149,6 +155,15 @@ const Users = () => {
                             <Button mode="contained" style={styles.saveButton} onPress={handleSave}>Save</Button>
                         ) : (
                             <Button mode="contained" style={styles.editButton} onPress={handleEditToggle}>Edit Profile</Button>
+                        )}{userData && (
+                            <Button
+                                mode="contained"
+                                style={styles.logoutButton}
+                                icon={() => <Icon name="logout" size={20} color="#fff" />}
+                                onPress={handleLogout}
+                            >
+                                Log Out
+                            </Button>
                         )}
                     </Card.Content>
                 </Card>
@@ -171,6 +186,7 @@ const styles = StyleSheet.create({
     editButton: { marginTop: 10, backgroundColor: '#FF385C' },
     saveButton: { marginTop: 10, backgroundColor: '#4CAF50' },
     noResultsText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#666' },
+    logoutButton: { marginTop: 10, backgroundColor: '#f98da1' },
 });
 
 export default Users;
