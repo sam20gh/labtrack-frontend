@@ -82,7 +82,8 @@ const HomeScreen = ({ navigation }: any) => {
   const handleDeepSeekFeedback = async () => {
     setLoadingFeedback(true);
     try {
-      const response = await fetch('http://10.0.6.113:5002/deepseek', {
+      // Use API_URL from your config and append /deepseek.
+      const response = await fetch(`${API_URL}/deepseek`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
