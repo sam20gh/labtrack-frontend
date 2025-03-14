@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
-import { Appbar, Avatar, Card, Title, Paragraph, ActivityIndicator, Button } from 'react-native-paper';
+import { Avatar, Card, ActivityIndicator, Button } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Toast from 'react-native-toast-message';
+import { Picker } from '@react-native-picker/picker';
 
 const Users = () => {
-    const [userData, setUserData] = useState(null);
+    const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState({
@@ -18,6 +19,7 @@ const Users = () => {
         email: '',
         phone: '',
         dob: '',
+        gender: '', // New gender field
         height: '',
         weight: ''
     });
@@ -50,8 +52,9 @@ const Users = () => {
                         email: data.email || '',
                         phone: data.phone || '',
                         dob: data.dob || '',
-                        height: data.height || '',
-                        weight: data.weight || ''
+                        gender: data.gender || '', // Include gender from fetched data
+                        height: data.height ? String(data.height) : '',
+                        weight: data.weight ? String(data.weight) : ''
                     });
                 } else {
                     Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'Failed to fetch user data' });
@@ -67,7 +70,7 @@ const Users = () => {
 
     const handleEditToggle = () => setEditing(!editing);
 
-    const handleChange = (name, value) => {
+    const handleChange = (name: string, value: string) => {
         setForm({ ...form, [name]: value });
     };
 
@@ -120,16 +123,38 @@ const Users = () => {
                         <View style={styles.avatarContainer}>
                             <Avatar.Image size={80} source={{ uri: userData.avatar || 'https://i.pravatar.cc/150' }} />
                         </View>
-                        {Object.keys(form).map((key) => (
-                            <TextInput
-                                key={key}
-                                style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
-                                value={form[key]}
-                                onChangeText={(text) => handleChange(key, text)}
-                                editable={editing}
-                                placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
-                            />
-                        ))}
+                        {Object.keys(form).map((key) => {
+                            if (key === 'gender') {
+                                return (
+                                    <View key={key} style={styles.pickerContainer}>
+                                        {editing ? (
+                                            <Picker
+                                                selectedValue={form.gender}
+                                                onValueChange={(itemValue) => handleChange('gender', itemValue)}
+                                                style={styles.picker}
+                                            >
+                                                <Picker.Item label="Select Gender" value="" />
+                                                <Picker.Item label="Male" value="Male" />
+                                                <Picker.Item label="Female" value="Female" />
+                                            </Picker>
+                                        ) : (
+                                            <Text style={styles.inputDisabled}>Gender: {form.gender || 'Not specified'}</Text>
+                                        )}
+                                    </View>
+                                );
+                            } else {
+                                return (
+                                    <TextInput
+                                        key={key}
+                                        style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
+                                        value={form[key]}
+                                        onChangeText={(text) => handleChange(key, text)}
+                                        editable={editing}
+                                        placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+                                    />
+                                );
+                            }
+                        })}
                         {editing ? (
                             <Button mode="contained" style={styles.saveButton} onPress={handleSave}>
                                 <Text>Save</Text>
@@ -164,7 +189,9 @@ const styles = StyleSheet.create({
     avatarContainer: { alignItems: 'center', marginBottom: 15 },
     input: { marginBottom: 10, borderWidth: 1, padding: 12, borderRadius: 5 },
     inputEditable: { borderColor: '#ccc', backgroundColor: '#f9f9f9' },
-    inputDisabled: { borderColor: '#ddd', backgroundColor: '#e9e9e9' },
+    inputDisabled: { marginBottom: 10, borderWidth: 1, padding: 12, borderRadius: 5, borderColor: '#ddd', backgroundColor: '#e9e9e9' },
+    pickerContainer: { marginBottom: 10, borderWidth: 1, borderRadius: 5, overflow: 'hidden' },
+    picker: { height: 50, width: '100%' },
     editButton: { marginTop: 10, backgroundColor: '#FF385C' },
     saveButton: { marginTop: 10, backgroundColor: '#4CAF50' },
     logoutButton: { marginTop: 20, alignSelf: 'center', backgroundColor: '#FF385C' },

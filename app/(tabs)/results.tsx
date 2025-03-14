@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
-import { API_URL } from '@/constants/config'; // Using centralized API URL
-import { useNavigation } from '@react-navigation/native';
+import { API_URL } from '@/constants/config';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -11,33 +11,42 @@ const ResultsPage = () => {
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation();
 
-    useEffect(() => {
-        const fetchTestResults = async () => {
-            try {
-                const userId = await AsyncStorage.getItem('userId');
-                if (!userId) {
-                    console.error('User ID not found');
+    useFocusEffect(
+        useCallback(() => {
+            setLoading(true);
+            const fetchTestResults = async () => {
+                try {
+                    const userId = await AsyncStorage.getItem('userId');
+                    if (!userId) {
+                        console.error('User ID not found');
+                        setLoading(false);
+                        return;
+                    }
+                    const response = await fetch(`${API_URL}/test-results?user_id=${userId}`);
+                    const data = await response.json();
+
+                    if (data) {
+                        let resultsArray = Array.isArray(data) ? data : [data];
+                        // Sort the results by date_of_test (latest first)
+                        resultsArray.sort(
+                            (a, b) =>
+                                new Date(b.patient.date_of_test).getTime() -
+                                new Date(a.patient.date_of_test).getTime()
+                        );
+                        setTestResults(resultsArray);
+                    } else {
+                        setTestResults([]);
+                    }
+                } catch (error) {
+                    console.error('Error fetching test results:', error);
+                } finally {
                     setLoading(false);
-                    return;
                 }
+            };
 
-                const response = await fetch(`${API_URL}/test-results?user_id=${userId}`);
-                const data = await response.json();
-
-                if (data) {
-                    setTestResults(Array.isArray(data) ? data : [data]);
-                } else {
-                    setTestResults([]);
-                }
-            } catch (error) {
-                console.error('Error fetching test results:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTestResults();
-    }, []);
+            fetchTestResults();
+        }, [])
+    );
 
     return (
         <ScrollView style={styles.container}>
@@ -53,8 +62,12 @@ const ResultsPage = () => {
                                     <Icon name="hospital" size={24} color="#FF385C" />
                                     <Title style={styles.testType}>{test?.patient?.lab_name ?? 'Unknown Lab'}</Title>
                                 </View>
-                                <Paragraph style={styles.testDate}><Icon name="calendar" size={18} color="#666" /> Date: {test?.patient?.date_of_test ?? 'Unknown Date'}</Paragraph>
-                                <Paragraph style={styles.interpretation}>{test?.interpretation ?? 'No interpretation available'}</Paragraph>
+                                <Paragraph style={styles.testDate}>
+                                    <Icon name="calendar" size={18} color="#666" /> Date: {test?.patient?.date_of_test ?? 'Unknown Date'}
+                                </Paragraph>
+                                <Paragraph style={styles.interpretation}>
+                                    {test?.interpretation ?? 'No interpretation available'}
+                                </Paragraph>
                             </Card.Content>
                         </Card>
                     </TouchableOpacity>
