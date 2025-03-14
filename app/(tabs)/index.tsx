@@ -183,14 +183,15 @@ const HomeScreen = ({ navigation }: any) => {
           </Paragraph>
           <View style={styles.deepSeekContainer}>
             <Button mode="contained" onPress={handleDeepSeekFeedback} style={styles.deepSeekButton}>
-              Get LabTrack Feedback
+              {loadingFeedback ? <ActivityIndicator color="white" size="small" /> : "Get LabTrack Feedback"}
             </Button>
-            {loadingFeedback && <ActivityIndicator animating={true} size="small" style={styles.feedbackLoader} />}
             {deepSeekFeedback !== '' && (
-              <View style={styles.feedbackBox}>
-                <Text style={styles.feedbackTitle}>LabTrack Feedback:</Text>
-                <Text style={styles.feedbackText}>{deepSeekFeedback}</Text>
-              </View>
+              <Card style={styles.feedbackCard}>
+                <Card.Content>
+                  <Title style={styles.feedbackTitle}>LabTrack Feedback</Title>
+                  <Paragraph style={styles.feedbackText}>{deepSeekFeedback}</Paragraph>
+                </Card.Content>
+              </Card>
             )}
           </View>
         </View>
@@ -215,6 +216,23 @@ const styles = StyleSheet.create({
   feedbackBox: { marginTop: 10, padding: 15, backgroundColor: '#f0f0f0', borderRadius: 10 },
   feedbackTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
   feedbackText: { fontSize: 16 },
+  feedbackCard: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 10,
+    padding: 15,
+    elevation: 3,
+    marginTop: 15,
+  },
+  feedbackTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#119658",
+  },
+  feedbackText: {
+    fontSize: 16,
+    color: "#333",
+    lineHeight: 22,
+  },
 });
 
 export default HomeScreen;
