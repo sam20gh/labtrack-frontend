@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from '@react-navigation/native';
 
+
 const calculateBMI = (weight: number, heightCm: number) => {
   if (!weight || !heightCm) return 'N/A';
   const heightM = heightCm / 100; // Convert cm to meters
@@ -82,11 +83,21 @@ const HomeScreen = ({ navigation }: any) => {
   const handleDeepSeekFeedback = async () => {
     setLoadingFeedback(true);
     try {
-      // Use API_URL from your config and append /deepseek.
+      const token = await AsyncStorage.getItem('authToken');
+      const userId = await AsyncStorage.getItem('userId');
+
+      if (!token || !userId) {
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Unauthorized. Please log in again.' });
+        return;
+      }
+
+      console.log("Fetching feedback for:", userData, latestTest);
+
       const response = await fetch(`${API_URL}/deepseek`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           user: {
@@ -101,7 +112,14 @@ const HomeScreen = ({ navigation }: any) => {
           }
         })
       });
+
       const data = await response.json();
+      console.log("DeepSeek API Response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch feedback.");
+      }
+
       setDeepSeekFeedback(data.recommendation);
     } catch (error) {
       console.error("Error fetching DeepSeek feedback:", error);
@@ -110,6 +128,7 @@ const HomeScreen = ({ navigation }: any) => {
       setLoadingFeedback(false);
     }
   };
+
 
   return (
     <ScrollView style={styles.container}>

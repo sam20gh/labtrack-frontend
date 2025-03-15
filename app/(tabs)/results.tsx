@@ -5,6 +5,7 @@ import { API_URL } from '@/constants/config';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
 
 const ResultsPage = () => {
     const [testResults, setTestResults] = useState<any[]>([]);
@@ -17,28 +18,40 @@ const ResultsPage = () => {
             const fetchTestResults = async () => {
                 try {
                     const userId = await AsyncStorage.getItem('userId');
-                    if (!userId) {
-                        console.error('User ID not found');
-                        setLoading(false);
+                    const token = await AsyncStorage.getItem('authToken');
+
+                    console.log("Retrieved userId:", userId);
+                    console.log("Retrieved authToken:", token);
+
+                    if (!userId || !token) {
+                        Toast.show({ type: 'error', text1: 'Error', text2: 'Unauthorized. Please log in again.' });
                         return;
                     }
-                    const response = await fetch(`${API_URL}/test-results?user_id=${userId}`);
-                    const data = await response.json();
 
-                    if (data) {
-                        let resultsArray = Array.isArray(data) ? data : [data];
-                        // Sort the results by date_of_test (latest first)
-                        resultsArray.sort(
+                    const response = await fetch(`${API_URL}/test-results?user_id=${userId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    const data = await response.json();
+                    console.log("API Response:", data);
+
+                    if (!response.ok) {
+                        throw new Error(data.message || "Failed to fetch test results");
+                    }
+
+                    if (data && Array.isArray(data)) {
+                        data.sort(
                             (a, b) =>
                                 new Date(b.patient.date_of_test).getTime() -
                                 new Date(a.patient.date_of_test).getTime()
                         );
-                        setTestResults(resultsArray);
+                        setTestResults(data);
                     } else {
                         setTestResults([]);
                     }
                 } catch (error) {
                     console.error('Error fetching test results:', error);
+                    Toast.show({ type: 'error', text1: 'Error', text2: error.message || 'Failed to fetch test results' });
                 } finally {
                     setLoading(false);
                 }
@@ -75,6 +88,7 @@ const ResultsPage = () => {
             ) : (
                 <Text style={styles.noResultsText}>No test results available</Text>
             )}
+            <Toast />
         </ScrollView>
     );
 };
