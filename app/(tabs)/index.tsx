@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from '@react-navigation/native';
+import Markdown from 'react-native-markdown-display';
 
 
 const calculateBMI = (weight: number, heightCm: number) => {
@@ -208,7 +209,7 @@ const HomeScreen = ({ navigation }: any) => {
               <Card style={styles.feedbackCard}>
                 <Card.Content>
                   <Title style={styles.feedbackTitle}>LabTrack Feedback</Title>
-                  <Paragraph style={styles.feedbackText}>{deepSeekFeedback}</Paragraph>
+                  <Markdown>{deepSeekFeedback}</Markdown>
                 </Card.Content>
               </Card>
             )}
