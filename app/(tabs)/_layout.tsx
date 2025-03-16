@@ -35,10 +35,10 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="explore"
+          name="professionals"
           options={{
-            title: () => <Text>Explore</Text>,
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={24} name="newspaper" color={color} />,
+            title: () => <Text>Dr.</Text>,
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons size={24} name="face-man-profile" color={color} />,
           }}
         />
 

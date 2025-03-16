@@ -7,6 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from '@react-navigation/native';
 import Markdown from 'react-native-markdown-display';
+import Toast from 'react-native-toast-message';
+
 
 
 const calculateBMI = (weight: number, heightCm: number) => {
@@ -60,6 +62,7 @@ const HomeScreen = ({ navigation }: any) => {
                 new Date(a.patient.date_of_test).getTime()
             );
             setLatestTest(resultsArray[0]);
+            console.log("🔍 latestTest object:", latestTest);
           }
         } catch (error) {
           console.error('Error fetching latest test result:', error);
@@ -92,9 +95,39 @@ const HomeScreen = ({ navigation }: any) => {
         return;
       }
 
-      console.log("Fetching feedback for:", userData, latestTest);
+      console.log("📢 Checking existing feedback for user:", userData);
+      console.log("📌 Checking latest test:", latestTest);
 
-      const response = await fetch(`${API_URL}/deepseek`, {
+      if (!latestTest || !latestTest._id) {
+        console.error("❌ No valid test ID found.");
+        Toast.show({ type: 'error', text1: 'Error', text2: 'No valid test found.' });
+        setLoadingFeedback(false);
+        return;
+      }
+
+      const testID = latestTest._id; // ✅ Ensure we use the correct test result ID
+
+      // Step 1: Check if feedback already exists in the database
+      console.log("🔍 Searching for existing feedback...");
+      const feedbackResponse = await fetch(`${API_URL}/aifeedback/get/${testID}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const feedbackData = await feedbackResponse.json();
+      if (feedbackResponse.ok && feedbackData.feedback) {
+        console.log("🟢 Existing feedback found:", feedbackData.feedback);
+        setDeepSeekFeedback(feedbackData.feedback);
+        setLoadingFeedback(false);
+        return;
+      }
+
+      console.log("📌 No existing feedback found. Calling DeepSeek API...");
+
+      // Step 2: Fetch AI feedback
+      const deepseekResponse = await fetch(`${API_URL}/deepseek`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,22 +147,73 @@ const HomeScreen = ({ navigation }: any) => {
         })
       });
 
-      const data = await response.json();
-      console.log("DeepSeek API Response:", data);
+      const deepseekData = await deepseekResponse.json();
+      console.log("🟢 DeepSeek API Response:", deepseekData);
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch feedback.");
+      if (!deepseekResponse.ok) {
+        throw new Error(deepseekData.message || "Failed to fetch feedback.");
       }
 
-      setDeepSeekFeedback(data.recommendation);
+      setDeepSeekFeedback(deepseekData.recommendation);
+
+      // Step 3: Save feedback in the database
+      console.log("📌 Saving new feedback to DB...");
+      await saveFeedback(deepseekData.recommendation, testID, userId, token);
+
     } catch (error) {
-      console.error("Error fetching DeepSeek feedback:", error);
+      console.error("❌ Error fetching DeepSeek feedback:", error);
       setDeepSeekFeedback("An error occurred while fetching feedback.");
     } finally {
       setLoadingFeedback(false);
     }
   };
 
+
+  const saveFeedback = async (feedbackText: string, testID: string, userID: string, token: string) => {
+    try {
+      console.log("📢 Sending feedback to backend:", { userID, testID, feedback: feedbackText });
+
+      if (!testID) {
+        console.error("❌ No testID provided! Cannot save feedback.");
+        Toast.show({ type: 'error', text1: 'Error', text2: 'No valid test ID found.' });
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/aifeedback/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userID, testID, feedback: feedbackText })
+      });
+
+      console.log("🔍 Raw Response:", response); // ✅ Log full response object
+
+      const textData = await response.text(); // ✅ Read response as text
+      console.log("🔍 Response Text:", textData); // ✅ Log the text response
+
+      // Try parsing JSON only if the response is valid
+      let data;
+      try {
+        data = JSON.parse(textData);
+      } catch (error) {
+        console.error("❌ JSON Parsing Error:", error);
+        throw new Error("Invalid JSON response from server.");
+      }
+
+      console.log("🟢 Backend response (Parsed JSON):", data);
+
+      if (response.ok) {
+        Toast.show({ type: 'success', text1: 'Success', text2: 'Feedback saved!' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'Failed to save feedback' });
+      }
+    } catch (error) {
+      console.error('❌ Error saving feedback:', error);
+      Toast.show({ type: 'error', text1: 'Error', text2: error.message || 'Server error' });
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -203,15 +287,15 @@ const HomeScreen = ({ navigation }: any) => {
           </Paragraph>
           <View style={styles.deepSeekContainer}>
             <Button mode="contained" onPress={handleDeepSeekFeedback} style={styles.deepSeekButton}>
-              {loadingFeedback ? <ActivityIndicator color="white" size="small" /> : "Get LabTrack Feedback"}
+              {loadingFeedback ? <ActivityIndicator color="white" size="small" /> : "Get LabTrack AI Feedback"}
             </Button>
             {deepSeekFeedback !== '' && (
-              <Card style={styles.feedbackCard}>
-                <Card.Content>
-                  <Title style={styles.feedbackTitle}>LabTrack Feedback</Title>
-                  <Markdown>{deepSeekFeedback}</Markdown>
-                </Card.Content>
-              </Card>
+              <View>
+
+                <Title style={styles.feedbackTitle}>LabTrack AI Feedback</Title>
+                <Markdown>{deepSeekFeedback}</Markdown>
+
+              </View>
             )}
           </View>
         </View>
@@ -233,13 +317,13 @@ const styles = StyleSheet.create({
   deepSeekContainer: { marginTop: 20 },
   deepSeekButton: { marginBottom: 10, backgroundColor: '#119658' },
   feedbackLoader: { marginVertical: 10 },
-  feedbackBox: { marginTop: 10, padding: 15, backgroundColor: '#f0f0f0', borderRadius: 10 },
+  feedbackBox: { marginTop: 10, padding: 5, backgroundColor: '#f0f0f0', borderRadius: 10 },
   feedbackTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
   feedbackText: { fontSize: 16 },
   feedbackCard: {
     backgroundColor: "#f8f9fa",
     borderRadius: 10,
-    padding: 15,
+    padding: 5,
     elevation: 3,
     marginTop: 15,
   },
