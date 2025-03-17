@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
-import { Avatar, Card, ActivityIndicator, Button } from 'react-native-paper';
+import { View, Text, ScrollView, ActivityIndicator, StyleSheet, TextInput } from 'react-native';
+import { Card, Button, Avatar } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
-import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
-import { Picker } from '@react-native-picker/picker';
 
 const Users = () => {
-    const [userData, setUserData] = useState<any>(null);
+    const router = useRouter();
+    const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState({
@@ -19,12 +18,10 @@ const Users = () => {
         email: '',
         phone: '',
         dob: '',
-        gender: '', // New gender field
+        gender: '',
         height: '',
         weight: ''
     });
-
-    const router = useRouter();
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -33,8 +30,7 @@ const Users = () => {
                 const token = await AsyncStorage.getItem('authToken');
 
                 if (!userId || !token) {
-                    Toast.show({ type: 'error', text1: 'Error', text2: 'Unauthorized. Please log in again.' });
-                    router.replace('/loginscreen');
+                    handleLogout();
                     return;
                 }
 
@@ -43,7 +39,13 @@ const Users = () => {
                 });
 
                 const data = await response.json();
-                if (response.ok && data) {
+
+                if (response.status === 401 || response.status === 403) {
+                    handleLogout();
+                    return;
+                }
+
+                if (response.ok) {
                     setUserData(data);
                     setForm({
                         firstName: data.firstName || '',
@@ -52,7 +54,7 @@ const Users = () => {
                         email: data.email || '',
                         phone: data.phone || '',
                         dob: data.dob || '',
-                        gender: data.gender || '', // Include gender from fetched data
+                        gender: data.gender || '',
                         height: data.height ? String(data.height) : '',
                         weight: data.weight ? String(data.weight) : ''
                     });
@@ -61,6 +63,7 @@ const Users = () => {
                 }
             } catch (error) {
                 console.error('Error fetching user:', error);
+                handleLogout();
             } finally {
                 setLoading(false);
             }
@@ -68,9 +71,7 @@ const Users = () => {
         fetchUserData();
     }, []);
 
-    const handleEditToggle = () => setEditing(!editing);
-
-    const handleChange = (name: string, value: string) => {
+    const handleChange = (name, value) => {
         setForm({ ...form, [name]: value });
     };
 
@@ -79,12 +80,11 @@ const Users = () => {
         try {
             const token = await AsyncStorage.getItem('authToken');
             if (!token) {
-                Toast.show({ type: 'error', text1: 'Error', text2: 'Unauthorized. Please log in again.' });
-                router.replace('/loginscreen');
+                handleLogout();
                 return;
             }
 
-            const response = await fetch(`${API_URL}/users/update`, {
+            const response = await fetch(`${API_URL}/users/${userData._id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -94,6 +94,12 @@ const Users = () => {
             });
 
             const data = await response.json();
+
+            if (response.status === 401 || response.status === 403) {
+                handleLogout();
+                return;
+            }
+
             if (response.ok) {
                 setUserData(data);
                 setEditing(false);
@@ -103,6 +109,7 @@ const Users = () => {
             }
         } catch (error) {
             Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to connect to the server' });
+            handleLogout();
         }
         setLoading(false);
     };
@@ -110,67 +117,41 @@ const Users = () => {
     const handleLogout = async () => {
         await AsyncStorage.removeItem('userId');
         await AsyncStorage.removeItem('authToken');
-        router.replace('/loginscreen');
+        Toast.show({ type: 'info', text1: 'Logged out', text2: 'Your session has expired. Please log in again.' });
+        router.replace('/(auth)/loginscreen');
     };
 
     return (
         <ScrollView style={styles.container}>
             {loading ? (
-                <ActivityIndicator animating={true} size="large" style={styles.loader} />
+                <ActivityIndicator size="large" style={styles.loader} />
             ) : userData ? (
                 <Card style={styles.profileCard}>
                     <Card.Content>
                         <View style={styles.avatarContainer}>
-                            <Avatar.Image size={80} source={{ uri: userData.avatar || 'https://i.pravatar.cc/150' }} />
+                            <Avatar.Image size={80} source={{ uri: userData.profileImage || 'https://i.pravatar.cc/150' }} />
                         </View>
-                        {Object.keys(form).map((key) => {
-                            if (key === 'gender') {
-                                return (
-                                    <View key={key} style={styles.pickerContainer}>
-                                        {editing ? (
-                                            <Picker
-                                                selectedValue={form.gender}
-                                                onValueChange={(itemValue) => handleChange('gender', itemValue)}
-                                                style={styles.picker}
-                                            >
-                                                <Picker.Item label="Select Gender" value="" />
-                                                <Picker.Item label="Male" value="Male" />
-                                                <Picker.Item label="Female" value="Female" />
-                                            </Picker>
-                                        ) : (
-                                            <Text style={styles.inputDisabled}>Gender: {form.gender || 'Not specified'}</Text>
-                                        )}
-                                    </View>
-                                );
-                            } else {
-                                return (
-                                    <TextInput
-                                        key={key}
-                                        style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
-                                        value={form[key]}
-                                        onChangeText={(text) => handleChange(key, text)}
-                                        editable={editing}
-                                        placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
-                                    />
-                                );
-                            }
-                        })}
+                        {Object.keys(form).map((key) => (
+                            <TextInput
+                                key={key}
+                                style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]}
+                                value={form[key]}
+                                onChangeText={(text) => handleChange(key, text)}
+                                editable={editing}
+                                placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+                            />
+                        ))}
                         {editing ? (
                             <Button mode="contained" style={styles.saveButton} onPress={handleSave}>
                                 <Text>Save</Text>
                             </Button>
                         ) : (
-                            <Button mode="contained" style={styles.editButton} onPress={handleEditToggle}>
+                            <Button mode="contained" style={styles.editButton} onPress={() => setEditing(!editing)}>
                                 <Text>Edit Profile</Text>
                             </Button>
                         )}
-                        <Button
-                            mode="contained"
-                            style={styles.logoutButton}
-                            icon={() => <Icon name="logout" size={20} color="#fff" />}
-                            onPress={handleLogout}
-                        >
-                            Log Out
+                        <Button mode="contained" style={styles.logoutButton} onPress={handleLogout}>
+                            <Text>Logout</Text>
                         </Button>
                     </Card.Content>
                 </Card>
@@ -189,12 +170,10 @@ const styles = StyleSheet.create({
     avatarContainer: { alignItems: 'center', marginBottom: 15 },
     input: { marginBottom: 10, borderWidth: 1, padding: 12, borderRadius: 5 },
     inputEditable: { borderColor: '#ccc', backgroundColor: '#f9f9f9' },
-    inputDisabled: { marginBottom: 10, borderWidth: 1, padding: 12, borderRadius: 5, borderColor: '#ddd', backgroundColor: '#e9e9e9' },
-    pickerContainer: { marginBottom: 10, borderWidth: 1, borderRadius: 5, overflow: 'hidden' },
-    picker: { height: 50, width: '100%' },
+    inputDisabled: { borderColor: '#ddd', backgroundColor: '#e9e9e9' },
     editButton: { marginTop: 10, backgroundColor: '#FF385C' },
     saveButton: { marginTop: 10, backgroundColor: '#4CAF50' },
-    logoutButton: { marginTop: 20, alignSelf: 'center', backgroundColor: '#FF385C' },
+    logoutButton: { marginTop: 20, backgroundColor: '#FF385C' },
     noResultsText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#666' },
 });
 

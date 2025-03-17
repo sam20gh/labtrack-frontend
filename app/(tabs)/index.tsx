@@ -38,18 +38,31 @@ const HomeScreen = ({ navigation }: any) => {
       const fetchUserData = async () => {
         try {
           const userId = await AsyncStorage.getItem('userId');
-          if (!userId) return;
-          const response = await fetch(`${API_URL}/users/${userId}`);
+          const token = await AsyncStorage.getItem('authToken');
+
+          if (!userId || !token) return;
+
+          const response = await fetch(`${API_URL}/users/${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+
           const data = await response.json();
-          setUserData(data);
+
+          if (response.status === 401 || response.status === 403) return;
+
+          if (response.ok) {
+            setUserData(data);
+          }
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
       };
 
+
       const fetchLatestTestResult = async () => {
         try {
           const userId = await AsyncStorage.getItem('userId');
+          const token = await AsyncStorage.getItem('authToken');
           if (!userId) return;
           const response = await fetch(`${API_URL}/test-results?user_id=${userId}`);
           const data = await response.json();
@@ -277,8 +290,12 @@ const HomeScreen = ({ navigation }: any) => {
         <View style={styles.latestTestContainer}>
           <Title>Latest Test Result</Title>
           <Paragraph>
+            <Icon name="hospital" size={18} color="#FF385C" /> Lab: {latestTest?.patient?.test_type ?? 'Unknown'}
+          </Paragraph>
+          <Paragraph>
             <Icon name="hospital" size={18} color="#FF385C" /> Lab: {latestTest?.patient?.lab_name ?? 'Unknown'}
           </Paragraph>
+
           <Paragraph>
             <Icon name="calendar" size={18} color="#FF385C" /> Date: {latestTest?.patient?.date_of_test ?? 'Unknown'}
           </Paragraph>
