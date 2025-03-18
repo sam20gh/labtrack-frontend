@@ -34,6 +34,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)/loginscreen" options={{ headerShown: false }} />
         <Stack.Screen name="users" options={{ headerShown: true }} />
         <Stack.Screen name="professionalDetails" options={{ title: "Professional Details", headerShown: true }} />
+        <Stack.Screen name="ProductDetails" options={{ title: "Product Details", headerShown: true }} />
       </Stack>
 
       <StatusBar style="auto" />

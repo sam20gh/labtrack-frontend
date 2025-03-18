@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
+import { useRouter } from 'expo-router';
 export default function ProductCardView() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
         fetch(`${API_URL}/products`)
@@ -30,7 +32,7 @@ export default function ProductCardView() {
     return (
         <ScrollView style={styles.container}>
             {products.map((product) => (
-                <Card key={product._id} style={styles.card}>
+                <Card key={product._id} style={styles.card} onPress={() => router.push({ pathname: '/ProductDetails', params: { productId: product._id } })}>
                     <Card.Cover source={{ uri: product.image }} style={styles.cover} />
                     <Card.Content>
                         <Title style={styles.title}>{product.name}</Title>
