@@ -242,7 +242,7 @@ const HomeScreen = ({ navigation }: any) => {
           <Card style={styles.statCard}>
             <Card.Content>
               <View style={styles.cardRow}>
-                <Icon name="calendar" size={30} color="#FF385C" />
+                <Icon name="calendar" size={20} color="#FF385C" />
                 <View>
                   <Title>Age</Title>
                   <Paragraph>{userAge} years</Paragraph>
@@ -253,7 +253,7 @@ const HomeScreen = ({ navigation }: any) => {
           <Card style={styles.statCard}>
             <Card.Content>
               <View style={styles.cardRow}>
-                <Icon name="human-male-height" size={30} color="#FF385C" />
+                <Icon name="human-male-height" size={20} color="#FF385C" />
                 <View>
                   <Title>Height</Title>
                   <Paragraph>{userHeight} m</Paragraph>
@@ -264,7 +264,7 @@ const HomeScreen = ({ navigation }: any) => {
           <Card style={styles.statCard}>
             <Card.Content>
               <View style={styles.cardRow}>
-                <Icon name="weight-kilogram" size={30} color="#FF385C" />
+                <Icon name="weight-kilogram" size={20} color="#FF385C" />
                 <View>
                   <Title>Weight</Title>
                   <Paragraph>{userWeight} kg</Paragraph>
@@ -275,7 +275,7 @@ const HomeScreen = ({ navigation }: any) => {
           <Card style={styles.statCard}>
             <Card.Content>
               <View style={styles.cardRow}>
-                <Icon name="heart-pulse" size={30} color={getBMIIconColor(userBMI)} />
+                <Icon name="heart-pulse" size={20} color={getBMIIconColor(userBMI)} />
                 <View>
                   <Title>BMI</Title>
                   <Paragraph>{userBMI}</Paragraph>
@@ -290,10 +290,10 @@ const HomeScreen = ({ navigation }: any) => {
         <View style={styles.latestTestContainer}>
           <Title>Latest Test Result</Title>
           <Paragraph>
-            <Icon name="hospital" size={18} color="#FF385C" /> Lab: {latestTest?.patient?.test_type ?? 'Unknown'}
+            <Icon name="hospital" size={18} color="#FF385C" /> Type: {latestTest?.patient?.test_type ?? 'Unknown'}
           </Paragraph>
           <Paragraph>
-            <Icon name="hospital" size={18} color="#FF385C" /> Lab: {latestTest?.patient?.lab_name ?? 'Unknown'}
+            <Icon name="doctor" size={18} color="#FF385C" /> Lab: {latestTest?.patient?.lab_name ?? 'Unknown'}
           </Paragraph>
 
           <Paragraph>
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   loader: { marginVertical: 20 },
   cardGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', padding: 10 },
   statCard: { width: '48%', padding: 16, marginBottom: 10, borderRadius: 10, backgroundColor: '#ffffff', elevation: 3 },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cardRow: { flexDirection: 'column', alignItems: 'center', gap: 2 },
   latestTestContainer: { padding: 16, marginTop: 20 },
   deepSeekContainer: { marginTop: 20 },
   deepSeekButton: { marginBottom: 10, backgroundColor: '#119658' },

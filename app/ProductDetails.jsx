@@ -81,11 +81,12 @@ const styles = StyleSheet.create({
     price: {
         fontWeight: 'bold',
         fontSize: 18,
-        color: '#6200ee',
+        color: '#FF385C',
         marginBottom: 15,
     },
     button: {
         marginTop: 10,
         padding: 5,
+        backgroundColor: '#FF385C',
     },
 });
