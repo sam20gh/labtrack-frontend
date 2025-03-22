@@ -153,9 +153,6 @@ const Users = () => {
                         <Button mode="contained" style={styles.logoutButton} onPress={handleLogout}>
                             <Text>Logout</Text>
                         </Button>
-                        <Button mode="outlined" style={styles.planButton} onPress={() => router.push('/myplans')}>
-                            <Text>View My Health Plans</Text>
-                        </Button>
                     </Card.Content>
                 </Card>
             ) : (
@@ -176,7 +173,7 @@ const styles = StyleSheet.create({
     inputDisabled: { borderColor: '#ddd', backgroundColor: '#e9e9e9' },
     editButton: { marginTop: 10, backgroundColor: '#FF385C' },
     saveButton: { marginTop: 10, backgroundColor: '#4CAF50' },
-    logoutButton: { marginTop: 20, backgroundColor: '#FF385C' },
+    logoutButton: { marginTop: 20, backgroundColor: '#d46176' },
     noResultsText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#666' },
 });
 

@@ -6,6 +6,8 @@ import { API_URL } from '@/constants/config';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
+import Constants from 'expo-constants';
+
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
@@ -48,7 +50,12 @@ const ProfileScreen = () => {
 
     fetchUserData();
   }, []);
-
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userId');
+    await AsyncStorage.removeItem('authToken');
+    Toast.show({ type: 'info', text1: 'Logged out', text2: 'Your session has expired. Please log in again.' });
+    router.replace('/(auth)/loginscreen');
+  };
 
   const handleProfileClick = () => {
     router.push('/users');
@@ -80,15 +87,24 @@ const ProfileScreen = () => {
         <MaterialIcons name="chevron-right" size={24} />
       </TouchableOpacity>
 
-      {/* Additional placeholder content (optional example) */}
+      {/* Card content */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Take your first test</Text>
         <Text style={styles.cardSubtitle}>
-          Its easy to monitr your health with our tests. Get started now!
+          It's easy to monitor your health with our tests. Get started now!
         </Text>
       </View>
 
-      {/* Settings example */}
+      {/* My Plans Row */}
+      <TouchableOpacity
+        style={[styles.settingItem, { borderTopWidth: 1, borderTopColor: '#eaeaea' }]}
+        onPress={() => router.push('/myplans')}
+      >
+        <Text style={styles.settingText}>My Health Plans</Text>
+        <MaterialIcons name="chevron-right" size={24} />
+      </TouchableOpacity>
+
+      {/* Settings */}
       <View style={styles.settings}>
         {['Personal information', 'Login & security', 'Payments and payouts'].map((item, index) => (
           <TouchableOpacity key={index} style={styles.settingItem}>
@@ -97,6 +113,15 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
+      {/* Version Display */}
+      <Text style={styles.versionText}>
+        Version {Constants.expoConfig?.version || '1.0.0'}
+      </Text>
+
+      {/* Logout Button */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
 
       <Toast />
     </ScrollView>
@@ -179,6 +204,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ffffff'
   },
+  logoutButton: {
+    marginTop: 30,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderRadius: 10,
+    backgroundColor: '#FF385C',
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  versionText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#888',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+
+
 });
 
 export default ProfileScreen;
