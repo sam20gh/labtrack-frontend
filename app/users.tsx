@@ -153,6 +153,9 @@ const Users = () => {
                         <Button mode="contained" style={styles.logoutButton} onPress={handleLogout}>
                             <Text>Logout</Text>
                         </Button>
+                        <Button mode="outlined" style={styles.planButton} onPress={() => router.push('/myplans')}>
+                            <Text>View My Health Plans</Text>
+                        </Button>
                     </Card.Content>
                 </Card>
             ) : (

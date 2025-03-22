@@ -35,6 +35,7 @@ export default function RootLayout() {
         <Stack.Screen name="users" options={{ headerShown: true }} />
         <Stack.Screen name="professionalDetails" options={{ title: "Professional Details", headerShown: true }} />
         <Stack.Screen name="ProductDetails" options={{ title: "Product Details", headerShown: true }} />
+        <Stack.Screen name="myplans" options={{ title: "My Plans", headerShown: true }} />
       </Stack>
 
       <StatusBar style="auto" />

@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, Text } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, FlatList, Alert } from 'react-native';
 import { Card, Title, Paragraph, ActivityIndicator, Button } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
-import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -311,6 +310,45 @@ const HomeScreen = ({ navigation }: any) => {
 
                 <Title style={styles.feedbackTitle}>LabTrack AI Feedback</Title>
                 <Markdown>{deepSeekFeedback}</Markdown>
+                <Button
+                  mode="contained"
+                  style={{ marginTop: 10, backgroundColor: '#0077CC' }}
+                  onPress={async () => {
+                    try {
+                      const userId = await AsyncStorage.getItem('userId');
+                      const token = await AsyncStorage.getItem('authToken');
+                      const testID = latestTest?._id;
+
+                      if (!userId || !testID || !token) {
+                        Toast.show({ type: 'error', text1: 'Error', text2: 'Missing user or test information' });
+                        return;
+                      }
+
+                      const res = await fetch(`${API_URL}/plans/create`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ userID: userId, testID }),
+                      });
+
+                      const data = await res.json();
+
+                      if (res.ok) {
+                        Toast.show({ type: 'success', text1: 'Plan Created', text2: 'Structured health plan saved!' });
+                      } else {
+                        Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'Failed to create plan' });
+                      }
+                    } catch (error) {
+                      console.error("❌ Error creating health plan:", error);
+                      Toast.show({ type: 'error', text1: 'Error', text2: 'Something went wrong' });
+                    }
+                  }}
+                >
+                  Generate Health Plan
+                </Button>
+
 
               </View>
             )}

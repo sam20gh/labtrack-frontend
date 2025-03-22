@@ -59,7 +59,7 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="users"
+          name="ProfileScreen"
           options={{
             title: () => <Text>Profile</Text>,
             tabBarIcon: ({ color }) => <Ionicons size={22} name="finger-print-outline" color={color} />,
