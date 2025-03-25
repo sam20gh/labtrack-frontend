@@ -210,6 +210,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     backgroundColor: '#FF385C',
+    marginBottom: 60,
   },
   logoutButtonText: {
     fontSize: 16,

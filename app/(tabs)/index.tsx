@@ -324,13 +324,32 @@ const HomeScreen = ({ navigation }: any) => {
                         return;
                       }
 
+                      // Fetch products and professionals
+                      const [productRes, proRes] = await Promise.all([
+                        fetch(`${API_URL}/products`, {
+                          headers: { Authorization: `Bearer ${token}` }
+                        }),
+                        fetch(`${API_URL}/professionals`, {
+                          headers: { Authorization: `Bearer ${token}` }
+                        }),
+                      ]);
+
+                      const products = await productRes.json();
+                      const professionals = await proRes.json();
+
                       const res = await fetch(`${API_URL}/plans/create`, {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
                           Authorization: `Bearer ${token}`,
                         },
-                        body: JSON.stringify({ userID: userId, testID }),
+                        body: JSON.stringify({
+                          user: userData,
+                          feedbackText: deepSeekFeedback,
+                          products,
+                          professionals,
+                          testID
+                        }),
                       });
 
                       const data = await res.json();
@@ -348,6 +367,7 @@ const HomeScreen = ({ navigation }: any) => {
                 >
                   Generate Health Plan
                 </Button>
+
 
 
               </View>

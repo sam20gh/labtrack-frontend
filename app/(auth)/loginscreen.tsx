@@ -37,7 +37,7 @@ const LoginScreen = () => {
                 await AsyncStorage.setItem('userId', data.user._id);
                 await AsyncStorage.setItem('authToken', data.token);
 
-                router.replace('/(tabs)/users');
+                router.replace('/profileScreen');
             } else {
                 Toast.show({ type: 'error', text1: 'Login Failed', text2: data.message || 'Invalid credentials' });
             }
@@ -73,7 +73,7 @@ const LoginScreen = () => {
                         <Text>Login</Text>
                     </Button>
                 )}
-                <TouchableOpacity onPress={() => router.push('/(tabs)/signup')} style={styles.registerLink}>
+                <TouchableOpacity onPress={() => router.push('/signup')} style={styles.registerLink}>
                     <Text style={styles.registerText}>Don't have an account? Register</Text>
                 </TouchableOpacity>
             </Card>
