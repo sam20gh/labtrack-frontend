@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, Image } from 'react-native';
+import { View, StyleSheet, FlatList, Image, ScrollView } from 'react-native';
 import {
     Title, Paragraph, ActivityIndicator, Card, Text,
     Button, IconButton, Menu, Provider as PaperProvider
@@ -22,7 +22,6 @@ const MyPlansScreen = () => {
             const token = await AsyncStorage.getItem('authToken');
             const userId = await AsyncStorage.getItem('userId');
             console.log("🔍 Fetching plans for userId:", userId);
-            await AsyncStorage.removeItem('userId');
             const res = await fetch(`${API_URL}/plans/${userId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -136,19 +135,21 @@ const MyPlansScreen = () => {
 
     return (
         <PaperProvider>
-            <View style={styles.container}>
-                <Title style={styles.header}>My Health Plans</Title>
-                {loading ? (
-                    <ActivityIndicator size="large" />
-                ) : (
-                    plans.length === 0 ? <Paragraph>No plans available yet. Generate one from your test results!</Paragraph> :
-                        <FlatList
-                            data={plans}
-                            renderItem={({ item, index }) => renderPlanCard(item, index)}
-                            keyExtractor={(item) => item._id}
-                        />
-                )}
-            </View>
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.container}>
+                    <Title style={styles.header}>My Health Plans</Title>
+                    {loading ? (
+                        <ActivityIndicator size="large" />
+                    ) : (
+                        plans.length === 0 ? <Paragraph>No plans available yet. Generate one from your test results!</Paragraph> :
+                            <FlatList
+                                data={plans}
+                                renderItem={({ item, index }) => renderPlanCard(item, index)}
+                                keyExtractor={(item) => item._id}
+                            />
+                    )}
+                </View>
+            </ScrollView>
         </PaperProvider>
     );
 };
