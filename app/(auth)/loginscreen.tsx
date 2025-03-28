@@ -37,7 +37,7 @@ const LoginScreen = () => {
                 await AsyncStorage.setItem('userId', data.user._id);
                 await AsyncStorage.setItem('authToken', data.token);
 
-                router.replace('/profileScreen');
+                router.replace('(tabs)/ProfileScreen');
             } else {
                 Toast.show({ type: 'error', text1: 'Login Failed', text2: data.message || 'Invalid credentials' });
             }
