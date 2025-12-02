@@ -3,8 +3,17 @@ import { ScrollView, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
 import { useRouter } from 'expo-router';
+
+interface Product {
+    _id: string;
+    name: string;
+    description: string;
+    price: number;
+    image: string;
+}
+
 export default function ProductCardView() {
-    const [products, setProducts] = useState([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
@@ -59,11 +68,12 @@ const styles = StyleSheet.create({
     },
     title: {
         fontWeight: 'bold',
-    },
-    title: {
         marginVertical: 5,
     },
-    loadingIndicator: {
+    description: {
+        marginVertical: 5,
+    },
+    loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
