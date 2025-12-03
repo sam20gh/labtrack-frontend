@@ -400,6 +400,36 @@ const HomeScreen = ({ navigation }: any) => {
             </View>
           )}
 
+          {/* Health Questionnaire Prompt - Show for logged-in users who haven't completed it */}
+          {isLoggedIn && userData && !userData.healthAssessment?.isComplete && (
+            <Surface style={styles.questionnaireCard}>
+              <View style={styles.questionnaireContent}>
+                <View style={styles.questionnaireIconContainer}>
+                  <Icon name="clipboard-text-outline" size={32} color="#FF385C" />
+                </View>
+                <View style={styles.questionnaireTextContainer}>
+                  <Text style={styles.questionnaireTitle}>Complete Your Health Profile</Text>
+                  <Text style={styles.questionnaireSubtitle}>
+                    Answer a few questions to get personalized health recommendations and better AI analysis.
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.questionnaireProgress}>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: '10%' }]} />
+                </View>
+                <Text style={styles.progressText}>Not started</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.questionnaireButton}
+                onPress={() => router.push('/health-assessment')}
+              >
+                <Text style={styles.questionnaireButtonText}>Start Health Assessment</Text>
+                <Icon name="chevron-right" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </Surface>
+          )}
+
           {/* Health Analytics Section - Only for logged-in users */}
           {isLoggedIn && (
             <View style={styles.analyticsSection}>
@@ -779,6 +809,89 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
     textAlign: 'center',
+  },
+
+  // Health Questionnaire Card
+  questionnaireCard: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FF385C',
+    borderStyle: 'dashed',
+  },
+  questionnaireContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  questionnaireIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  questionnaireTextContainer: {
+    flex: 1,
+  },
+  questionnaireTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  questionnaireSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+  },
+  questionnaireProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  progressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 3,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FF385C',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  questionnaireButton: {
+    backgroundColor: '#FF385C',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  questionnaireButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    marginRight: 8,
   },
 
   // Analytics Section
