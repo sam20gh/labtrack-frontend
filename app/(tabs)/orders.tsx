@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ScrollView, View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { Card, Title, Paragraph } from 'react-native-paper';
 import { API_URL } from '@/constants/config';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Product {
     _id: string;
@@ -15,25 +16,54 @@ interface Product {
 export default function ProductCardView() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
-        fetch(`${API_URL}/products`)
-            .then((response) => response.json())
-            .then((data) => {
-                setProducts(data);
+        const fetchProducts = async () => {
+            try {
+                const token = await AsyncStorage.getItem('authToken');
+                const response = await fetch(`${API_URL}/products`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    setError(data.error || 'Failed to fetch products');
+                    setLoading(false);
+                    return;
+                }
+
+                if (Array.isArray(data)) {
+                    setProducts(data);
+                } else {
+                    setError('Invalid response from server');
+                }
+            } catch (err) {
+                console.error('Error fetching products:', err);
+                setError('Failed to load products');
+            } finally {
                 setLoading(false);
-            })
-            .catch((error) => {
-                console.error('Error fetching products:', error);
-                setLoading(false);
-            });
+            }
+        };
+
+        fetchProducts();
     }, []);
 
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#6200ee" />
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Text style={styles.errorText}>{error}</Text>
             </View>
         );
     }
@@ -81,5 +111,9 @@ const styles = StyleSheet.create({
     price: {
         marginTop: 5,
         fontWeight: 'bold',
+    },
+    errorText: {
+        color: 'red',
+        fontSize: 16,
     },
 });
