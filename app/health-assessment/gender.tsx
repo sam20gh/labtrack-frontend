@@ -70,7 +70,7 @@ export default function GenderScreen() {
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             {/* Screen Title */}
             <Text style={styles.screenTitle}>Health Assessment</Text>
-            
+
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>

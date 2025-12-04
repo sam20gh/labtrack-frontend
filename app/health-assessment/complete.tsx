@@ -367,7 +367,7 @@ export default function CompleteScreen() {
                 <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
                     <Text style={styles.title}>Assessment Complete!</Text>
                     <Text style={styles.subtitle}>
-                        {saveError 
+                        {saveError
                             ? `Your assessment was completed but there was an issue saving: ${saveError}. You can try again from your profile.`
                             : "Great job! Your health profile has been created. We'll use this information to provide personalized insights and recommendations."
                         }
