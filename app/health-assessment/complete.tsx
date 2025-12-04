@@ -1,21 +1,27 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
     Animated,
     Dimensions,
+    ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@/constants/config';
 
 const { width } = Dimensions.get('window');
 
 export default function CompleteScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const [isSaving, setIsSaving] = useState(true);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const hasSaved = useRef(false);
 
     // Animation values
     const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -30,7 +36,197 @@ export default function CompleteScreen() {
         }))
     ).current;
 
-    useEffect(() => {
+    // Helper to parse array params (they come as comma-separated strings or arrays)
+    const parseArrayParam = (param: any): string[] => {
+        if (!param) return [];
+        if (Array.isArray(param)) return param;
+        if (typeof param === 'string') {
+            // Try to parse as JSON first
+            try {
+                const parsed = JSON.parse(param);
+                if (Array.isArray(parsed)) return parsed;
+            } catch {
+                // If not JSON, split by comma
+                return param.split(',').map(s => s.trim()).filter(Boolean);
+            }
+        }
+        return [];
+    };
+
+    // Save health assessment data to the backend
+    const saveHealthAssessment = async () => {
+        if (hasSaved.current) return;
+        hasSaved.current = true;
+
+        try {
+            const userId = await AsyncStorage.getItem('userId');
+            const token = await AsyncStorage.getItem('authToken');
+
+            if (!userId || !token) {
+                setSaveError('Please log in to save your health assessment');
+                setIsSaving(false);
+                return;
+            }
+
+            // Extract all params from the health assessment flow
+            const {
+                // Basic info
+                fullName,
+                healthGoals,
+                birthYear,
+                // Physical attributes
+                gender,
+                weight,
+                weightUnit,
+                height,
+                heightUnit,
+                bloodType,
+                rhFactor,
+                fitnessLevel,
+                // Lifestyle
+                sleepLevel,
+                sleepHours,
+                exerciseTypes,
+                mood,
+                eatingHabits,
+                calorieIntake,
+                // Medical
+                hasMedications,
+                medications,
+                hasAllergies,
+                allergies,
+                hasConditions,
+                conditions,
+                checkupFrequency,
+                // Notes & Voice
+                healthNotes,
+                hasVoiceRecording,
+                voiceDuration,
+            } = params;
+
+            // Parse name
+            const nameParts = fullName ? String(fullName).split(' ') : [];
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            // Calculate DOB from birth year
+            const dob = birthYear ? `${birthYear}-01-01` : '';
+
+            // Parse numeric values
+            const parsedWeight = weight ? parseFloat(String(weight)) : null;
+            const parsedHeight = height ? parseFloat(String(height)) : null;
+            const parsedCalories = calorieIntake && calorieIntake !== 'unknown' ? parseInt(String(calorieIntake)) : null;
+
+            // Build the health assessment object
+            const healthAssessment: any = {
+                // Goals
+                healthGoals: parseArrayParam(healthGoals),
+
+                // Lifestyle
+                lifestyle: {
+                    fitnessLevel: fitnessLevel ? String(fitnessLevel) : undefined,
+                    sleepQuality: sleepLevel ? parseInt(String(sleepLevel)) : undefined,
+                    sleepHoursPerNight: sleepHours ? parseFloat(String(sleepHours)) : undefined,
+                    exerciseTypes: parseArrayParam(exerciseTypes),
+                    dietType: eatingHabits ? String(eatingHabits) : undefined,
+                    checkupFrequency: checkupFrequency ? String(checkupFrequency) : undefined,
+                },
+
+                // Mood entry (if provided)
+                moodHistory: mood ? [{
+                    mood: String(mood),
+                    date: new Date(),
+                }] : [],
+
+                // Nutrition
+                nutritionGoals: parsedCalories ? {
+                    dailyCalorieGoal: parsedCalories,
+                } : undefined,
+
+                // Medical info
+                medications: hasMedications === 'true' ? parseArrayParam(medications).map(med => ({
+                    name: med,
+                    isCurrentlyTaking: true,
+                })) : [],
+
+                allergies: hasAllergies === 'true' ? parseArrayParam(allergies).map(allergy => ({
+                    allergen: allergy,
+                    severity: 'Moderate',
+                })) : [],
+
+                conditions: hasConditions === 'true' ? parseArrayParam(conditions).map(condition => ({
+                    name: condition,
+                    status: 'Active',
+                })) : [],
+
+                // Notes
+                notes: healthNotes ? [{
+                    content: String(healthNotes),
+                    category: 'General',
+                    createdAt: new Date(),
+                }] : [],
+
+                // Analysis preferences
+                analysisPreferences: {
+                    receiveAIRecommendations: true,
+                    focusAreas: parseArrayParam(healthGoals),
+                },
+            };
+
+            // Update user profile fields (name, dob, gender, height, weight)
+            const userProfileUpdate: any = {};
+            if (firstName) userProfileUpdate.firstName = firstName;
+            if (lastName) userProfileUpdate.lastName = lastName;
+            if (dob) userProfileUpdate.dob = dob;
+            if (gender) userProfileUpdate.gender = String(gender);
+            if (parsedHeight !== null) userProfileUpdate.height = parsedHeight;
+            if (parsedWeight !== null) userProfileUpdate.weight = parsedWeight;
+            if (bloodType) userProfileUpdate.bloodType = `${bloodType}${rhFactor || ''}`;
+
+            // First, update user profile
+            if (Object.keys(userProfileUpdate).length > 0) {
+                const profileResponse = await fetch(`${API_URL}/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(userProfileUpdate),
+                });
+
+                if (!profileResponse.ok) {
+                    console.warn('Failed to update user profile:', await profileResponse.text());
+                }
+            }
+
+            // Then, update health assessment
+            const assessmentResponse = await fetch(`${API_URL}/users/${userId}/health-assessment`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ healthAssessment }),
+            });
+
+            if (!assessmentResponse.ok) {
+                const errorData = await assessmentResponse.text();
+                throw new Error(`Failed to save health assessment: ${errorData}`);
+            }
+
+            console.log('Health assessment saved successfully!');
+            setIsSaving(false);
+            startAnimations();
+
+        } catch (error) {
+            console.error('Error saving health assessment:', error);
+            setSaveError(error instanceof Error ? error.message : 'Failed to save health assessment');
+            setIsSaving(false);
+            startAnimations();
+        }
+    };
+
+    const startAnimations = () => {
         // Entrance animation sequence
         Animated.sequence([
             // Circle scale in
@@ -87,6 +283,10 @@ export default function CompleteScreen() {
                 ]),
             ]).start();
         });
+    };
+
+    useEffect(() => {
+        saveHealthAssessment();
     }, []);
 
     const handleGoToHome = () => {
@@ -100,8 +300,24 @@ export default function CompleteScreen() {
 
     const confettiColors = ['#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
 
+    // Show loading state while saving
+    if (isSaving) {
+        return (
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <Text style={styles.screenTitle}>Health Assessment</Text>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#7C3AED" />
+                    <Text style={styles.loadingText}>Saving your health profile...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Screen Title */}
+            <Text style={styles.screenTitle}>Health Assessment</Text>
+
             {/* Confetti */}
             <View style={styles.confettiContainer}>
                 {confettiAnims.map((anim, index) => (
@@ -151,7 +367,10 @@ export default function CompleteScreen() {
                 <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
                     <Text style={styles.title}>Assessment Complete!</Text>
                     <Text style={styles.subtitle}>
-                        Great job! Your health profile has been created. We'll use this information to provide personalized insights and recommendations.
+                        {saveError 
+                            ? `Your assessment was completed but there was an issue saving: ${saveError}. You can try again from your profile.`
+                            : "Great job! Your health profile has been created. We'll use this information to provide personalized insights and recommendations."
+                        }
                     </Text>
 
                     {/* Summary Stats */}
@@ -223,6 +442,25 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+    },
+    screenTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#7C3AED',
+        textAlign: 'center',
+        paddingTop: 8,
+        marginBottom: 8,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 16,
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#6B7280',
+        marginTop: 12,
     },
     confettiContainer: {
         position: 'absolute',

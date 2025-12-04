@@ -4,9 +4,9 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
     Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,7 +40,10 @@ export default function HealthAssessmentWelcome() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Screen Title */}
+            <Text style={styles.screenTitle}>Health Assessment</Text>
+
             {/* Progress Steps */}
             <View style={styles.progressContainer}>
                 <View style={styles.stepContainer}>
@@ -99,6 +102,14 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+    },
+    screenTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#7C3AED',
+        textAlign: 'center',
+        paddingTop: 8,
+        marginBottom: 8,
     },
     progressContainer: {
         flexDirection: 'row',

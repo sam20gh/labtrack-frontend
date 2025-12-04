@@ -4,9 +4,9 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
     FlatList,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -104,7 +104,10 @@ export default function HeightScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            {/* Screen Title */}
+            <Text style={styles.screenTitle}>Health Assessment</Text>
+            
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -178,6 +181,13 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+    },
+    screenTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1F2937',
+        textAlign: 'center',
+        paddingVertical: 12,
     },
     header: {
         flexDirection: 'row',

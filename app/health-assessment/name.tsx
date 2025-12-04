@@ -4,11 +4,11 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
     TextInput,
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -36,11 +36,14 @@ export default function NameScreen() {
     const progress = 1 / 20; // Step 1 of ~20 steps
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
             >
+                {/* Screen Title */}
+                <Text style={styles.screenTitle}>Health Assessment</Text>
+                
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -104,6 +107,13 @@ const styles = StyleSheet.create({
     },
     keyboardView: {
         flex: 1,
+    },
+    screenTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1F2937',
+        textAlign: 'center',
+        paddingVertical: 12,
     },
     header: {
         flexDirection: 'row',
