@@ -2,16 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, Image, ScrollView } from 'react-native';
 import { Title, Paragraph, ActivityIndicator, Card, Text, Button, IconButton, Menu, Provider as PaperProvider, List } from 'react-native-paper';
 import { api, ApiError } from '@/lib/api';
+import type { Plan } from '@/types/api';
 import { getUserId } from '@/lib/auth';
 import Toast from 'react-native-toast-message';
 
+type PlanEntry = Plan['plan'][number];
+
 const MyPlansScreen = () => {
-    const [plans, setPlans] = useState([]);
+    const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
     const currentYear = new Date().getFullYear();
-    const [expandedYear, setExpandedYear] = useState('Urgently');
-    const [visibleMenu, setVisibleMenu] = useState(null);
-    const [userDob, setUserDob] = useState(null);
+    const [expandedYear, setExpandedYear] = useState<string>('Urgently');
+    const [visibleMenu, setVisibleMenu] = useState<string | null>(null);
+    const [userDob, setUserDob] = useState<string | null>(null);
 
     useEffect(() => { fetchPlans(); }, []);
 
@@ -35,7 +38,7 @@ const MyPlansScreen = () => {
         }
     };
 
-    const deletePlan = async (planID) => {
+    const deletePlan = async (planID: string) => {
         try {
             const data = await api.delete(`/plans/delete/${planID}`);
             setPlans(plans.filter(plan => plan._id !== planID));
@@ -49,14 +52,14 @@ const MyPlansScreen = () => {
     // Null until the profile loads; without a DOB nothing is marked urgent by age
     const userAge = userDob ? currentYear - new Date(userDob).getFullYear() : null;
 
-    const renderTimelineItem = (entry) => (
-        <View key={entry.age} style={styles.timelineItem}>
-            <Image source={{ uri: entry.image }} style={styles.entryImage} />
+    const renderTimelineItem = (entry: PlanEntry) => (
+        <View key={`${entry.type}-${entry.age ?? 'na'}-${entry.test ?? entry.speciality ?? ''}`} style={styles.timelineItem}>
+            <Image source={{ uri: entry.image ?? undefined }} style={styles.entryImage} />
             <View style={styles.timelineContent}>
-                <Text style={styles.timelineYear}>Age {entry.age}</Text>
+                <Text style={styles.timelineYear}>{entry.age != null ? `Age ${entry.age}` : 'Scheduled'}</Text>
                 <Text style={styles.timelineLabel}>
                     {entry.type === 'test' ? `${entry.test}` : `${entry.speciality}`}
-                    {entry.type === 'test' && userAge !== null && entry.age <= userAge ? ' (Urgently)' : ''}
+                    {entry.type === 'test' && userAge !== null && entry.age != null && entry.age <= userAge ? ' (Urgently)' : ''}
                 </Text>
                 {entry.productName && <Text style={styles.entryName}>{entry.productName}</Text>}
                 {entry.professionalName && <Text style={styles.entryName}>{entry.professionalName}</Text>}
@@ -68,14 +71,18 @@ const MyPlansScreen = () => {
         </View>
     );
 
-    const renderPlanCard = (plan, index) => {
-        const groupedByYear = plan.plan.reduce((acc, curr) => {
-            const yearKey = curr.year <= currentYear ? 'Urgently' : curr.year;
+    const renderPlanCard = (plan: Plan, index: number) => {
+        const groupedByYear = plan.plan.reduce<Record<string, PlanEntry[]>>((acc, curr) => {
+            // Items with no year, or already due, are grouped as urgent
+            const yearKey = curr.year == null || curr.year <= currentYear
+                ? 'Urgently'
+                : String(curr.year);
             (acc[yearKey] = acc[yearKey] || []).push(curr);
             return acc;
         }, {});
 
-        const sortedYears = Object.keys(groupedByYear).sort((a, b) => (a === 'Urgently' ? -1 : a - b));
+        const sortedYears = Object.keys(groupedByYear).sort((a, b) =>
+            a === 'Urgently' ? -1 : b === 'Urgently' ? 1 : Number(a) - Number(b));
 
         return (
             <Card key={plan._id} style={styles.card}>
@@ -91,22 +98,22 @@ const MyPlansScreen = () => {
                         </Menu>
                     </View>
 
-                    <Paragraph>Recommended Screenings: {plan.structured_plan?.recommended_screenings.map(s => `${s.condition} (${s.test}, Age ${s.starting_age}, ${s.frequency})`).join('; ')}</Paragraph>
-                    <Paragraph>Lifestyle Recommendations: {plan.structured_plan?.lifestyle_recommendations.join(', ')}</Paragraph>
-                    <Paragraph>Specialist Consultations: {plan.structured_plan?.specialist_consultations.map(c => `${c.speciality} (Urgency: ${c.urgency})`).join('; ')}</Paragraph>
+                    <Paragraph>Recommended Screenings: {(plan.structured_plan?.recommended_screenings ?? []).map(s => `${s.condition} (${s.test}, Age ${s.starting_age}, ${s.frequency})`).join('; ')}</Paragraph>
+                    <Paragraph>Lifestyle Recommendations: {(plan.structured_plan?.lifestyle_recommendations ?? []).join(', ')}</Paragraph>
+                    <Paragraph>Specialist Consultations: {(plan.structured_plan?.specialist_consultations ?? []).map(c => `${c.speciality} (Urgency: ${c.urgency})`).join('; ')}</Paragraph>
 
                     {sortedYears.map(year => (
                         <List.Accordion
                             key={year}
                             title={year === 'Urgently' ? 'Urgently' : `Year ${year}`}
                             expanded={expandedYear === year}
-                            onPress={() => setExpandedYear(expandedYear === year ? null : year)}
+                            onPress={() => setExpandedYear(expandedYear === year ? '' : year)}
                         >
-                            {groupedByYear[year].map(renderTimelineItem)}
+                            {(groupedByYear[year] ?? []).map(renderTimelineItem)}
                         </List.Accordion>
                     ))}
 
-                    <Text style={styles.footerText}>Generated: {new Date(plan.createdAt).toLocaleDateString()}</Text>
+                    <Text style={styles.footerText}>Generated: {plan.createdAt ? new Date(plan.createdAt).toLocaleDateString() : '—'}</Text>
                 </Card.Content>
             </Card>
         );

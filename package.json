@@ -61,7 +61,8 @@
     "react-native-toast-message": "^2.2.1",
     "react-native-url-polyfill": "^4.0.0",
     "react-native-web": "~0.19.13",
-    "react-native-webview": "^13.13.4"
+    "react-native-webview": "^13.13.4",
+    "expo-dev-client": "~5.0.20"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

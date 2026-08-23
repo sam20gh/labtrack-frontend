@@ -2,6 +2,11 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { api } from '@/lib/api';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
+import type { Professional } from '@/types/api';
+
+// expo-router screens are not in a typed param list, so navigate() infers `never`
+type AppNavigation = NavigationProp<Record<string, object | undefined>>;
 
 interface professional {
     _id: string;
@@ -20,7 +25,7 @@ const professionals = () => {
     const [professionals, setProfessionals] = useState<professional[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const navigation = useNavigation();
+    const navigation = useNavigation<AppNavigation>();
 
     const fetchProfessionals = async () => {
         try {

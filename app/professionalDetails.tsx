@@ -4,7 +4,7 @@ import { useRoute } from '@react-navigation/native';
 
 const professionalDetails = () => {
     const route = useRoute();
-    const { professional } = route.params;
+    const { professional } = (route.params ?? {}) as { professional: any };
 
     return (
         <ScrollView contentContainerStyle={styles.container}>

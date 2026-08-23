@@ -16,9 +16,25 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
 import { supabase } from '@/constants/supabase';
 import { API_URL } from '@/constants/config';
+
+/**
+ * Deep-link targets for Supabase redirects.
+ *
+ * Deliberately NOT built with `Linking.createURL()`. That helper appends the Metro host in
+ * a development client — `labtrack://192.168.1.5:8081/auth/callback` — which does not match
+ * the Supabase allow list. Supabase does not reject an unlisted redirect; it silently falls
+ * back to the project's Site URL (default `http://localhost:3000`), so the confirmation
+ * email lands on an unreachable page after the account has already been verified.
+ *
+ * These constants match the entries in Supabase → Authentication → URL Configuration and
+ * the `labtrack` scheme registered in AndroidManifest.xml / Info.plist, and are identical
+ * in development and production builds.
+ */
+export const APP_SCHEME = 'labtrack';
+export const AUTH_CALLBACK_URL = `${APP_SCHEME}://auth/callback`;
+export const AUTH_RESET_URL = `${APP_SCHEME}://auth/reset`;
 
 /** AsyncStorage keys shared across the app. */
 export const STORAGE_KEYS = {
@@ -113,7 +129,7 @@ export const signUpWithEmail = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
-        options: { emailRedirectTo: Linking.createURL('/auth/callback') },
+        options: { emailRedirectTo: AUTH_CALLBACK_URL },
     });
 
     if (error) return { ok: false as const, error: error.message };
@@ -139,7 +155,7 @@ export const signUpWithEmail = async (email: string, password: string) => {
  * dashboard under Authentication → URL Configuration.
  */
 export const signInWithGoogle = async () => {
-    const redirectTo = Linking.createURL('/auth/callback');
+    const redirectTo = AUTH_CALLBACK_URL;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -215,7 +231,7 @@ export const verifyPhoneOtp = async (phone: string, token: string) => {
  */
 export const sendPasswordResetEmail = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: Linking.createURL('/auth/reset'),
+        redirectTo: AUTH_RESET_URL,
     });
     if (error) console.warn('Password reset request failed:', error.message);
     return { ok: true as const };

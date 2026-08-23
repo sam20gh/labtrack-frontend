@@ -28,6 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>com.labtrack.app</string>
+          <string>labtrack</string>
         </array>
       </dict>
     </array>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, StyleSheet, TextInput, Platform, TouchableOpacity } from 'react-native';
 import { Card, Button, Avatar } from 'react-native-paper';
 import { api, ApiError } from '@/lib/api';
+import type { User } from '@/types/api';
 import { getUserId, signOut } from '@/lib/auth';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
@@ -10,7 +11,7 @@ import { Picker } from '@react-native-picker/picker';
 
 const Users = () => {
     const router = useRouter();
-    const [userData, setUserData] = useState(null);
+    const [userData, setUserData] = useState<(User & { profileImage?: string }) | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
@@ -69,7 +70,7 @@ const Users = () => {
         fetchUserData();
     }, []);
 
-    const handleChange = (name, value) => {
+    const handleChange = (name: string, value: string) => {
         setForm({ ...form, [name]: value });
     };
 
@@ -78,7 +79,7 @@ const Users = () => {
         try {
             let data;
             try {
-                data = await api.put(`/users/${userData._id}`, form);
+                data = await api.put(`/users/${userData!._id}`, form);
             } catch (err) {
                 if (err instanceof ApiError && err.isAuthError) {
                     handleLogout();
@@ -111,7 +112,7 @@ const Users = () => {
                 <Card style={styles.profileCard}>
                     <Card.Content>
                         <View style={styles.avatarContainer}>
-                            <Avatar.Image size={80} source={{ uri: userData.profileImage || 'https://i.pravatar.cc/150' }} />
+                            <Avatar.Image size={80} source={{ uri: userData?.profileImage || 'https://i.pravatar.cc/150' }} />
                         </View>
 
                         <TextInput style={[styles.input, editing ? styles.inputEditable : styles.inputDisabled]} value={form.firstName} onChangeText={(text) => handleChange('firstName', text)} editable={editing} placeholder="First Name" />

@@ -27,8 +27,7 @@ interface TestDetailsProps {
 
 const TestDetails: React.FC = () => {
     const route = useRoute();
-    console.log('Route params:', route.params);
-    const test = route.params?.test as TestDetailsProps | undefined;
+    const { test } = (route.params ?? {}) as { test?: TestDetailsProps };
 
     if (!test) {
         return (
@@ -61,7 +60,7 @@ const TestDetails: React.FC = () => {
                             <Title style={styles.resultText}>{key}</Title>
                             <Text style={styles.resultValue}>{value.value} {value.unit}</Text>
                             <Text style={styles.referenceRange}>Reference: {value.reference_range}</Text>
-                            <Text style={[styles.status, styles[value.status.toLowerCase()]]}>{value.status}</Text>
+                            <Text style={[styles.status, statusStyle(value.status)]}>{value.status}</Text>
                         </View>
                     </View>
                 ))}
@@ -92,5 +91,12 @@ const styles = StyleSheet.create({
     high: { color: 'red' },
     low: { color: 'blue' }
 });
+
+/** Colour a result by its reported status; unknown statuses fall back to neutral. */
+const statusStyle = (status?: string) => {
+    const key = String(status ?? '').toLowerCase();
+    const map = styles as Record<string, object>;
+    return map[key] ?? null;
+};
 
 export default TestDetails;

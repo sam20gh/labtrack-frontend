@@ -2,6 +2,10 @@ import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
 import { api, ApiError } from '@/lib/api';
+import type { NavigationProp } from '@react-navigation/native';
+import type { TestResult } from '@/types/api';
+
+type AppNavigation = NavigationProp<Record<string, object | undefined>>;
 import { getUserId } from '@/lib/auth';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,7 +15,7 @@ import Toast from 'react-native-toast-message';
 const ResultsPage = () => {
     const [testResults, setTestResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const navigation = useNavigation();
+    const navigation = useNavigation<AppNavigation>();
 
     useFocusEffect(
         useCallback(() => {

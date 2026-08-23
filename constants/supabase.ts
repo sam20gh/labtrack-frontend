@@ -10,6 +10,9 @@
  * binary regardless. It is not the secret key, which must never reach this repo.
  */
 import 'react-native-url-polyfill/auto';
+// Must precede createClient: supabase-js reads `crypto` when building the PKCE challenge,
+// and silently downgrades to Math.random + a plain challenge when it is missing.
+import '@/lib/crypto-polyfill';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
