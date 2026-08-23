@@ -38,6 +38,7 @@ export default function AllergiesScreen() {
             pathname: '/health-assessment/conditions',
             params: {
                 ...params,
+                hasAllergies: 'false',
                 allergies: ''
             }
         });
@@ -48,6 +49,7 @@ export default function AllergiesScreen() {
             pathname: '/health-assessment/conditions',
             params: {
                 ...params,
+                hasAllergies: 'true',
                 allergies: allergies.join(',')
             }
         });

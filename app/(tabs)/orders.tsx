@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { Card, Title, Paragraph } from 'react-native-paper';
-import { API_URL } from '@/constants/config';
+import { api, ApiError } from '@/lib/api';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -22,28 +22,10 @@ export default function ProductCardView() {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const token = await AsyncStorage.getItem('authToken');
-                const response = await fetch(`${API_URL}/products`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-                const data = await response.json();
-
-                if (!response.ok) {
-                    setError(data.error || 'Failed to fetch products');
-                    setLoading(false);
-                    return;
-                }
-
-                if (Array.isArray(data)) {
-                    setProducts(data);
-                } else {
-                    setError('Invalid response from server');
-                }
+                const data = await api.get('/products');
+                setProducts(Array.isArray(data) ? data : []);
             } catch (err) {
-                console.error('Error fetching products:', err);
-                setError('Failed to load products');
+                setError(err instanceof ApiError ? err.message : 'Failed to fetch products');
             } finally {
                 setLoading(false);
             }

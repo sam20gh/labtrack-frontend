@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@/constants/config';
-import { useNavigation } from '@react-navigation/native';
+import { api } from '@/lib/api';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 interface professional {
     _id: string;
@@ -25,15 +24,8 @@ const professionals = () => {
 
     const fetchProfessionals = async () => {
         try {
-            const token = await AsyncStorage.getItem('token');
-            const response = await fetch(`${API_URL}/professionals`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            const data = await response.json();
-            setProfessionals(data);
+            const data = await api.get('/professionals');
+            setProfessionals(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching professionals:', error);
         } finally {
@@ -42,11 +34,12 @@ const professionals = () => {
         }
     };
 
-    useEffect(() => {
-        fetchProfessionals();
-        const interval = setInterval(fetchProfessionals, 5000); // Auto-refresh every 5 seconds
-        return () => clearInterval(interval);
-    }, []);
+    // Refetch when the tab regains focus; pull-to-refresh covers manual updates
+    useFocusEffect(
+        useCallback(() => {
+            fetchProfessionals();
+        }, [])
+    );
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);

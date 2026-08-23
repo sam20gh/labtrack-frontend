@@ -24,7 +24,7 @@ export default function CalorieIntakeScreen() {
             pathname: '/health-assessment/medications',
             params: {
                 ...params,
-                dailyCalories: calories.toString()
+                calorieIntake: calories.toString()
             }
         });
     };
@@ -41,7 +41,7 @@ export default function CalorieIntakeScreen() {
             pathname: '/health-assessment/medications',
             params: {
                 ...params,
-                dailyCalories: 'unknown'
+                calorieIntake: 'unknown'
             }
         });
     };

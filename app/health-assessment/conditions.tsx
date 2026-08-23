@@ -16,7 +16,7 @@ export default function ConditionsScreen() {
     const handleYes = () => {
         router.push({
             pathname: '/health-assessment/conditions-list',
-            params: { ...params }
+            params: { ...params, hasConditions: 'true' }
         });
     };
 
@@ -25,6 +25,7 @@ export default function ConditionsScreen() {
             pathname: '/health-assessment/checkup-frequency',
             params: {
                 ...params,
+                hasConditions: 'false',
                 conditions: ''
             }
         });

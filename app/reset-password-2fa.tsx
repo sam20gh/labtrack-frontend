@@ -11,12 +11,14 @@ import {
     ScrollView,
     ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { verifyPhoneOtp } from '@/lib/auth';
 
 const ResetPassword2FAScreen = () => {
     const router = useRouter();
+    const { phone } = useLocalSearchParams();
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const inputRefs = useRef<TextInput[]>([]);
@@ -45,14 +47,24 @@ const ResetPassword2FAScreen = () => {
             return;
         }
 
+        if (!phone) {
+            Toast.show({ type: 'error', text1: 'Error', text2: 'Missing phone number — please start again' });
+            return;
+        }
+
         setLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            setLoading(false);
-            Toast.show({ type: 'success', text1: 'Success', text2: 'Code verified successfully' });
-            // Navigate to password reset screen
-        }, 1500);
+        const result = await verifyPhoneOtp(String(phone), fullCode);
+        setLoading(false);
+
+        if (!result.ok) {
+            Toast.show({ type: 'error', text1: 'Verification failed', text2: result.error });
+            return;
+        }
+
+        // A verified OTP is a full sign-in, so go straight into the app
+        Toast.show({ type: 'success', text1: 'Verified', text2: 'Signed in successfully' });
+        router.replace('/(tabs)');
     };
 
     const isCodeComplete = code.every(digit => digit !== '');

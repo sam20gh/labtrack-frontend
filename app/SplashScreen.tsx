@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated, Easing, StatusBar } from 'react-nativ
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isSignedIn } from '@/lib/auth';
 
 export default function SplashScreen() {
     const router = useRouter();
@@ -32,11 +33,10 @@ export default function SplashScreen() {
             await new Promise(resolve => setTimeout(resolve, 2500)); // Show splash for 2.5s
 
             try {
-                const token = await AsyncStorage.getItem('authToken');
-                const userId = await AsyncStorage.getItem('userId');
+                const signedIn = await isSignedIn();
                 const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
 
-                if (token && userId) {
+                if (signedIn) {
                     router.replace('/(tabs)');
                 } else if (!hasSeenOnboarding) {
                     // First time user - show onboarding

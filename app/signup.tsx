@@ -11,7 +11,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { API_URL } from '@/constants/config';
+import { signUpWithEmail } from '@/lib/auth';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
@@ -30,6 +30,7 @@ const RegisterScreen = () => {
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -74,35 +75,67 @@ const RegisterScreen = () => {
     }
 
     setLoading(true);
+    const result = await signUpWithEmail(form.email, form.password);
+    setLoading(false);
 
-    try {
-      const response = await fetch(`${API_URL}/users/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: form.email,
-          password: form.password,
-        }),
-      });
-
-      const data = await response.json();
-      setLoading(false);
-
-      if (response.ok) {
-        await AsyncStorage.setItem('userId', data.user._id);
-        await AsyncStorage.setItem('authToken', data.token || '');
-        Toast.show({ type: 'success', text1: 'Success', text2: 'Account created successfully!' });
-        router.replace('/(tabs)/ProfileScreen');
-      } else {
-        Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'Signup failed' });
-      }
-    } catch (error) {
-      setLoading(false);
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to connect to the server' });
+    if (!result.ok) {
+      Toast.show({ type: 'error', text1: 'Error', text2: result.error || 'Signup failed' });
+      return;
     }
+
+    // This project requires email confirmation, so signUp returns no session. Showing the
+    // app here would produce an account that 403s on every request until the link is
+    // clicked, so surface the confirmation step instead.
+    if (result.needsConfirmation) {
+      setAwaitingConfirmation(true);
+      return;
+    }
+
+    Toast.show({ type: 'success', text1: 'Success', text2: 'Account created successfully!' });
+    router.replace('/(tabs)');
   };
 
   const isFormValid = form.email && form.password && form.confirmPassword && passwordsMatch && passwordStrength.level >= 2;
+
+  if (awaitingConfirmation) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={confirmStyles.wrap}>
+          <View style={confirmStyles.iconCircle}>
+            <Ionicons name="mail-outline" size={40} color="#7C3AED" />
+          </View>
+          <Text style={confirmStyles.title}>Check your email</Text>
+          <Text style={confirmStyles.body}>
+            We've sent a confirmation link to{'\n'}
+            <Text style={confirmStyles.email}>{form.email}</Text>
+          </Text>
+          <Text style={confirmStyles.hint}>
+            Tap the link to activate your account, then sign in. The link expires after 24 hours.
+          </Text>
+
+          <TouchableOpacity
+            style={confirmStyles.primaryButton}
+            onPress={() => router.replace('/(auth)/loginscreen')}
+          >
+            <Text style={confirmStyles.primaryButtonText}>Back to Sign In</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={async () => {
+              const retry = await signUpWithEmail(form.email, form.password);
+              Toast.show(
+                retry.ok
+                  ? { type: 'success', text1: 'Sent', text2: 'Confirmation email resent' }
+                  : { type: 'error', text1: 'Error', text2: retry.error || 'Could not resend' }
+              );
+            }}
+          >
+            <Text style={confirmStyles.resend}>Didn't get it? Resend email</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -353,3 +386,21 @@ const styles = StyleSheet.create({
 });
 
 export default RegisterScreen;
+
+const confirmStyles = StyleSheet.create({
+  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+  iconCircle: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: '#F3E8FF',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 24,
+  },
+  title: { fontSize: 24, fontWeight: '700', color: '#1F2937', marginBottom: 12 },
+  body: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginBottom: 16 },
+  email: { fontWeight: '600', color: '#1F2937' },
+  hint: { fontSize: 13, color: '#9CA3AF', textAlign: 'center', lineHeight: 20, marginBottom: 32 },
+  primaryButton: {
+    backgroundColor: '#7C3AED', paddingVertical: 16, paddingHorizontal: 48,
+    borderRadius: 12, marginBottom: 20, width: '100%', alignItems: 'center',
+  },
+  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  resend: { color: '#7C3AED', fontSize: 14, fontWeight: '500' },
+});

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, Image, ScrollView } from 'react-native';
 import { Title, Paragraph, ActivityIndicator, Card, Text, Button, IconButton, Menu, Provider as PaperProvider, List } from 'react-native-paper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@/constants/config';
+import { api, ApiError } from '@/lib/api';
+import { getUserId } from '@/lib/auth';
 import Toast from 'react-native-toast-message';
 
 const MyPlansScreen = () => {
@@ -11,43 +11,43 @@ const MyPlansScreen = () => {
     const currentYear = new Date().getFullYear();
     const [expandedYear, setExpandedYear] = useState('Urgently');
     const [visibleMenu, setVisibleMenu] = useState(null);
+    const [userDob, setUserDob] = useState(null);
 
     useEffect(() => { fetchPlans(); }, []);
 
     const fetchPlans = async () => {
-        const token = await AsyncStorage.getItem('authToken');
-        const userId = await AsyncStorage.getItem('userId');
-        try {
-            const res = await fetch(`${API_URL}/plans/${userId}`, { headers: { Authorization: `Bearer ${token}` } });
-            const data = await res.json();
-            if (res.ok) setPlans(data.plans);
-            else Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'No plans found' });
-        } catch (err) {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Server error' });
-        } finally { setLoading(false); }
-    };
+        const userId = await getUserId();
+        if (!userId) { setLoading(false); return; }
 
-    const deletePlan = async (planID) => {
-        const token = await AsyncStorage.getItem('authToken');
         try {
-            const res = await fetch(`${API_URL}/plans/delete/${planID}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setPlans(plans.filter(plan => plan._id !== planID));
-                Toast.show({ type: 'success', text1: 'Success', text2: data.message });
-            } else {
-                Toast.show({ type: 'error', text1: 'Error', text2: data.message });
-            }
+            const [planData, user] = await Promise.all([
+                api.get(`/plans/${userId}`),
+                api.get(`/users/${userId}`),
+            ]);
+            setPlans(planData.plans || []);
+            // Urgency is relative to the signed-in user's own age
+            if (user?.dob) setUserDob(user.dob);
         } catch (err) {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Server error' });
+            const message = err instanceof ApiError ? err.message : 'Server error';
+            Toast.show({ type: 'error', text1: 'Error', text2: message });
+        } finally {
+            setLoading(false);
         }
     };
 
-    const userDob = new Date('1986-05-20');
-    const userAge = currentYear - userDob.getFullYear();
+    const deletePlan = async (planID) => {
+        try {
+            const data = await api.delete(`/plans/delete/${planID}`);
+            setPlans(plans.filter(plan => plan._id !== planID));
+            Toast.show({ type: 'success', text1: 'Success', text2: data.message });
+        } catch (err) {
+            const message = err instanceof ApiError ? err.message : 'Server error';
+            Toast.show({ type: 'error', text1: 'Error', text2: message });
+        }
+    };
+
+    // Null until the profile loads; without a DOB nothing is marked urgent by age
+    const userAge = userDob ? currentYear - new Date(userDob).getFullYear() : null;
 
     const renderTimelineItem = (entry) => (
         <View key={entry.age} style={styles.timelineItem}>
@@ -56,7 +56,7 @@ const MyPlansScreen = () => {
                 <Text style={styles.timelineYear}>Age {entry.age}</Text>
                 <Text style={styles.timelineLabel}>
                     {entry.type === 'test' ? `${entry.test}` : `${entry.speciality}`}
-                    {entry.type === 'test' && entry.age <= userAge ? ' (Urgently)' : ''}
+                    {entry.type === 'test' && userAge !== null && entry.age <= userAge ? ' (Urgently)' : ''}
                 </Text>
                 {entry.productName && <Text style={styles.entryName}>{entry.productName}</Text>}
                 {entry.professionalName && <Text style={styles.entryName}>{entry.professionalName}</Text>}

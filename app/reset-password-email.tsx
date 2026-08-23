@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { API_URL } from '@/constants/config';
+import { sendPasswordResetEmail } from '@/lib/auth';
 import Toast from 'react-native-toast-message';
 
 const ResetPasswordEmailScreen = () => {
@@ -40,30 +40,15 @@ const ResetPasswordEmailScreen = () => {
 
         setLoading(true);
 
-        try {
-            // API call to send reset password email
-            const response = await fetch(`${API_URL}/users/forgot-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
-            });
+        // Supabase sends the reset link. The result is deliberately not surfaced: revealing
+        // whether an address is registered would leak account existence.
+        await sendPasswordResetEmail(email);
+        setLoading(false);
 
-            setLoading(false);
-
-            // Navigate to confirmation screen regardless of API response
-            // (for security, we don't reveal if email exists)
-            router.push({
-                pathname: '/password-reset-sent',
-                params: { email },
-            });
-        } catch (error) {
-            setLoading(false);
-            // Still navigate to confirmation for security
-            router.push({
-                pathname: '/password-reset-sent',
-                params: { email },
-            });
-        }
+        router.push({
+            pathname: '/password-reset-sent',
+            params: { email },
+        });
     };
 
     return (

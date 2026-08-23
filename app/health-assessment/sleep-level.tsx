@@ -13,14 +13,16 @@ interface SleepLevel {
     level: number;
     label: string;
     hours: string;
+    /** Midpoint of `hours`, saved as healthAssessment.lifestyle.sleepHoursPerNight */
+    hoursValue: number;
 }
 
 const sleepLevels: SleepLevel[] = [
-    { level: 1, label: 'Very Poor', hours: 'Less than 4 hours daily' },
-    { level: 2, label: 'Poor', hours: '4 - 5 hours daily' },
-    { level: 3, label: 'Fair', hours: '5 - 6 hours daily' },
-    { level: 4, label: 'Good', hours: '6 - 7 hours daily' },
-    { level: 5, label: 'Moderate', hours: '6 - 7 hours daily' },
+    { level: 1, label: 'Very Poor', hours: 'Less than 4 hours daily', hoursValue: 3.5 },
+    { level: 2, label: 'Poor', hours: '4 - 5 hours daily', hoursValue: 4.5 },
+    { level: 3, label: 'Fair', hours: '5 - 6 hours daily', hoursValue: 5.5 },
+    { level: 4, label: 'Good', hours: '6 - 7 hours daily', hoursValue: 6.5 },
+    { level: 5, label: 'Moderate', hours: '6 - 7 hours daily', hoursValue: 6.5 },
 ];
 
 export default function SleepLevelScreen() {
@@ -36,7 +38,8 @@ export default function SleepLevelScreen() {
             params: {
                 ...params,
                 sleepLevel: selectedLevel.toString(),
-                sleepLabel: currentSleep.label
+                sleepLabel: currentSleep.label,
+                sleepHours: currentSleep.hoursValue.toString()
             }
         });
     };

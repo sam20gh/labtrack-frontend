@@ -57,7 +57,7 @@ export default function EatingHabitsScreen() {
             pathname: '/health-assessment/calorie-intake',
             params: {
                 ...params,
-                eatingHabit: selectedHabit || ''
+                eatingHabits: selectedHabit || ''
             }
         });
     };

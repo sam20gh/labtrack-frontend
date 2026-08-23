@@ -9,24 +9,28 @@ import {
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function NameScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
     const [name, setName] = useState('');
 
     const handleContinue = () => {
         if (name.trim()) {
             router.push({
                 pathname: '/health-assessment/health-goals',
-                params: { name: name.trim() }
+                params: { ...params, fullName: name.trim() }
             });
         }
     };
 
     const handleSkip = () => {
-        router.push('/health-assessment/health-goals');
+        router.push({
+            pathname: '/health-assessment/health-goals',
+            params: { ...params }
+        });
     };
 
     const handleBack = () => {

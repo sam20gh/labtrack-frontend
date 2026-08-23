@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@/constants/config';
+import { api, ApiError } from '@/lib/api';
+import { getUserId, signOut } from '@/lib/auth';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
@@ -17,32 +17,21 @@ const ProfileScreen = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const userId = await AsyncStorage.getItem('userId');
-      const token = await AsyncStorage.getItem('authToken');
-
-      if (!userId || !token) {
+      const userId = await getUserId();
+      if (!userId) {
         router.replace('/(auth)/loginscreen');
         return;
       }
 
       try {
-        const response = await fetch(`${API_URL}/users/${userId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
+        const data = await api.get(`/users/${userId}`);
+        setUser(data);
+      } catch (error) {
+        if (error instanceof ApiError && error.isAuthError) {
           router.replace('/(auth)/loginscreen');
           return;
         }
-
-        const userData = await response.json();
-        setUser({
-          firstName: userData.firstName,
-          profileImage: userData.profileImage || 'https://i.pravatar.cc/150'
-        });
-      } catch (error) {
         Toast.show({ type: 'error', text1: 'Error', text2: 'Unable to fetch user data' });
-        router.replace('/(auth)/loginscreen');
       } finally {
         setLoading(false);
       }
@@ -51,9 +40,7 @@ const ProfileScreen = () => {
     fetchUserData();
   }, []);
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('userId');
-    await AsyncStorage.removeItem('authToken');
-    Toast.show({ type: 'info', text1: 'Logged out', text2: 'Your session has expired. Please log in again.' });
+    await signOut();
     router.replace('/(auth)/loginscreen');
   };
 

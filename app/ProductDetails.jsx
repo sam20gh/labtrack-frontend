@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Button } from 'react-native-paper';
-import { API_URL } from '@/constants/config';
 import { useRoute } from '@react-navigation/native';
+import { api } from '@/lib/api';
 
 export default function ProductDetails() {
     const route = useRoute();
@@ -12,16 +12,17 @@ export default function ProductDetails() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`${API_URL}/products/${productId}`)
-            .then((res) => res.json())
-            .then((data) => {
-                setProduct(data);
-                setLoading(false);
-            })
-            .catch((error) => {
+        const fetchProduct = async () => {
+            try {
+                setProduct(await api.get(`/products/${productId}`));
+            } catch (error) {
                 console.error('Error fetching product:', error);
+            } finally {
                 setLoading(false);
-            });
+            }
+        };
+
+        fetchProduct();
     }, [productId]);
 
     if (loading) {

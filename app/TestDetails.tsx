@@ -2,7 +2,7 @@ import React from 'react';
 import { View, ScrollView, StyleSheet, Text } from 'react-native';
 import { Card, Title, Paragraph } from 'react-native-paper';
 import { useRoute } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 
 interface TestDetailsProps {
     patient: {

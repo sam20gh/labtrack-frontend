@@ -1,50 +1,101 @@
-# Welcome to your Expo app 👋
+# LabTrack — mobile app
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+React Native 0.76 + Expo SDK 52 client for LabTrack. File-based routing via
+[expo-router](https://docs.expo.dev/router/introduction), TypeScript, prebuild (bare)
+workflow with committed `ios/` and `android/` directories.
 
-## Get started
+The backend lives in a separate repo: `github.com/sam20gh/labtrack-backend`.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-    npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Setup
 
 ```bash
-npm run reset-project
+npm install
+npm start                 # expo start --dev-client
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+| Command | What it does |
+|---|---|
+| `npm start` | Metro with a dev client |
+| `npx expo run:ios` | Build and run the iOS app locally |
+| `npx expo run:android` | Build and run the Android app locally |
+| `npm run lint` | `expo lint` |
+| `npm test` | `jest --watchAll` — one snapshot test exists |
+| `npx tsc --noEmit` | Typecheck; ~36 pre-existing errors, not wired into CI |
 
-## Learn more
+`npx expo prebuild` regenerates `ios/` and `android/` and will overwrite local native
+edits — both directories are committed on purpose.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Pointing at a backend
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+`constants/config.ts` is the only switch; there is no env-var mechanism.
 
-## Join the community
+```ts
+export const API_URL = 'https://labtrack-backend.onrender.com/api';  // prod (active)
+// export const API_URL = 'http://localhost:5002/api';               // local
+```
 
-Join our community of developers creating universal apps.
+## Structure
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+app/
+  _layout.tsx            Root Stack, starts at SplashScreen
+  SplashScreen.tsx       2.5s splash, then → (tabs) | onboarding | login
+  onboarding.tsx         Sets hasSeenOnboarding
+  (auth)/loginscreen.tsx POST /users/login — sends the email as `username`
+  signup.tsx
+  forgot-password.tsx    → reset-password-{email,sms,2fa} → password-reset-sent
+  (tabs)/
+    index.tsx            Home: profile, latest test, products, AI feedback, plan creation
+    professionals.tsx    Professional directory
+    orders.tsx           Product catalogue
+    results.tsx          Test result list
+    ProfileScreen.tsx    Profile and logout
+  health-assessment/     23-screen questionnaire, index → … → complete
+  myplans.tsx            Health-plan timeline grouped by year
+  TestDetails.tsx  ProductDetails.jsx  professionalDetails.tsx  users.tsx
+components/              Shared UI (Header, Themed*, ui/*)
+constants/               config.ts (API_URL), Colors.ts
+hooks/                   useColorScheme, useThemeColor
+```
+
+## Conventions
+
+- **Import alias:** `@/` resolves to the project root — `@/constants/config`.
+- **Auth storage:** AsyncStorage keys `userId`, `authToken`, `keepSignedIn`,
+  `hasSeenOnboarding`. On 401/403, `router.replace('/(auth)/loginscreen')`.
+- **Data fetching:** `useFocusEffect(useCallback(() => { fetchData(); }, []))` from
+  `@react-navigation/native` for anything that can go stale on return.
+- **Colors:** `#FF385C` is the legacy accent (tab bar, splash); `#7C3AED` purple is used
+  throughout onboarding and the health assessment. `constants/Colors.ts` is the unmodified
+  Expo template palette, used only by `ThemedText` / `ThemedView`.
+- Use `.tsx` for new files. `app/ProductDetails.jsx` is the only remaining `.jsx`.
+
+## Health-assessment flow
+
+The 23 screens pass state **entirely through router params** — each reads
+`useLocalSearchParams()` and forwards `{ ...params, newKey: value }`. Nothing is persisted
+until `complete.tsx`, which sends `PUT /users/:id` followed by
+`PUT /users/:id/health-assessment`.
+
+A mismatched param name therefore drops data with no error. Several mismatches exist today —
+read `docs/KNOWN-ISSUES.md` in the LabTrack workspace before adding or renaming a step.
+
+## Builds
+
+```bash
+eas build --platform android --profile staging
+eas build --platform ios --profile production
+```
+
+`development`, `preview`, and `staging` profiles publish to the `staging` channel;
+`production` publishes to `production`. OTA updates are configured in `app.json`
+(`runtimeVersion` `1.0.0`).
+
+## Further reading
+
+These live in the LabTrack workspace directory that contains this repo, not in this repo
+itself:
+
+- `CLAUDE.md` — full architecture and conventions across both repos
+- `docs/API.md` — backend endpoint reference
+- `docs/KNOWN-ISSUES.md` — verified defects

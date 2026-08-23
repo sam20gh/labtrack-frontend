@@ -12,11 +12,11 @@ import {
     ScrollView,
     Image,
 } from 'react-native';
-import { API_URL } from '@/constants/config';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
+import { signInWithEmail, signInWithGoogle, STORAGE_KEYS } from '@/lib/auth';
 
 const LoginScreen = () => {
     const router = useRouter();
@@ -40,40 +40,37 @@ const LoginScreen = () => {
         setLoading(true);
         setError('');
 
-        try {
-            const response = await fetch(`${API_URL}/users/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: form.email, password: form.password }),
-            });
+        const result = await signInWithEmail(form.email, form.password);
+        setLoading(false);
 
-            const data = await response.json();
-            setLoading(false);
-
-            if (response.ok) {
-                if (!data.user || !data.user._id || !data.token) {
-                    setError('Authentication failed');
-                    return;
-                }
-
-                await AsyncStorage.setItem('userId', data.user._id);
-                await AsyncStorage.setItem('authToken', data.token);
-                if (keepSignedIn) {
-                    await AsyncStorage.setItem('keepSignedIn', 'true');
-                }
-
-                router.replace('(tabs)/ProfileScreen');
-            } else {
-                setError(data.message || 'Incorrect email or password!');
-            }
-        } catch (error) {
-            setLoading(false);
-            setError('Failed to connect to the server');
+        if (!result.ok) {
+            setError(result.error || 'Incorrect email or password!');
+            return;
         }
+
+        if (keepSignedIn) {
+            await AsyncStorage.setItem(STORAGE_KEYS.keepSignedIn, 'true');
+        }
+
+        router.replace('/(tabs)');
     };
 
-    const handleGoogleSignIn = () => {
-        Toast.show({ type: 'info', text1: 'Coming Soon', text2: 'Google Sign In will be available soon' });
+    const handleGoogleSignIn = async () => {
+        setLoading(true);
+        setError('');
+
+        const result = await signInWithGoogle();
+        setLoading(false);
+
+        if (!result.ok) {
+            // A cancelled browser session is a user choice, not an error worth shouting about
+            if (!('cancelled' in result && result.cancelled)) {
+                setError(result.error || 'Google sign in failed');
+            }
+            return;
+        }
+
+        router.replace('/(tabs)');
     };
 
     return (

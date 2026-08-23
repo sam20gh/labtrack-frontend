@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Text, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { Card, Title, Paragraph, ActivityIndicator, Button, Chip, Surface } from 'react-native-paper';
-import { API_URL } from '@/constants/config';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api, ApiError } from '@/lib/api';
+import { getUserId, isSignedIn } from '@/lib/auth';
 // @ts-ignore - types not available but package works at runtime
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+
+type IconName = React.ComponentProps<typeof Icon>['name'];
 import { useFocusEffect } from '@react-navigation/native';
 import Markdown from 'react-native-markdown-display';
 import Toast from 'react-native-toast-message';
@@ -19,7 +21,7 @@ const calculateBMI = (weight: number, heightCm: number) => {
   return (weight / (heightM * heightM)).toFixed(1);
 };
 
-const getBMIStatus = (bmi: string): { color: string; status: string; icon: string } => {
+const getBMIStatus = (bmi: string): { color: string; status: string; icon: IconName } => {
   const bmiValue = parseFloat(bmi);
   if (isNaN(bmiValue)) return { color: '#94A3B8', status: 'Unknown', icon: 'help-circle' };
   if (bmiValue < 18.5) return { color: '#FBBF24', status: 'Underweight', icon: 'alert-circle' };
@@ -63,58 +65,34 @@ const HomeScreen = ({ navigation }: any) => {
   useFocusEffect(
     useCallback(() => {
       const checkAuthAndFetchData = async () => {
-        const userId = await AsyncStorage.getItem('userId');
-        const token = await AsyncStorage.getItem('authToken');
-
-        const loggedIn = !!(userId && token);
+        const userId = await getUserId();
+        const loggedIn = await isSignedIn();
         setIsLoggedIn(loggedIn);
 
-        if (loggedIn) {
-          fetchUserData(userId!, token!);
-          fetchLatestTestResult(userId!);
+        if (loggedIn && userId) {
+          fetchUserData(userId);
+          fetchLatestTestResult(userId);
         } else {
           setLoading(false);
         }
 
-        // Always fetch products, even for non-logged-in users
-        fetchFeaturedProducts(token);
+        // Always attempt products; signed-out visitors simply get none
+        fetchFeaturedProducts(loggedIn);
       };
 
-      const fetchUserData = async (userId: string, token: string) => {
+      const fetchUserData = async (userId: string) => {
         try {
-          const response = await fetch(`${API_URL}/users/${userId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-
-          const data = await response.json();
-
-          if (response.status === 401 || response.status === 403) {
-            setIsLoggedIn(false);
-            return;
-          }
-
-          if (response.ok) {
-            setUserData(data);
-          }
+          setUserData(await api.get(`/users/${userId}`));
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
       };
 
-
       const fetchLatestTestResult = async (userId: string) => {
         try {
-          const response = await fetch(`${API_URL}/test-results?user_id=${userId}`);
-          const data = await response.json();
-          if (data) {
-            let resultsArray = Array.isArray(data) ? data : [data];
-            resultsArray.sort(
-              (a, b) =>
-                new Date(b.patient.date_of_test).getTime() -
-                new Date(a.patient.date_of_test).getTime()
-            );
-            setLatestTest(resultsArray[0]);
-          }
+          // API returns a date-descending array (empty when there is no history)
+          const data = await api.get(`/test-results?user_id=${userId}`);
+          setLatestTest(Array.isArray(data) ? (data[0] ?? null) : null);
         } catch (error) {
           console.error('Error fetching latest test result:', error);
         } finally {
@@ -122,17 +100,15 @@ const HomeScreen = ({ navigation }: any) => {
         }
       };
 
-      const fetchFeaturedProducts = async (token: string | null) => {
+      const fetchFeaturedProducts = async (loggedIn: boolean) => {
+        if (!loggedIn) {
+          setFeaturedProducts([]);
+          setLoadingProducts(false);
+          return;
+        }
         try {
-          const headers: Record<string, string> = {};
-          if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-          }
-          const response = await fetch(`${API_URL}/products`, { headers });
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            setFeaturedProducts(data.slice(0, 6));
-          }
+          const data = await api.get('/products');
+          setFeaturedProducts(Array.isArray(data) ? data.slice(0, 5) : []);
         } catch (error) {
           console.error('Error fetching products:', error);
         } finally {
@@ -157,133 +133,64 @@ const HomeScreen = ({ navigation }: any) => {
   const handleDeepSeekFeedback = async () => {
     setLoadingFeedback(true);
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      const userId = await AsyncStorage.getItem('userId');
-
-      if (!token || !userId) {
+      const userId = await getUserId();
+      if (!userId) {
         Toast.show({ type: 'error', text1: 'Error', text2: 'Unauthorized. Please log in again.' });
+        setLoadingFeedback(false);
         return;
       }
 
-      console.log("📢 Checking existing feedback for user:", userData);
-      console.log("📌 Checking latest test:", latestTest);
-
-      if (!latestTest || !latestTest._id) {
-        console.error("❌ No valid test ID found.");
+      if (!latestTest?._id) {
         Toast.show({ type: 'error', text1: 'Error', text2: 'No valid test found.' });
         setLoadingFeedback(false);
         return;
       }
 
-      const testID = latestTest._id; // ✅ Ensure we use the correct test result ID
+      const testID = latestTest._id;
 
-      // Step 1: Check if feedback already exists in the database
-      console.log("🔍 Searching for existing feedback...");
-      const feedbackResponse = await fetch(`${API_URL}/aifeedback/get/${testID}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      // Cached interpretations are reused: only a 404 justifies spending a model call.
+      try {
+        const cached = await api.get(`/aifeedback/get/${testID}`);
+        if (cached?.feedback) {
+          setDeepSeekFeedback(cached.feedback);
+          setLoadingFeedback(false);
+          return;
         }
-      });
-
-      const feedbackData = await feedbackResponse.json();
-      if (feedbackResponse.ok && feedbackData.feedback) {
-        console.log("🟢 Existing feedback found:", feedbackData.feedback);
-        setDeepSeekFeedback(feedbackData.feedback);
-        setLoadingFeedback(false);
-        return;
+      } catch (err) {
+        if (!(err instanceof ApiError && err.status === 404)) throw err;
       }
 
-      console.log("📌 No existing feedback found. Calling DeepSeek API...");
-
-      // Step 2: Fetch AI feedback
-      const deepseekResponse = await fetch(`${API_URL}/deepseek`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const result = await api.post('/deepseek', {
+        user: {
+          gender: userData?.gender || 'N/A',
+          height: userData?.height || 0,
+          weight: userData?.weight || 0,
+          dob: userData?.dob || 'N/A',
         },
-        body: JSON.stringify({
-          user: {
-            gender: userData?.gender || 'N/A',
-            height: userData?.height || 0,
-            weight: userData?.weight || 0,
-            dob: userData?.dob || 'N/A',
-          },
-          testResult: {
-            type: latestTest?.patient?.test_type || 'N/A',
-            result: latestTest?.interpretation || 'N/A',
-          }
-        })
+        testResult: {
+          type: latestTest?.patient?.test_type || 'N/A',
+          result: latestTest?.interpretation || 'N/A',
+        },
       });
 
-      const deepseekData = await deepseekResponse.json();
-      console.log("🟢 DeepSeek API Response:", deepseekData);
-
-      if (!deepseekResponse.ok) {
-        throw new Error(deepseekData.message || "Failed to fetch feedback.");
-      }
-
-      setDeepSeekFeedback(deepseekData.recommendation);
-
-      // Step 3: Save feedback in the database
-      console.log("📌 Saving new feedback to DB...");
-      await saveFeedback(deepseekData.recommendation, testID, userId, token);
-
+      setDeepSeekFeedback(result.recommendation);
+      await saveFeedback(result.recommendation, testID, userId);
     } catch (error) {
-      console.error("❌ Error fetching DeepSeek feedback:", error);
-      setDeepSeekFeedback("An error occurred while fetching feedback.");
+      console.error('Error fetching AI feedback:', error);
+      setDeepSeekFeedback('An error occurred while fetching feedback.');
     } finally {
       setLoadingFeedback(false);
     }
   };
 
-
-  const saveFeedback = async (feedbackText: string, testID: string, userID: string, token: string) => {
+  const saveFeedback = async (feedbackText: string, testID: string, userID: string) => {
     try {
-      console.log("📢 Sending feedback to backend:", { userID, testID, feedback: feedbackText });
-
-      if (!testID) {
-        console.error("❌ No testID provided! Cannot save feedback.");
-        Toast.show({ type: 'error', text1: 'Error', text2: 'No valid test ID found.' });
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/aifeedback/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ userID, testID, feedback: feedbackText })
-      });
-
-      console.log("🔍 Raw Response:", response); // ✅ Log full response object
-
-      const textData = await response.text(); // ✅ Read response as text
-      console.log("🔍 Response Text:", textData); // ✅ Log the text response
-
-      // Try parsing JSON only if the response is valid
-      let data;
-      try {
-        data = JSON.parse(textData);
-      } catch (error) {
-        console.error("❌ JSON Parsing Error:", error);
-        throw new Error("Invalid JSON response from server.");
-      }
-
-      console.log("🟢 Backend response (Parsed JSON):", data);
-
-      if (response.ok) {
-        Toast.show({ type: 'success', text1: 'Success', text2: 'Feedback saved!' });
-      } else {
-        Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'Failed to save feedback' });
-      }
-    } catch (error: any) {
-      console.error('❌ Error saving feedback:', error);
-      Toast.show({ type: 'error', text1: 'Error', text2: error?.message || 'Server error' });
+      await api.post('/aifeedback/save', { userID, testID, feedback: feedbackText });
+    } catch (error) {
+      console.error('Error saving feedback:', error);
     }
   };
+
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -586,48 +493,34 @@ const HomeScreen = ({ navigation }: any) => {
                     icon="clipboard-plus"
                     onPress={async () => {
                       try {
-                        const userId = await AsyncStorage.getItem('userId');
-                        const token = await AsyncStorage.getItem('authToken');
+                        const userId = await getUserId();
                         const testID = latestTest?._id;
 
-                        if (!userId || !testID || !token) {
+                        if (!userId || !testID) {
                           Toast.show({ type: 'error', text1: 'Error', text2: 'Missing user or test information' });
                           return;
                         }
 
-                        const [productRes, proRes] = await Promise.all([
-                          fetch(`${API_URL}/products`, { headers: { Authorization: `Bearer ${token}` } }),
-                          fetch(`${API_URL}/professionals`, { headers: { Authorization: `Bearer ${token}` } }),
+                        // The plan generator matches screenings/consultations against
+                        // these catalogues, so the client supplies them.
+                        const [products, professionals] = await Promise.all([
+                          api.get('/products'),
+                          api.get('/professionals'),
                         ]);
 
-                        const products = await productRes.json();
-                        const professionals = await proRes.json();
-
-                        const res = await fetch(`${API_URL}/plans/create`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${token}`,
-                          },
-                          body: JSON.stringify({
-                            user: userData,
-                            feedbackText: deepSeekFeedback,
-                            products,
-                            professionals,
-                            testID
-                          }),
+                        await api.post('/plans/create', {
+                          user: userData,
+                          feedbackText: deepSeekFeedback,
+                          products,
+                          professionals,
+                          testID,
                         });
 
-                        const data = await res.json();
-
-                        if (res.ok) {
-                          Toast.show({ type: 'success', text1: 'Plan Created', text2: 'Structured health plan saved!' });
-                        } else {
-                          Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'Failed to create plan' });
-                        }
+                        Toast.show({ type: 'success', text1: 'Plan Created', text2: 'Structured health plan saved!' });
                       } catch (error) {
-                        console.error("❌ Error creating health plan:", error);
-                        Toast.show({ type: 'error', text1: 'Error', text2: 'Something went wrong' });
+                        console.error('Error creating health plan:', error);
+                        const message = error instanceof ApiError ? error.message : 'Something went wrong';
+                        Toast.show({ type: 'error', text1: 'Error', text2: message });
                       }
                     }}
                   >

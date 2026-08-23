@@ -11,8 +11,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@/constants/config';
+import { api } from '@/lib/api';
+import { getUserId } from '@/lib/auth';
+import {
+    AssessmentParams,
+    parseArrayParam,
+    hasListEntries,
+} from './params';
 
 const { width } = Dimensions.get('window');
 
@@ -36,39 +41,22 @@ export default function CompleteScreen() {
         }))
     ).current;
 
-    // Helper to parse array params (they come as comma-separated strings or arrays)
-    const parseArrayParam = (param: any): string[] => {
-        if (!param) return [];
-        if (Array.isArray(param)) return param;
-        if (typeof param === 'string') {
-            // Try to parse as JSON first
-            try {
-                const parsed = JSON.parse(param);
-                if (Array.isArray(parsed)) return parsed;
-            } catch {
-                // If not JSON, split by comma
-                return param.split(',').map(s => s.trim()).filter(Boolean);
-            }
-        }
-        return [];
-    };
-
     // Save health assessment data to the backend
     const saveHealthAssessment = async () => {
         if (hasSaved.current) return;
         hasSaved.current = true;
 
         try {
-            const userId = await AsyncStorage.getItem('userId');
-            const token = await AsyncStorage.getItem('authToken');
+            const userId = await getUserId();
 
-            if (!userId || !token) {
+            if (!userId) {
                 setSaveError('Please log in to save your health assessment');
                 setIsSaving(false);
                 return;
             }
 
-            // Extract all params from the health assessment flow
+            // Typed against the shared contract in ./params — a key that no screen emits,
+            // or one emitted under a different name, is now a compile error.
             const {
                 // Basic info
                 fullName,
@@ -81,7 +69,6 @@ export default function CompleteScreen() {
                 height,
                 heightUnit,
                 bloodType,
-                rhFactor,
                 fitnessLevel,
                 // Lifestyle
                 sleepLevel,
@@ -102,7 +89,7 @@ export default function CompleteScreen() {
                 healthNotes,
                 hasVoiceRecording,
                 voiceDuration,
-            } = params;
+            } = params as AssessmentParams;
 
             // Parse name
             const nameParts = fullName ? String(fullName).split(' ') : [];
@@ -144,20 +131,26 @@ export default function CompleteScreen() {
                 } : undefined,
 
                 // Medical info
-                medications: hasMedications === 'true' ? parseArrayParam(medications).map(med => ({
-                    name: med,
-                    isCurrentlyTaking: true,
-                })) : [],
+                medications: hasListEntries(hasMedications, medications)
+                    ? parseArrayParam(medications).map(med => ({
+                        name: med,
+                        isCurrentlyTaking: true,
+                    }))
+                    : [],
 
-                allergies: hasAllergies === 'true' ? parseArrayParam(allergies).map(allergy => ({
-                    allergen: allergy,
-                    severity: 'Moderate',
-                })) : [],
+                allergies: hasListEntries(hasAllergies, allergies)
+                    ? parseArrayParam(allergies).map(allergy => ({
+                        allergen: allergy,
+                        severity: 'Moderate',
+                    }))
+                    : [],
 
-                conditions: hasConditions === 'true' ? parseArrayParam(conditions).map(condition => ({
-                    name: condition,
-                    status: 'Active',
-                })) : [],
+                conditions: hasListEntries(hasConditions, conditions)
+                    ? parseArrayParam(conditions).map(condition => ({
+                        name: condition,
+                        status: 'Active',
+                    }))
+                    : [],
 
                 // Notes
                 notes: healthNotes ? [{
@@ -178,41 +171,25 @@ export default function CompleteScreen() {
             if (firstName) userProfileUpdate.firstName = firstName;
             if (lastName) userProfileUpdate.lastName = lastName;
             if (dob) userProfileUpdate.dob = dob;
-            if (gender) userProfileUpdate.gender = String(gender);
+            // User.gender enum is Male | Female | Other — gender.tsx can also emit
+            // 'PreferNotToSay', which is stored as no value rather than an invalid one.
+            if (gender && gender !== 'PreferNotToSay') userProfileUpdate.gender = String(gender);
             if (parsedHeight !== null) userProfileUpdate.height = parsedHeight;
             if (parsedWeight !== null) userProfileUpdate.weight = parsedWeight;
-            if (bloodType) userProfileUpdate.bloodType = `${bloodType}${rhFactor || ''}`;
+            // blood-type.tsx already appends the Rh factor (e.g. "A+")
+            if (bloodType) userProfileUpdate.bloodType = String(bloodType);
 
-            // First, update user profile
+            // Profile first. A failure here is logged but not fatal — the assessment
+            // itself is the answer set worth preserving.
             if (Object.keys(userProfileUpdate).length > 0) {
-                const profileResponse = await fetch(`${API_URL}/users/${userId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(userProfileUpdate),
-                });
-
-                if (!profileResponse.ok) {
-                    console.warn('Failed to update user profile:', await profileResponse.text());
+                try {
+                    await api.put(`/users/${userId}`, userProfileUpdate);
+                } catch (err) {
+                    console.warn('Failed to update user profile:', err);
                 }
             }
 
-            // Then, update health assessment
-            const assessmentResponse = await fetch(`${API_URL}/users/${userId}/health-assessment`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ healthAssessment }),
-            });
-
-            if (!assessmentResponse.ok) {
-                const errorData = await assessmentResponse.text();
-                throw new Error(`Failed to save health assessment: ${errorData}`);
-            }
+            await api.put(`/users/${userId}/health-assessment`, { healthAssessment });
 
             console.log('Health assessment saved successfully!');
             setIsSaving(false);

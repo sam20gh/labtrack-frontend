@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, StyleSheet, TextInput, Platform, TouchableOpacity } from 'react-native';
 import { Card, Button, Avatar } from 'react-native-paper';
-import { API_URL } from '@/constants/config';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api, ApiError } from '@/lib/api';
+import { getUserId, signOut } from '@/lib/auth';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -29,28 +29,26 @@ const Users = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const userId = await AsyncStorage.getItem('userId');
-                const token = await AsyncStorage.getItem('authToken');
+                const userId = await getUserId();
 
-                if (!userId || !token) {
+                if (!userId) {
                     handleLogout();
                     return;
                 }
 
-                const response = await fetch(`${API_URL}/users/${userId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                const data = await response.json();
-
-                if (response.status === 401 || response.status === 403) {
-                    handleLogout();
-                    return;
+                let data;
+                try {
+                    data = await api.get(`/users/${userId}`);
+                } catch (err) {
+                    if (err instanceof ApiError && err.isAuthError) {
+                        handleLogout();
+                        return;
+                    }
+                    throw err;
                 }
 
-                if (response.ok) {
-                    setUserData(data);
-                    setForm({
+                setUserData(data);
+                setForm({
                         firstName: data.firstName || '',
                         lastName: data.lastName || '',
                         username: data.username || '',
@@ -58,12 +56,9 @@ const Users = () => {
                         phone: data.phone || '',
                         dob: data.dob || '',
                         gender: data.gender || '',
-                        height: data.height ? String(data.height) : '',
-                        weight: data.weight ? String(data.weight) : ''
-                    });
-                } else {
-                    Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'Failed to fetch user data' });
-                }
+                    height: data.height ? String(data.height) : '',
+                    weight: data.weight ? String(data.weight) : ''
+                });
             } catch (error) {
                 console.error('Error fetching user:', error);
                 handleLogout();
@@ -81,35 +76,20 @@ const Users = () => {
     const handleSave = async () => {
         setLoading(true);
         try {
-            const token = await AsyncStorage.getItem('authToken');
-            if (!token) {
-                handleLogout();
-                return;
+            let data;
+            try {
+                data = await api.put(`/users/${userData._id}`, form);
+            } catch (err) {
+                if (err instanceof ApiError && err.isAuthError) {
+                    handleLogout();
+                    return;
+                }
+                throw err;
             }
 
-            const response = await fetch(`${API_URL}/users/${userData._id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(form),
-            });
-
-            const data = await response.json();
-
-            if (response.status === 401 || response.status === 403) {
-                handleLogout();
-                return;
-            }
-
-            if (response.ok) {
-                setUserData(data);
-                setEditing(false);
-                Toast.show({ type: 'success', text1: 'Success', text2: 'Profile updated successfully' });
-            } else {
-                Toast.show({ type: 'error', text1: 'Error', text2: data.message || 'Update failed' });
-            }
+            setUserData(data);
+            setEditing(false);
+            Toast.show({ type: 'success', text1: 'Success', text2: 'Profile updated successfully' });
         } catch (error) {
             Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to connect to the server' });
             handleLogout();
@@ -118,8 +98,7 @@ const Users = () => {
     };
 
     const handleLogout = async () => {
-        await AsyncStorage.removeItem('userId');
-        await AsyncStorage.removeItem('authToken');
+        await signOut();
         Toast.show({ type: 'info', text1: 'Logged out', text2: 'Your session has expired. Please log in again.' });
         router.replace('/(auth)/loginscreen');
     };

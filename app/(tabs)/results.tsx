@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
-import { API_URL } from '@/constants/config';
+import { api, ApiError } from '@/lib/api';
+import { getUserId } from '@/lib/auth';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
 const ResultsPage = () => {
@@ -16,48 +17,22 @@ const ResultsPage = () => {
         useCallback(() => {
             setLoading(true);
             const fetchTestResults = async () => {
+                const userId = await getUserId();
+                if (!userId) { setLoading(false); return; }
+
                 try {
-                    const userId = await AsyncStorage.getItem('userId');
-                    const token = await AsyncStorage.getItem('authToken');
-
-                    console.log("Retrieved userId:", userId);
-                    console.log("Retrieved authToken:", token);
-
-                    if (!userId || !token) {
-                        Toast.show({ type: 'error', text1: 'Error', text2: 'Unauthorized. Please log in again.' });
-                        return;
-                    }
-
-                    const response = await fetch(`${API_URL}/test-results?user_id=${userId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    const data = await response.json();
-                    console.log("API Response:", data);
-
-                    if (!response.ok) {
-                        throw new Error(data.message || "Failed to fetch test results");
-                    }
-
-                    if (data && Array.isArray(data)) {
-                        data.sort(
-                            (a, b) =>
-                                new Date(b.patient.date_of_test).getTime() -
-                                new Date(a.patient.date_of_test).getTime()
-                        );
-                        setTestResults(data);
-                    } else {
-                        setTestResults([]);
-                    }
+                    // Server returns newest-first; empty history is a 200 with []
+                    const data = await api.get(`/test-results?user_id=${userId}`);
+                    setTestResults(Array.isArray(data) ? data : []);
                 } catch (error) {
-                    console.error('Error fetching test results:', error);
-                    Toast.show({ type: 'error', text1: 'Error', text2: error.message || 'Failed to fetch test results' });
+                    const message = error instanceof ApiError ? error.message : 'Failed to fetch test results';
+                    Toast.show({ type: 'error', text1: 'Error', text2: message });
                 } finally {
                     setLoading(false);
                 }
             };
 
-            fetchTestResults();
+                        fetchTestResults();
         }, [])
     );
 

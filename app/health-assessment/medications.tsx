@@ -17,7 +17,7 @@ export default function MedicationsScreen() {
     const handleYes = () => {
         router.push({
             pathname: '/health-assessment/medications-list',
-            params: { ...params }
+            params: { ...params, hasMedications: 'true' }
         });
     };
 
@@ -26,6 +26,7 @@ export default function MedicationsScreen() {
             pathname: '/health-assessment/allergies',
             params: {
                 ...params,
+                hasMedications: 'false',
                 medications: ''
             }
         });

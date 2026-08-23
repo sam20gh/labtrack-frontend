@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { sendPhoneOtp, normalisePhone } from '@/lib/auth';
 
 const ResetPasswordSMSScreen = () => {
     const router = useRouter();
@@ -28,12 +29,21 @@ const ResetPasswordSMSScreen = () => {
 
         setLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            setLoading(false);
-            Toast.show({ type: 'success', text1: 'Success', text2: 'Verification code sent to your phone' });
-            // Navigate to verification screen (to be implemented)
-        }, 1500);
+        const result = await sendPhoneOtp(phone);
+        setLoading(false);
+
+        if (!result.ok) {
+            // Until Authentication -> Phone is enabled in Supabase this reports
+            // "provider is not enabled" — shown as-is rather than failing silently.
+            Toast.show({ type: 'error', text1: 'Could not send code', text2: result.error });
+            return;
+        }
+
+        Toast.show({ type: 'success', text1: 'Sent', text2: 'Verification code sent to your phone' });
+        router.push({
+            pathname: '/reset-password-2fa',
+            params: { phone: normalisePhone(phone) },
+        });
     };
 
     return (
