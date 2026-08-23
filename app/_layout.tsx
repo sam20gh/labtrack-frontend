@@ -38,6 +38,7 @@ export default function RootLayout() {
         <Stack.Screen name="health-assessment" options={{ headerShown: false }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
         <Stack.Screen name="auth/reset" options={{ headerShown: false }} />
+        <Stack.Screen name="add-result" options={{ headerShown: false }} />
         <Stack.Screen name="users" options={{ headerShown: true }} />
         <Stack.Screen name="professionalDetails" options={{ title: "Professional Details", headerShown: true }} />
         <Stack.Screen name="ProductDetails" options={{ title: "Product Details", headerShown: true }} />

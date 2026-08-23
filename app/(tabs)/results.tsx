@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 import { api, ApiError } from '@/lib/api';
 import type { NavigationProp } from '@react-navigation/native';
 import type { TestResult } from '@/types/api';
@@ -16,6 +17,7 @@ const ResultsPage = () => {
     const [testResults, setTestResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation<AppNavigation>();
+    const router = useRouter();
 
     useFocusEffect(
         useCallback(() => {
@@ -67,12 +69,24 @@ const ResultsPage = () => {
             ) : (
                 <Text style={styles.noResultsText}>No test results available</Text>
             )}
+
+            <TouchableOpacity style={styles.addButton} onPress={() => router.push('/add-result')}>
+                <Icon name="plus-circle-outline" size={22} color="#fff" />
+                <Text style={styles.addButtonText}>Add a result</Text>
+            </TouchableOpacity>
+
             <Toast />
         </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
+    addButton: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: '#7C3AED', paddingVertical: 16, borderRadius: 12,
+        marginHorizontal: 16, marginTop: 12, marginBottom: 24,
+    },
+    addButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
     container: { flex: 1, padding: 10, backgroundColor: '#f9f9f9' },
     pageTitle: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginVertical: 15, color: '#FF385C' },
     loader: { marginVertical: 20 },
