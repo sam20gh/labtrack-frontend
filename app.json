@@ -34,6 +34,15 @@
         "projectId": "8a44b0f8-69d5-432b-bdcf-f9a1406bff3e"
       }
     },
-    "runtimeVersion": "1.1.0"
+    "runtimeVersion": "1.2.0",
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "LabTrack needs access to your photos so you can upload a lab report.",
+          "cameraPermission": "LabTrack needs camera access so you can photograph a lab report."
+        }
+      ]
+    ]
   }
 }

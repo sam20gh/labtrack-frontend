@@ -22,6 +22,11 @@
     <string>1.0.1</string>
     <key>CFBundleSignature</key>
     <string>????</string>
+    <!-- Required for expo-image-picker; iOS crashes the app without these strings -->
+    <key>NSCameraUsageDescription</key>
+    <string>LabTrack needs camera access so you can photograph a lab report.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>LabTrack needs access to your photos so you can upload a lab report.</string>
     <key>CFBundleURLTypes</key>
     <array>
       <dict>
