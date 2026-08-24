@@ -53,6 +53,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth/reset" options={{ headerShown: false }} />
         <Stack.Screen name="add-result" options={{ headerShown: false }} />
         <Stack.Screen name="basket" options={{ headerShown: false }} />
+        <Stack.Screen name="clinician" options={{ headerShown: false }} />
         <Stack.Screen name="order-details" options={{ headerShown: false }} />
         <Stack.Screen name="orders-history" options={{ title: "Your orders", headerShown: true }} />
         <Stack.Screen name="users" options={{ headerShown: true }} />

@@ -97,6 +97,12 @@ const ProfileScreen = () => {
         <MaterialIcons name="chevron-right" size={24} />
       </TouchableOpacity>
 
+      {/* Clinician access — the screen itself requires professional credentials */}
+      <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/clinician')}>
+        <Text style={styles.settingText}>Clinician review queue</Text>
+        <MaterialIcons name="chevron-right" size={24} />
+      </TouchableOpacity>
+
       {/* Settings */}
       <View style={styles.settings}>
         {['Personal information', 'Login & security', 'Payments and payouts'].map((item, index) => (

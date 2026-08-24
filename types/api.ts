@@ -257,6 +257,13 @@ export interface DnaReport extends Timestamped {
     aiInterpretation?: {
         summary?: string;
         risks?: { condition?: string; level?: 'low' | 'moderate' | 'high' | 'unknown'; rationale?: string }[];
+        /**
+         * The complete structured output, kept so an interpretation can be re-read or
+         * amended without another model call. Loosely typed on purpose: the schema in
+         * `interpretationSchema.js` is the contract, and mirroring it here would be a
+         * second definition to keep in step.
+         */
+        raw?: Record<string, any>;
         model?: string;
         generatedAt?: IsoDate;
     };
