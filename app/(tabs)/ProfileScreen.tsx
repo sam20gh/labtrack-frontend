@@ -91,6 +91,12 @@ const ProfileScreen = () => {
         <MaterialIcons name="chevron-right" size={24} />
       </TouchableOpacity>
 
+      {/* Orders */}
+      <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/orders-history')}>
+        <Text style={styles.settingText}>Your orders</Text>
+        <MaterialIcons name="chevron-right" size={24} />
+      </TouchableOpacity>
+
       {/* Settings */}
       <View style={styles.settings}>
         {['Personal information', 'Login & security', 'Payments and payouts'].map((item, index) => (

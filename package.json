@@ -64,7 +64,8 @@
     "react-native-webview": "^13.13.4",
     "expo-dev-client": "~5.0.20",
     "expo-image-picker": "~16.0.6",
-    "expo-document-picker": "~13.0.3"
+    "expo-document-picker": "~13.0.3",
+    "@stripe/stripe-react-native": "0.38.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
