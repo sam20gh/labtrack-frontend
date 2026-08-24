@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
@@ -56,7 +57,7 @@ const professionals = () => {
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <FlatList
                 data={professionals}
                 keyExtractor={(item) => item._id}
@@ -75,7 +76,7 @@ const professionals = () => {
                 )}
 
             />
-        </View>
+        </SafeAreaView>
     );
 };
 

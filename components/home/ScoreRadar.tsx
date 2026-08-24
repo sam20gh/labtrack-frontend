@@ -12,6 +12,7 @@
 import React from 'react';
 import Svg, { Polygon, Circle, Line, Text as SvgText, G } from 'react-native-svg';
 import type { Pillar } from '@/lib/healthScore';
+import { Fonts } from '@/constants/theme';
 
 interface Props {
     pillars: Pillar[];
@@ -112,7 +113,7 @@ export default function ScoreRadar({
                             x={lx}
                             y={ly + 4}
                             fontSize={11}
-                            fontWeight="600"
+                            fontFamily={Fonts.semibold}
                             fill={p.value == null ? stroke : labelColor}
                             textAnchor={anchor}
                         >

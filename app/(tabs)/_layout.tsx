@@ -5,16 +5,13 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { HapticTab } from '@/components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
-import Header from '@/components/Header';
 import { Palette } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <>
-      <Header />
-      <Tabs
+    <Tabs
         screenOptions={{
           tabBarActiveTintColor: Palette.primary,
           headerShown: false,
@@ -67,7 +64,6 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => <Ionicons size={22} name="finger-print-outline" color={color} />,
           }}
         />
-      </Tabs>
-    </>
+    </Tabs>
   );
 }

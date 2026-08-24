@@ -16,6 +16,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
     RefreshControl, Image, Modal, Pressable, useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -158,14 +159,14 @@ export default function HomeScreen() {
 
     if (loading && signedIn === null) {
         return (
-            <View style={[styles.container, styles.center]}>
+            <SafeAreaView style={[styles.container, styles.center]} edges={['top']}>
                 <ActivityIndicator size="large" color={Palette.primary} />
-            </View>
+            </SafeAreaView>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <ScrollView
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
@@ -290,7 +291,7 @@ export default function HomeScreen() {
             </ScrollView>
 
             <ScoreExplainer visible={explainerOpen} score={score} onClose={() => setExplainerOpen(false)} />
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -593,13 +594,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         paddingHorizontal: GUTTER, paddingTop: Spacing.lg, paddingBottom: Spacing.md,
     },
-    greetingLabel: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.body },
-    greetingName: { fontSize: 24, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
+    greetingLabel: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    greetingName: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold },
     avatar: {
         width: 40, height: 40, borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
-    avatarText: { fontSize: 14, fontWeight: '700', color: Palette.primary },
+    avatarText: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
 
     // Score hero
     hero: {
@@ -608,21 +609,21 @@ const styles = StyleSheet.create({
     },
     heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     heroEyebrow: {
-        fontSize: 12, fontWeight: '700', letterSpacing: 0.8,
-        color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', fontFamily: Fonts.body,
+        fontSize: 12, letterSpacing: 0.8,
+        color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', fontFamily: Fonts.bold,
     },
     heroBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     heroFigures: { gap: Spacing.sm },
     heroScore: {
-        fontSize: 56, lineHeight: 60, fontWeight: '800', color: Palette.white, fontFamily: Fonts.display,
+        fontSize: 56, lineHeight: 62, color: Palette.white, fontFamily: Fonts.bold,
     },
     bandPill: {
         flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
         paddingHorizontal: Spacing.md, paddingVertical: 5, borderRadius: Radius.pill,
     },
     bandDot: { width: 7, height: 7, borderRadius: Radius.pill },
-    bandText: { fontSize: 12, fontWeight: '700', color: Palette.white },
-    heroHeadline: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.88)', fontFamily: Fonts.body },
+    bandText: { fontSize: 12, color: Palette.white, fontFamily: Fonts.semibold },
+    heroHeadline: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.88)', fontFamily: Fonts.regular },
 
     // Sections
     section: { marginTop: Spacing.xxl },
@@ -630,8 +631,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: GUTTER, marginBottom: Spacing.md,
     },
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
-    sectionAction: { fontSize: 13, fontWeight: '600', color: Palette.primary },
+    sectionTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
+    sectionAction: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.semibold },
 
     // Attention
     attentionCard: {
@@ -639,12 +640,12 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.white, gap: 6, ...Shadow.card,
     },
     flagPill: { alignSelf: 'flex-start', paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm },
-    flagText: { fontSize: 10, fontWeight: '700' },
-    attentionName: { fontSize: 13, fontWeight: '600', color: Palette.text, fontFamily: Fonts.body },
+    flagText: { fontSize: 10, fontFamily: Fonts.bold },
+    attentionName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
     valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-    attentionValue: { fontSize: 22, fontWeight: '700', fontFamily: Fonts.display },
-    unit: { fontSize: 11, color: Palette.textMuted },
-    movement: { fontSize: 11, fontWeight: '600' },
+    attentionValue: { fontSize: 22, fontFamily: Fonts.bold },
+    unit: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular },
+    movement: { fontSize: 11, fontFamily: Fonts.semibold },
 
     // Quick actions
     actionRow: { flexDirection: 'row', paddingHorizontal: GUTTER, gap: Spacing.md },
@@ -653,7 +654,7 @@ const styles = StyleSheet.create({
         width: 48, height: 48, borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
-    actionLabel: { fontSize: 12, fontWeight: '600', color: Palette.textSecondary, textAlign: 'center' },
+    actionLabel: { fontSize: 12, color: Palette.textSecondary, textAlign: 'center', fontFamily: Fonts.semibold },
 
     // Assessment nudge
     assessmentCard: {
@@ -665,8 +666,8 @@ const styles = StyleSheet.create({
         width: 38, height: 38, borderRadius: Radius.md, backgroundColor: Palette.white,
         alignItems: 'center', justifyContent: 'center',
     },
-    assessmentTitle: { fontSize: 14, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
-    assessmentBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary, marginTop: 2 },
+    assessmentTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold },
+    assessmentBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary, marginTop: 2, fontFamily: Fonts.regular },
 
     // Plan
     planRow: {
@@ -678,9 +679,9 @@ const styles = StyleSheet.create({
         width: 36, height: 36, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
-    planTitle: { fontSize: 14, fontWeight: '600', color: Palette.text, fontFamily: Fonts.body },
-    planMeta: { fontSize: 12, color: Palette.textSecondary, marginTop: 2 },
-    planDue: { fontSize: 12, fontWeight: '700', color: Palette.textSecondary },
+    planTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold },
+    planMeta: { fontSize: 12, color: Palette.textSecondary, marginTop: 2, fontFamily: Fonts.regular },
+    planDue: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.semibold },
 
     // Metric grid
     metricGrid: {
@@ -691,53 +692,53 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border, gap: 6,
     },
     metricTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    metricName: { flex: 1, fontSize: 12, fontWeight: '600', color: Palette.textSecondary },
+    metricName: { flex: 1, fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.semibold },
     statusDot: { width: 8, height: 8, borderRadius: Radius.pill },
-    metricValue: { fontSize: 22, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
+    metricValue: { fontSize: 22, color: Palette.text, fontFamily: Fonts.bold },
 
     // Products
     productCard: { width: 152, gap: 6 },
     productImage: { width: 152, height: 104, borderRadius: Radius.lg, backgroundColor: Palette.surface },
     productPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-    productName: { fontSize: 13, fontWeight: '600', color: Palette.text, fontFamily: Fonts.body },
-    productPrice: { fontSize: 14, fontWeight: '700', color: Palette.primary },
+    productName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
+    productPrice: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
 
     // Empty
     emptyCard: {
         alignItems: 'center', gap: Spacing.sm, marginHorizontal: GUTTER, marginTop: Spacing.xxl,
         padding: Spacing.xxl, borderRadius: Radius.lg, backgroundColor: Palette.surface,
     },
-    emptyTitle: { fontSize: 16, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
-    emptyBody: { fontSize: 13, lineHeight: 19, color: Palette.textSecondary, textAlign: 'center' },
+    emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
+    emptyBody: { fontSize: 13, lineHeight: 19, color: Palette.textSecondary, textAlign: 'center', fontFamily: Fonts.regular },
 
     primaryButton: {
         backgroundColor: Palette.primary, borderRadius: Radius.md,
         paddingVertical: 14, paddingHorizontal: Spacing.xxl, alignItems: 'center', marginTop: Spacing.sm,
         alignSelf: 'stretch',
     },
-    primaryButtonText: { color: Palette.white, fontSize: 15, fontWeight: '700' },
+    primaryButtonText: { color: Palette.white, fontSize: 15, fontFamily: Fonts.semibold },
 
     // Signed out
     welcomeTitle: {
-        fontSize: 26, lineHeight: 32, fontWeight: '800', color: Palette.white, fontFamily: Fonts.display,
+        fontSize: 26, lineHeight: 34, color: Palette.white, fontFamily: Fonts.bold,
     },
     ctaRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
     ctaPrimary: {
         flex: 1, backgroundColor: Palette.white, borderRadius: Radius.md,
         paddingVertical: 13, alignItems: 'center',
     },
-    ctaPrimaryText: { color: Palette.primaryDark, fontSize: 14, fontWeight: '700' },
+    ctaPrimaryText: { color: Palette.primaryDark, fontSize: 14, fontFamily: Fonts.semibold },
     ctaSecondary: {
         flex: 1, borderRadius: Radius.md, paddingVertical: 13, alignItems: 'center',
         borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)',
     },
-    ctaSecondaryText: { color: Palette.white, fontSize: 14, fontWeight: '700' },
+    ctaSecondaryText: { color: Palette.white, fontSize: 14, fontFamily: Fonts.semibold },
     benefitCard: {
         flexGrow: 1, flexBasis: '46%', padding: Spacing.lg, borderRadius: Radius.lg,
         backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border, gap: Spacing.sm,
     },
-    benefitTitle: { fontSize: 14, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
-    benefitBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary },
+    benefitTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold },
+    benefitBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary, fontFamily: Fonts.regular },
 
     // Explainer sheet
     backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.64)', justifyContent: 'flex-end' },
@@ -748,14 +749,14 @@ const styles = StyleSheet.create({
     sheetHandle: {
         width: 40, height: 4, borderRadius: Radius.pill, backgroundColor: Palette.border, alignSelf: 'center',
     },
-    sheetTitle: { fontSize: 20, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
-    sheetBody: { fontSize: 13, lineHeight: 19, color: Palette.textSecondary },
+    sheetTitle: { fontSize: 20, color: Palette.text, fontFamily: Fonts.bold },
+    sheetBody: { fontSize: 13, lineHeight: 19, color: Palette.textSecondary, fontFamily: Fonts.regular },
     pillarRow: { gap: 5 },
     pillarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    pillarLabel: { fontSize: 13, fontWeight: '700', color: Palette.text },
-    pillarValue: { fontSize: 13, fontWeight: '700', color: Palette.primary },
+    pillarLabel: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
+    pillarValue: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.bold },
     pillarTrack: { height: 6, borderRadius: Radius.pill, backgroundColor: Palette.borderLight, overflow: 'hidden' },
     pillarFill: { height: 6, borderRadius: Radius.pill, backgroundColor: Palette.primary },
-    pillarDetail: { fontSize: 12, color: Palette.textSecondary },
-    disclaimer: { fontSize: 11, lineHeight: 16, color: Palette.textMuted, marginTop: Spacing.sm },
+    pillarDetail: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    disclaimer: { fontSize: 11, lineHeight: 16, color: Palette.textMuted, marginTop: Spacing.sm, fontFamily: Fonts.regular },
 });

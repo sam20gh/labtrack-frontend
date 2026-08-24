@@ -1,5 +1,11 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import {
+  ChakraPetch_400Regular,
+  ChakraPetch_500Medium,
+  ChakraPetch_600SemiBold,
+  ChakraPetch_700Bold,
+} from '@expo-google-fonts/chakra-petch';
 import { Stack } from 'expo-router';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -46,8 +52,15 @@ export default function RootLayout() {
 
     return () => subscription.remove();
   }, [router]);
+  // Chakra Petch is registered per weight: Android cannot synthesise a bold from a
+  // regular face, so each weight the UI uses has to be its own family. Keys here are the
+  // family names `constants/theme.ts` refers to.
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    ChakraPetch_400Regular,
+    ChakraPetch_500Medium,
+    ChakraPetch_600SemiBold,
+    ChakraPetch_700Bold,
   });
 
   useEffect(() => {

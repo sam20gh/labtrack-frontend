@@ -69,15 +69,21 @@ export const Radius = {
 } as const;
 
 /**
- * Type families.
+ * Type families — Chakra Petch, the face the turing kit sets everything in.
  *
- * The turing kit sets everything in Chakra Petch. That face is not bundled yet, so these
- * resolve to the platform UI font; adding `@expo-google-fonts/chakra-petch` and pointing
- * `display`/`body` at it is the single edit that switches the whole app over.
+ * Keyed by weight rather than by role, because **Android ignores `fontWeight` on a custom
+ * font**: `fontFamily: 'ChakraPetch_400Regular'` with `fontWeight: '700'` renders regular
+ * on Android and synthetically-emboldened regular on iOS. The weight has to be chosen by
+ * picking the family. So use `fontFamily: Fonts.bold` and *omit* `fontWeight` entirely —
+ * pairing the two is what produces the mismatch.
+ *
+ * The families must match the names registered by `useFonts` in `app/_layout.tsx`.
  */
 export const Fonts = {
-    display: undefined as string | undefined,
-    body: undefined as string | undefined,
+    regular: 'ChakraPetch_400Regular',
+    medium: 'ChakraPetch_500Medium',
+    semibold: 'ChakraPetch_600SemiBold',
+    bold: 'ChakraPetch_700Bold',
 } as const;
 
 export const Typography = {

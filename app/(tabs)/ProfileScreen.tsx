@@ -7,6 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import Constants from 'expo-constants';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 const ProfileScreen = () => {
@@ -50,14 +51,15 @@ const ProfileScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer} edges={['top']}>
         <ActivityIndicator size="large" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.profileText}>Profile</Text>
@@ -129,7 +131,8 @@ const ProfileScreen = () => {
       </TouchableOpacity>
 
       <Toast />
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
