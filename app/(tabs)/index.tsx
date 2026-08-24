@@ -1,1157 +1,761 @@
-import React, { useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, Text, TouchableOpacity, Dimensions, Image } from 'react-native';
-import { Card, Title, Paragraph, ActivityIndicator, Button, Chip, Surface } from 'react-native-paper';
+/**
+ * Home.
+ *
+ * Rebuilt against the turing kit's "Home & Smart Health Metrics" flow. The kit leads with
+ * one AI-derived score drawn as a six-axis polygon, an explainer sheet behind it, and then
+ * short, scannable sections underneath. This screen follows that shape with LabTrack's own
+ * data: the pillars are the things the app measures, not step counts it has never held.
+ *
+ * The previous version opened with a coral gradient, a score derived from BMI alone, and a
+ * "Get AI Analysis" button as the primary action — it showed the same screen whether every
+ * marker was normal or three were critical. The ordering here is clinical: what is wrong
+ * comes first, what is due comes next, and shopping comes last.
+ */
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
+    RefreshControl, Image, Modal, Pressable, useWindowDimensions,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Toast from 'react-native-toast-message';
+
 import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
-// @ts-ignore - types not available but package works at runtime
-import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { getLatestBiomarkers, byClinicalPriority, describeMovement, formatValue, FLAG_META } from '@/lib/biomarkers';
+import { getPlan } from '@/lib/plan';
+import { computeHealthScore, BAND_META, SCORE_DISCLAIMER, type HealthScore } from '@/lib/healthScore';
+import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import ScoreRadar from '@/components/home/ScoreRadar';
+import type { BiomarkerSummary, PlanItem, Product, User } from '@/types/api';
 
-type IconName = React.ComponentProps<typeof Icon>['name'];
-import { useFocusEffect } from '@react-navigation/native';
-import Markdown from 'react-native-markdown-display';
-import Toast from 'react-native-toast-message';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-
-const { width } = Dimensions.get('window');
-
-const calculateBMI = (weight: number, heightCm: number) => {
-  if (!weight || !heightCm) return 'N/A';
-  const heightM = heightCm / 100;
-  return (weight / (heightM * heightM)).toFixed(1);
+const EMPTY_SCORE: HealthScore = {
+    value: null, band: 'unknown', headline: 'Add a result to unlock your score', pillars: [], coverage: 0,
 };
 
-const getBMIStatus = (bmi: string): { color: string; status: string; icon: IconName } => {
-  const bmiValue = parseFloat(bmi);
-  if (isNaN(bmiValue)) return { color: '#94A3B8', status: 'Unknown', icon: 'help-circle' };
-  if (bmiValue < 18.5) return { color: '#FBBF24', status: 'Underweight', icon: 'alert-circle' };
-  if (bmiValue < 25) return { color: '#10B981', status: 'Healthy', icon: 'check-circle' };
-  if (bmiValue < 30) return { color: '#F97316', status: 'Overweight', icon: 'alert' };
-  return { color: '#EF4444', status: 'Obese', icon: 'alert-octagon' };
+const greetingFor = (hour: number) =>
+    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/** "Overdue", "Due today", "In 12 days" — a date on its own makes the reader do the maths. */
+const describeDue = (iso: string) => {
+    const days = Math.round((new Date(iso).getTime() - Date.now()) / DAY);
+    if (Number.isNaN(days)) return { text: 'Scheduled', overdue: false };
+    if (days < 0) return { text: `${Math.abs(days)}d overdue`, overdue: true };
+    if (days === 0) return { text: 'Due today', overdue: true };
+    if (days === 1) return { text: 'Due tomorrow', overdue: false };
+    if (days < 30) return { text: `In ${days} days`, overdue: false };
+    return { text: `In ${Math.round(days / 30)} months`, overdue: false };
 };
 
-const getHealthScore = (bmi: string, hasRecentTest: boolean): number => {
-  let score = 50;
-  const bmiValue = parseFloat(bmi);
-  if (!isNaN(bmiValue)) {
-    if (bmiValue >= 18.5 && bmiValue < 25) score += 30;
-    else if (bmiValue >= 25 && bmiValue < 30) score += 15;
-    else score += 5;
-  }
-  if (hasRecentTest) score += 20;
-  return Math.min(score, 100);
-};
+export default function HomeScreen() {
+    const router = useRouter();
 
-interface Product {
-  _id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  type?: string;
+    const [signedIn, setSignedIn] = useState<boolean | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [biomarkers, setBiomarkers] = useState<BiomarkerSummary[]>([]);
+    const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [explainerOpen, setExplainerOpen] = useState(false);
+
+    const load = useCallback(async () => {
+        const loggedIn = await isSignedIn();
+        setSignedIn(loggedIn);
+
+        // Products are the only thing worth fetching for a signed-out visitor, and the
+        // catalogue is the one endpoint that answers without a linked account.
+        if (!loggedIn) {
+            setProducts(await api.get<Product[]>('/products').then((p) => (Array.isArray(p) ? p.slice(0, 6) : [])).catch(() => []));
+            return;
+        }
+
+        const userId = await getUserId();
+
+        // Settled rather than all: a home screen that renders nothing because the plan
+        // endpoint hiccuped is worse than one missing a section.
+        const [userRes, biomarkerRes, planRes, productRes] = await Promise.allSettled([
+            userId ? api.get<User>(`/users/${userId}`) : Promise.reject(new Error('no user id')),
+            getLatestBiomarkers(),
+            getPlan(),
+            api.get<Product[]>('/products'),
+        ]);
+
+        if (userRes.status === 'fulfilled') setUser(userRes.value);
+        if (biomarkerRes.status === 'fulfilled') setBiomarkers(biomarkerRes.value.biomarkers ?? []);
+        if (planRes.status === 'fulfilled') setPlanItems(planRes.value.items ?? []);
+        if (productRes.status === 'fulfilled') setProducts(Array.isArray(productRes.value) ? productRes.value.slice(0, 6) : []);
+
+        const rejected = [userRes, biomarkerRes, planRes, productRes]
+            .filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+        if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
+            router.replace('/(auth)/loginscreen');
+        } else if (rejected.length) {
+            // Sections quietly missing is how the old screen hid outages. Say it once.
+            Toast.show({
+                type: 'error',
+                text1: 'Some data could not load',
+                text2: 'Pull down to try again.',
+            });
+        }
+    }, [router]);
+
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+            setLoading(true);
+            load().finally(() => { if (active) setLoading(false); });
+            return () => { active = false; };
+        }, [load]),
+    );
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await load();
+        setRefreshing(false);
+    }, [load]);
+
+    const score = useMemo(
+        () => (signedIn
+            ? computeHealthScore({
+                biomarkers,
+                planItems,
+                heightCm: user?.height,
+                weightKg: user?.weight,
+                assessment: user?.healthAssessment,
+            })
+            : EMPTY_SCORE),
+        [signedIn, biomarkers, planItems, user],
+    );
+
+    /** Out-of-range markers, worst first — the reason someone opens a health app. */
+    const attention = useMemo(
+        () => biomarkers.filter((b) => b.flag !== 'normal' && b.flag !== 'unknown').sort(byClinicalPriority).slice(0, 6),
+        [biomarkers],
+    );
+
+    /** The next few things actually due, soonest first. Completed and dismissed drop out. */
+    const upcoming = useMemo(
+        () => planItems
+            .filter((i) => i.status !== 'completed' && i.status !== 'dismissed')
+            .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+            .slice(0, 3),
+        [planItems],
+    );
+
+    const movers = useMemo(
+        () => biomarkers.filter((b) => b.measurementCount > 1 && b.delta != null).slice(0, 4),
+        [biomarkers],
+    );
+
+    const firstName = user?.firstName?.trim() || 'there';
+    const initials = (user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '');
+    const assessmentDone = user?.healthAssessment?.isComplete;
+
+    if (loading && signedIn === null) {
+        return (
+            <View style={[styles.container, styles.center]}>
+                <ActivityIndicator size="large" color={Palette.primary} />
+            </View>
+        );
+    }
+
+    return (
+        <View style={styles.container}>
+            <ScrollView
+                contentContainerStyle={styles.content}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Palette.primary} />
+                }
+            >
+                {signedIn ? (
+                    <>
+                        <Greeting
+                            name={firstName}
+                            initials={initials.toUpperCase()}
+                            onPressAvatar={() => router.push('/(tabs)/ProfileScreen')}
+                        />
+
+                        <ScoreHero score={score} onExplain={() => setExplainerOpen(true)} />
+
+                        {attention.length > 0 && (
+                            <Section
+                                title="Needs attention"
+                                action="All results"
+                                onAction={() => router.push('/(tabs)/results')}
+                            >
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={styles.hScroll}
+                                >
+                                    {attention.map((b) => (
+                                        <AttentionCard
+                                            key={b._id}
+                                            biomarker={b}
+                                            onPress={() => router.push({ pathname: '/biomarker/[name]', params: { name: b.name } })}
+                                        />
+                                    ))}
+                                </ScrollView>
+                            </Section>
+                        )}
+
+                        <Section title="Quick actions">
+                            <View style={styles.actionRow}>
+                                <QuickAction icon="add-circle-outline" label="Add result" onPress={() => router.push('/add-result')} />
+                                <QuickAction icon="flask-outline" label="Order test" onPress={() => router.push('/(tabs)/orders')} />
+                                <QuickAction icon="calendar-outline" label="My plan" onPress={() => router.push('/myplans')} />
+                                <QuickAction icon="people-outline" label="Consult" onPress={() => router.push('/(tabs)/professionals')} />
+                            </View>
+                        </Section>
+
+                        {!assessmentDone && (
+                            <TouchableOpacity
+                                style={styles.assessmentCard}
+                                activeOpacity={0.85}
+                                onPress={() => router.push('/health-assessment')}
+                            >
+                                <View style={styles.assessmentIcon}>
+                                    <Ionicons name="clipboard-outline" size={20} color={Palette.primary} />
+                                </View>
+                                <View style={styles.flex}>
+                                    <Text style={styles.assessmentTitle}>Complete your health profile</Text>
+                                    <Text style={styles.assessmentBody}>
+                                        Sleep, activity and history sharpen every insight LabTrack gives you.
+                                    </Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+                            </TouchableOpacity>
+                        )}
+
+                        {upcoming.length > 0 && (
+                            <Section title="Next up" action="Full plan" onAction={() => router.push('/myplans')}>
+                                <View style={styles.stack}>
+                                    {upcoming.map((item) => (
+                                        <PlanRow key={item._id} item={item} onPress={() => router.push('/myplans')} />
+                                    ))}
+                                </View>
+                            </Section>
+                        )}
+
+                        {movers.length > 0 && (
+                            <Section title="Recent movement" action="All results" onAction={() => router.push('/(tabs)/results')}>
+                                <View style={styles.metricGrid}>
+                                    {movers.map((b) => (
+                                        <MetricCard
+                                            key={b._id}
+                                            biomarker={b}
+                                            onPress={() => router.push({ pathname: '/biomarker/[name]', params: { name: b.name } })}
+                                        />
+                                    ))}
+                                </View>
+                            </Section>
+                        )}
+
+                        {biomarkers.length === 0 && (
+                            <View style={styles.emptyCard}>
+                                <Ionicons name="document-text-outline" size={40} color={Palette.primaryLight} />
+                                <Text style={styles.emptyTitle}>No results yet</Text>
+                                <Text style={styles.emptyBody}>
+                                    Upload a lab report or order a test, and your score and trends start building.
+                                </Text>
+                                <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/add-result')}>
+                                    <Text style={styles.primaryButtonText}>Add a result</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {products.length > 0 && (
+                            <Section title="Recommended tests" action="See all" onAction={() => router.push('/(tabs)/orders')}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                                    {products.map((p) => (
+                                        <ProductCard
+                                            key={p._id}
+                                            product={p}
+                                            onPress={() => router.push({ pathname: '/ProductDetails', params: { productId: p._id } })}
+                                        />
+                                    ))}
+                                </ScrollView>
+                            </Section>
+                        )}
+                    </>
+                ) : (
+                    <SignedOut products={products} router={router} />
+                )}
+            </ScrollView>
+
+            <ScoreExplainer visible={explainerOpen} score={score} onClose={() => setExplainerOpen(false)} />
+        </View>
+    );
 }
 
-const HomeScreen = ({ navigation }: any) => {
-  const router = useRouter();
-  const [userData, setUserData] = useState<any>(null);
-  const [latestTest, setLatestTest] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [deepSeekFeedback, setDeepSeekFeedback] = useState<string>('');
-  const [loadingFeedback, setLoadingFeedback] = useState<boolean>(false);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+// ---------------------------------------------------------------------------
+// Pieces
+// ---------------------------------------------------------------------------
 
-  useFocusEffect(
-    useCallback(() => {
-      const checkAuthAndFetchData = async () => {
-        const userId = await getUserId();
-        const loggedIn = await isSignedIn();
-        setIsLoggedIn(loggedIn);
-
-        if (loggedIn && userId) {
-          fetchUserData(userId);
-          fetchLatestTestResult(userId);
-        } else {
-          setLoading(false);
-        }
-
-        // Always attempt products; signed-out visitors simply get none
-        fetchFeaturedProducts(loggedIn);
-      };
-
-      const fetchUserData = async (userId: string) => {
-        try {
-          setUserData(await api.get(`/users/${userId}`));
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        }
-      };
-
-      const fetchLatestTestResult = async (userId: string) => {
-        try {
-          // API returns a date-descending array (empty when there is no history)
-          const data = await api.get(`/test-results?user_id=${userId}`);
-          setLatestTest(Array.isArray(data) ? (data[0] ?? null) : null);
-        } catch (error) {
-          console.error('Error fetching latest test result:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      const fetchFeaturedProducts = async (loggedIn: boolean) => {
-        if (!loggedIn) {
-          setFeaturedProducts([]);
-          setLoadingProducts(false);
-          return;
-        }
-        try {
-          const data = await api.get('/products');
-          setFeaturedProducts(Array.isArray(data) ? data.slice(0, 5) : []);
-        } catch (error) {
-          console.error('Error fetching products:', error);
-        } finally {
-          setLoadingProducts(false);
-        }
-      };
-
-      checkAuthAndFetchData();
-    }, [])
-  );
-
-  const userFirstName = userData?.firstName ?? 'User';
-  const userAge = userData?.dob
-    ? Math.max(0, new Date().getFullYear() - new Date(userData.dob).getFullYear())
-    : null;
-  const userHeight = userData?.height ? (userData.height / 100).toFixed(2) : null;
-  const userWeight = userData?.weight ?? null;
-  const userBMI = calculateBMI(userWeight, userData?.height);
-  const bmiStatus = getBMIStatus(userBMI);
-  const healthScore = getHealthScore(userBMI, !!latestTest);
-
-  /**
-   * Generate an interpretation and rebuild the plan from it.
-   *
-   * Replaces the old DeepSeek call, which produced prose that a keyword parser scanned for
-   * exact phrases — anything worded differently was silently discarded. `/api/deepseek` now
-   * returns 410.
-   */
-  const handleGenerateInterpretation = async () => {
-    setLoadingFeedback(true);
-    try {
-      if (!latestTest?._id) {
-        Toast.show({ type: 'error', text1: 'Error', text2: 'Add a test result first.' });
-        return;
-      }
-
-      const result = await api.post('/interpretation/generate', { testResultId: latestTest._id });
-      setDeepSeekFeedback(result.interpretation?.summary ?? '');
-
-      const created = result.plan?.created ?? 0;
-      Toast.show({
-        type: 'success',
-        text1: created ? `${created} plan items created` : 'Interpretation ready',
-        text2: result.cached ? 'Showing your existing interpretation' : 'Review it in My Plans',
-      });
-    } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Could not generate an interpretation';
-      console.error('Error generating interpretation:', error);
-      setDeepSeekFeedback('');
-      Toast.show({ type: 'error', text1: 'Error', text2: message });
-    } finally {
-      setLoadingFeedback(false);
-    }
-  };
-
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Hero Section with Gradient */}
-      <LinearGradient
-        colors={['#7C3AED', '#FF6B6B', '#FF8E8E']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.heroSection}
-      >
-        <View style={styles.heroContent}>
-          <View style={styles.heroTextContainer}>
-            <Text style={styles.heroGreeting}>
-              {isLoggedIn ? `Hello, ${userFirstName} 👋` : 'Welcome to LabTrack 🧬'}
-            </Text>
-            <Text style={styles.heroSubtitle}>
-              {isLoggedIn ? "Let's check your health today" : 'Your AI-powered health companion'}
-            </Text>
-          </View>
-          {isLoggedIn && (
-            <View style={styles.healthScoreContainer}>
-              <View style={styles.healthScoreCircle}>
-                <Text style={styles.healthScoreValue}>{healthScore}</Text>
-                <Text style={styles.healthScoreLabel}>Score</Text>
-              </View>
-            </View>
-          )}
+const Greeting = ({ name, initials, onPressAvatar }: { name: string; initials: string; onPressAvatar: () => void }) => (
+    <View style={styles.greetingRow}>
+        <View style={styles.flex}>
+            <Text style={styles.greetingLabel}>{greetingFor(new Date().getHours())}</Text>
+            <Text style={styles.greetingName} numberOfLines={1}>{name}</Text>
         </View>
-      </LinearGradient>
+        <TouchableOpacity style={styles.avatar} onPress={onPressAvatar} accessibilityLabel="Your profile">
+            {initials.trim()
+                ? <Text style={styles.avatarText}>{initials}</Text>
+                : <Ionicons name="person" size={18} color={Palette.primary} />}
+        </TouchableOpacity>
+    </View>
+);
 
-      {loading ? (
-        <ActivityIndicator animating={true} size="large" style={styles.loader} color="#7C3AED" />
-      ) : (
-        <>
-          {/* Login CTA for non-logged-in users */}
-          {!isLoggedIn && (
-            <Surface style={styles.loginCTACard}>
-              <View style={styles.loginCTAContent}>
-                <View style={styles.loginCTAIconContainer}>
-                  <Icon name="account-heart" size={32} color="#7C3AED" />
-                </View>
-                <View style={styles.loginCTATextContainer}>
-                  <Text style={styles.loginCTATitle}>Unlock Your Health Journey</Text>
-                  <Text style={styles.loginCTASubtitle}>
-                    Sign in to get personalized health plans, AI-powered insights, and track your biomarkers over time.
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.loginCTAButtons}>
-                <Button
-                  mode="contained"
-                  style={styles.loginButton}
-                  labelStyle={{ fontWeight: '600' }}
-                  onPress={() => router.push('/(auth)/loginscreen')}
-                >
-                  Sign In
-                </Button>
-                <Button
-                  mode="outlined"
-                  style={styles.signupButton}
-                  labelStyle={{ color: '#7C3AED', fontWeight: '600' }}
-                  onPress={() => router.push('/signup')}
-                >
-                  Create Account
-                </Button>
-              </View>
-              <View style={styles.loginCTAFeatures}>
-                <View style={styles.featureItem}>
-                  <Icon name="check-circle" size={16} color="#10B981" />
-                  <Text style={styles.featureText}>AI Health Analysis</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Icon name="check-circle" size={16} color="#10B981" />
-                  <Text style={styles.featureText}>Personalized Plans</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Icon name="check-circle" size={16} color="#10B981" />
-                  <Text style={styles.featureText}>Track Biomarkers</Text>
-                </View>
-              </View>
-            </Surface>
-          )}
-
-          {/* Quick Actions - Only show for logged-in users */}
-          {isLoggedIn && (
-            <View style={styles.quickActionsContainer}>
-              <Text style={styles.sectionTitle}>Quick Actions</Text>
-              <View style={styles.quickActionsRow}>
-                <TouchableOpacity style={styles.quickActionButton} onPress={() => router.push('/(tabs)/orders')}>
-                  <View style={[styles.quickActionIcon, { backgroundColor: '#FEE2E2' }]}>
-                    <Icon name="test-tube" size={24} color="#7C3AED" />
-                  </View>
-                  <Text style={styles.quickActionText}>Order Test</Text>
+/**
+ * The score hero. The number is deliberately large and the radar deliberately unlabelled
+ * with values — it communicates shape (which pillar is dented), and the sheet behind the
+ * info button carries the detail.
+ */
+const ScoreHero = ({ score, onExplain }: { score: HealthScore; onExplain: () => void }) => {
+    const band = BAND_META[score.band];
+    // The radar shares its row with the score, so it takes what is left of the width
+    // rather than a fixed size that overflows on a 360pt phone.
+    const { width } = useWindowDimensions();
+    const radarSize = Math.max(96, Math.min(132, width - 236));
+    return (
+        <LinearGradient
+            colors={Palette.heroGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.hero}
+        >
+            <View style={styles.heroTop}>
+                <Text style={styles.heroEyebrow}>LabTrack score</Text>
+                <TouchableOpacity onPress={onExplain} hitSlop={12} accessibilityLabel="How your score is calculated">
+                    <Ionicons name="information-circle-outline" size={20} color="rgba(255,255,255,0.8)" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionButton} onPress={() => router.push('/(tabs)/results')}>
-                  <View style={[styles.quickActionIcon, { backgroundColor: '#E0F2FE' }]}>
-                    <Icon name="file-document" size={24} color="#0EA5E9" />
-                  </View>
-                  <Text style={styles.quickActionText}>View Results</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionButton} onPress={() => router.push('/myplans')}>
-                  <View style={[styles.quickActionIcon, { backgroundColor: '#D1FAE5' }]}>
-                    <Icon name="clipboard-check" size={24} color="#10B981" />
-                  </View>
-                  <Text style={styles.quickActionText}>My Plans</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionButton} onPress={() => router.push('/(tabs)/professionals')}>
-                  <View style={[styles.quickActionIcon, { backgroundColor: '#F3E8FF' }]}>
-                    <Icon name="doctor" size={24} color="#8B5CF6" />
-                  </View>
-                  <Text style={styles.quickActionText}>Consult</Text>
-                </TouchableOpacity>
-              </View>
             </View>
-          )}
 
-          {/* Health Questionnaire Prompt - Show for logged-in users who haven't completed it */}
-          {isLoggedIn && userData && !userData.healthAssessment?.isComplete && (
-            <Surface style={styles.questionnaireCard}>
-              <View style={styles.questionnaireContent}>
-                <View style={styles.questionnaireIconContainer}>
-                  <Icon name="clipboard-text-outline" size={32} color="#7C3AED" />
-                </View>
-                <View style={styles.questionnaireTextContainer}>
-                  <Text style={styles.questionnaireTitle}>Complete Your Health Profile</Text>
-                  <Text style={styles.questionnaireSubtitle}>
-                    Answer a few questions to get personalized health recommendations and better AI analysis.
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.questionnaireProgress}>
-                <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: '10%' }]} />
-                </View>
-                <Text style={styles.progressText}>Not started</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.questionnaireButton}
-                onPress={() => router.push('/health-assessment')}
-              >
-                <Text style={styles.questionnaireButtonText}>Start Health Assessment</Text>
-                <Icon name="chevron-right" size={20} color="#FFF" />
-              </TouchableOpacity>
-            </Surface>
-          )}
-
-          {/* Health Analytics Section - Only for logged-in users */}
-          {isLoggedIn && (
-            <View style={styles.analyticsSection}>
-              <Text style={styles.sectionTitle}>Your Health Analytics</Text>
-              <View style={styles.analyticsGrid}>
-                <Surface style={styles.analyticCard}>
-                  <View style={[styles.analyticIconContainer, { backgroundColor: '#FEF3C7' }]}>
-                    <Icon name="calendar-account" size={22} color="#F59E0B" />
-                  </View>
-                  <Text style={styles.analyticValue}>{userAge ?? '--'}</Text>
-                  <Text style={styles.analyticLabel}>Age</Text>
-                </Surface>
-
-                <Surface style={styles.analyticCard}>
-                  <View style={[styles.analyticIconContainer, { backgroundColor: '#E0E7FF' }]}>
-                    <Icon name="human-male-height" size={22} color="#6366F1" />
-                  </View>
-                  <Text style={styles.analyticValue}>{userHeight ?? '--'}</Text>
-                  <Text style={styles.analyticLabel}>Height (m)</Text>
-                </Surface>
-
-                <Surface style={styles.analyticCard}>
-                  <View style={[styles.analyticIconContainer, { backgroundColor: '#FCE7F3' }]}>
-                    <Icon name="weight" size={22} color="#EC4899" />
-                  </View>
-                  <Text style={styles.analyticValue}>{userWeight ?? '--'}</Text>
-                  <Text style={styles.analyticLabel}>Weight (kg)</Text>
-                </Surface>
-
-                <Surface style={[styles.analyticCard, { borderWidth: 2, borderColor: bmiStatus.color }]}>
-                  <View style={[styles.analyticIconContainer, { backgroundColor: `${bmiStatus.color}20` }]}>
-                    <Icon name={bmiStatus.icon} size={22} color={bmiStatus.color} />
-                  </View>
-                  <Text style={[styles.analyticValue, { color: bmiStatus.color }]}>{userBMI}</Text>
-                  <Text style={styles.analyticLabel}>BMI</Text>
-                  <Chip
-                    style={[styles.bmiChip, { backgroundColor: `${bmiStatus.color}20` }]}
-                    textStyle={{ color: bmiStatus.color, fontSize: 10 }}
-                  >
-                    {bmiStatus.status}
-                  </Chip>
-                </Surface>
-              </View>
-            </View>
-          )}
-
-          {/* Featured Products Section */}
-          <View style={styles.productsSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                {isLoggedIn ? 'Recommended Tests' : 'Popular Health Tests'}
-              </Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/orders')}>
-                <Text style={styles.seeAllText}>See All →</Text>
-              </TouchableOpacity>
-            </View>
-            {!isLoggedIn && (
-              <Text style={styles.productsSubtitle}>
-                Discover comprehensive health tests to understand your body better
-              </Text>
-            )}
-            {loadingProducts ? (
-              <ActivityIndicator size="small" color="#7C3AED" />
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productsScroll}>
-                {featuredProducts.map((product) => (
-                  <TouchableOpacity
-                    key={product._id}
-                    style={styles.productCard}
-                    onPress={() => router.push({ pathname: '/ProductDetails', params: { productId: product._id } })}
-                  >
-                    <Image
-                      source={{ uri: product.image || 'https://via.placeholder.com/150' }}
-                      style={styles.productImage}
-                    />
-                    <View style={styles.productInfo}>
-                      <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-                      <Text style={styles.productPrice}>£{product.price}</Text>
+            <View style={styles.heroBody}>
+                <View style={styles.heroFigures}>
+                    <Text style={styles.heroScore}>{score.value ?? '--'}</Text>
+                    <View style={[styles.bandPill, { backgroundColor: `${band.color}33` }]}>
+                        <View style={[styles.bandDot, { backgroundColor: band.color }]} />
+                        <Text style={styles.bandText}>{band.label}</Text>
                     </View>
-                    <TouchableOpacity style={styles.addToCartButton}>
-                      <Icon name="plus" size={18} color="#FFF" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
+                </View>
+
+                {score.pillars.length > 0 && (
+                    <ScoreRadar pillars={score.pillars} size={radarSize} />
+                )}
+            </View>
+
+            <Text style={styles.heroHeadline}>{score.headline}</Text>
+        </LinearGradient>
+    );
+};
+
+const Section = ({ title, action, onAction, children }: {
+    title: string; action?: string; onAction?: () => void; children: React.ReactNode;
+}) => (
+    <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {action && onAction && (
+                <TouchableOpacity onPress={onAction} hitSlop={8}>
+                    <Text style={styles.sectionAction}>{action}</Text>
+                </TouchableOpacity>
+            )}
+        </View>
+        {children}
+    </View>
+);
+
+const AttentionCard = ({ biomarker, onPress }: { biomarker: BiomarkerSummary; onPress: () => void }) => {
+    const meta = FLAG_META[biomarker.flag];
+    const movement = describeMovement(biomarker);
+    return (
+        <TouchableOpacity style={[styles.attentionCard, { borderColor: meta.color }]} onPress={onPress} activeOpacity={0.85}>
+            <View style={[styles.flagPill, { backgroundColor: meta.bg }]}>
+                <Text style={[styles.flagText, { color: meta.color }]}>{meta.label}</Text>
+            </View>
+            <Text style={styles.attentionName} numberOfLines={2}>
+                {biomarker.displayName ?? biomarker.name}
+            </Text>
+            <View style={styles.valueRow}>
+                <Text style={[styles.attentionValue, { color: meta.color }]}>{formatValue(biomarker.value)}</Text>
+                <Text style={styles.unit}>{biomarker.unit}</Text>
+            </View>
+            {movement && (
+                <Text style={[styles.movement, { color: movement.tone === 'good' ? Palette.success : movement.tone === 'bad' ? Palette.danger : Palette.textSecondary }]}>
+                    {movement.text} since last
+                </Text>
+            )}
+        </TouchableOpacity>
+    );
+};
+
+const QuickAction = ({ icon, label, onPress }: {
+    icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void;
+}) => (
+    <TouchableOpacity style={styles.action} onPress={onPress} activeOpacity={0.75}>
+        <View style={styles.actionIcon}>
+            <Ionicons name={icon} size={22} color={Palette.primary} />
+        </View>
+        <Text style={styles.actionLabel}>{label}</Text>
+    </TouchableOpacity>
+);
+
+const PLAN_ICON: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+    test: 'flask-outline',
+    scan: 'scan-outline',
+    consultation: 'person-outline',
+    assessment: 'clipboard-outline',
+    lifestyle: 'leaf-outline',
+};
+
+const PlanRow = ({ item, onPress }: { item: PlanItem; onPress: () => void }) => {
+    const due = describeDue(item.dueDate);
+    return (
+        <TouchableOpacity style={styles.planRow} onPress={onPress} activeOpacity={0.85}>
+            <View style={[styles.planIcon, due.overdue && { backgroundColor: Palette.dangerSurface }]}>
+                <Ionicons
+                    name={PLAN_ICON[item.type] ?? 'flask-outline'}
+                    size={18}
+                    color={due.overdue ? Palette.danger : Palette.primary}
+                />
+            </View>
+            <View style={styles.flex}>
+                <Text style={styles.planTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={styles.planMeta} numberOfLines={1}>
+                    {item.condition ?? item.speciality ?? item.frequency ?? 'Scheduled'}
+                </Text>
+            </View>
+            <Text style={[styles.planDue, due.overdue && { color: Palette.danger }]}>{due.text}</Text>
+        </TouchableOpacity>
+    );
+};
+
+const MetricCard = ({ biomarker, onPress }: { biomarker: BiomarkerSummary; onPress: () => void }) => {
+    const meta = FLAG_META[biomarker.flag];
+    const movement = describeMovement(biomarker);
+    return (
+        <TouchableOpacity style={styles.metricCard} onPress={onPress} activeOpacity={0.85}>
+            <View style={styles.metricTop}>
+                <Text style={styles.metricName} numberOfLines={1}>
+                    {biomarker.displayName ?? biomarker.name}
+                </Text>
+                <View style={[styles.statusDot, { backgroundColor: meta.color }]} />
+            </View>
+            <View style={styles.valueRow}>
+                <Text style={styles.metricValue}>{formatValue(biomarker.value)}</Text>
+                <Text style={styles.unit}>{biomarker.unit}</Text>
+            </View>
+            <Text
+                style={[styles.movement, { color: movement?.tone === 'good' ? Palette.success : movement?.tone === 'bad' ? Palette.danger : Palette.textSecondary }]}
+                numberOfLines={1}
+            >
+                {movement ? `${movement.text} since last` : `${biomarker.measurementCount} readings`}
+            </Text>
+        </TouchableOpacity>
+    );
+};
+
+const ProductCard = ({ product, onPress }: { product: Product; onPress: () => void }) => (
+    <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.85}>
+        {product.image
+            ? <Image source={{ uri: product.image }} style={styles.productImage} />
+            : <View style={[styles.productImage, styles.productPlaceholder]}>
+                <Ionicons name="flask-outline" size={26} color={Palette.primaryLight} />
+            </View>}
+        <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+        <Text style={styles.productPrice}>£{product.price}</Text>
+    </TouchableOpacity>
+);
+
+/**
+ * Score explainer. The kit ships a dedicated "What is the nightingale score" screen for a
+ * reason: a number a person cannot interrogate is a number they do not act on.
+ */
+const ScoreExplainer = ({ visible, score, onClose }: { visible: boolean; score: HealthScore; onClose: () => void }) => (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+        <Pressable style={styles.backdrop} onPress={onClose}>
+            <Pressable style={styles.sheet} onPress={() => {}}>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.sheetTitle}>How your score works</Text>
+                <Text style={styles.sheetBody}>
+                    Six pillars, weighted by how much each one tells us about your health. Measured
+                    markers count for more than anything you self-report.
+                </Text>
+
+                <View style={styles.stack}>
+                    {score.pillars.map((p) => (
+                        <View key={p.key} style={styles.pillarRow}>
+                            <View style={styles.pillarHeader}>
+                                <Text style={styles.pillarLabel}>{p.label}</Text>
+                                <Text style={styles.pillarValue}>{p.value == null ? 'No data' : `${p.value}`}</Text>
+                            </View>
+                            <View style={styles.pillarTrack}>
+                                <View style={[styles.pillarFill, { width: `${p.value ?? 0}%` }]} />
+                            </View>
+                            <Text style={styles.pillarDetail}>{p.detail}</Text>
+                        </View>
+                    ))}
+                </View>
+
+                <Text style={styles.disclaimer}>{SCORE_DISCLAIMER}</Text>
+
+                <TouchableOpacity style={styles.primaryButton} onPress={onClose}>
+                    <Text style={styles.primaryButtonText}>Got it</Text>
+                </TouchableOpacity>
+            </Pressable>
+        </Pressable>
+    </Modal>
+);
+
+const BENEFITS: { icon: React.ComponentProps<typeof Ionicons>['name']; title: string; body: string }[] = [
+    { icon: 'sparkles-outline', title: 'AI interpretation', body: 'Your results explained in plain language.' },
+    { icon: 'trending-up-outline', title: 'Track over time', body: 'Every marker charted against your own range.' },
+    { icon: 'calendar-outline', title: 'A real plan', body: 'Screenings and consultations, dated and bookable.' },
+    { icon: 'shield-checkmark-outline', title: 'Genetic context', body: 'Ranges narrowed to your DNA where it matters.' },
+];
+
+const SignedOut = ({ products, router }: { products: Product[]; router: ReturnType<typeof useRouter> }) => (
+    <>
+        <LinearGradient
+            colors={Palette.heroGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.hero}
+        >
+            <Text style={styles.heroEyebrow}>LabTrack</Text>
+            <Text style={styles.welcomeTitle}>Understand what your results actually mean</Text>
+            <Text style={styles.heroHeadline}>
+                Upload a lab report and get an interpretation, a tracked history, and a plan you can act on.
+            </Text>
+            <View style={styles.ctaRow}>
+                <TouchableOpacity style={styles.ctaPrimary} onPress={() => router.push('/signup')}>
+                    <Text style={styles.ctaPrimaryText}>Create account</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.ctaSecondary} onPress={() => router.push('/(auth)/loginscreen')}>
+                    <Text style={styles.ctaSecondaryText}>Sign in</Text>
+                </TouchableOpacity>
+            </View>
+        </LinearGradient>
+
+        <Section title="Why LabTrack">
+            <View style={styles.metricGrid}>
+                {BENEFITS.map((b) => (
+                    <View key={b.title} style={styles.benefitCard}>
+                        <View style={styles.actionIcon}>
+                            <Ionicons name={b.icon} size={20} color={Palette.primary} />
+                        </View>
+                        <Text style={styles.benefitTitle}>{b.title}</Text>
+                        <Text style={styles.benefitBody}>{b.body}</Text>
+                    </View>
                 ))}
-              </ScrollView>
-            )}
-          </View>
-
-          {/* Latest Test Result Card - Only for logged-in users with test results */}
-          {isLoggedIn && latestTest && (
-            <View style={styles.latestTestSection}>
-              <Text style={styles.sectionTitle}>Latest Test Result</Text>
-              <Surface style={styles.testResultCard}>
-                <View style={styles.testResultHeader}>
-                  <View style={styles.testTypeContainer}>
-                    <View style={styles.testIconContainer}>
-                      <Icon name="flask" size={24} color="#7C3AED" />
-                    </View>
-                    <View>
-                      <Text style={styles.testType}>{latestTest?.patient?.test_type ?? 'Unknown Test'}</Text>
-                      <Text style={styles.testLab}>{latestTest?.patient?.lab_name ?? 'Unknown Lab'}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.testDateContainer}>
-                    <Icon name="calendar" size={14} color="#94A3B8" />
-                    <Text style={styles.testDate}>{latestTest?.patient?.date_of_test ?? 'N/A'}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.testInterpretation}>
-                  <Text style={styles.interpretationLabel}>Summary</Text>
-                  <Text style={styles.interpretationText} numberOfLines={3}>
-                    {latestTest?.interpretation ?? 'No interpretation available'}
-                  </Text>
-                </View>
-
-                <View style={styles.testActionsRow}>
-                  <Button
-                    mode="contained"
-                    onPress={handleGenerateInterpretation}
-                    style={styles.aiButton}
-                    labelStyle={styles.aiButtonLabel}
-                    icon={loadingFeedback ? undefined : "robot"}
-                  >
-                    {loadingFeedback ? <ActivityIndicator color="white" size="small" /> : "Get AI Analysis"}
-                  </Button>
-                  <TouchableOpacity
-                    style={styles.viewDetailsButton}
-                    onPress={() => router.push('/(tabs)/results')}
-                  >
-                    <Text style={styles.viewDetailsText}>View Details</Text>
-                    <Icon name="chevron-right" size={20} color="#7C3AED" />
-                  </TouchableOpacity>
-                </View>
-              </Surface>
-
-              {/* AI Feedback Section */}
-              {deepSeekFeedback !== '' && (
-                <Surface style={styles.feedbackCard}>
-                  <View style={styles.feedbackHeader}>
-                    <View style={styles.feedbackTitleRow}>
-                      <Icon name="robot" size={24} color="#10B981" />
-                      <Text style={styles.feedbackTitle}>LabTrack AI Analysis</Text>
-                    </View>
-                    <Chip style={styles.aiChip} textStyle={{ color: '#10B981', fontSize: 10 }}>AI Powered</Chip>
-                  </View>
-                  <View style={styles.feedbackContent}>
-                    <Markdown style={markdownStyles}>{deepSeekFeedback}</Markdown>
-                  </View>
-                  <Button
-                    mode="contained"
-                    style={styles.generatePlanButton}
-                    labelStyle={styles.generatePlanLabel}
-                    icon="clipboard-plus"
-                    // Plan items are now created as part of interpretation, so this is
-                    // navigation rather than a second generation step. The old handler
-                    // posted to /plans/create, which ran the retired keyword parser.
-                    onPress={() => router.push('/myplans')}
-                  >
-                    View My Health Plan
-                  </Button>
-                </Surface>
-              )}
             </View>
-          )}
+        </Section>
 
-          {/* Empty State for logged-in users with No Tests */}
-          {isLoggedIn && !latestTest && !loading && (
-            <View style={styles.emptyStateContainer}>
-              <Icon name="flask-empty-outline" size={64} color="#CBD5E1" />
-              <Text style={styles.emptyStateTitle}>No Test Results Yet</Text>
-              <Text style={styles.emptyStateText}>
-                Order your first health test to get personalized insights and recommendations.
-              </Text>
-              <Button
-                mode="contained"
-                style={styles.emptyStateButton}
-                labelStyle={{ color: '#FFF' }}
-                onPress={() => router.push('/(tabs)/orders')}
-              >
-                Browse Tests
-              </Button>
-            </View>
-          )}
+        {products.length > 0 && (
+            <Section title="Popular tests" action="See all" onAction={() => router.push('/(tabs)/orders')}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                    {products.map((p) => (
+                        <ProductCard
+                            key={p._id}
+                            product={p}
+                            onPress={() => router.push({ pathname: '/ProductDetails', params: { productId: p._id } })}
+                        />
+                    ))}
+                </ScrollView>
+            </Section>
+        )}
+    </>
+);
 
-          {/* Why LabTrack Section - For non-logged-in users */}
-          {!isLoggedIn && (
-            <View style={styles.whyLabTrackSection}>
-              <Text style={styles.sectionTitle}>Why Choose LabTrack?</Text>
-              <View style={styles.benefitsGrid}>
-                <Surface style={styles.benefitCard}>
-                  <View style={[styles.benefitIcon, { backgroundColor: '#FEE2E2' }]}>
-                    <Icon name="robot" size={28} color="#7C3AED" />
-                  </View>
-                  <Text style={styles.benefitTitle}>AI-Powered Analysis</Text>
-                  <Text style={styles.benefitText}>Get intelligent insights from your test results powered by advanced AI</Text>
-                </Surface>
+// ---------------------------------------------------------------------------
+// Styles — 16pt gutter and 8pt card radius, matching the turing kit.
+// ---------------------------------------------------------------------------
 
-                <Surface style={styles.benefitCard}>
-                  <View style={[styles.benefitIcon, { backgroundColor: '#D1FAE5' }]}>
-                    <Icon name="chart-timeline-variant" size={28} color="#10B981" />
-                  </View>
-                  <Text style={styles.benefitTitle}>Track Progress</Text>
-                  <Text style={styles.benefitText}>Monitor your biomarkers over time and see your health improve</Text>
-                </Surface>
-
-                <Surface style={styles.benefitCard}>
-                  <View style={[styles.benefitIcon, { backgroundColor: '#E0E7FF' }]}>
-                    <Icon name="clipboard-text" size={28} color="#6366F1" />
-                  </View>
-                  <Text style={styles.benefitTitle}>Personalized Plans</Text>
-                  <Text style={styles.benefitText}>Receive customized health recommendations based on your results</Text>
-                </Surface>
-
-                <Surface style={styles.benefitCard}>
-                  <View style={[styles.benefitIcon, { backgroundColor: '#FEF3C7' }]}>
-                    <Icon name="shield-check" size={28} color="#F59E0B" />
-                  </View>
-                  <Text style={styles.benefitTitle}>Genetic Insights</Text>
-                  <Text style={styles.benefitText}>Understand your genetic predispositions for proactive health care</Text>
-                </Surface>
-              </View>
-
-              <Button
-                mode="contained"
-                style={styles.getStartedButton}
-                labelStyle={{ fontWeight: '600', fontSize: 16 }}
-                onPress={() => router.push('/signup')}
-              >
-                Get Started Free
-              </Button>
-            </View>
-          )}
-        </>
-      )}
-    </ScrollView>
-  );
-};
-
-const markdownStyles = {
-  body: { color: '#374151', fontSize: 14, lineHeight: 22 },
-  heading1: { color: '#111827', fontSize: 18, fontWeight: '700' as const, marginVertical: 8 },
-  heading2: { color: '#111827', fontSize: 16, fontWeight: '600' as const, marginVertical: 6 },
-  bullet_list: { marginVertical: 4 },
-  list_item: { marginVertical: 2 },
-  strong: { fontWeight: '600' as const, color: '#111827' },
-};
+const GUTTER = Spacing.lg;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  heroSection: {
-    paddingTop: 60,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  heroContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  heroTextContainer: {
-    flex: 1,
-  },
-  heroGreeting: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: 'white',
-    marginBottom: 4,
-  },
-  heroSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.85)',
-  },
-  healthScoreContainer: {
-    alignItems: 'center',
-  },
-  healthScoreCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.5)',
-  },
-  healthScoreValue: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: 'white',
-  },
-  healthScoreLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: '600',
-  },
-  loader: {
-    marginVertical: 40,
-  },
+    container: { flex: 1, backgroundColor: Palette.background },
+    center: { alignItems: 'center', justifyContent: 'center' },
+    content: { paddingBottom: Spacing.xxxl },
+    flex: { flex: 1 },
+    stack: { gap: Spacing.sm },
+    hScroll: { paddingHorizontal: GUTTER, gap: Spacing.md },
 
-  // Quick Actions
-  quickActionsContainer: {
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 12,
-  },
-  quickActionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  quickActionButton: {
-    alignItems: 'center',
-    width: (width - 60) / 4,
-  },
-  quickActionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  quickActionText: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-    textAlign: 'center',
-  },
+    // Greeting
+    greetingRow: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+        paddingHorizontal: GUTTER, paddingTop: Spacing.lg, paddingBottom: Spacing.md,
+    },
+    greetingLabel: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.body },
+    greetingName: { fontSize: 24, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
+    avatar: {
+        width: 40, height: 40, borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    avatarText: { fontSize: 14, fontWeight: '700', color: Palette.primary },
 
-  // Health Questionnaire Card
-  questionnaireCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    borderWidth: 2,
-    borderColor: '#7C3AED',
-    borderStyle: 'dashed',
-  },
-  questionnaireContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  questionnaireIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#FEE2E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  questionnaireTextContainer: {
-    flex: 1,
-  },
-  questionnaireTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  questionnaireSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 18,
-  },
-  questionnaireProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 3,
-    marginRight: 12,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#7C3AED',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '500',
-  },
-  questionnaireButton: {
-    backgroundColor: '#7C3AED',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  questionnaireButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-    marginRight: 8,
-  },
+    // Score hero
+    hero: {
+        marginHorizontal: GUTTER, borderRadius: Radius.xl, padding: Spacing.xl,
+        gap: Spacing.md, ...Shadow.card,
+    },
+    heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    heroEyebrow: {
+        fontSize: 12, fontWeight: '700', letterSpacing: 0.8,
+        color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', fontFamily: Fonts.body,
+    },
+    heroBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    heroFigures: { gap: Spacing.sm },
+    heroScore: {
+        fontSize: 56, lineHeight: 60, fontWeight: '800', color: Palette.white, fontFamily: Fonts.display,
+    },
+    bandPill: {
+        flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+        paddingHorizontal: Spacing.md, paddingVertical: 5, borderRadius: Radius.pill,
+    },
+    bandDot: { width: 7, height: 7, borderRadius: Radius.pill },
+    bandText: { fontSize: 12, fontWeight: '700', color: Palette.white },
+    heroHeadline: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.88)', fontFamily: Fonts.body },
 
-  // Analytics Section
-  analyticsSection: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  analyticsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  analyticCard: {
-    width: (width - 52) / 2,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-  },
-  analyticIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  analyticValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  analyticLabel: {
-    fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  bmiChip: {
-    marginTop: 8,
-    height: 24,
-  },
+    // Sections
+    section: { marginTop: Spacing.xxl },
+    sectionHeader: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: GUTTER, marginBottom: Spacing.md,
+    },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
+    sectionAction: { fontSize: 13, fontWeight: '600', color: Palette.primary },
 
-  // Products Section
-  productsSection: {
-    marginTop: 24,
-    paddingLeft: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingRight: 20,
-    marginBottom: 12,
-  },
-  seeAllText: {
-    fontSize: 14,
-    color: '#7C3AED',
-    fontWeight: '600',
-  },
-  productsScroll: {
-    paddingRight: 20,
-  },
-  productCard: {
-    width: 160,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginRight: 12,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-  },
-  productImage: {
-    width: '100%',
-    height: 100,
-    backgroundColor: '#F1F5F9',
-  },
-  productInfo: {
-    padding: 12,
-  },
-  productName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  productPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#7C3AED',
-  },
-  addToCartButton: {
-    position: 'absolute',
-    right: 8,
-    bottom: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    // Attention
+    attentionCard: {
+        width: 150, padding: Spacing.lg, borderRadius: Radius.lg, borderWidth: 1,
+        backgroundColor: Palette.white, gap: 6, ...Shadow.card,
+    },
+    flagPill: { alignSelf: 'flex-start', paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm },
+    flagText: { fontSize: 10, fontWeight: '700' },
+    attentionName: { fontSize: 13, fontWeight: '600', color: Palette.text, fontFamily: Fonts.body },
+    valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+    attentionValue: { fontSize: 22, fontWeight: '700', fontFamily: Fonts.display },
+    unit: { fontSize: 11, color: Palette.textMuted },
+    movement: { fontSize: 11, fontWeight: '600' },
 
-  // Latest Test Section
-  latestTestSection: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-    marginBottom: 20,
-  },
-  testResultCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-  },
-  testResultHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  testTypeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  testIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#FEE2E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  testType: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  testLab: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  testDateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  testDate: {
-    fontSize: 12,
-    color: '#64748B',
-    marginLeft: 4,
-  },
-  testInterpretation: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-  },
-  interpretationLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94A3B8',
-    marginBottom: 4,
-  },
-  interpretationText: {
-    fontSize: 14,
-    color: '#475569',
-    lineHeight: 20,
-  },
-  testActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  aiButton: {
-    backgroundColor: '#10B981',
-    borderRadius: 12,
-    flex: 1,
-    marginRight: 12,
-  },
-  aiButtonLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  viewDetailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  viewDetailsText: {
-    fontSize: 14,
-    color: '#7C3AED',
-    fontWeight: '600',
-  },
+    // Quick actions
+    actionRow: { flexDirection: 'row', paddingHorizontal: GUTTER, gap: Spacing.md },
+    action: { flex: 1, alignItems: 'center', gap: Spacing.sm },
+    actionIcon: {
+        width: 48, height: 48, borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    actionLabel: { fontSize: 12, fontWeight: '600', color: Palette.textSecondary, textAlign: 'center' },
 
-  // Feedback Card
-  feedbackCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginTop: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D1FAE5',
-  },
-  feedbackHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  feedbackTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  feedbackTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#10B981',
-    marginLeft: 10,
-  },
-  aiChip: {
-    backgroundColor: '#D1FAE5',
-    height: 24,
-  },
-  feedbackContent: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  generatePlanButton: {
-    backgroundColor: '#7C3AED',
-    borderRadius: 12,
-  },
-  generatePlanLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
+    // Assessment nudge
+    assessmentCard: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+        marginHorizontal: GUTTER, marginTop: Spacing.xxl, padding: Spacing.lg,
+        borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
+    },
+    assessmentIcon: {
+        width: 38, height: 38, borderRadius: Radius.md, backgroundColor: Palette.white,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    assessmentTitle: { fontSize: 14, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
+    assessmentBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary, marginTop: 2 },
 
-  // Empty State
-  emptyStateContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  emptyStateButton: {
-    backgroundColor: '#7C3AED',
-    borderRadius: 12,
-    paddingHorizontal: 24,
-  },
+    // Plan
+    planRow: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+        marginHorizontal: GUTTER, padding: Spacing.lg, borderRadius: Radius.lg,
+        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
+    },
+    planIcon: {
+        width: 36, height: 36, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    planTitle: { fontSize: 14, fontWeight: '600', color: Palette.text, fontFamily: Fonts.body },
+    planMeta: { fontSize: 12, color: Palette.textSecondary, marginTop: 2 },
+    planDue: { fontSize: 12, fontWeight: '700', color: Palette.textSecondary },
 
-  // Login CTA Card
-  loginCTACard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
-  },
-  loginCTAContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  loginCTAIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#FEE2E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  loginCTATextContainer: {
-    flex: 1,
-  },
-  loginCTATitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  loginCTASubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 18,
-  },
-  loginCTAButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  loginButton: {
-    flex: 1,
-    backgroundColor: '#7C3AED',
-    borderRadius: 12,
-  },
-  signupButton: {
-    flex: 1,
-    borderColor: '#7C3AED',
-    borderRadius: 12,
-  },
-  loginCTAFeatures: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  featureText: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '500',
-  },
+    // Metric grid
+    metricGrid: {
+        flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, paddingHorizontal: GUTTER,
+    },
+    metricCard: {
+        flexGrow: 1, flexBasis: '46%', padding: Spacing.lg, borderRadius: Radius.lg,
+        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border, gap: 6,
+    },
+    metricTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    metricName: { flex: 1, fontSize: 12, fontWeight: '600', color: Palette.textSecondary },
+    statusDot: { width: 8, height: 8, borderRadius: Radius.pill },
+    metricValue: { fontSize: 22, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
 
-  // Products Subtitle
-  productsSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 12,
-    paddingRight: 20,
-  },
+    // Products
+    productCard: { width: 152, gap: 6 },
+    productImage: { width: 152, height: 104, borderRadius: Radius.lg, backgroundColor: Palette.surface },
+    productPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+    productName: { fontSize: 13, fontWeight: '600', color: Palette.text, fontFamily: Fonts.body },
+    productPrice: { fontSize: 14, fontWeight: '700', color: Palette.primary },
 
-  // Why LabTrack Section
-  whyLabTrackSection: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-    marginBottom: 40,
-  },
-  benefitsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  benefitCard: {
-    width: (width - 52) / 2,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-  },
-  benefitIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  benefitTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E293B',
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  benefitText: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  getStartedButton: {
-    backgroundColor: '#7C3AED',
-    borderRadius: 12,
-    marginTop: 8,
-    paddingVertical: 4,
-  },
+    // Empty
+    emptyCard: {
+        alignItems: 'center', gap: Spacing.sm, marginHorizontal: GUTTER, marginTop: Spacing.xxl,
+        padding: Spacing.xxl, borderRadius: Radius.lg, backgroundColor: Palette.surface,
+    },
+    emptyTitle: { fontSize: 16, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
+    emptyBody: { fontSize: 13, lineHeight: 19, color: Palette.textSecondary, textAlign: 'center' },
+
+    primaryButton: {
+        backgroundColor: Palette.primary, borderRadius: Radius.md,
+        paddingVertical: 14, paddingHorizontal: Spacing.xxl, alignItems: 'center', marginTop: Spacing.sm,
+        alignSelf: 'stretch',
+    },
+    primaryButtonText: { color: Palette.white, fontSize: 15, fontWeight: '700' },
+
+    // Signed out
+    welcomeTitle: {
+        fontSize: 26, lineHeight: 32, fontWeight: '800', color: Palette.white, fontFamily: Fonts.display,
+    },
+    ctaRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
+    ctaPrimary: {
+        flex: 1, backgroundColor: Palette.white, borderRadius: Radius.md,
+        paddingVertical: 13, alignItems: 'center',
+    },
+    ctaPrimaryText: { color: Palette.primaryDark, fontSize: 14, fontWeight: '700' },
+    ctaSecondary: {
+        flex: 1, borderRadius: Radius.md, paddingVertical: 13, alignItems: 'center',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)',
+    },
+    ctaSecondaryText: { color: Palette.white, fontSize: 14, fontWeight: '700' },
+    benefitCard: {
+        flexGrow: 1, flexBasis: '46%', padding: Spacing.lg, borderRadius: Radius.lg,
+        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border, gap: Spacing.sm,
+    },
+    benefitTitle: { fontSize: 14, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
+    benefitBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary },
+
+    // Explainer sheet
+    backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.64)', justifyContent: 'flex-end' },
+    sheet: {
+        backgroundColor: Palette.background, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+        padding: Spacing.xl, paddingBottom: Spacing.xxxl, gap: Spacing.md,
+    },
+    sheetHandle: {
+        width: 40, height: 4, borderRadius: Radius.pill, backgroundColor: Palette.border, alignSelf: 'center',
+    },
+    sheetTitle: { fontSize: 20, fontWeight: '700', color: Palette.text, fontFamily: Fonts.display },
+    sheetBody: { fontSize: 13, lineHeight: 19, color: Palette.textSecondary },
+    pillarRow: { gap: 5 },
+    pillarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    pillarLabel: { fontSize: 13, fontWeight: '700', color: Palette.text },
+    pillarValue: { fontSize: 13, fontWeight: '700', color: Palette.primary },
+    pillarTrack: { height: 6, borderRadius: Radius.pill, backgroundColor: Palette.borderLight, overflow: 'hidden' },
+    pillarFill: { height: 6, borderRadius: Radius.pill, backgroundColor: Palette.primary },
+    pillarDetail: { fontSize: 12, color: Palette.textSecondary },
+    disclaimer: { fontSize: 11, lineHeight: 16, color: Palette.textMuted, marginTop: Spacing.sm },
 });
-
-export default HomeScreen;

@@ -17,6 +17,14 @@ export const Palette = {
     primaryLight: '#A78BFA',
     /** Tinted surface behind icons and badges. */
     primarySurface: '#F3E8FF',
+    /**
+     * Deep violet and indigo from the turing kit. The kit uses `#4F46E5` for primary
+     * buttons and `#2E1065` as the darkest point of its hero gradients.
+     */
+    primaryDeep: '#2E1065',
+    indigo: '#4F46E5',
+    /** Hero gradient, top-left to bottom-right, as drawn in the kit's home header. */
+    heroGradient: ['#7C3AED', '#6D28D9', '#4F46E5'] as [string, string, string],
 
     // Clinical status. These are semantic, not decorative: a person reads them to
     // understand a result, so they must stay distinguishable and consistent everywhere.
@@ -58,6 +66,18 @@ export const Radius = {
     lg: 12,
     xl: 14,
     pill: 999,
+} as const;
+
+/**
+ * Type families.
+ *
+ * The turing kit sets everything in Chakra Petch. That face is not bundled yet, so these
+ * resolve to the platform UI font; adding `@expo-google-fonts/chakra-petch` and pointing
+ * `display`/`body` at it is the single edit that switches the whole app over.
+ */
+export const Fonts = {
+    display: undefined as string | undefined,
+    body: undefined as string | undefined,
 } as const;
 
 export const Typography = {
