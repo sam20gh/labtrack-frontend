@@ -130,67 +130,39 @@ const HomeScreen = ({ navigation }: any) => {
   const bmiStatus = getBMIStatus(userBMI);
   const healthScore = getHealthScore(userBMI, !!latestTest);
 
-  const handleDeepSeekFeedback = async () => {
+  /**
+   * Generate an interpretation and rebuild the plan from it.
+   *
+   * Replaces the old DeepSeek call, which produced prose that a keyword parser scanned for
+   * exact phrases — anything worded differently was silently discarded. `/api/deepseek` now
+   * returns 410.
+   */
+  const handleGenerateInterpretation = async () => {
     setLoadingFeedback(true);
     try {
-      const userId = await getUserId();
-      if (!userId) {
-        Toast.show({ type: 'error', text1: 'Error', text2: 'Unauthorized. Please log in again.' });
-        setLoadingFeedback(false);
-        return;
-      }
-
       if (!latestTest?._id) {
-        Toast.show({ type: 'error', text1: 'Error', text2: 'No valid test found.' });
-        setLoadingFeedback(false);
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Add a test result first.' });
         return;
       }
 
-      const testID = latestTest._id;
+      const result = await api.post('/interpretation/generate', { testResultId: latestTest._id });
+      setDeepSeekFeedback(result.interpretation?.summary ?? '');
 
-      // Cached interpretations are reused: only a 404 justifies spending a model call.
-      try {
-        const cached = await api.get(`/aifeedback/get/${testID}`);
-        if (cached?.feedback) {
-          setDeepSeekFeedback(cached.feedback);
-          setLoadingFeedback(false);
-          return;
-        }
-      } catch (err) {
-        if (!(err instanceof ApiError && err.status === 404)) throw err;
-      }
-
-      const result = await api.post('/deepseek', {
-        user: {
-          gender: userData?.gender || 'N/A',
-          height: userData?.height || 0,
-          weight: userData?.weight || 0,
-          dob: userData?.dob || 'N/A',
-        },
-        testResult: {
-          type: latestTest?.patient?.test_type || 'N/A',
-          result: latestTest?.interpretation || 'N/A',
-        },
+      const created = result.plan?.created ?? 0;
+      Toast.show({
+        type: 'success',
+        text1: created ? `${created} plan items created` : 'Interpretation ready',
+        text2: result.cached ? 'Showing your existing interpretation' : 'Review it in My Plans',
       });
-
-      setDeepSeekFeedback(result.recommendation);
-      await saveFeedback(result.recommendation, testID, userId);
     } catch (error) {
-      console.error('Error fetching AI feedback:', error);
-      setDeepSeekFeedback('An error occurred while fetching feedback.');
+      const message = error instanceof ApiError ? error.message : 'Could not generate an interpretation';
+      console.error('Error generating interpretation:', error);
+      setDeepSeekFeedback('');
+      Toast.show({ type: 'error', text1: 'Error', text2: message });
     } finally {
       setLoadingFeedback(false);
     }
   };
-
-  const saveFeedback = async (feedbackText: string, testID: string, userID: string) => {
-    try {
-      await api.post('/aifeedback/save', { userID, testID, feedback: feedbackText });
-    } catch (error) {
-      console.error('Error saving feedback:', error);
-    }
-  };
-
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -456,7 +428,7 @@ const HomeScreen = ({ navigation }: any) => {
                 <View style={styles.testActionsRow}>
                   <Button
                     mode="contained"
-                    onPress={handleDeepSeekFeedback}
+                    onPress={handleGenerateInterpretation}
                     style={styles.aiButton}
                     labelStyle={styles.aiButtonLabel}
                     icon={loadingFeedback ? undefined : "robot"}
@@ -491,40 +463,12 @@ const HomeScreen = ({ navigation }: any) => {
                     style={styles.generatePlanButton}
                     labelStyle={styles.generatePlanLabel}
                     icon="clipboard-plus"
-                    onPress={async () => {
-                      try {
-                        const userId = await getUserId();
-                        const testID = latestTest?._id;
-
-                        if (!userId || !testID) {
-                          Toast.show({ type: 'error', text1: 'Error', text2: 'Missing user or test information' });
-                          return;
-                        }
-
-                        // The plan generator matches screenings/consultations against
-                        // these catalogues, so the client supplies them.
-                        const [products, professionals] = await Promise.all([
-                          api.get('/products'),
-                          api.get('/professionals'),
-                        ]);
-
-                        await api.post('/plans/create', {
-                          user: userData,
-                          feedbackText: deepSeekFeedback,
-                          products,
-                          professionals,
-                          testID,
-                        });
-
-                        Toast.show({ type: 'success', text1: 'Plan Created', text2: 'Structured health plan saved!' });
-                      } catch (error) {
-                        console.error('Error creating health plan:', error);
-                        const message = error instanceof ApiError ? error.message : 'Something went wrong';
-                        Toast.show({ type: 'error', text1: 'Error', text2: message });
-                      }
-                    }}
+                    // Plan items are now created as part of interpretation, so this is
+                    // navigation rather than a second generation step. The old handler
+                    // posted to /plans/create, which ran the retired keyword parser.
+                    onPress={() => router.push('/myplans')}
                   >
-                    Generate Personalized Health Plan
+                    View My Health Plan
                   </Button>
                 </Surface>
               )}
