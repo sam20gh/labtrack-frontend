@@ -1,11 +1,12 @@
 import React from 'react';
-import { Platform, Text } from 'react-native';
+import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { HapticTab } from '@/components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import Header from '@/components/Header';
+import { Palette } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -15,12 +16,13 @@ export default function TabLayout() {
       <Header />
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#FF385C',
+          tabBarActiveTintColor: Palette.primary,
           headerShown: false,
           tabBarButton: HapticTab,
           tabBarBackground: TabBarBackground,
+          tabBarInactiveTintColor: Palette.textMuted,
           tabBarLabelStyle: {
-            fontSize: 10, // 🔹 Reduce font size for better readability
+            fontSize: 10,
             fontWeight: '500',
           },
           tabBarStyle: {
@@ -32,14 +34,14 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: () => <Text>Home</Text>,
+            title: 'Home',
             tabBarIcon: ({ color }) => <Ionicons size={22} name="home-outline" color={color} />,
           }}
         />
         <Tabs.Screen
           name="professionals"
           options={{
-            title: () => <Text>Pros</Text>,
+            title: 'Pros',
             tabBarIcon: ({ color }) => <Ionicons size={22} name="briefcase-outline" color={color} />,
           }}
         />
@@ -47,21 +49,21 @@ export default function TabLayout() {
         <Tabs.Screen
           name="orders"
           options={{
-            title: () => <Text>Order</Text>,
+            title: 'Order',
             tabBarIcon: ({ color }) => <Ionicons size={22} name="bag-add-outline" color={color} />,
           }}
         />
         <Tabs.Screen
           name="results"
           options={{
-            title: () => <Text>Results</Text>,
+            title: 'Results',
             tabBarIcon: ({ color }) => <Ionicons size={22} name="analytics-outline" color={color} />,
           }}
         />
         <Tabs.Screen
           name="ProfileScreen"
           options={{
-            title: () => <Text>Profile</Text>,
+            title: 'Profile',
             tabBarIcon: ({ color }) => <Ionicons size={22} name="finger-print-outline" color={color} />,
           }}
         />

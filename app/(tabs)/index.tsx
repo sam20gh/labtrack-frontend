@@ -168,7 +168,7 @@ const HomeScreen = ({ navigation }: any) => {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Hero Section with Gradient */}
       <LinearGradient
-        colors={['#FF385C', '#FF6B6B', '#FF8E8E']}
+        colors={['#7C3AED', '#FF6B6B', '#FF8E8E']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.heroSection}
@@ -194,7 +194,7 @@ const HomeScreen = ({ navigation }: any) => {
       </LinearGradient>
 
       {loading ? (
-        <ActivityIndicator animating={true} size="large" style={styles.loader} color="#FF385C" />
+        <ActivityIndicator animating={true} size="large" style={styles.loader} color="#7C3AED" />
       ) : (
         <>
           {/* Login CTA for non-logged-in users */}
@@ -202,7 +202,7 @@ const HomeScreen = ({ navigation }: any) => {
             <Surface style={styles.loginCTACard}>
               <View style={styles.loginCTAContent}>
                 <View style={styles.loginCTAIconContainer}>
-                  <Icon name="account-heart" size={32} color="#FF385C" />
+                  <Icon name="account-heart" size={32} color="#7C3AED" />
                 </View>
                 <View style={styles.loginCTATextContainer}>
                   <Text style={styles.loginCTATitle}>Unlock Your Health Journey</Text>
@@ -223,7 +223,7 @@ const HomeScreen = ({ navigation }: any) => {
                 <Button
                   mode="outlined"
                   style={styles.signupButton}
-                  labelStyle={{ color: '#FF385C', fontWeight: '600' }}
+                  labelStyle={{ color: '#7C3AED', fontWeight: '600' }}
                   onPress={() => router.push('/signup')}
                 >
                   Create Account
@@ -253,7 +253,7 @@ const HomeScreen = ({ navigation }: any) => {
               <View style={styles.quickActionsRow}>
                 <TouchableOpacity style={styles.quickActionButton} onPress={() => router.push('/(tabs)/orders')}>
                   <View style={[styles.quickActionIcon, { backgroundColor: '#FEE2E2' }]}>
-                    <Icon name="test-tube" size={24} color="#FF385C" />
+                    <Icon name="test-tube" size={24} color="#7C3AED" />
                   </View>
                   <Text style={styles.quickActionText}>Order Test</Text>
                 </TouchableOpacity>
@@ -284,7 +284,7 @@ const HomeScreen = ({ navigation }: any) => {
             <Surface style={styles.questionnaireCard}>
               <View style={styles.questionnaireContent}>
                 <View style={styles.questionnaireIconContainer}>
-                  <Icon name="clipboard-text-outline" size={32} color="#FF385C" />
+                  <Icon name="clipboard-text-outline" size={32} color="#7C3AED" />
                 </View>
                 <View style={styles.questionnaireTextContainer}>
                   <Text style={styles.questionnaireTitle}>Complete Your Health Profile</Text>
@@ -371,7 +371,7 @@ const HomeScreen = ({ navigation }: any) => {
               </Text>
             )}
             {loadingProducts ? (
-              <ActivityIndicator size="small" color="#FF385C" />
+              <ActivityIndicator size="small" color="#7C3AED" />
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productsScroll}>
                 {featuredProducts.map((product) => (
@@ -405,7 +405,7 @@ const HomeScreen = ({ navigation }: any) => {
                 <View style={styles.testResultHeader}>
                   <View style={styles.testTypeContainer}>
                     <View style={styles.testIconContainer}>
-                      <Icon name="flask" size={24} color="#FF385C" />
+                      <Icon name="flask" size={24} color="#7C3AED" />
                     </View>
                     <View>
                       <Text style={styles.testType}>{latestTest?.patient?.test_type ?? 'Unknown Test'}</Text>
@@ -440,7 +440,7 @@ const HomeScreen = ({ navigation }: any) => {
                     onPress={() => router.push('/(tabs)/results')}
                   >
                     <Text style={styles.viewDetailsText}>View Details</Text>
-                    <Icon name="chevron-right" size={20} color="#FF385C" />
+                    <Icon name="chevron-right" size={20} color="#7C3AED" />
                   </TouchableOpacity>
                 </View>
               </Surface>
@@ -501,7 +501,7 @@ const HomeScreen = ({ navigation }: any) => {
               <View style={styles.benefitsGrid}>
                 <Surface style={styles.benefitCard}>
                   <View style={[styles.benefitIcon, { backgroundColor: '#FEE2E2' }]}>
-                    <Icon name="robot" size={28} color="#FF385C" />
+                    <Icon name="robot" size={28} color="#7C3AED" />
                   </View>
                   <Text style={styles.benefitTitle}>AI-Powered Analysis</Text>
                   <Text style={styles.benefitText}>Get intelligent insights from your test results powered by advanced AI</Text>
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     borderWidth: 2,
-    borderColor: '#FF385C',
+    borderColor: '#7C3AED',
     borderStyle: 'dashed',
   },
   questionnaireContent: {
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#FF385C',
+    backgroundColor: '#7C3AED',
     borderRadius: 3,
   },
   progressText: {
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   questionnaireButton: {
-    backgroundColor: '#FF385C',
+    backgroundColor: '#7C3AED',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 14,
-    color: '#FF385C',
+    color: '#7C3AED',
     fontWeight: '600',
   },
   productsScroll: {
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
   productPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FF385C',
+    color: '#7C3AED',
   },
   addToCartButton: {
     position: 'absolute',
@@ -836,7 +836,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FF385C',
+    backgroundColor: '#7C3AED',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
   },
   viewDetailsText: {
     fontSize: 14,
-    color: '#FF385C',
+    color: '#7C3AED',
     fontWeight: '600',
   },
 
@@ -983,7 +983,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   generatePlanButton: {
-    backgroundColor: '#FF385C',
+    backgroundColor: '#7C3AED',
     borderRadius: 12,
   },
   generatePlanLabel: {
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   emptyStateButton: {
-    backgroundColor: '#FF385C',
+    backgroundColor: '#7C3AED',
     borderRadius: 12,
     paddingHorizontal: 24,
   },
@@ -1067,12 +1067,12 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     flex: 1,
-    backgroundColor: '#FF385C',
+    backgroundColor: '#7C3AED',
     borderRadius: 12,
   },
   signupButton: {
     flex: 1,
-    borderColor: '#FF385C',
+    borderColor: '#7C3AED',
     borderRadius: 12,
   },
   loginCTAFeatures: {
@@ -1147,7 +1147,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   getStartedButton: {
-    backgroundColor: '#FF385C',
+    backgroundColor: '#7C3AED',
     borderRadius: 12,
     marginTop: 8,
     paddingVertical: 4,

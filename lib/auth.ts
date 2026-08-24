@@ -241,7 +241,37 @@ export const sendPasswordResetEmail = async (email: string) => {
 // Sign out
 // ---------------------------------------------------------------------------
 
+/**
+ * Detach this device's push token before signing out.
+ *
+ * Inlined rather than imported from `lib/notifications`, which imports `lib/api`, which
+ * imports this module — a cycle. The request is three lines, and duplicating them is
+ * cheaper than a fragile import graph.
+ */
+const releasePushToken = async () => {
+    try {
+        const token = await AsyncStorage.getItem('expoPushToken');
+        if (!token) return;
+
+        const accessToken = await getAccessToken();
+        if (accessToken) {
+            await fetch(`${API_URL}/notifications/register`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+            });
+        }
+        await AsyncStorage.removeItem('expoPushToken');
+    } catch {
+        // The server prunes tokens that fail to deliver, so this is best-effort
+    }
+};
+
 export const signOut = async () => {
+    // Release the device first: leaving it registered would send the next person to sign
+    // in on this phone the previous account's health reminders.
+    await releasePushToken();
+
     try {
         await supabase.auth.signOut();
     } catch {

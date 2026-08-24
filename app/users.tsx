@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     input: { marginBottom: 10, borderWidth: 1, padding: 12, borderRadius: 5 },
     inputEditable: { borderColor: '#ccc', backgroundColor: '#f9f9f9' },
     inputDisabled: { borderColor: '#ddd', backgroundColor: '#e9e9e9' },
-    editButton: { marginTop: 10, backgroundColor: '#FF385C' },
+    editButton: { marginTop: 10, backgroundColor: '#7C3AED' },
     saveButton: { marginTop: 10, backgroundColor: '#4CAF50' },
     logoutButton: { marginTop: 20, backgroundColor: '#d46176' },
     noResultsText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#666' },

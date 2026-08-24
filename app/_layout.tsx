@@ -10,6 +10,9 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { BasketProvider } from '@/lib/basket';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { getPaymentStatus } from '@/lib/payments';
+import * as Notifications from 'expo-notifications';
+import { routeForNotification } from '@/lib/notifications';
+import { useRouter } from 'expo-router';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 ExpoSplashScreen.preventAutoHideAsync();
@@ -19,11 +22,30 @@ export default function RootLayout() {
   // Fetched rather than hardcoded: swapping Stripe accounts should not need a new build
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
     getPaymentStatus()
       .then((s) => setPublishableKey(s.publishableKey))
       .catch(() => setPublishableKey(null));
   }, []);
+
+  // A tapped notification should land on the thing it is about, not the home screen
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const route = routeForNotification(response.notification.request.content.data);
+      if (route) router.push(route as any);
+    });
+
+    // Cold start: the app was launched *by* the notification, so no listener fired
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!response) return;
+      const route = routeForNotification(response.notification.request.content.data);
+      if (route) setTimeout(() => router.push(route as any), 800);
+    });
+
+    return () => subscription.remove();
+  }, [router]);
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -54,6 +76,8 @@ export default function RootLayout() {
         <Stack.Screen name="add-result" options={{ headerShown: false }} />
         <Stack.Screen name="basket" options={{ headerShown: false }} />
         <Stack.Screen name="clinician" options={{ headerShown: false }} />
+        <Stack.Screen name="biomarker/[name]" options={{ headerShown: false }} />
+        <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
         <Stack.Screen name="order-details" options={{ headerShown: false }} />
         <Stack.Screen name="orders-history" options={{ title: "Your orders", headerShown: true }} />
         <Stack.Screen name="users" options={{ headerShown: true }} />

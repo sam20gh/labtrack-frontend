@@ -97,6 +97,12 @@ const ProfileScreen = () => {
         <MaterialIcons name="chevron-right" size={24} />
       </TouchableOpacity>
 
+      {/* Notifications */}
+      <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/notification-settings')}>
+        <Text style={styles.settingText}>Notifications</Text>
+        <MaterialIcons name="chevron-right" size={24} />
+      </TouchableOpacity>
+
       {/* Clinician access — the screen itself requires professional credentials */}
       <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/clinician')}>
         <Text style={styles.settingText}>Clinician review queue</Text>
@@ -208,7 +214,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     borderRadius: 10,
-    backgroundColor: '#FF385C',
+    backgroundColor: '#7C3AED',
     marginBottom: 60,
   },
   logoutButtonText: {

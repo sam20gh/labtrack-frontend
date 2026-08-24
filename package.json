@@ -65,7 +65,9 @@
     "expo-dev-client": "~5.0.20",
     "expo-image-picker": "~16.0.6",
     "expo-document-picker": "~13.0.3",
-    "@stripe/stripe-react-native": "0.38.6"
+    "@stripe/stripe-react-native": "0.38.6",
+    "expo-notifications": "~0.29.14",
+    "expo-device": "~7.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

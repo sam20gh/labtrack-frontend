@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { ApiError } from '@/lib/api';
 import { getPlan, orderPlanItem, bookPlanItem, dismissPlanItem, STATUS_META, TYPE_ICON } from '@/lib/plan';
+import { hasBeenAsked, registerForPushNotifications } from '@/lib/notifications';
 import type { PlanItem, GroupedPlanItems } from '@/types/api';
 
 const formatDate = (iso: string) =>
@@ -49,6 +50,13 @@ export default function MyPlansScreen() {
             // Open the soonest year alongside overdue, so the screen is never all-collapsed
             const years = Object.keys(data.grouped || {}).filter((k) => k !== 'urgent').sort();
             setExpanded((prev) => ({ ...prev, urgent: true, [years[0]]: true }));
+
+            // Ask about notifications only once there is a plan worth reminding about.
+            // Prompting on first launch, before the value is obvious, is the surest route
+            // to a permanent denial — and on iOS a denial cannot be re-prompted.
+            if ((data.items?.length ?? 0) > 0 && !(await hasBeenAsked())) {
+                registerForPushNotifications().catch(() => { /* user can enable it in settings */ });
+            }
         } catch (error) {
             const message = error instanceof ApiError ? error.message : 'Could not load your plan';
             Toast.show({ type: 'error', text1: 'Error', text2: message });
