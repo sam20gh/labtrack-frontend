@@ -31,6 +31,23 @@ const age = (dob?: string) => {
     return a;
 };
 
+/**
+ * What this interpretation read, in the queue's one line of room.
+ *
+ * The queue used to be genetic-only, so a lab name was enough. It now carries blood-only
+ * and mixed cases, and which kind it is changes how a clinician approaches it.
+ */
+const describeSources = (entry: { sourceKinds?: string[]; sourceCount?: number }) => {
+    const kinds = entry.sourceKinds || [];
+    const genetic = kinds.includes('dna_report');
+    const blood = kinds.includes('test_result');
+
+    if (genetic && blood) return `genetic + ${entry.sourceCount ?? 0} sources`;
+    if (genetic) return 'genetic report';
+    if (blood) return entry.sourceCount === 1 ? '1 lab report' : `${entry.sourceCount ?? 0} lab reports`;
+    return null;
+};
+
 const waitingFor = (iso: string) => {
     const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
     if (days < 1) return 'today';
@@ -54,8 +71,8 @@ export default function ClinicianQueueScreen() {
 
             const { professional: me } = await getClinicianProfile();
             setProfessional(me);
-            const { reports } = await getReviewQueue();
-            setQueue(reports);
+            const { interpretations } = await getReviewQueue();
+            setQueue(interpretations);
         } catch {
             // An expired or rejected token means signing in again
             await clearClinicianToken();
@@ -173,7 +190,7 @@ export default function ClinicianQueueScreen() {
                     return (
                         <TouchableOpacity
                             key={entry._id}
-                            style={[styles.card, entry.pathogenicCount > 0 && styles.cardUrgent]}
+                            style={[styles.card, (entry.pathogenicCount > 0 || entry.highRiskCount > 0) && styles.cardUrgent]}
                             onPress={() => router.push({ pathname: '/clinician/review', params: { reportId: entry._id } })}
                         >
                             <View style={styles.cardTop}>
@@ -184,7 +201,7 @@ export default function ClinicianQueueScreen() {
                             </View>
 
                             <Text style={styles.patientMeta}>
-                                {[patientAge != null ? `${patientAge}y` : null, entry.patient?.gender, entry.labName]
+                                {[patientAge != null ? `${patientAge}y` : null, entry.patient?.gender, describeSources(entry)]
                                     .filter(Boolean).join(' · ')}
                             </Text>
 
@@ -193,6 +210,15 @@ export default function ClinicianQueueScreen() {
                                     <Ionicons name="alert-circle" size={13} color="#DC2626" />
                                     <Text style={styles.pathogenicText}>
                                         {entry.pathogenicCount} pathogenic {entry.pathogenicCount === 1 ? 'variant' : 'variants'}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {entry.pathogenicCount === 0 && entry.highRiskCount > 0 && (
+                                <View style={styles.pathogenicBadge}>
+                                    <Ionicons name="alert-circle" size={13} color="#DC2626" />
+                                    <Text style={styles.pathogenicText}>
+                                        {entry.highRiskCount} high {entry.highRiskCount === 1 ? 'risk' : 'risks'} flagged
                                     </Text>
                                 </View>
                             )}

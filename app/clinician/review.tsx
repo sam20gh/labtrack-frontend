@@ -21,6 +21,8 @@ export default function ReviewScreen() {
     const router = useRouter();
     const { reportId } = useLocalSearchParams();
     const [report, setReport] = useState<any>(null);
+    const [sources, setSources] = useState<{ dnaReports: any[]; testResults: any[] }>({ dnaReports: [], testResults: [] });
+    const [previous, setPrevious] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -32,11 +34,15 @@ export default function ReviewScreen() {
 
     const load = useCallback(async () => {
         try {
-            const { report: r } = await getReportForReview(String(reportId));
-            setReport(r);
-            const raw = r.aiInterpretation?.raw ?? {};
-            setSummary(raw.summary ?? r.aiInterpretation?.summary ?? '');
-            setFollowUp(raw.follow_up ?? '');
+            const { interpretation, sources: s, previous: p } = await getReportForReview(String(reportId));
+            setReport(interpretation);
+            setSources(s);
+            setPrevious(p);
+            // Edit whatever is current: re-reviewing must build on the previous clinician's
+            // amendment rather than silently reverting to the AI text.
+            const current: any = interpretation.amended?.content ?? interpretation.content ?? {};
+            setSummary(current.summary ?? '');
+            setFollowUp(current.follow_up ?? '');
         } catch (error) {
             Toast.show({ type: 'error', text1: 'Could not load', text2: (error as Error).message });
         } finally {
@@ -47,7 +53,7 @@ export default function ReviewScreen() {
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
     const sign = async (approved: boolean) => {
-        const raw = report?.aiInterpretation?.raw ?? {};
+        const raw: any = report?.amended?.content ?? report?.content ?? {};
         const amendments: Record<string, unknown> = {};
         if (summary.trim() && summary !== (raw.summary ?? '')) amendments.summary = summary.trim();
         if (followUp.trim() && followUp !== (raw.follow_up ?? '')) amendments.follow_up = followUp.trim();
@@ -93,9 +99,11 @@ export default function ReviewScreen() {
         return <SafeAreaView style={styles.container}><View style={styles.center}><Text>Report not found</Text></View></SafeAreaView>;
     }
 
-    const raw = report.aiInterpretation?.raw ?? {};
+    const raw = report.amended?.content ?? report.content ?? {};
     const patient = report.userId ?? {};
-    const alreadyReviewed = report.status === 'specialist_reviewed';
+    const alreadyReviewed = ['approved', 'amended'].includes(report.review?.status);
+    // Every variant across every genetic report this interpretation read.
+    const mutations = (sources.dnaReports ?? []).flatMap((d: any) => d.mutations ?? []);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -113,8 +121,11 @@ export default function ReviewScreen() {
                         {[patient.firstName, patient.lastName].filter(Boolean).join(' ') || 'Patient'}
                     </Text>
                     <Text style={styles.patientMeta}>
-                        {[patient.gender, patient.dob ? `DOB ${String(patient.dob).slice(0, 10)}` : null, report.labName]
-                            .filter(Boolean).join(' · ')}
+                        {[
+                            patient.gender,
+                            patient.dob ? `DOB ${String(patient.dob).slice(0, 10)}` : null,
+                            `${(report.covers ?? []).length} source${(report.covers ?? []).length === 1 ? '' : 's'}`,
+                        ].filter(Boolean).join(' · ')}
                     </Text>
 
                     {alreadyReviewed && (
@@ -124,8 +135,43 @@ export default function ReviewScreen() {
                         </View>
                     )}
 
-                    <Text style={styles.sectionLabel}>Genetic findings</Text>
-                    {(report.mutations ?? []).map((m: any, i: number) => (
+                    {/* What the interpretation read, so a clinician is not signing off prose
+                        they cannot check against a source. */}
+                    <Text style={styles.sectionLabel}>Sources</Text>
+                    {(sources.testResults ?? []).map((t: any) => (
+                        <View key={t._id} style={styles.mutation}>
+                            <Text style={styles.gene}>{t.patient?.test_type || 'Lab report'}</Text>
+                            <Text style={styles.significance}>
+                                {[t.patient?.lab_name, t.patient?.date_of_test ? String(t.patient.date_of_test).slice(0, 10) : null]
+                                    .filter(Boolean).join(' · ')}
+                            </Text>
+                        </View>
+                    ))}
+                    {(sources.dnaReports ?? []).map((d: any) => (
+                        <View key={d._id} style={styles.mutation}>
+                            <Text style={styles.gene}>{d.labName || 'Genetic report'}</Text>
+                            <Text style={styles.significance}>
+                                {(d.mutations ?? []).length} variant{(d.mutations ?? []).length === 1 ? '' : 's'}
+                            </Text>
+                        </View>
+                    ))}
+                    {(sources.testResults ?? []).length === 0 && (sources.dnaReports ?? []).length === 0 && (
+                        <Text style={styles.significance}>No source documents recorded.</Text>
+                    )}
+
+                    {previous?.content?.summary ? (
+                        <>
+                            <Text style={styles.sectionLabel}>Previous interpretation</Text>
+                            <View style={styles.mutation}>
+                                <Text style={styles.significance}>
+                                    {String(previous.generatedAt).slice(0, 10)} — {previous.content.summary}
+                                </Text>
+                            </View>
+                        </>
+                    ) : null}
+
+                    {mutations.length > 0 && <Text style={styles.sectionLabel}>Genetic findings</Text>}
+                    {mutations.map((m: any, i: number) => (
                         <View key={i} style={[styles.mutation, ['pathogenic', 'likely_pathogenic'].includes(m.significance) && styles.mutationPathogenic]}>
                             <Text style={styles.gene}>{m.gene} {m.variant}</Text>
                             <Text style={styles.significance}>{m.significance.replace(/_/g, ' ')}{m.condition ? ` · ${m.condition}` : ''}</Text>
