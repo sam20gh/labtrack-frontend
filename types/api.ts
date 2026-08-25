@@ -364,10 +364,13 @@ export interface Professional {
     _id: Id;
     firstname: string;
     lastname: string;
+    /** Constrained to the 48-value enum in `models/Professional.js`. */
     speciality: string[];
     hourly_rate: number;
     profile_image?: string;
     description?: string;
+    address?: string;
+    postcode?: string;
     country?: string;
 }
 
