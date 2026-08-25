@@ -24,8 +24,16 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Lint
+        # Gating as of 2026-08-25. It was advisory while nine rules-of-hooks errors stood
+        # in two screens that declared their components lowercase — which also meant the
+        # linter could not check hook ordering in either file. Both are renamed and the
+        # dead `index.js` (importing an `App` that does not exist) is gone, so errors are
+        # zero and this can fail the build again.
         run: npx expo lint
-        continue-on-error: true
+
+      - name: Tests
+        # `npm test` is `jest --watchAll`, which never exits — CI needs the non-watching one
+        run: npm run test:ci
 
       - name: Bundle
         # The strongest signal available without a device: catches missing modules,

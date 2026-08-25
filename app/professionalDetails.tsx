@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, ScrollView } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 
-const professionalDetails = () => {
+const ProfessionalDetailsScreen = () => {
     const route = useRoute();
     const { professional } = (route.params ?? {}) as { professional: any };
 
@@ -67,4 +67,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default professionalDetails;
+export default ProfessionalDetailsScreen;

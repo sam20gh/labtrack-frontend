@@ -22,7 +22,7 @@ interface professional {
     country: string;
 }
 
-const professionals = () => {
+const ProfessionalsScreen = () => {
     const [professionals, setProfessionals] = useState<professional[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -128,4 +128,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default professionals;
+export default ProfessionalsScreen;
