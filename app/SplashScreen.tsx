@@ -1,36 +1,66 @@
-import React, { useEffect, useRef } from 'react';
+/**
+ * Splash screen.
+ *
+ * Redrawn against the turing kit's splash frames: full-bleed purple, the flared cross mark
+ * centred, and a determinate progress bar with a percentage at the foot rather than an
+ * indeterminate spinner. The purple matches `expo.splash.backgroundColor` in `app.json`,
+ * so the native splash hands off to this screen without a colour flash.
+ *
+ * The bar is honest about what it is: a 2.5s dwell, not a real load. It runs to 100% over
+ * exactly the window we wait before routing, so it never sits full while nothing happens.
+ */
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSignedIn } from '@/lib/auth';
+import BrandMark from '@/components/BrandMark';
+import { Fonts, Palette } from '@/constants/theme';
+
+/** How long the mark is held on screen before we route. The bar is timed to match. */
+const DWELL_MS = 2500;
 
 export default function SplashScreen() {
     const router = useRouter();
-    const spinValue = useRef(new Animated.Value(0)).current;
     const fadeValue = useRef(new Animated.Value(0)).current;
+    const scaleValue = useRef(new Animated.Value(0.82)).current;
+    const progressValue = useRef(new Animated.Value(0)).current;
+    const [percent, setPercent] = useState(0);
 
     useEffect(() => {
-        // Fade in animation
-        Animated.timing(fadeValue, {
+        // The mark eases up to full size as it fades in, so it reads as arriving rather
+        // than blinking on.
+        Animated.parallel([
+            Animated.timing(fadeValue, {
+                toValue: 1,
+                duration: 700,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleValue, {
+                toValue: 1,
+                friction: 7,
+                tension: 60,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        Animated.timing(progressValue, {
             toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
+            duration: DWELL_MS,
+            easing: Easing.inOut(Easing.quad),
+            // Width cannot be driven natively, and the percentage label needs the value on
+            // the JS side anyway.
+            useNativeDriver: false,
         }).start();
 
-        // Spinning animation for loader
-        Animated.loop(
-            Animated.timing(spinValue, {
-                toValue: 1,
-                duration: 1500,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            })
-        ).start();
+        const listener = progressValue.addListener(({ value }) => {
+            setPercent(Math.round(value * 100));
+        });
 
         // Check auth status and navigate
         const checkAuth = async () => {
-            await new Promise(resolve => setTimeout(resolve, 2500)); // Show splash for 2.5s
+            await new Promise(resolve => setTimeout(resolve, DWELL_MS));
 
             try {
                 const signedIn = await isSignedIn();
@@ -50,39 +80,40 @@ export default function SplashScreen() {
         };
 
         checkAuth();
+
+        return () => progressValue.removeListener(listener);
     }, []);
 
-    const spin = spinValue.interpolate({
+    const barWidth = progressValue.interpolate({
         inputRange: [0, 1],
-        outputRange: ['0deg', '360deg'],
+        outputRange: ['0%', '100%'],
     });
 
     return (
         <LinearGradient
-            colors={['#1a2a4a', '#0d1829']}
+            colors={['#8B5CF6', Palette.primary, Palette.primaryDark]}
             style={styles.container}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
         >
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-            <Animated.View style={[styles.content, { opacity: fadeValue }]}>
-                {/* Logo */}
-                <View style={styles.logoContainer}>
-                    <View style={styles.logoIcon}>
-                        <View style={styles.logoBar} />
-                        <View style={styles.logoBarShort} />
-                        <View style={styles.logoBar} />
-                    </View>
-                    <Text style={styles.logoText}>LabTrack</Text>
-                </View>
+            <Animated.View
+                style={[
+                    styles.content,
+                    { opacity: fadeValue, transform: [{ scale: scaleValue }] },
+                ]}
+            >
+                <BrandMark size={92} color={Palette.white} />
+                <Text style={styles.wordmark}>LabTrack</Text>
+                <Text style={styles.tagline}>Smart Health Starts Here.</Text>
+            </Animated.View>
 
-                {/* Loading indicator */}
-                <View style={styles.loaderContainer}>
-                    <Animated.View style={[styles.loader, { transform: [{ rotate: spin }] }]}>
-                        <View style={styles.loaderArc} />
-                    </Animated.View>
+            <Animated.View style={[styles.footer, { opacity: fadeValue }]}>
+                <View style={styles.track}>
+                    <Animated.View style={[styles.fill, { width: barWidth }]} />
                 </View>
+                <Text style={styles.percent}>{percent}%</Text>
             </Animated.View>
         </LinearGradient>
     );
@@ -91,8 +122,6 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     content: {
         flex: 1,
@@ -100,56 +129,44 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '100%',
     },
-    logoContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 60,
-    },
-    logoIcon: {
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        marginRight: 12,
-        height: 32,
-        gap: 4,
-    },
-    logoBar: {
-        width: 6,
-        height: 28,
-        backgroundColor: '#fff',
-        borderRadius: 3,
-    },
-    logoBarShort: {
-        width: 6,
-        height: 18,
-        backgroundColor: '#fff',
-        borderRadius: 3,
-    },
-    logoText: {
-        fontSize: 32,
-        fontWeight: '600',
-        color: '#fff',
+    wordmark: {
+        fontSize: 34,
+        fontFamily: Fonts.bold,
+        color: Palette.white,
         letterSpacing: 1,
+        marginTop: 28,
     },
-    loaderContainer: {
+    tagline: {
+        fontSize: 14,
+        fontFamily: Fonts.medium,
+        color: 'rgba(255,255,255,0.75)',
+        letterSpacing: 0.4,
+        marginTop: 8,
+    },
+    footer: {
         position: 'absolute',
-        bottom: 120,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    loader: {
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
+        left: 48,
+        right: 48,
+        bottom: 72,
         alignItems: 'center',
     },
-    loaderArc: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        borderWidth: 3,
-        borderColor: 'transparent',
-        borderTopColor: '#fff',
-        borderRightColor: '#fff',
+    track: {
+        width: '100%',
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: 'rgba(255,255,255,0.28)',
+        overflow: 'hidden',
+    },
+    fill: {
+        height: '100%',
+        borderRadius: 3,
+        backgroundColor: Palette.white,
+    },
+    percent: {
+        marginTop: 14,
+        fontSize: 13,
+        fontFamily: Fonts.semibold,
+        color: 'rgba(255,255,255,0.85)',
+        letterSpacing: 0.5,
     },
 });

@@ -1,3 +1,18 @@
+/**
+ * Onboarding carousel.
+ *
+ * Laid out from the turing kit's welcome screens. Two slide shapes:
+ *
+ * - **Slide 1** is the welcome: line-art hero, headline, and a full-width primary CTA with
+ *   a sign-in escape hatch underneath, for people who already have an account and should
+ *   not have to swipe through eleven feature slides to reach it.
+ * - **Slides 2-12** are feature slides: a segmented progress bar, a lavender stage with a
+ *   phone body rising from the bottom and the feature's card floating over its top edge,
+ *   then a white sheet carrying the copy and the prev/next controls.
+ *
+ * The card artwork lives in `components/onboarding/SlideVisuals.tsx` — see the note there
+ * about the two slides the kit illustrates with stock photography.
+ */
 import React, { useState, useRef } from 'react';
 import {
     View,
@@ -6,14 +21,16 @@ import {
     Dimensions,
     TouchableOpacity,
     FlatList,
-    Animated,
     StatusBar,
-    Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import SlideVisual from '@/components/onboarding/SlideVisuals';
+import WelcomeIllustration from '@/components/onboarding/WelcomeIllustration';
+import { Fonts, Palette } from '@/constants/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -23,102 +40,78 @@ interface OnboardingSlide {
     id: string;
     title: string;
     description: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    gradient: [string, string];
 }
 
 const slides: OnboardingSlide[] = [
     {
         id: '1',
         title: 'Welcome to the ultimate\nLabTrack UI Kit!',
-        description: 'We\'ll help you set up your health information and get started with Lab. The testing is easy with LabTrack AI suggestions.',
-        icon: 'flask-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
+        description: 'We bring all of your health information together on one app, with the power of AI',
     },
     {
         id: '2',
         title: 'Personalized Health\nThat You Can Control',
         description: 'Tailored insights and plans that adapt to your unique health journey.',
-        icon: 'heart-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '3',
         title: 'Daily Activity\nSuggestions',
         description: 'Simple, actionable tips to move better and feel stronger every day.',
-        icon: 'fitness-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '4',
         title: 'A Health Metrics That\nUnderstands You.',
         description: 'Smart tracking that learns from your habits and evolves with you.',
-        icon: 'pulse-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '5',
         title: 'Meet Dr T, An Intelligent\nHealth Companion',
         description: 'Your friendly AI guide for smarter, faster health decisions.',
-        icon: 'chatbubbles-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '6',
         title: 'Access to 24/7 Virtual\nCare Anywhere.',
         description: 'Instant health support whenever—and wherever—you need it.',
-        icon: 'videocam-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '7',
         title: 'Monitor Your Sleep Like\nA Baby',
         description: 'Deep sleep insights to help you wake up refreshed and recharged.',
-        icon: 'moon-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '8',
         title: 'Nutrition Tracking &\nRecommendation',
         description: 'Eat smarter with personalized meal suggestions and nutrient tracking.',
-        icon: 'nutrition-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '9',
         title: 'Smart Medication\nManagement',
         description: 'Timely reminders and intelligent tracking for better medication habits.',
-        icon: 'medkit-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '10',
         title: 'AI-Powered Symptom\nChecker',
         description: 'Get quick, accurate insights to understand your symptoms fast.',
-        icon: 'search-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '11',
         title: 'Predict Your Health With\nHigh Accuracy',
         description: 'See what\'s ahead with powerful AI-driven health predictions.',
-        icon: 'analytics-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
     {
         id: '12',
         title: 'Wellness Resources,\nTips & Courses',
         description: 'Boost your mind and body with expert guides, tips, and mini-courses.',
-        icon: 'book-outline',
-        gradient: ['#f8f9ff', '#ffffff'],
     },
 ];
+
+/** One segment per feature slide — slide 1 is the cover, so it sits outside the count. */
+const FEATURE_COUNT = slides.length - 1;
 
 export default function OnboardingScreen() {
     const router = useRouter();
     const [currentIndex, setCurrentIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
-    const scrollX = useRef(new Animated.Value(0)).current;
 
     const handleNext = () => {
         if (currentIndex < slides.length - 1) {
@@ -143,14 +136,7 @@ export default function OnboardingScreen() {
         }
     };
 
-    const handleSignIn = async () => {
-        try {
-            await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-            router.replace('/(auth)/loginscreen');
-        } catch (error) {
-            router.replace('/(auth)/loginscreen');
-        }
-    };
+    const handleSignIn = handleGetStarted;
 
     const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
         if (viewableItems.length > 0) {
@@ -160,130 +146,108 @@ export default function OnboardingScreen() {
 
     const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
-    const renderSlide = ({ item, index }: { item: OnboardingSlide; index: number }) => {
-        const isFirstSlide = index === 0;
-        const isLastSlide = index === slides.length - 1;
+    /** Slide 1: the cover. No progress bar — nothing has been progressed through yet. */
+    const renderWelcome = (item: OnboardingSlide) => (
+        <SafeAreaView style={styles.welcome} edges={['top', 'bottom']}>
+            <View style={styles.welcomeArt}>
+                <WelcomeIllustration width={Math.min(width - 48, 340)} />
+            </View>
+
+            <Text style={styles.title}>{item.title}</Text>
+            <Text style={styles.description}>{item.description}</Text>
+
+            <TouchableOpacity style={styles.primaryButton} onPress={handleNext} activeOpacity={0.85}>
+                <Text style={styles.primaryButtonText}>Get Started</Text>
+                <Ionicons name="arrow-forward" size={18} color={Palette.white} />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleSignIn} style={styles.signInLink} activeOpacity={0.7}>
+                <Text style={styles.signInText}>
+                    Already have an account? <Text style={styles.signInTextBold}>Sign In.</Text>
+                </Text>
+            </TouchableOpacity>
+        </SafeAreaView>
+    );
+
+    /** Slides 2-12: stage above, copy sheet below. */
+    const renderFeature = (item: OnboardingSlide, index: number) => {
+        const isLast = index === slides.length - 1;
 
         return (
-            <View style={styles.slide}>
-                <LinearGradient
-                    colors={item.gradient}
-                    style={styles.slideGradient}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                >
-                    {/* Icon/Illustration Area */}
-                    <View style={styles.illustrationContainer}>
-                        <View style={styles.iconCircle}>
-                            <Ionicons name={item.icon} size={80} color="#7C3AED" />
+            <View style={styles.feature}>
+                <SafeAreaView edges={['top']} style={styles.progressWrap}>
+                    <View style={styles.progress}>
+                        {Array.from({ length: FEATURE_COUNT }).map((_, i) => (
+                            <View
+                                key={i}
+                                style={[styles.progressSegment, i < index && styles.progressSegmentFilled]}
+                            />
+                        ))}
+                    </View>
+                </SafeAreaView>
+
+                <View style={styles.stage}>
+                    <LinearGradient
+                        colors={[Palette.white, Palette.white, '#E7DBFA']}
+                        locations={[0, 0.5, 1]}
+                        style={StyleSheet.absoluteFill}
+                    />
+
+                    {/* Phone body. It runs past the bottom of the stage on purpose — the
+                        copy sheet crops it, which is what gives the card its lift. */}
+                    <View style={styles.phone}>
+                        <View style={styles.phoneScreen}>
+                            <View style={styles.dynamicIsland}>
+                                <View style={styles.islandCamera} />
+                            </View>
                         </View>
-                        {/* Decorative elements */}
-                        <View style={[styles.decorCircle, styles.decorCircle1]} />
-                        <View style={[styles.decorCircle, styles.decorCircle2]} />
-                        <View style={[styles.decorCircle, styles.decorCircle3]} />
                     </View>
 
-                    {/* Content Area */}
-                    <View style={styles.contentContainer}>
-                        <Text style={styles.title}>{item.title}</Text>
-                        <Text style={styles.description}>{item.description}</Text>
+                    <View style={styles.cardLayer}>
+                        <SlideVisual id={item.id} />
                     </View>
+                </View>
 
-                    {/* Action Buttons */}
-                    {isFirstSlide ? (
-                        <View style={styles.firstSlideActions}>
+                <SafeAreaView edges={['bottom']} style={styles.sheet}>
+                    <Text style={styles.title}>{item.title}</Text>
+                    <Text style={styles.description}>{item.description}</Text>
+
+                    <View style={styles.navRow}>
+                        <TouchableOpacity style={styles.navButton} onPress={handlePrev} activeOpacity={0.7}>
+                            <Ionicons name="chevron-back" size={20} color={Palette.primary} />
+                        </TouchableOpacity>
+
+                        {isLast ? (
                             <TouchableOpacity
-                                style={styles.getStartedButton}
-                                onPress={handleNext}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.getStartedText}>Get Started</Text>
-                                <Ionicons name="arrow-forward" size={20} color="#fff" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleSignIn} style={styles.signInLink}>
-                                <Text style={styles.signInText}>
-                                    Already have an account? <Text style={styles.signInTextBold}>Sign in.</Text>
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : isLastSlide ? (
-                        <View style={styles.lastSlideActions}>
-                            <TouchableOpacity
-                                style={styles.getStartedButton}
+                                style={styles.finishButton}
                                 onPress={handleGetStarted}
-                                activeOpacity={0.8}
+                                activeOpacity={0.85}
                             >
-                                <Text style={styles.getStartedText}>Let's Go!</Text>
-                                <Ionicons name="checkmark" size={20} color="#fff" />
+                                <Text style={styles.finishButtonText}>Let&apos;s Go!</Text>
+                                <Ionicons name="checkmark" size={18} color={Palette.white} />
                             </TouchableOpacity>
-                        </View>
-                    ) : (
-                        <View style={styles.navigationButtons}>
-                            <TouchableOpacity
-                                style={styles.navButton}
-                                onPress={handlePrev}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons name="chevron-back" size={24} color="#7C3AED" />
+                        ) : (
+                            <TouchableOpacity style={styles.navButton} onPress={handleNext} activeOpacity={0.7}>
+                                <Ionicons name="chevron-forward" size={20} color={Palette.primary} />
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.navButton}
-                                onPress={handleNext}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons name="chevron-forward" size={24} color="#7C3AED" />
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                </LinearGradient>
+                        )}
+                    </View>
+                </SafeAreaView>
             </View>
         );
     };
 
-    const renderPagination = () => {
-        return (
-            <View style={styles.pagination}>
-                {slides.map((_, index) => {
-                    const inputRange = [
-                        (index - 1) * width,
-                        index * width,
-                        (index + 1) * width,
-                    ];
-
-                    const dotWidth = scrollX.interpolate({
-                        inputRange,
-                        outputRange: [8, 24, 8],
-                        extrapolate: 'clamp',
-                    });
-
-                    const dotOpacity = scrollX.interpolate({
-                        inputRange,
-                        outputRange: [0.3, 1, 0.3],
-                        extrapolate: 'clamp',
-                    });
-
-                    return (
-                        <Animated.View
-                            key={index}
-                            style={[
-                                styles.dot,
-                                {
-                                    width: dotWidth,
-                                    opacity: dotOpacity,
-                                },
-                            ]}
-                        />
-                    );
-                })}
-            </View>
-        );
-    };
+    const renderSlide = ({ item, index }: { item: OnboardingSlide; index: number }) => (
+        <View style={styles.slide}>
+            {index === 0 ? renderWelcome(item) : renderFeature(item, index)}
+        </View>
+    );
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#f8f9ff" />
+            <StatusBar barStyle="dark-content" backgroundColor={Palette.white} />
 
-            <Animated.FlatList
+            <FlatList
                 ref={flatListRef}
                 data={slides}
                 renderItem={renderSlide}
@@ -292,26 +256,19 @@ export default function OnboardingScreen() {
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 bounces={false}
-                onScroll={Animated.event(
-                    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                    { useNativeDriver: false }
-                )}
                 onViewableItemsChanged={onViewableItemsChanged}
                 viewabilityConfig={viewabilityConfig}
-                scrollEventThrottle={16}
+
             />
 
-            {renderPagination()}
-
-            {/* Skip button - visible on all slides except first and last */}
+            {/* Skip is for people mid-tour. On the cover the CTA already says "Get Started",
+                and on the last slide "Let's Go!" does the same job. */}
             {currentIndex > 0 && currentIndex < slides.length - 1 && (
-                <TouchableOpacity
-                    style={styles.skipButton}
-                    onPress={handleGetStarted}
-                    activeOpacity={0.7}
-                >
-                    <Text style={styles.skipText}>Skip</Text>
-                </TouchableOpacity>
+                <SafeAreaView edges={['top']} style={styles.skipWrap} pointerEvents="box-none">
+                    <TouchableOpacity style={styles.skipButton} onPress={handleGetStarted} activeOpacity={0.7}>
+                        <Text style={styles.skipText}>Skip</Text>
+                    </TouchableOpacity>
+                </SafeAreaView>
             )}
         </View>
     );
@@ -320,167 +277,205 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9ff',
+        backgroundColor: Palette.white,
     },
     slide: {
         width,
         height,
+        backgroundColor: Palette.white,
     },
-    slideGradient: {
-        flex: 1,
-        paddingTop: 60,
-        paddingHorizontal: 24,
-        paddingBottom: 120,
-    },
-    illustrationContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-    },
-    iconCircle: {
-        width: 180,
-        height: 180,
-        borderRadius: 90,
-        backgroundColor: '#EDE9FE',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#7C3AED',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.15,
-        shadowRadius: 30,
-        elevation: 10,
-    },
-    decorCircle: {
-        position: 'absolute',
-        borderRadius: 100,
-        backgroundColor: '#7C3AED',
-    },
-    decorCircle1: {
-        width: 12,
-        height: 12,
-        top: '20%',
-        left: '15%',
-        opacity: 0.3,
-    },
-    decorCircle2: {
-        width: 8,
-        height: 8,
-        top: '30%',
-        right: '20%',
-        opacity: 0.5,
-    },
-    decorCircle3: {
-        width: 16,
-        height: 16,
-        bottom: '25%',
-        right: '25%',
-        opacity: 0.2,
-    },
-    contentContainer: {
-        paddingVertical: 32,
-    },
+
+    // shared copy
     title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: '#1a1a2e',
+        fontSize: 26,
+        fontFamily: Fonts.bold,
+        color: Palette.text,
         textAlign: 'center',
-        marginBottom: 16,
-        lineHeight: 36,
+        lineHeight: 34,
+        paddingHorizontal: 24,
     },
     description: {
-        fontSize: 16,
-        color: '#666',
+        fontSize: 14,
+        fontFamily: Fonts.regular,
+        color: Palette.textSecondary,
         textAlign: 'center',
-        lineHeight: 24,
-        paddingHorizontal: 16,
+        lineHeight: 22,
+        marginTop: 12,
+        paddingHorizontal: 32,
     },
-    firstSlideActions: {
+
+    // slide 1
+    welcome: {
+        flex: 1,
+        justifyContent: 'center',
+        paddingBottom: 24,
+    },
+    welcomeArt: {
         alignItems: 'center',
-        paddingTop: 20,
+        marginBottom: 44,
     },
-    lastSlideActions: {
-        alignItems: 'center',
-        paddingTop: 20,
-    },
-    getStartedButton: {
+    primaryButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#7C3AED',
-        paddingVertical: 16,
-        paddingHorizontal: 32,
-        borderRadius: 30,
-        gap: 8,
-        shadowColor: '#7C3AED',
+        gap: 10,
+        backgroundColor: Palette.primary,
+        marginHorizontal: 24,
+        marginTop: 36,
+        paddingVertical: 17,
+        borderRadius: 14,
+        shadowColor: Palette.primary,
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.28,
         shadowRadius: 16,
         elevation: 8,
     },
-    getStartedText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '600',
+    primaryButtonText: {
+        color: Palette.white,
+        fontSize: 16,
+        fontFamily: Fonts.semibold,
     },
     signInLink: {
-        marginTop: 20,
+        marginTop: 22,
+        alignItems: 'center',
     },
     signInText: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: 13,
+        fontFamily: Fonts.regular,
+        color: Palette.textSecondary,
     },
     signInTextBold: {
-        color: '#7C3AED',
-        fontWeight: '600',
+        fontFamily: Fonts.bold,
+        color: Palette.primary,
+        textDecorationLine: 'underline',
     },
-    navigationButtons: {
+
+    // slides 2-12
+    feature: {
+        flex: 1,
+    },
+    progressWrap: {
+        backgroundColor: Palette.white,
+    },
+    progress: {
+        flexDirection: 'row',
+        gap: 5,
+        paddingHorizontal: 24,
+        paddingTop: 10,
+        paddingBottom: 6,
+    },
+    progressSegment: {
+        flex: 1,
+        height: 5,
+        borderRadius: 3,
+        backgroundColor: Palette.borderLight,
+    },
+    progressSegmentFilled: {
+        backgroundColor: Palette.primary,
+    },
+    stage: {
+        flex: 1,
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    phone: {
+        position: 'absolute',
+        left: 46,
+        right: 46,
+        top: 52,
+        bottom: -60,
+        borderRadius: 46,
+        borderWidth: 3,
+        borderColor: '#EDEFF3',
+        backgroundColor: '#FBFBFD',
+        padding: 6,
+    },
+    phoneScreen: {
+        flex: 1,
+        borderRadius: 40,
+        backgroundColor: '#F5F6F9',
+        alignItems: 'center',
+        paddingTop: 14,
+    },
+    dynamicIsland: {
+        width: 92,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: Palette.white,
+        borderWidth: 1,
+        borderColor: '#E8EAEF',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingRight: 8,
+    },
+    islandCamera: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#C7CBD3',
+    },
+    cardLayer: {
+        paddingHorizontal: 18,
+        justifyContent: 'center',
+    },
+    sheet: {
+        backgroundColor: Palette.white,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingTop: 28,
+        paddingBottom: 16,
+        marginTop: -20,
+    },
+    navRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 40,
-        paddingTop: 20,
+        gap: 16,
+        marginTop: 24,
+        marginBottom: 12,
     },
     navButton: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#fff',
-        justifyContent: 'center',
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: Palette.primarySurface,
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#EDE9FE',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    pagination: {
-        position: 'absolute',
-        bottom: 50,
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
         justifyContent: 'center',
+    },
+    finishButton: {
+        flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
+        backgroundColor: Palette.primary,
+        paddingHorizontal: 26,
+        height: 52,
+        borderRadius: 26,
+        shadowColor: Palette.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.28,
+        shadowRadius: 14,
+        elevation: 6,
     },
-    dot: {
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#7C3AED',
+    finishButtonText: {
+        color: Palette.white,
+        fontSize: 15,
+        fontFamily: Fonts.semibold,
+    },
+
+    skipWrap: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
     },
     skipButton: {
-        position: 'absolute',
-        top: 60,
-        right: 24,
         paddingVertical: 8,
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
+        marginTop: 6,
     },
     skipText: {
-        fontSize: 16,
-        color: '#7C3AED',
-        fontWeight: '500',
+        fontSize: 14,
+        fontFamily: Fonts.semibold,
+        color: Palette.primary,
     },
 });
