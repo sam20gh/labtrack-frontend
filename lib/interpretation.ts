@@ -61,6 +61,22 @@ export interface LatestResultRef {
     biomarkerCount: number | null;
 }
 
+/**
+ * Clinician verification state.
+ *
+ * `withheld` cannot be true under current policy — patients see unverified interpretations,
+ * labelled. It exists because that policy is expected to change if regulation requires
+ * sign-off first, and that switch must be server-side only. The client handles the state
+ * now so the change never needs an app release on a regulatory deadline.
+ */
+export interface Verification {
+    status: 'unverified' | 'approved' | 'amended';
+    /** True when policy forbids showing an unreviewed interpretation to the patient. */
+    withheld: boolean;
+    reviewRequired: boolean;
+    reviewedAt: string | null;
+}
+
 export interface LatestInterpretation {
     available: boolean;
     interpretation: Interpretation | null;
@@ -69,7 +85,12 @@ export interface LatestInterpretation {
     latestResult: LatestResultRef | null;
     /** False when the interpretation describes an earlier result than the newest one. */
     isForLatestResult: boolean;
+    verification?: Verification;
 }
+
+/** A clinician has signed this off, so it is no longer "AI-generated, pending review". */
+export const isVerified = (v?: Verification): boolean =>
+    v?.status === 'approved' || v?.status === 'amended';
 
 /**
  * Everything the home screen needs about interpretation, in one authenticated call.
@@ -88,14 +109,18 @@ export const getInterpretationStatus = () =>
 /**
  * A previously generated interpretation for one source document.
  *
+ * Answers with the newest interpretation that *read* this document, which may be a later
+ * whole-person one rather than the generation this document triggered.
+ *
  * Resolves to `null` on 404 rather than throwing: "none yet" is the normal state for a
- * freshly uploaded result, not an error the caller should have to catch.
+ * freshly uploaded result, not an error the caller should have to catch. A 404 is also how
+ * a withheld interpretation presents, so callers must not treat it as "never analysed".
  */
 export const getInterpretationFor = async (
     sourceId: string,
-): Promise<{ interpretation: Interpretation; generatedAt: string } | null> => {
+): Promise<{ interpretation: Interpretation; generatedAt: string; verification: Verification } | null> => {
     try {
-        return await api.get<{ interpretation: Interpretation; generatedAt: string }>(
+        return await api.get<{ interpretation: Interpretation; generatedAt: string; verification: Verification }>(
             `/interpretation/${sourceId}`,
         );
     } catch (error) {

@@ -28,7 +28,7 @@ import { getUserId, isSignedIn } from '@/lib/auth';
 import { getLatestBiomarkers, byClinicalPriority, describeMovement, formatValue, FLAG_META } from '@/lib/biomarkers';
 import { getPlan } from '@/lib/plan';
 import {
-    getLatestInterpretation, generateInterpretation, hasMeaningfulChanges,
+    getLatestInterpretation, generateInterpretation, hasMeaningfulChanges, isVerified,
     RISK_META, byRiskSeverity, type LatestInterpretation,
 } from '@/lib/interpretation';
 import { computeHealthScore, BAND_META, SCORE_DISCLAIMER, type HealthScore } from '@/lib/healthScore';
@@ -164,6 +164,15 @@ export default function HomeScreen() {
             await load();
         } catch (error) {
             const message = error instanceof ApiError ? error.message : 'Could not generate an analysis';
+
+            // 429 is the rate limiter, and it is not a failure — the server is saying the
+            // analysis would be identical, or that enough have been run today. The user
+            // still has their existing analysis, so this reads as information.
+            if (error instanceof ApiError && error.status === 429) {
+                Toast.show({ type: 'info', text1: 'No new analysis needed', text2: message });
+                return;
+            }
+
             // 503 means the server has no AI key — reflect that rather than letting the
             // user keep pressing something that cannot work.
             if (error instanceof ApiError && error.status === 503) {
@@ -457,7 +466,13 @@ const AnalysisCard = ({
     onGenerate: () => void;
     onRegenerate: () => void;
 }) => {
-    const { interpretation, latestResult, source, isForLatestResult, available } = analysis;
+    const { interpretation, latestResult, source, isForLatestResult, available, verification } = analysis;
+
+    // Policy currently shows unverified interpretations, so `withheld` is always false
+    // today. It is handled anyway: if regulation later requires sign-off first, the server
+    // flips one function and this screen already knows what to render.
+    const withheld = verification?.withheld === true;
+    const verified = isVerified(verification);
 
     const fmt = (iso?: string | null) =>
         iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
@@ -467,7 +482,9 @@ const AnalysisCard = ({
     const headTitle = (headed && 'testType' in headed ? headed.testType : null) || 'Test result';
     const headMeta = [headed?.labName, fmt(headed?.date)].filter(Boolean).join(' · ');
 
-    const needsFresh = Boolean(latestResult) && (!interpretation || !isForLatestResult);
+    // A withheld analysis is not a missing one — offering to generate would produce the
+    // same cached result and withhold it again.
+    const needsFresh = !withheld && Boolean(latestResult) && (!interpretation || !isForLatestResult);
 
     return (
         <View style={styles.analysisCard}>
@@ -481,9 +498,14 @@ const AnalysisCard = ({
                         {headMeta || 'Awaiting details'}
                     </Text>
                 </View>
-                {interpretation && (
+                {verified ? (
+                    <View style={[styles.aiBadge, styles.verifiedBadge]}>
+                        <Ionicons name="checkmark-circle" size={11} color={Palette.success} />
+                        <Text style={[styles.aiBadgeText, { color: Palette.success }]}>Verified</Text>
+                    </View>
+                ) : interpretation ? (
                     <View style={styles.aiBadge}><Text style={styles.aiBadgeText}>AI</Text></View>
-                )}
+                ) : null}
             </View>
 
             {/* An analysis that predates the newest result is still worth reading — but the
@@ -507,7 +529,18 @@ const AnalysisCard = ({
                 </View>
             )}
 
-            {interpretation ? (
+            {withheld ? (
+                <View style={styles.withheldNote}>
+                    <Ionicons name="lock-closed-outline" size={18} color={Palette.textSecondary} />
+                    <View style={styles.flex}>
+                        <Text style={styles.withheldTitle}>Awaiting clinician review</Text>
+                        <Text style={styles.detailBody}>
+                            Your results have been analysed. A clinician is reviewing the analysis before
+                            it is released, and you will be notified as soon as it is ready.
+                        </Text>
+                    </View>
+                </View>
+            ) : interpretation ? (
                 <>
                     <Text style={styles.analysisSummary} numberOfLines={expanded ? undefined : 4}>
                         {interpretation.summary}
@@ -600,8 +633,10 @@ const AnalysisCard = ({
                     </View>
 
                     <Text style={styles.analysisDisclaimer}>
-                        AI-generated and pending clinical review
-                        {analysis.generatedAt ? ` · ${new Date(analysis.generatedAt).toLocaleDateString()}` : ''}
+                        {verified
+                            ? `Reviewed by a clinician${verification?.reviewedAt ? ` on ${new Date(verification.reviewedAt).toLocaleDateString()}` : ''}`
+                            : 'AI-generated · not yet verified by a clinician'}
+                        {analysis.generatedAt ? ` · analysed ${new Date(analysis.generatedAt).toLocaleDateString()}` : ''}
                     </Text>
                 </>
             ) : (
@@ -967,6 +1002,17 @@ const styles = StyleSheet.create({
     },
     staleText: {
         flex: 1, fontSize: 12, lineHeight: 17, color: Palette.warning, fontFamily: Fonts.medium,
+    },
+    withheldNote: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md,
+        padding: Spacing.lg, borderRadius: Radius.md, backgroundColor: Palette.surface,
+    },
+    withheldTitle: {
+        fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold, marginBottom: 3,
+    },
+    verifiedBadge: {
+        flexDirection: 'row', alignItems: 'center', gap: 3,
+        backgroundColor: Palette.successSurface,
     },
     changesNote: {
         gap: 5, padding: Spacing.md, borderRadius: Radius.md,
