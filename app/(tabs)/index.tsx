@@ -243,7 +243,7 @@ export default function HomeScreen() {
                         <Greeting
                             name={firstName}
                             initials={initials.toUpperCase()}
-                            onPressAvatar={() => router.push('/(tabs)/ProfileScreen')}
+                            onPressAvatar={() => router.push('/profile')}
                         />
 
                         <ScoreHero score={score} onExplain={() => setExplainerOpen(true)} />

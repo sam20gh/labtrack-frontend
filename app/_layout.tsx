@@ -90,6 +90,10 @@ export default function RootLayout() {
         <Stack.Screen name="basket" options={{ headerShown: false }} />
         <Stack.Screen name="clinician" options={{ headerShown: false }} />
         <Stack.Screen name="biomarker/[name]" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
+        <Stack.Screen name="assistant/intro" options={{ headerShown: false }} />
+        <Stack.Screen name="assistant/immersive" options={{ headerShown: false }} />
+        <Stack.Screen name="assistant/settings" options={{ headerShown: false }} />
         <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
         <Stack.Screen name="order-details" options={{ headerShown: false }} />
         <Stack.Screen name="orders-history" options={{ title: "Your orders", headerShown: true }} />

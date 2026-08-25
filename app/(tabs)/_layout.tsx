@@ -57,11 +57,17 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => <Ionicons size={22} name="analytics-outline" color={color} />,
           }}
         />
+        {/*
+          The fifth slot is the assistant, not the profile. The profile is reachable from
+          the avatar in the home header and is a screen people visit to change something and
+          leave; the assistant is opened repeatedly within a session, which is what a tab is
+          for. It lives at `app/profile.tsx` now.
+        */}
         <Tabs.Screen
-          name="ProfileScreen"
+          name="assistant"
           options={{
-            title: 'Profile',
-            tabBarIcon: ({ color }) => <Ionicons size={22} name="finger-print-outline" color={color} />,
+            title: 'Assistant',
+            tabBarIcon: ({ color }) => <Ionicons size={22} name="sparkles-outline" color={color} />,
           }}
         />
     </Tabs>

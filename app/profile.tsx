@@ -1,6 +1,13 @@
+/**
+ * The person's account, reached from the avatar in the home header.
+ *
+ * Was a tab. It lost that slot to the AI assistant, which is something people open many
+ * times a session, where this is opened to change a setting and then left. Being a pushed
+ * stack route also gives it the back affordance a destination screen should have — as a tab
+ * it was a dead end you could only leave by picking another tab.
+ */
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { api, ApiError } from '@/lib/api';
 import { getUserId, signOut } from '@/lib/auth';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -8,10 +15,10 @@ import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Palette, Fonts } from '@/constants/theme';
 
 
 const ProfileScreen = () => {
-  const navigation = useNavigation();
   const router = useRouter();
   const [user, setUser] = useState({ firstName: '', profileImage: '' });
   const [loading, setLoading] = useState(true);
@@ -62,8 +69,13 @@ const ProfileScreen = () => {
       <ScrollView>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
+          <MaterialIcons name="chevron-left" size={28} color={Palette.text} />
+        </TouchableOpacity>
         <Text style={styles.profileText}>Profile</Text>
-        <MaterialIcons name="notifications-none" size={24} />
+        <TouchableOpacity onPress={() => router.push('/notification-settings')} accessibilityLabel="Notification settings">
+          <MaterialIcons name="notifications-none" size={24} color={Palette.text} />
+        </TouchableOpacity>
       </View>
 
       {/* User Profile Section */}
@@ -96,6 +108,12 @@ const ProfileScreen = () => {
       {/* Orders */}
       <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/orders-history')}>
         <Text style={styles.settingText}>Your orders</Text>
+        <MaterialIcons name="chevron-right" size={24} />
+      </TouchableOpacity>
+
+      {/* AI assistant — history and memory live with the assistant, its settings live here */}
+      <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/assistant/settings')}>
+        <Text style={styles.settingText}>AI assistant</Text>
         <MaterialIcons name="chevron-right" size={24} />
       </TouchableOpacity>
 
@@ -139,9 +157,8 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Palette.background,
     paddingHorizontal: 20,
-    paddingTop: 50,
   },
   header: {
     flexDirection: 'row',
@@ -149,9 +166,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  // Negative inset so the chevron's own padding does not push the title off the 20pt
+  // gutter every other row on this screen aligns to.
+  backButton: {
+    marginLeft: -8,
+    padding: 4,
+  },
   profileText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: Fonts.bold,
+    color: Palette.text,
   },
   userSection: {
     flexDirection: 'row',
@@ -217,7 +241,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     borderRadius: 10,
-    backgroundColor: '#7C3AED',
+    backgroundColor: Palette.primary,
     marginBottom: 60,
   },
   logoutButtonText: {

@@ -272,7 +272,7 @@ export default function CompleteScreen() {
     };
 
     const handleViewProfile = () => {
-        router.replace('/(tabs)/ProfileScreen');
+        router.replace('/profile');
     };
 
     const confettiColors = ['#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
