@@ -27,6 +27,10 @@ import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
 import { getLatestBiomarkers, byClinicalPriority, describeMovement, formatValue, FLAG_META } from '@/lib/biomarkers';
 import { getPlan } from '@/lib/plan';
+import {
+    getLatestInterpretation, generateInterpretation,
+    RISK_META, byRiskSeverity, type LatestInterpretation,
+} from '@/lib/interpretation';
 import { computeHealthScore, BAND_META, SCORE_DISCLAIMER, type HealthScore } from '@/lib/healthScore';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 import ScoreRadar from '@/components/home/ScoreRadar';
@@ -60,9 +64,12 @@ export default function HomeScreen() {
     const [biomarkers, setBiomarkers] = useState<BiomarkerSummary[]>([]);
     const [planItems, setPlanItems] = useState<PlanItem[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [analysis, setAnalysis] = useState<LatestInterpretation | null>(null);
+    const [generating, setGenerating] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [explainerOpen, setExplainerOpen] = useState(false);
+    const [analysisExpanded, setAnalysisExpanded] = useState(false);
 
     const load = useCallback(async () => {
         const loggedIn = await isSignedIn();
@@ -79,19 +86,24 @@ export default function HomeScreen() {
 
         // Settled rather than all: a home screen that renders nothing because the plan
         // endpoint hiccuped is worse than one missing a section.
-        const [userRes, biomarkerRes, planRes, productRes] = await Promise.allSettled([
+        const [userRes, biomarkerRes, planRes, productRes, analysisRes] = await Promise.allSettled([
             userId ? api.get<User>(`/users/${userId}`) : Promise.reject(new Error('no user id')),
             getLatestBiomarkers(),
             getPlan(),
             api.get<Product[]>('/products'),
+            // One call: the newest result, the newest interpretation, and whether they are
+            // the same document. Scoped by the token, so it does not depend on the cached
+            // user id the way the old /test-results?user_id= path did.
+            getLatestInterpretation(),
         ]);
 
         if (userRes.status === 'fulfilled') setUser(userRes.value);
         if (biomarkerRes.status === 'fulfilled') setBiomarkers(biomarkerRes.value.biomarkers ?? []);
         if (planRes.status === 'fulfilled') setPlanItems(planRes.value.items ?? []);
         if (productRes.status === 'fulfilled') setProducts(Array.isArray(productRes.value) ? productRes.value.slice(0, 6) : []);
+        if (analysisRes.status === 'fulfilled') setAnalysis(analysisRes.value);
 
-        const rejected = [userRes, biomarkerRes, planRes, productRes]
+        const rejected = [userRes, biomarkerRes, planRes, productRes, analysisRes]
             .filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
             router.replace('/(auth)/loginscreen');
@@ -119,6 +131,49 @@ export default function HomeScreen() {
         await load();
         setRefreshing(false);
     }, [load]);
+
+
+    /**
+     * Generate (or regenerate) the interpretation for the newest result.
+     *
+     * The server reads *all* of this person's biomarkers when it builds the context, not
+     * just the ones on this document — so an analysis generated against the newest result
+     * already accounts for everything that came before it.
+     *
+     * Generating also rebuilds the plan, so a fresh run reloads the whole screen: "Next up"
+     * would otherwise show the previous plan beside the new analysis.
+     */
+    const handleGenerate = useCallback(async (force = false) => {
+        const targetId = analysis?.latestResult?.id;
+        if (!targetId) {
+            Toast.show({ type: 'error', text1: 'Add a result first', text2: 'There is nothing to interpret yet.' });
+            return;
+        }
+        setGenerating(true);
+        try {
+            const result = await generateInterpretation({ testResultId: targetId, force });
+            Toast.show({
+                type: 'success',
+                text1: result.cached ? 'Showing your existing analysis' : 'Analysis ready',
+                text2: result.plan?.created
+                    ? `${result.plan.created} plan item${result.plan.created > 1 ? 's' : ''} updated`
+                    : undefined,
+            });
+            // Reload rather than patching state locally: this changes the plan and the
+            // score's plan pillar too.
+            await load();
+        } catch (error) {
+            const message = error instanceof ApiError ? error.message : 'Could not generate an analysis';
+            // 503 means the server has no AI key — reflect that rather than letting the
+            // user keep pressing something that cannot work.
+            if (error instanceof ApiError && error.status === 503) {
+                setAnalysis((prev) => (prev ? { ...prev, available: false } : prev));
+            }
+            Toast.show({ type: 'error', text1: 'Analysis failed', text2: message });
+        } finally {
+            setGenerating(false);
+        }
+    }, [analysis, load]);
 
     const score = useMemo(
         () => (signedIn
@@ -183,6 +238,23 @@ export default function HomeScreen() {
                         />
 
                         <ScoreHero score={score} onExplain={() => setExplainerOpen(true)} />
+
+                        {analysis?.latestResult && (
+                            <Section
+                                title="Latest analysis"
+                                action={analysis.interpretation ? 'View plan' : undefined}
+                                onAction={analysis.interpretation ? () => router.push('/myplans') : undefined}
+                            >
+                                <AnalysisCard
+                                    analysis={analysis}
+                                    generating={generating}
+                                    expanded={analysisExpanded}
+                                    onToggle={() => setAnalysisExpanded((v) => !v)}
+                                    onGenerate={() => handleGenerate(false)}
+                                    onRegenerate={() => handleGenerate(true)}
+                                />
+                            </Section>
+                        )}
 
                         {attention.length > 0 && (
                             <Section
@@ -258,7 +330,7 @@ export default function HomeScreen() {
                             </Section>
                         )}
 
-                        {biomarkers.length === 0 && (
+                        {biomarkers.length === 0 && !analysis?.latestResult && (
                             <View style={styles.emptyCard}>
                                 <Ionicons name="document-text-outline" size={40} color={Palette.primaryLight} />
                                 <Text style={styles.emptyTitle}>No results yet</Text>
@@ -356,6 +428,203 @@ const ScoreHero = ({ score, onExplain }: { score: HealthScore; onExplain: () => 
         </LinearGradient>
     );
 };
+
+
+/**
+ * Latest AI analysis.
+ *
+ * Four states, and the two in the middle are the ones the first version got wrong:
+ *
+ *   - no analysis at all              → the card is the call to action
+ *   - analysis, but of an OLDER result → show it, say so plainly, and offer to analyse the
+ *                                        new one. Previously this rendered nothing, so a
+ *                                        person with a perfectly good analysis on their
+ *                                        first result saw an empty home screen after
+ *                                        adding a second.
+ *   - analysis of the newest result    → the normal case
+ *   - AI unavailable on the server     → no button to press
+ *
+ * The stale analysis is never relabelled as belonging to the new result. It names the
+ * values it read, and a reader who thinks it covers bloods it never saw is being misled.
+ */
+const AnalysisCard = ({
+    analysis, generating, expanded, onToggle, onGenerate, onRegenerate,
+}: {
+    analysis: LatestInterpretation;
+    generating: boolean;
+    expanded: boolean;
+    onToggle: () => void;
+    onGenerate: () => void;
+    onRegenerate: () => void;
+}) => {
+    const { interpretation, latestResult, source, isForLatestResult, available } = analysis;
+
+    const fmt = (iso?: string | null) =>
+        iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+
+    // The card is headed by whichever document the reader is being shown.
+    const headed = interpretation && !isForLatestResult && source ? source : latestResult;
+    const headTitle = (headed && 'testType' in headed ? headed.testType : null) || 'Test result';
+    const headMeta = [headed?.labName, fmt(headed?.date)].filter(Boolean).join(' · ');
+
+    const needsFresh = Boolean(latestResult) && (!interpretation || !isForLatestResult);
+
+    return (
+        <View style={styles.analysisCard}>
+            <View style={styles.analysisHeader}>
+                <View style={styles.analysisIcon}>
+                    <Ionicons name="sparkles" size={16} color={Palette.primary} />
+                </View>
+                <View style={styles.flex}>
+                    <Text style={styles.analysisTest} numberOfLines={1}>{headTitle}</Text>
+                    <Text style={styles.analysisMeta} numberOfLines={1}>
+                        {headMeta || 'Awaiting details'}
+                    </Text>
+                </View>
+                {interpretation && (
+                    <View style={styles.aiBadge}><Text style={styles.aiBadgeText}>AI</Text></View>
+                )}
+            </View>
+
+            {/* An analysis that predates the newest result is still worth reading — but the
+                reader has to know which draw it describes. */}
+            {interpretation && !isForLatestResult && (
+                <View style={styles.staleNote}>
+                    <Ionicons name="time-outline" size={14} color={Palette.warning} />
+                    <Text style={styles.staleText}>
+                        This analysis covers your {fmt(source?.date) ?? 'earlier'} result.
+                        Your newer {latestResult?.testType || 'result'} has not been analysed yet.
+                    </Text>
+                </View>
+            )}
+
+            {/* The lab's own wording, when the report carried any. Distinct from the AI
+                read and labelled as such so the two are never confused. */}
+            {!!latestResult?.labInterpretation && (
+                <View style={styles.labNote}>
+                    <Text style={styles.labNoteLabel}>From the lab</Text>
+                    <Text style={styles.detailBody}>{latestResult.labInterpretation}</Text>
+                </View>
+            )}
+
+            {interpretation ? (
+                <>
+                    <Text style={styles.analysisSummary} numberOfLines={expanded ? undefined : 4}>
+                        {interpretation.summary}
+                    </Text>
+
+                    {expanded && (
+                        <View style={styles.analysisDetail}>
+                            {interpretation.biomarkers_of_concern?.length > 0 && (
+                                <AnalysisBlock title="Worth attention">
+                                    {interpretation.biomarkers_of_concern.map((b) => (
+                                        <View key={b.name} style={styles.detailItem}>
+                                            <Text style={styles.detailName}>{b.name}</Text>
+                                            <Text style={styles.detailBody}>{b.observation}</Text>
+                                            <Text style={styles.detailAction}>{b.action}</Text>
+                                        </View>
+                                    ))}
+                                </AnalysisBlock>
+                            )}
+
+                            {interpretation.risks?.length > 0 && (
+                                <AnalysisBlock title="Risks assessed">
+                                    {[...interpretation.risks].sort(byRiskSeverity).map((r) => {
+                                        const meta = RISK_META[r.level] ?? RISK_META.unknown;
+                                        return (
+                                            <View key={`${r.condition}-${r.level}`} style={styles.detailItem}>
+                                                <View style={styles.riskRow}>
+                                                    <Text style={[styles.detailName, styles.flex]}>{r.condition}</Text>
+                                                    <View style={[styles.riskPill, { backgroundColor: meta.bg }]}>
+                                                        <Text style={[styles.riskText, { color: meta.color }]}>{meta.label}</Text>
+                                                    </View>
+                                                </View>
+                                                <Text style={styles.detailBody}>{r.rationale}</Text>
+                                            </View>
+                                        );
+                                    })}
+                                </AnalysisBlock>
+                            )}
+
+                            {interpretation.lifestyle_recommendations?.length > 0 && (
+                                <AnalysisBlock title="Suggested changes">
+                                    {interpretation.lifestyle_recommendations.map((l) => (
+                                        <View key={`${l.area}-${l.recommendation}`} style={styles.detailItem}>
+                                            <Text style={styles.detailName}>{l.area}</Text>
+                                            <Text style={styles.detailBody}>{l.recommendation}</Text>
+                                        </View>
+                                    ))}
+                                </AnalysisBlock>
+                            )}
+
+                            {!!interpretation.follow_up && (
+                                <AnalysisBlock title="Next review">
+                                    <Text style={styles.detailBody}>{interpretation.follow_up}</Text>
+                                </AnalysisBlock>
+                            )}
+
+                            {interpretation.limitations?.length > 0 && (
+                                <AnalysisBlock title="What this could not assess">
+                                    {interpretation.limitations.map((l) => (
+                                        <Text key={l} style={styles.detailBody}>• {l}</Text>
+                                    ))}
+                                </AnalysisBlock>
+                            )}
+                        </View>
+                    )}
+
+                    <View style={styles.analysisFooter}>
+                        <TouchableOpacity onPress={onToggle} hitSlop={8} style={styles.footerLink}>
+                            <Text style={styles.footerLinkText}>{expanded ? 'Show less' : 'Read full analysis'}</Text>
+                            <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={Palette.primary} />
+                        </TouchableOpacity>
+                        {available && !needsFresh && (
+                            <TouchableOpacity onPress={onRegenerate} hitSlop={8} disabled={generating}>
+                                <Text style={[styles.regenerateText, generating && styles.disabledText]}>
+                                    {generating ? 'Working…' : 'Regenerate'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    <Text style={styles.analysisDisclaimer}>
+                        AI-generated and pending clinical review
+                        {analysis.generatedAt ? ` · ${new Date(analysis.generatedAt).toLocaleDateString()}` : ''}
+                    </Text>
+                </>
+            ) : (
+                <Text style={styles.analysisSummary}>
+                    {available
+                        ? 'This result has not been analysed yet. Generate an analysis to see what it means and refresh your plan.'
+                        : 'AI analysis is unavailable on this server right now. Your result is saved and your markers are still tracked.'}
+                </Text>
+            )}
+
+            {/* One button, whether this is the first analysis or a catch-up for a newer
+                result. It always targets the newest result. */}
+            {available && needsFresh && (
+                <TouchableOpacity
+                    style={[styles.primaryButton, generating && styles.buttonDisabled]}
+                    onPress={onGenerate}
+                    disabled={generating}
+                >
+                    {generating
+                        ? <ActivityIndicator color={Palette.white} size="small" />
+                        : <Text style={styles.primaryButtonText}>
+                            {interpretation ? 'Analyse latest result' : 'Get AI analysis'}
+                        </Text>}
+                </TouchableOpacity>
+            )}
+        </View>
+    );
+};
+
+const AnalysisBlock = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <View style={styles.analysisBlock}>
+        <Text style={styles.analysisBlockTitle}>{title}</Text>
+        {children}
+    </View>
+);
 
 const Section = ({ title, action, onAction, children }: {
     title: string; action?: string; onAction?: () => void; children: React.ReactNode;
@@ -633,6 +902,67 @@ const styles = StyleSheet.create({
     },
     sectionTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     sectionAction: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.semibold },
+
+
+    // Latest analysis
+    analysisCard: {
+        marginHorizontal: GUTTER, padding: Spacing.lg, borderRadius: Radius.lg,
+        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
+        gap: Spacing.md,
+    },
+    analysisHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    analysisIcon: {
+        width: 32, height: 32, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    analysisTest: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold },
+    analysisMeta: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 1 },
+    aiBadge: {
+        paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm,
+        backgroundColor: Palette.primarySurface,
+    },
+    aiBadgeText: { fontSize: 10, color: Palette.primary, fontFamily: Fonts.bold, letterSpacing: 0.5 },
+    analysisSummary: { fontSize: 13, lineHeight: 20, color: Palette.text, fontFamily: Fonts.regular },
+    analysisDetail: { gap: Spacing.lg, paddingTop: Spacing.xs },
+    analysisBlock: { gap: 6 },
+    analysisBlockTitle: {
+        fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase',
+        color: Palette.textMuted, fontFamily: Fonts.bold,
+    },
+    detailItem: {
+        gap: 2, paddingLeft: Spacing.md,
+        borderLeftWidth: 2, borderLeftColor: Palette.borderLight,
+    },
+    detailName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
+    detailBody: { fontSize: 12, lineHeight: 18, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    detailAction: { fontSize: 12, lineHeight: 18, color: Palette.primary, fontFamily: Fonts.medium },
+    riskRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
+    riskPill: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm },
+    riskText: { fontSize: 10, fontFamily: Fonts.bold },
+    analysisFooter: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        borderTopWidth: 1, borderTopColor: Palette.borderLight, paddingTop: Spacing.md,
+    },
+    footerLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    footerLinkText: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.semibold },
+    regenerateText: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.semibold },
+    disabledText: { color: Palette.textMuted },
+    buttonDisabled: { opacity: 0.6 },
+    analysisDisclaimer: { fontSize: 11, lineHeight: 15, color: Palette.textMuted, fontFamily: Fonts.regular },
+    staleNote: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm,
+        padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Palette.warningSurface,
+    },
+    staleText: {
+        flex: 1, fontSize: 12, lineHeight: 17, color: Palette.warning, fontFamily: Fonts.medium,
+    },
+    labNote: {
+        gap: 3, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Palette.surface,
+    },
+    labNoteLabel: {
+        fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase',
+        color: Palette.textMuted, fontFamily: Fonts.bold,
+    },
 
     // Attention
     attentionCard: {
