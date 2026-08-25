@@ -28,7 +28,7 @@ import { getUserId, isSignedIn } from '@/lib/auth';
 import { getLatestBiomarkers, byClinicalPriority, describeMovement, formatValue, FLAG_META } from '@/lib/biomarkers';
 import { getPlan } from '@/lib/plan';
 import {
-    getLatestInterpretation, generateInterpretation,
+    getLatestInterpretation, generateInterpretation, hasMeaningfulChanges,
     RISK_META, byRiskSeverity, type LatestInterpretation,
 } from '@/lib/interpretation';
 import { computeHealthScore, BAND_META, SCORE_DISCLAIMER, type HealthScore } from '@/lib/healthScore';
@@ -513,6 +513,18 @@ const AnalysisCard = ({
                         {interpretation.summary}
                     </Text>
 
+                    {hasMeaningfulChanges(interpretation) && (
+                        <View style={styles.changesNote}>
+                            <View style={styles.changesHeader}>
+                                <Ionicons name="git-compare-outline" size={13} color={Palette.primary} />
+                                <Text style={styles.changesLabel}>What changed</Text>
+                            </View>
+                            <Text style={styles.detailBody} numberOfLines={expanded ? undefined : 3}>
+                                {interpretation.changes_since_last}
+                            </Text>
+                        </View>
+                    )}
+
                     {expanded && (
                         <View style={styles.analysisDetail}>
                             {interpretation.biomarkers_of_concern?.length > 0 && (
@@ -955,6 +967,15 @@ const styles = StyleSheet.create({
     },
     staleText: {
         flex: 1, fontSize: 12, lineHeight: 17, color: Palette.warning, fontFamily: Fonts.medium,
+    },
+    changesNote: {
+        gap: 5, padding: Spacing.md, borderRadius: Radius.md,
+        backgroundColor: Palette.primarySurface,
+    },
+    changesHeader: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    changesLabel: {
+        fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase',
+        color: Palette.primary, fontFamily: Fonts.bold,
     },
     labNote: {
         gap: 3, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Palette.surface,

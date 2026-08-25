@@ -25,6 +25,11 @@ export interface Interpretation {
     }[];
     lifestyle_recommendations: { area: string; recommendation: string; rationale: string }[];
     biomarkers_of_concern: { name: string; observation: string; action: string }[];
+    /**
+     * What moved since the previous interpretation. Absent on anything generated before
+     * this field existed, and set to a fixed sentence on a first-ever read.
+     */
+    changes_since_last?: string;
     follow_up: string;
     limitations: string[];
 }
@@ -113,6 +118,18 @@ export const generateInterpretation = (
         method: 'POST',
         body: { force: false, ...params },
     });
+
+/**
+ * Whether `changes_since_last` is worth showing.
+ *
+ * False for interpretations generated before the field existed, and for the first-run
+ * sentence the schema asks for — "no previous assessment to compare against" is not news
+ * to someone who has only ever had one result.
+ */
+export const hasMeaningfulChanges = (i: Interpretation | null): boolean => {
+    const text = i?.changes_since_last?.trim();
+    return Boolean(text) && !/^first interpretation/i.test(text!);
+};
 
 export const RISK_META: Record<RiskLevel, { label: string; color: string; bg: string }> = {
     high: { label: 'High', color: '#DC2626', bg: '#FEF2F2' },
