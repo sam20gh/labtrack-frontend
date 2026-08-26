@@ -21,6 +21,7 @@ import Toast from 'react-native-toast-message';
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
 import { getLatestBiomarkers, FLAG_META, byClinicalPriority, describeMovement, formatValue } from '@/lib/biomarkers';
+import { listGenotypeFiles } from '@/lib/genotype';
 import type { BiomarkerSummary, TestResult } from '@/types/api';
 
 export default function ResultsScreen() {
@@ -30,19 +31,22 @@ export default function ResultsScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showReports, setShowReports] = useState(false);
+    const [dna, setDna] = useState<{ _id: string; labName?: string; assayType: string }[]>([]);
 
     const load = useCallback(async () => {
         try {
             // /test-results is scoped by user_id and rejects anything but the caller's own
             const userId = await getUserId();
-            const [{ biomarkers: bs }, reportData] = await Promise.all([
+            const [{ biomarkers: bs }, reportData, dnaData] = await Promise.all([
                 getLatestBiomarkers(),
                 userId
                     ? api.get<TestResult[]>(`/test-results?user_id=${userId}`).catch(() => [])
                     : Promise.resolve([] as TestResult[]),
+                listGenotypeFiles().catch(() => []),
             ]);
             setBiomarkers(bs || []);
             setReports(Array.isArray(reportData) ? reportData : []);
+            setDna(Array.isArray(dnaData) ? dnaData : []);
         } catch (error) {
             if (error instanceof ApiError && !error.isAuthError) {
                 Toast.show({ type: 'error', text1: 'Error', text2: error.message });
@@ -76,6 +80,26 @@ export default function ResultsScreen() {
                             : `All ${biomarkers.length} within your range`
                         : 'Nothing recorded yet'}
                 </Text>
+
+                {dna.map((d) => (
+                    <TouchableOpacity
+                        key={d._id}
+                        style={styles.dnaCard}
+                        onPress={() => router.push(`/dna/${d._id}`)}
+                        accessibilityRole="button"
+                    >
+                        <View style={styles.dnaIcon}>
+                            <Ionicons name="git-branch-outline" size={18} color="#7C3AED" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.dnaTitle}>Your DNA results</Text>
+                            <Text style={styles.dnaBody}>
+                                {d.labName || 'Genetic test'} · some of the ranges below are personalised to it
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                    </TouchableOpacity>
+                ))}
 
                 {!biomarkers.length && (
                     <View style={styles.empty}>
@@ -188,6 +212,16 @@ const styles = StyleSheet.create({
     badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
     badgeText: { fontSize: 11, fontWeight: '700' },
     geneNote: { fontSize: 9, color: '#7C3AED', fontWeight: '600' },
+    dnaCard: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        backgroundColor: '#F3E8FF', borderRadius: 12, padding: 14, marginBottom: 16,
+    },
+    dnaIcon: {
+        width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    dnaTitle: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
+    dnaBody: { fontSize: 12, color: '#6B7280', marginTop: 2 },
     reportsSection: { marginTop: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 8 },
     reportsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
     reportsTitle: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
