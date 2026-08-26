@@ -490,7 +490,7 @@ const AnalysisCard = ({
         <View style={styles.analysisCard}>
             <View style={styles.analysisHeader}>
                 <View style={styles.analysisIcon}>
-                    <Ionicons name="sparkles" size={16} color={Palette.primary} />
+                    <Ionicons name="sparkles" size={18} color={Palette.primary} />
                 </View>
                 <View style={styles.flex}>
                     <Text style={styles.analysisTest} numberOfLines={1}>{headTitle}</Text>
@@ -500,7 +500,7 @@ const AnalysisCard = ({
                 </View>
                 {verified ? (
                     <View style={[styles.aiBadge, styles.verifiedBadge]}>
-                        <Ionicons name="checkmark-circle" size={11} color={Palette.success} />
+                        <Ionicons name="checkmark-circle" size={13} color={Palette.success} />
                         <Text style={[styles.aiBadgeText, { color: Palette.success }]}>Verified</Text>
                     </View>
                 ) : interpretation ? (
@@ -512,7 +512,7 @@ const AnalysisCard = ({
                 reader has to know which draw it describes. */}
             {interpretation && !isForLatestResult && (
                 <View style={styles.staleNote}>
-                    <Ionicons name="time-outline" size={14} color={Palette.warning} />
+                    <Ionicons name="time-outline" size={16} color={Palette.warning} />
                     <Text style={styles.staleText}>
                         This analysis covers your {fmt(source?.date) ?? 'earlier'} result.
                         Your newer {latestResult?.testType || 'result'} has not been analysed yet.
@@ -542,14 +542,16 @@ const AnalysisCard = ({
                 </View>
             ) : interpretation ? (
                 <>
-                    <Text style={styles.analysisSummary} numberOfLines={expanded ? undefined : 4}>
+                    {/* 5 rather than 4: at 16px the same clamp showed noticeably less
+                        summary than it did at 13px. */}
+                    <Text style={styles.analysisSummary} numberOfLines={expanded ? undefined : 5}>
                         {interpretation.summary}
                     </Text>
 
                     {hasMeaningfulChanges(interpretation) && (
                         <View style={styles.changesNote}>
                             <View style={styles.changesHeader}>
-                                <Ionicons name="git-compare-outline" size={13} color={Palette.primary} />
+                                <Ionicons name="git-compare-outline" size={15} color={Palette.primary} />
                                 <Text style={styles.changesLabel}>What changed</Text>
                             </View>
                             <Text style={styles.detailBody} numberOfLines={expanded ? undefined : 3}>
@@ -962,53 +964,53 @@ const styles = StyleSheet.create({
         width: 32, height: 32, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
-    analysisTest: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold },
-    analysisMeta: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 1 },
+    analysisTest: { fontSize: 17, color: Palette.text, fontFamily: Fonts.semibold },
+    analysisMeta: { fontSize: 14, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 2 },
     aiBadge: {
         paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm,
         backgroundColor: Palette.primarySurface,
     },
-    aiBadgeText: { fontSize: 10, color: Palette.primary, fontFamily: Fonts.bold, letterSpacing: 0.5 },
-    analysisSummary: { fontSize: 13, lineHeight: 20, color: Palette.text, fontFamily: Fonts.regular },
+    aiBadgeText: { fontSize: 12, color: Palette.primary, fontFamily: Fonts.bold, letterSpacing: 0.5 },
+    analysisSummary: { fontSize: 16, lineHeight: 24, color: Palette.text, fontFamily: Fonts.regular },
     analysisDetail: { gap: Spacing.lg, paddingTop: Spacing.xs },
     analysisBlock: { gap: 6 },
     analysisBlockTitle: {
-        fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase',
+        fontSize: 13, letterSpacing: 0.6, textTransform: 'uppercase',
         color: Palette.textMuted, fontFamily: Fonts.bold,
     },
     detailItem: {
         gap: 2, paddingLeft: Spacing.md,
         borderLeftWidth: 2, borderLeftColor: Palette.borderLight,
     },
-    detailName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    detailBody: { fontSize: 12, lineHeight: 18, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    detailAction: { fontSize: 12, lineHeight: 18, color: Palette.primary, fontFamily: Fonts.medium },
+    detailName: { fontSize: 16, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
+    detailBody: { fontSize: 15, lineHeight: 22, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    detailAction: { fontSize: 15, lineHeight: 22, color: Palette.primary, fontFamily: Fonts.medium },
     riskRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
     riskPill: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm },
-    riskText: { fontSize: 10, fontFamily: Fonts.bold },
+    riskText: { fontSize: 12, fontFamily: Fonts.bold },
     analysisFooter: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         borderTopWidth: 1, borderTopColor: Palette.borderLight, paddingTop: Spacing.md,
     },
     footerLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    footerLinkText: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.semibold },
-    regenerateText: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.semibold },
+    footerLinkText: { fontSize: 15, color: Palette.primary, fontFamily: Fonts.semibold },
+    regenerateText: { fontSize: 15, color: Palette.textSecondary, fontFamily: Fonts.semibold },
     disabledText: { color: Palette.textMuted },
     buttonDisabled: { opacity: 0.6 },
-    analysisDisclaimer: { fontSize: 11, lineHeight: 15, color: Palette.textMuted, fontFamily: Fonts.regular },
+    analysisDisclaimer: { fontSize: 13, lineHeight: 19, color: Palette.textMuted, fontFamily: Fonts.regular },
     staleNote: {
         flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm,
         padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Palette.warningSurface,
     },
     staleText: {
-        flex: 1, fontSize: 12, lineHeight: 17, color: Palette.warning, fontFamily: Fonts.medium,
+        flex: 1, fontSize: 14, lineHeight: 20, color: Palette.warning, fontFamily: Fonts.medium,
     },
     withheldNote: {
         flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md,
         padding: Spacing.lg, borderRadius: Radius.md, backgroundColor: Palette.surface,
     },
     withheldTitle: {
-        fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold, marginBottom: 3,
+        fontSize: 17, color: Palette.text, fontFamily: Fonts.semibold, marginBottom: 4,
     },
     verifiedBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 3,
@@ -1020,14 +1022,14 @@ const styles = StyleSheet.create({
     },
     changesHeader: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     changesLabel: {
-        fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase',
+        fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase',
         color: Palette.primary, fontFamily: Fonts.bold,
     },
     labNote: {
         gap: 3, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Palette.surface,
     },
     labNoteLabel: {
-        fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase',
+        fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase',
         color: Palette.textMuted, fontFamily: Fonts.bold,
     },
 

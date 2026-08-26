@@ -35,10 +35,10 @@ function FindingCard({ finding, onBiomarker }: { finding: Finding; onBiomarker: 
     if (finding.withheld) {
         return (
             <View style={[styles.card, styles.cardMuted]}>
-                <View style={styles.cardHead}>
-                    <Text style={styles.cardTitle}>{finding.name}</Text>
+                <Text style={styles.cardTitle}>{finding.name}</Text>
+                <View style={styles.cardMeta}>
                     <View style={[styles.chip, { backgroundColor: Palette.borderLight }]}>
-                        <Ionicons name="time-outline" size={11} color={Palette.textSecondary} />
+                        <Ionicons name="time-outline" size={13} color={Palette.textSecondary} />
                         <Text style={[styles.chipText, { color: Palette.textSecondary }]}>In review</Text>
                     </View>
                 </View>
@@ -52,8 +52,8 @@ function FindingCard({ finding, onBiomarker }: { finding: Finding; onBiomarker: 
     if (finding.status !== 'called') {
         return (
             <View style={[styles.card, styles.cardMuted]}>
-                <View style={styles.cardHead}>
-                    <Text style={styles.cardTitle}>{finding.name}</Text>
+                <Text style={styles.cardTitle}>{finding.name}</Text>
+                <View style={styles.cardMeta}>
                     <View style={[styles.chip, { backgroundColor: Palette.borderLight }]}>
                         <Text style={[styles.chipText, { color: Palette.textSecondary }]}>
                             {finding.status === 'not_covered' ? 'Not tested' : 'No result'}
@@ -69,24 +69,26 @@ function FindingCard({ finding, onBiomarker }: { finding: Finding; onBiomarker: 
 
     return (
         <View style={styles.card}>
-            <View style={styles.cardHead}>
-                <Text style={styles.cardTitle}>{finding.name}</Text>
+            {/* Title takes the full width. At this type size a chip sharing the row squeezes
+                longer names ("Vitamin B12 absorption") onto three cramped lines. */}
+            <Text style={styles.cardTitle}>{finding.name}</Text>
+
+            <View style={styles.cardMeta}>
                 <View style={[styles.chip, { backgroundColor: tone.bg }]}>
                     <Text style={[styles.chipText, { color: tone.color }]}>{finding.label}</Text>
                 </View>
+                <Text style={styles.genotype}>
+                    {finding.gene}
+                    {finding.alleleName ? ` · ${finding.alleleName}` : ''}
+                    {finding.genotype ? ` · ${finding.genotype}` : ''}
+                </Text>
             </View>
-
-            <Text style={styles.genotype}>
-                {finding.gene}
-                {finding.alleleName ? ` · ${finding.alleleName}` : ''}
-                {finding.genotype ? ` · ${finding.genotype}` : ''}
-            </Text>
 
             <Text style={styles.cardDetail}>{finding.detail}</Text>
 
             {!!finding.incomplete && (
                 <View style={styles.note}>
-                    <Ionicons name="alert-circle-outline" size={13} color={Palette.warning} />
+                    <Ionicons name="alert-circle-outline" size={16} color={Palette.warning} />
                     <Text style={styles.noteText}>{finding.incomplete}</Text>
                 </View>
             )}
@@ -98,7 +100,7 @@ function FindingCard({ finding, onBiomarker }: { finding: Finding; onBiomarker: 
                     accessibilityRole="button"
                 >
                     <Text style={styles.linkText}>See how this affects your results</Text>
-                    <Ionicons name="arrow-forward" size={13} color={Palette.primary} />
+                    <Ionicons name="arrow-forward" size={16} color={Palette.primary} />
                 </TouchableOpacity>
             )}
         </View>
@@ -213,7 +215,7 @@ export default function DnaReportScreen() {
                     </Text>
                     {!file.clinicianReleased && file.summary.withheld > 0 && (
                         <View style={styles.reviewBanner}>
-                            <Ionicons name="time-outline" size={14} color={Palette.info} />
+                            <Ionicons name="time-outline" size={16} color={Palette.info} />
                             <Text style={styles.reviewText}>
                                 {file.summary.withheld} result{file.summary.withheld === 1 ? '' : 's'} awaiting
                                 clinician review
@@ -225,7 +227,7 @@ export default function DnaReportScreen() {
                 {groups.map((group) => (
                     <View key={group.category} style={styles.section}>
                         <View style={styles.sectionHead}>
-                            <Ionicons name={group.icon as any} size={16} color={Palette.primary} />
+                            <Ionicons name={group.icon as any} size={19} color={Palette.primary} />
                             <Text style={styles.sectionTitle}>{group.title}</Text>
                         </View>
                         <Text style={styles.sectionBlurb}>{group.blurb}</Text>
@@ -277,7 +279,7 @@ export default function DnaReportScreen() {
                 {/* The section that stops silence being read as reassurance. */}
                 <View style={styles.section}>
                     <View style={styles.sectionHead}>
-                        <Ionicons name="information-circle-outline" size={16} color={Palette.textSecondary} />
+                        <Ionicons name="information-circle-outline" size={19} color={Palette.textSecondary} />
                         <Text style={styles.sectionTitle}>What this test did not cover</Text>
                     </View>
                     <Text style={styles.sectionBlurb}>
@@ -295,7 +297,7 @@ export default function DnaReportScreen() {
                                     accessibilityRole="button"
                                 >
                                     <Text style={styles.linkText}>See tests that cover this</Text>
-                                    <Ionicons name="arrow-forward" size={13} color={Palette.primary} />
+                                    <Ionicons name="arrow-forward" size={16} color={Palette.primary} />
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -319,27 +321,27 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
         borderBottomWidth: 1, borderBottomColor: Palette.borderLight,
     },
-    headerTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
+    headerTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.text },
     scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
     empty: { padding: Spacing.xxxl, alignItems: 'center' },
-    emptyText: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textSecondary },
+    emptyText: { fontFamily: Fonts.regular, fontSize: 16, color: Palette.textSecondary },
 
     meta: { marginBottom: Spacing.xl },
-    metaLab: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
-    metaLine: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted, marginTop: 2 },
+    metaLab: { fontFamily: Fonts.semibold, fontSize: 18, color: Palette.text },
+    metaLine: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textMuted, marginTop: 3, lineHeight: 20 },
     reviewBanner: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         backgroundColor: Palette.infoSurface, borderRadius: Radius.md,
         paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, marginTop: Spacing.md,
     },
-    reviewText: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.info, flex: 1 },
+    reviewText: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.info, flex: 1, lineHeight: 20 },
 
     section: { marginBottom: Spacing.xxl },
     sectionHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    sectionTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
+    sectionTitle: { fontFamily: Fonts.bold, fontSize: 19, color: Palette.text },
     sectionBlurb: {
-        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary,
-        marginTop: 2, marginBottom: Spacing.md,
+        fontFamily: Fonts.regular, fontSize: 14, color: Palette.textSecondary,
+        lineHeight: 20, marginTop: 3, marginBottom: Spacing.md,
     },
 
     card: {
@@ -348,53 +350,53 @@ const styles = StyleSheet.create({
     },
     cardMuted: { backgroundColor: Palette.surface, ...Shadow.card, shadowOpacity: 0 },
     cardGap: { backgroundColor: Palette.surface, borderStyle: 'dashed', shadowOpacity: 0 },
-    cardHead: {
-        flexDirection: 'row', alignItems: 'flex-start',
-        justifyContent: 'space-between', gap: Spacing.sm,
+    cardMeta: {
+        flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap',
+        gap: Spacing.sm, marginTop: Spacing.sm,
     },
-    cardTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text, flex: 1 },
+    cardTitle: { fontFamily: Fonts.semibold, fontSize: 17, color: Palette.text, lineHeight: 23 },
     genotype: {
-        fontFamily: Fonts.medium, fontSize: 11, color: Palette.textMuted,
-        letterSpacing: 0.5, marginTop: 4,
+        fontFamily: Fonts.medium, fontSize: 13, color: Palette.textMuted,
+        letterSpacing: 0.4,
     },
     cardDetail: {
-        fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary,
-        lineHeight: 19, marginTop: Spacing.sm,
+        fontFamily: Fonts.regular, fontSize: 16, color: Palette.text,
+        lineHeight: 24, marginTop: Spacing.md,
     },
 
     chip: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
-        paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.pill,
+        paddingHorizontal: Spacing.md, paddingVertical: 5, borderRadius: Radius.pill,
     },
-    chipText: { fontFamily: Fonts.semibold, fontSize: 11 },
+    chipText: { fontFamily: Fonts.semibold, fontSize: 13 },
 
     note: {
         flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm,
         backgroundColor: Palette.warningSurface, borderRadius: Radius.md,
         padding: Spacing.md, marginTop: Spacing.md,
     },
-    noteText: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.warning, flex: 1, lineHeight: 17 },
+    noteText: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.warning, flex: 1, lineHeight: 21 },
 
     link: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: Spacing.md },
-    linkText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
+    linkText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.primary },
 
     consentCard: {
         flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start',
         backgroundColor: Palette.primarySurface, borderRadius: Radius.lg, padding: Spacing.lg,
     },
-    consentTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
+    consentTitle: { fontFamily: Fonts.semibold, fontSize: 17, color: Palette.text },
     consentBody: {
-        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary,
-        lineHeight: 18, marginTop: 4,
+        fontFamily: Fonts.regular, fontSize: 15, color: Palette.textSecondary,
+        lineHeight: 22, marginTop: 5,
     },
     consentButton: {
         borderWidth: 1, borderColor: Palette.primary, borderRadius: Radius.md,
         paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.md,
     },
-    consentButtonText: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.primary },
+    consentButtonText: { fontFamily: Fonts.semibold, fontSize: 16, color: Palette.primary },
 
     footer: {
-        fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted,
-        lineHeight: 17, textAlign: 'center', marginTop: Spacing.lg,
+        fontFamily: Fonts.regular, fontSize: 13, color: Palette.textMuted,
+        lineHeight: 20, textAlign: 'center', marginTop: Spacing.lg,
     },
 });
