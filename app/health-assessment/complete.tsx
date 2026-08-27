@@ -21,6 +21,20 @@ import {
 
 const { width } = Dimensions.get('window');
 
+/**
+ * mood.tsx emits its own option ids; `MoodEntrySchema.mood` is a required enum of
+ * Excellent | Good | Okay | Poor | Bad. Sending the raw id fails the backend's
+ * `runValidators` check, which 500s the whole PUT — so the assessment never gets
+ * `isComplete: true` and the home screen keeps asking for it. Translate here.
+ */
+const MOOD_ENUM: Record<string, string> = {
+    very_sad: 'Bad',
+    sad: 'Poor',
+    neutral: 'Okay',
+    happy: 'Good',
+    very_happy: 'Excellent',
+};
+
 export default function CompleteScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -119,9 +133,10 @@ export default function CompleteScreen() {
                     checkupFrequency: checkupFrequency ? String(checkupFrequency) : undefined,
                 },
 
-                // Mood entry (if provided)
-                moodHistory: mood ? [{
-                    mood: String(mood),
+                // Mood entry (if provided). An unrecognised id is dropped rather than
+                // sent through — one bad value would reject the entire assessment.
+                moodHistory: mood && MOOD_ENUM[String(mood)] ? [{
+                    mood: MOOD_ENUM[String(mood)],
                     date: new Date(),
                 }] : [],
 
