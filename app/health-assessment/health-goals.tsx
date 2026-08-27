@@ -9,26 +9,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { parseArrayParam } from './params';
+import { healthGoals } from './options';
 
-interface HealthGoal {
-    id: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    label: string;
-}
-
-const healthGoals: HealthGoal[] = [
-    { id: 'improve_health', icon: 'fitness-outline', label: 'Improve my overall health' },
-    { id: 'predict_health', icon: 'analytics-outline', label: 'I wanna predict my health' },
-    { id: 'manage_medications', icon: 'medkit-outline', label: 'Manage my medications' },
-    { id: 'try_ai', icon: 'chatbubble-ellipses-outline', label: 'I wanna try Dr. T AI assistant' },
-    { id: 'track_activity', icon: 'footsteps-outline', label: 'I want to track activity' },
-    { id: 'just_try', icon: 'phone-portrait-outline', label: 'Just wanna try the app' },
-];
 
 export default function HealthGoalsScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+    const [selectedGoals, setSelectedGoals] = useState<string[]>(parseArrayParam(params.healthGoals));
 
     const toggleGoal = (goalId: string) => {
         setSelectedGoals(prev =>

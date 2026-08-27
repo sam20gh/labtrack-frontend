@@ -11,14 +11,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramString } from './params';
 
 const MAX_CHARS = 500;
 
 export default function HealthNotesScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [notes, setNotes] = useState('');
-    const [history, setHistory] = useState<string[]>(['']);
+    const [notes, setNotes] = useState(paramString(params.healthNotes) ?? '');
+    const [history, setHistory] = useState<string[]>([paramString(params.healthNotes) ?? '']);
     const [historyIndex, setHistoryIndex] = useState(0);
 
     const handleTextChange = (text: string) => {

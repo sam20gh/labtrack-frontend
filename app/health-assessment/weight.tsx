@@ -10,14 +10,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
+import { paramNumber, paramString } from './params';
 
 const { width } = Dimensions.get('window');
 
 export default function WeightScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [unit, setUnit] = useState<'lbs' | 'kg'>('lbs');
-    const [weight, setWeight] = useState(140);
+    // A saved weight is always kg (userModel.js stores metric), so seeding also
+    // switches the unit rather than converting into the imperial default.
+    const seededWeight = paramString(params.weight);
+    const [unit, setUnit] = useState<'lbs' | 'kg'>(seededWeight ? 'kg' : 'lbs');
+    const [weight, setWeight] = useState(paramNumber(params.weight, 140));
 
     const minWeight = unit === 'lbs' ? 66 : 30;
     const maxWeight = unit === 'lbs' ? 440 : 200;

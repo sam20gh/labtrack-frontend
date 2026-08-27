@@ -8,19 +8,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramString } from './params';
+import { checkupFrequencies as frequencies } from './options';
 
-const frequencies = [
-    { id: 'weekly', label: 'Weekly' },
-    { id: 'bi-weekly', label: 'Bi-weekly' },
-    { id: 'monthly', label: 'Monthly' },
-    { id: 'bi-monthly', label: 'Bi-monthly' },
-    { id: 'yearly', label: 'Yearly' },
-];
 
 export default function CheckupFrequencyScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [selectedFrequency, setSelectedFrequency] = useState<string | null>('monthly');
+    const [selectedFrequency, setSelectedFrequency] = useState<string | null>(paramString(params.checkupFrequency) ?? 'monthly');
 
     const handleContinue = () => {
         router.push({

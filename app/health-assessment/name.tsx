@@ -11,11 +11,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramString } from './params';
 
 export default function NameScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [name, setName] = useState('');
+    const [name, setName] = useState(paramString(params.fullName) ?? '');
 
     const handleContinue = () => {
         if (name.trim()) {

@@ -9,11 +9,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramNumber } from './params';
 
 export default function CalorieIntakeScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [calories, setCalories] = useState(0);
+    // 'unknown' is a real answer from the Don't know button; it is not a number.
+    const [calories, setCalories] = useState(paramNumber(params.calorieIntake, 0));
 
     const incrementCalories = (amount: number) => {
         setCalories(prev => Math.max(0, prev + amount));

@@ -8,26 +8,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramNumber } from './params';
+import { fitnessLevels } from './options';
 
-interface FitnessLevel {
-    level: number;
-    label: string;
-    description: string;
-    color: string;
-}
-
-const fitnessLevels: FitnessLevel[] = [
-    { level: 1, label: 'Sedentary', description: 'I rarely exercise', color: '#EF4444' },
-    { level: 2, label: 'Light', description: 'I exercise 1 - 2 times weekly', color: '#F97316' },
-    { level: 3, label: 'Moderate', description: 'I exercise 2 - 3 times weekly', color: '#EAB308' },
-    { level: 4, label: 'Athletic', description: 'I exercise 3 - 4 times weekly', color: '#22C55E' },
-    { level: 5, label: 'Elite', description: 'I exercise 5+ times weekly', color: '#10B981' },
-];
 
 export default function FitnessLevelScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [selectedLevel, setSelectedLevel] = useState(4);
+    const [selectedLevel, setSelectedLevel] = useState(paramNumber(params.fitnessLevel, 4));
 
     const currentFitness = fitnessLevels.find(f => f.level === selectedLevel) || fitnessLevels[3];
 

@@ -8,26 +8,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramString } from './params';
+import { moodOptions } from './options';
 
-interface MoodOption {
-    id: string;
-    emoji: string;
-    label: string;
-    color: string;
-}
-
-const moodOptions: MoodOption[] = [
-    { id: 'very_sad', emoji: '😢', label: "I'm feeling very sad", color: '#3B82F6' },
-    { id: 'sad', emoji: '😔', label: "I'm feeling sad", color: '#6B7280' },
-    { id: 'neutral', emoji: '😐', label: "I'm feeling okay", color: '#9CA3AF' },
-    { id: 'happy', emoji: '😊', label: "I'm feeling happy", color: '#F59E0B' },
-    { id: 'very_happy', emoji: '😄', label: "I'm feeling very happy", color: '#EAB308' },
-];
 
 export default function MoodScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [selectedMood, setSelectedMood] = useState<string | null>('very_happy');
+    const [selectedMood, setSelectedMood] = useState<string | null>(paramString(params.mood) ?? 'very_happy');
 
     const currentMood = moodOptions.find(m => m.id === selectedMood);
 

@@ -10,13 +10,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { parseArrayParam, parseBooleanParam } from './params';
 
 export default function AllergiesScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [hasAllergies, setHasAllergies] = useState<boolean | null>(null);
+    const [hasAllergies, setHasAllergies] = useState<boolean | null>(
+        params.hasAllergies !== undefined ? parseBooleanParam(params.hasAllergies) : null
+    );
     const [allergyInput, setAllergyInput] = useState('');
-    const [allergies, setAllergies] = useState<string[]>([]);
+    const [allergies, setAllergies] = useState<string[]>(parseArrayParam(params.allergies));
 
     const addAllergy = () => {
         if (allergyInput.trim() && !allergies.includes(allergyInput.trim())) {

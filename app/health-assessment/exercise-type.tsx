@@ -9,27 +9,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { parseArrayParam } from './params';
+import { exerciseTypes } from './options';
 
-interface ExerciseType {
-    id: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    label: string;
-}
-
-const exerciseTypes: ExerciseType[] = [
-    { id: 'jogging', icon: 'walk-outline', label: 'Jogging' },
-    { id: 'cardio', icon: 'heart-outline', label: 'Cardio' },
-    { id: 'swimming', icon: 'water-outline', label: 'Swimming' },
-    { id: 'walking', icon: 'footsteps-outline', label: 'Walking' },
-    { id: 'cycling', icon: 'bicycle-outline', label: 'Cycling' },
-    { id: 'aerobics', icon: 'body-outline', label: 'Aerobics' },
-    { id: 'other', icon: 'fitness-outline', label: 'Other' },
-];
 
 export default function ExerciseTypeScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+    const [selectedTypes, setSelectedTypes] = useState<string[]>(parseArrayParam(params.exerciseTypes));
 
     const toggleType = (typeId: string) => {
         setSelectedTypes(prev =>

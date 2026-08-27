@@ -8,27 +8,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramNumber } from './params';
+import { sleepLevels } from './options';
 
-interface SleepLevel {
-    level: number;
-    label: string;
-    hours: string;
-    /** Midpoint of `hours`, saved as healthAssessment.lifestyle.sleepHoursPerNight */
-    hoursValue: number;
-}
-
-const sleepLevels: SleepLevel[] = [
-    { level: 1, label: 'Very Poor', hours: 'Less than 4 hours daily', hoursValue: 3.5 },
-    { level: 2, label: 'Poor', hours: '4 - 5 hours daily', hoursValue: 4.5 },
-    { level: 3, label: 'Fair', hours: '5 - 6 hours daily', hoursValue: 5.5 },
-    { level: 4, label: 'Good', hours: '6 - 7 hours daily', hoursValue: 6.5 },
-    { level: 5, label: 'Moderate', hours: '6 - 7 hours daily', hoursValue: 6.5 },
-];
 
 export default function SleepLevelScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [selectedLevel, setSelectedLevel] = useState(5);
+    const [selectedLevel, setSelectedLevel] = useState(paramNumber(params.sleepLevel, 5));
 
     const currentSleep = sleepLevels.find(s => s.level === selectedLevel) || sleepLevels[4];
 

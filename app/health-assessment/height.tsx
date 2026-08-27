@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramNumber } from './params';
 
 const ITEM_HEIGHT = 50;
 const VISIBLE_ITEMS = 5;
@@ -18,7 +19,8 @@ export default function HeightScreen() {
     const params = useLocalSearchParams();
     const flatListRef = useRef<FlatList>(null);
     const [unit, setUnit] = useState<'cm' | 'inch'>('cm');
-    const [height, setHeight] = useState(162);
+    // Stored in cm, and the picker's initialScrollIndex already follows this value.
+    const [height, setHeight] = useState(paramNumber(params.height, 162));
 
     // Generate height values
     const cmValues = Array.from({ length: 121 }, (_, i) => 120 + i); // 120-240 cm

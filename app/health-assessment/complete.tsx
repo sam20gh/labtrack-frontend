@@ -13,27 +13,15 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
+import type { HealthAssessment } from '@/types/api';
 import {
     AssessmentParams,
     parseArrayParam,
     hasListEntries,
+    MOOD_ID_TO_ENUM,
 } from './params';
 
 const { width } = Dimensions.get('window');
-
-/**
- * mood.tsx emits its own option ids; `MoodEntrySchema.mood` is a required enum of
- * Excellent | Good | Okay | Poor | Bad. Sending the raw id fails the backend's
- * `runValidators` check, which 500s the whole PUT — so the assessment never gets
- * `isComplete: true` and the home screen keeps asking for it. Translate here.
- */
-const MOOD_ENUM: Record<string, string> = {
-    very_sad: 'Bad',
-    sad: 'Poor',
-    neutral: 'Okay',
-    happy: 'Good',
-    very_happy: 'Excellent',
-};
 
 export default function CompleteScreen() {
     const router = useRouter();
@@ -105,6 +93,23 @@ export default function CompleteScreen() {
                 voiceDuration,
             } = params as AssessmentParams;
 
+            // What is already stored. A retake resubmits the whole assessment, and the
+            // backend PUT replaces rather than merges, so anything append-only has to be
+            // carried forward by the client. A failure here is not fatal: worst case the
+            // person keeps their newest answers and loses older mood/note entries.
+            let previousMoodHistory: any[] = [];
+            let previousNotes: any[] = [];
+            try {
+                const existing = await api.get<{ healthAssessment?: HealthAssessment }>(
+                    `/users/${userId}/health-assessment`
+                );
+                previousMoodHistory = existing?.healthAssessment?.moodHistory ?? [];
+                previousNotes = existing?.healthAssessment?.notes ?? [];
+            } catch (err) {
+                console.warn('Could not read the existing assessment:', err);
+            }
+            const latestPreviousNote = previousNotes[previousNotes.length - 1]?.content;
+
             // Parse name
             const nameParts = fullName ? String(fullName).split(' ') : [];
             const firstName = nameParts[0] || '';
@@ -135,10 +140,17 @@ export default function CompleteScreen() {
 
                 // Mood entry (if provided). An unrecognised id is dropped rather than
                 // sent through — one bad value would reject the entire assessment.
-                moodHistory: mood && MOOD_ENUM[String(mood)] ? [{
-                    mood: MOOD_ENUM[String(mood)],
-                    date: new Date(),
-                }] : [],
+                //
+                // Appended to what is already stored: the backend replaces the whole
+                // healthAssessment object, so sending only today's mood would erase every
+                // earlier one the first time someone updates their answers.
+                moodHistory: [
+                    ...previousMoodHistory,
+                    ...(mood && MOOD_ID_TO_ENUM[String(mood)] ? [{
+                        mood: MOOD_ID_TO_ENUM[String(mood)],
+                        date: new Date(),
+                    }] : []),
+                ],
 
                 // Nutrition
                 nutritionGoals: parsedCalories ? {
@@ -167,12 +179,16 @@ export default function CompleteScreen() {
                     }))
                     : [],
 
-                // Notes
-                notes: healthNotes ? [{
-                    content: String(healthNotes),
-                    category: 'General',
-                    createdAt: new Date(),
-                }] : [],
+                // Notes. Kept alongside the earlier ones for the same reason as mood —
+                // and an unchanged note is not written twice.
+                notes: [
+                    ...previousNotes,
+                    ...(healthNotes && String(healthNotes) !== latestPreviousNote ? [{
+                        content: String(healthNotes),
+                        category: 'General',
+                        createdAt: new Date(),
+                    }] : []),
+                ],
 
                 // Analysis preferences
                 analysisPreferences: {
@@ -281,6 +297,18 @@ export default function CompleteScreen() {
         saveHealthAssessment();
     }, []);
 
+    /**
+     * A failed save used to leave the person on a screen that said "Assessment Complete!"
+     * with a Go to Home button — the answers were gone and nothing said so. Retrying has
+     * to reset the guard, which is what stops the save running twice on mount.
+     */
+    const handleRetrySave = () => {
+        hasSaved.current = false;
+        setSaveError(null);
+        setIsSaving(true);
+        saveHealthAssessment();
+    };
+
     const handleGoToHome = () => {
         // Navigate to home/tabs and reset the stack
         router.replace('/(tabs)');
@@ -343,85 +371,98 @@ export default function CompleteScreen() {
                 <Animated.View
                     style={[
                         styles.successCircle,
+                        saveError && styles.errorCircle,
                         {
                             transform: [{ scale: scaleAnim }],
                         },
                     ]}
                 >
-                    <View style={styles.innerCircle}>
+                    <View style={[styles.innerCircle, saveError && styles.innerCircleError]}>
                         <Animated.View style={{ opacity: checkAnim }}>
-                            <Ionicons name="checkmark" size={80} color="#fff" />
+                            <Ionicons name={saveError ? 'alert' : 'checkmark'} size={80} color="#fff" />
                         </Animated.View>
                     </View>
                 </Animated.View>
 
                 {/* Text Content */}
                 <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
-                    <Text style={styles.title}>Assessment Complete!</Text>
+                    <Text style={styles.title}>
+                        {saveError ? "We couldn't save your answers" : 'Assessment Complete!'}
+                    </Text>
                     <Text style={styles.subtitle}>
                         {saveError
-                            ? `Your assessment was completed but there was an issue saving: ${saveError}. You can try again from your profile.`
+                            ? `${saveError}. Your answers are still here — try again, or come back to it from Profile › Health profile.`
                             : "Great job! Your health profile has been created. We'll use this information to provide personalized insights and recommendations."
                         }
                     </Text>
 
-                    {/* Summary Stats */}
-                    <View style={styles.statsContainer}>
-                        <View style={styles.statItem}>
-                            <View style={styles.statIcon}>
-                                <Ionicons name="document-text" size={24} color="#7C3AED" />
+                    {!saveError && (
+                        <>
+                            {/* Summary Stats */}
+                            <View style={styles.statsContainer}>
+                                <View style={styles.statItem}>
+                                    <View style={styles.statIcon}>
+                                        <Ionicons name="document-text" size={24} color="#7C3AED" />
+                                    </View>
+                                    <Text style={styles.statLabel}>Profile</Text>
+                                    <Text style={styles.statValue}>Complete</Text>
+                                </View>
+                                <View style={styles.statDivider} />
+                                <View style={styles.statItem}>
+                                    <View style={styles.statIcon}>
+                                        <Ionicons name="shield-checkmark" size={24} color="#10B981" />
+                                    </View>
+                                    <Text style={styles.statLabel}>Data</Text>
+                                    <Text style={styles.statValue}>Secured</Text>
+                                </View>
+                                <View style={styles.statDivider} />
+                                <View style={styles.statItem}>
+                                    <View style={styles.statIcon}>
+                                        <Ionicons name="analytics" size={24} color="#3B82F6" />
+                                    </View>
+                                    <Text style={styles.statLabel}>Insights</Text>
+                                    <Text style={styles.statValue}>Ready</Text>
+                                </View>
                             </View>
-                            <Text style={styles.statLabel}>Profile</Text>
-                            <Text style={styles.statValue}>Complete</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <View style={styles.statIcon}>
-                                <Ionicons name="shield-checkmark" size={24} color="#10B981" />
-                            </View>
-                            <Text style={styles.statLabel}>Data</Text>
-                            <Text style={styles.statValue}>Secured</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <View style={styles.statIcon}>
-                                <Ionicons name="analytics" size={24} color="#3B82F6" />
-                            </View>
-                            <Text style={styles.statLabel}>Insights</Text>
-                            <Text style={styles.statValue}>Ready</Text>
-                        </View>
-                    </View>
 
-                    {/* What's Next */}
-                    <View style={styles.nextStepsContainer}>
-                        <Text style={styles.nextStepsTitle}>What's Next?</Text>
-                        <View style={styles.nextStepItem}>
-                            <View style={styles.nextStepNumber}>
-                                <Text style={styles.nextStepNumberText}>1</Text>
+                            {/* What's Next */}
+                            <View style={styles.nextStepsContainer}>
+                                <Text style={styles.nextStepsTitle}>What's Next?</Text>
+                                <View style={styles.nextStepItem}>
+                                    <View style={styles.nextStepNumber}>
+                                        <Text style={styles.nextStepNumberText}>1</Text>
+                                    </View>
+                                    <Text style={styles.nextStepText}>Explore personalized health recommendations</Text>
+                                </View>
+                                <View style={styles.nextStepItem}>
+                                    <View style={styles.nextStepNumber}>
+                                        <Text style={styles.nextStepNumberText}>2</Text>
+                                    </View>
+                                    <Text style={styles.nextStepText}>Order health tests tailored to your profile</Text>
+                                </View>
+                                <View style={styles.nextStepItem}>
+                                    <View style={styles.nextStepNumber}>
+                                        <Text style={styles.nextStepNumberText}>3</Text>
+                                    </View>
+                                    <Text style={styles.nextStepText}>Connect with healthcare professionals</Text>
+                                </View>
                             </View>
-                            <Text style={styles.nextStepText}>Explore personalized health recommendations</Text>
-                        </View>
-                        <View style={styles.nextStepItem}>
-                            <View style={styles.nextStepNumber}>
-                                <Text style={styles.nextStepNumberText}>2</Text>
-                            </View>
-                            <Text style={styles.nextStepText}>Order health tests tailored to your profile</Text>
-                        </View>
-                        <View style={styles.nextStepItem}>
-                            <View style={styles.nextStepNumber}>
-                                <Text style={styles.nextStepNumberText}>3</Text>
-                            </View>
-                            <Text style={styles.nextStepText}>Connect with healthcare professionals</Text>
-                        </View>
-                    </View>
+                        </>
+                    )}
                 </Animated.View>
             </View>
 
             {/* Bottom Buttons */}
             <Animated.View style={[styles.bottomContainer, { opacity: fadeAnim }]}>
-                <TouchableOpacity style={styles.primaryButton} onPress={handleGoToHome}>
-                    <Text style={styles.primaryButtonText}>Go to Home</Text>
-                </TouchableOpacity>
+                {saveError ? (
+                    <TouchableOpacity style={styles.primaryButton} onPress={handleRetrySave}>
+                        <Text style={styles.primaryButtonText}>Try again</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity style={styles.primaryButton} onPress={handleGoToHome}>
+                        <Text style={styles.primaryButtonText}>Go to Home</Text>
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity style={styles.secondaryButton} onPress={handleViewProfile}>
                     <Text style={styles.secondaryButtonText}>View My Profile</Text>
                 </TouchableOpacity>
@@ -482,6 +523,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 32,
+    },
+    errorCircle: {
+        backgroundColor: '#FEF2F2',
+    },
+    innerCircleError: {
+        backgroundColor: '#DC2626',
     },
     innerCircle: {
         width: 120,

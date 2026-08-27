@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramNumber } from './params';
 
 const { height } = Dimensions.get('window');
 const ITEM_HEIGHT = 50;
@@ -23,8 +24,8 @@ export default function BirthYearScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const flatListRef = useRef<FlatList>(null);
-    const [selectedYear, setSelectedYear] = useState(2001);
-    const [selectedMonth, setSelectedMonth] = useState(8);
+    const [selectedYear, setSelectedYear] = useState(paramNumber(params.birthYear, 2001));
+    const [selectedMonth, setSelectedMonth] = useState(paramNumber(params.birthMonth, 8));
 
     const months = [
         { num: 1, label: 'January' },
@@ -42,13 +43,16 @@ export default function BirthYearScreen() {
     ];
 
     useEffect(() => {
-        // Scroll to default year (2001)
-        const index = years.indexOf(2001);
+        // Scroll to the year in state — the default on a first run, the saved one on a retake.
+        const index = years.indexOf(selectedYear);
         if (index !== -1 && flatListRef.current) {
             setTimeout(() => {
                 flatListRef.current?.scrollToIndex({ index, animated: false });
             }, 100);
         }
+        // Mount only: this positions the picker at the starting year. Re-running it on
+        // every change would fight the user's own scrolling.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const calculateAge = () => {

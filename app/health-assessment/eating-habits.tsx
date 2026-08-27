@@ -9,48 +9,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramString } from './params';
+import { eatingHabits } from './options';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 64) / 2;
 
-interface EatingHabit {
-    id: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    label: string;
-    description: string;
-}
-
-const eatingHabits: EatingHabit[] = [
-    {
-        id: 'balanced',
-        icon: 'restaurant-outline',
-        label: 'Balanced Diet',
-        description: "I'm eating a very balanced diet"
-    },
-    {
-        id: 'vegetarian',
-        icon: 'leaf-outline',
-        label: 'Vegetarian',
-        description: "I was a rabbit on my previous life"
-    },
-    {
-        id: 'low_carb',
-        icon: 'nutrition-outline',
-        label: 'Low Carb',
-        description: "I am allergic to carbohydrates"
-    },
-    {
-        id: 'gluten_free',
-        icon: 'ban-outline',
-        label: 'Gluten Free',
-        description: "I hate glutens with all of my life"
-    },
-];
 
 export default function EatingHabitsScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [selectedHabit, setSelectedHabit] = useState<string | null>(null);
+    const [selectedHabit, setSelectedHabit] = useState<string | null>(paramString(params.eatingHabits) ?? null);
 
     const handleContinue = () => {
         router.push({

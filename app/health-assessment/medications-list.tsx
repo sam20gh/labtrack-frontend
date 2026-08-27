@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { parseArrayParam } from './params';
 
 const commonMedications = [
     'Aspirin',
@@ -59,7 +60,7 @@ export default function MedicationsListScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedMedications, setSelectedMedications] = useState<string[]>([]);
+    const [selectedMedications, setSelectedMedications] = useState<string[]>(parseArrayParam(params.medications));
 
     const filteredMedications = useMemo(() => {
         if (!searchQuery.trim()) return commonMedications.slice(0, 10);

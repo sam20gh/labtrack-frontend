@@ -9,6 +9,7 @@ export default function HealthAssessmentLayout() {
             }}
         >
             <Stack.Screen name="index" />
+            <Stack.Screen name="review" />
             <Stack.Screen name="name" />
             <Stack.Screen name="health-goals" />
             <Stack.Screen name="birth-year" />

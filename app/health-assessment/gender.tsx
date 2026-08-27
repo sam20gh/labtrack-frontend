@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramString } from './params';
 
 interface GenderOption {
     id: string;
@@ -27,8 +28,8 @@ const genderOptions: GenderOption[] = [
 export default function GenderScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [selectedGender, setSelectedGender] = useState<string | null>(null);
-    const [customDescription, setCustomDescription] = useState('');
+    const [selectedGender, setSelectedGender] = useState<string | null>(paramString(params.gender) ?? null);
+    const [customDescription, setCustomDescription] = useState(paramString(params.genderDescription) ?? '');
 
     const handleContinue = () => {
         if (selectedGender) {

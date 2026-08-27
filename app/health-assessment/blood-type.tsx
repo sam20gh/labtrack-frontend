@@ -8,6 +8,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { paramString } from './params';
 
 const bloodTypes = ['A', 'B', 'AB', 'O'];
 const rhFactors = ['+', '-'];
@@ -15,8 +16,15 @@ const rhFactors = ['+', '-'];
 export default function BloodTypeScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [selectedType, setSelectedType] = useState<string | null>('A');
-    const [selectedRh, setSelectedRh] = useState<string | null>(null);
+    // Stored as one string ("AB+"); the screen picks the group and the factor separately.
+    const seededBloodType = paramString(params.bloodType);
+    const seededRh = seededBloodType?.slice(-1);
+    const [selectedType, setSelectedType] = useState<string | null>(
+        seededBloodType ? seededBloodType.replace(/[+-]$/, '') : 'A'
+    );
+    const [selectedRh, setSelectedRh] = useState<string | null>(
+        seededRh === '+' || seededRh === '-' ? seededRh : null
+    );
 
     const handleContinue = () => {
         if (selectedType) {

@@ -105,6 +105,12 @@ const ProfileScreen = () => {
         <MaterialIcons name="chevron-right" size={24} />
       </TouchableOpacity>
 
+      {/* Health profile — the assessment answers, and the way back into them */}
+      <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/health-assessment/review')}>
+        <Text style={styles.settingText}>Health profile</Text>
+        <MaterialIcons name="chevron-right" size={24} />
+      </TouchableOpacity>
+
       {/* Orders */}
       <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/orders-history')}>
         <Text style={styles.settingText}>Your orders</Text>

@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { parseArrayParam } from './params';
 
 const commonConditions = [
     'Hypertension',
@@ -64,7 +65,7 @@ export default function ConditionsListScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+    const [selectedConditions, setSelectedConditions] = useState<string[]>(parseArrayParam(params.conditions));
     const [showSearch, setShowSearch] = useState(false);
 
     const filteredConditions = useMemo(() => {
