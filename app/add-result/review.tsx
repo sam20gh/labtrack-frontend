@@ -75,8 +75,20 @@ export default function ReviewScreen() {
                 testType: parsed.report.testType ?? undefined,
                 collectionDate: parsed.report.collectionDate ?? undefined,
                 measurements: included.map((r) => ({
-                    // Send the canonical name and normalised unit: the user confirmed those
-                    name: r.canonicalName || r.name,
+                    // Send the name **the lab printed**, not the canonical form.
+                    //
+                    // `canonicalName` is a slug for anything the parser could not match —
+                    // separators stripped — and the server re-resolves whatever it is sent.
+                    // Sending the slug therefore destroyed the only string that could match:
+                    // `resolveName` splits on parentheses and commas, so it resolves
+                    // "Glycosylated Hemoglobin (HbA1c)" but not "glycosylatedhemoglobinhba1c".
+                    // Live reports lost HbA1c and calculated LDL that way — stored raw,
+                    // unconverted, and never range-checked.
+                    //
+                    // For an analyte the parser *did* recognise this changes nothing: the
+                    // server runs the same `resolveName` over the same string and reaches the
+                    // same canonical key, so the user is saved exactly what they reviewed.
+                    name: r.name || r.canonicalName,
                     value: Number(r.editedValue),
                     unit: r.normalisedUnit || r.unit,
                     reportedRange: r.reportedRange,
