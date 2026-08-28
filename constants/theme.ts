@@ -50,6 +50,13 @@ export const Palette = {
     borderLight: '#F3F4F6',
     surface: '#FAFAFA',
     background: '#FFFFFF',
+    /**
+     * The turing kit's slate ramp, used for full-page canvases where white cards need to
+     * read as raised. `background` stays pure white for the cards themselves — a white
+     * card on a white page is just a border, which is what the profile screen used to be.
+     */
+    canvas: '#F8FAFC',
+    borderSlate: '#E2E8F0',
 
     white: '#FFFFFF',
 } as const;
