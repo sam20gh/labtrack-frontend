@@ -110,7 +110,12 @@ export default function RootLayout() {
         <Stack.Screen name="order-details" options={{ headerShown: false }} />
         <Stack.Screen name="orders-history" options={{ title: "Your orders", headerShown: true }} />
         <Stack.Screen name="users" options={{ headerShown: true }} />
-        <Stack.Screen name="professionalDetails" options={{ title: "Professional Details", headerShown: true }} />
+        {/* Draws its own back bar inside a top-inset SafeAreaView. With the Stack header
+            on, "Professional Details" stacked a second bar above that one. */}
+        <Stack.Screen name="professionalDetails" options={{ headerShown: false }} />
+        {/* The doctor-appointment flow: agenda, booking, confirmation. Each screen draws
+            its own header, so the Stack must not add one. */}
+        <Stack.Screen name="appointments" options={{ headerShown: false }} />
         <Stack.Screen name="ProductDetails" options={{ title: "Product Details", headerShown: true }} />
         <Stack.Screen name="myplans" options={{ title: "My Plans", headerShown: true }} />
       </Stack>

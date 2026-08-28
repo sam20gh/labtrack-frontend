@@ -6,7 +6,7 @@
  * express "this specific screening is now overdue and here is who to book".
  */
 import { api, apiFetch } from './api';
-import type { PlanItem, GroupedPlanItems, Order, Appointment, Professional } from '@/types/api';
+import type { PlanItem, GroupedPlanItems, Order, Professional } from '@/types/api';
 
 export interface PlanResponse {
     items: PlanItem[];
@@ -23,17 +23,15 @@ export const orderPlanItem = (item: PlanItem) =>
         body: { items: [{ productId: item.productId, quantity: 1, planItemId: item._id }] },
     });
 
-/** Book the consultation behind a plan item. */
-export const bookPlanItem = (item: PlanItem, scheduledFor: Date) =>
-    apiFetch<{ appointment: Appointment }>('/appointments', {
-        method: 'POST',
-        body: {
-            professionalId: item.professionalId,
-            planItemId: item._id,
-            scheduledFor: scheduledFor.toISOString(),
-            reasonForVisit: item.description,
-        },
-    });
+/**
+ * Booking lives in `lib/appointments.ts`.
+ *
+ * This module used to export `bookPlanItem(item, scheduledFor)`, which the plan screen
+ * called with a fixed slot a week out. Now that there is a screen where a person picks the
+ * day and the time, a second path that posts a time nobody chose is just a way to create
+ * appointments the user did not agree to. `createAppointment` takes a `planItemId`, so the
+ * plan link survives.
+ */
 
 export const dismissPlanItem = (id: string) =>
     apiFetch<{ item: PlanItem }>(`/plan-items/${id}/status`, {

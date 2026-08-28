@@ -18,20 +18,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { ApiError } from '@/lib/api';
-import { getPlan, orderPlanItem, bookPlanItem, dismissPlanItem, STATUS_META, TYPE_ICON } from '@/lib/plan';
+import { getPlan, orderPlanItem, dismissPlanItem, STATUS_META, TYPE_ICON } from '@/lib/plan';
 import { hasBeenAsked, registerForPushNotifications } from '@/lib/notifications';
 import type { PlanItem, GroupedPlanItems } from '@/types/api';
 
 const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
-/** Default booking slot: a week out, mid-morning. Users adjust from the appointment screen. */
-const defaultSlot = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 7);
-    d.setHours(10, 0, 0, 0);
-    return d;
-};
+
 
 export default function MyPlansScreen() {
     const router = useRouter();
@@ -68,15 +62,30 @@ export default function MyPlansScreen() {
 
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
-    const act = async (item: PlanItem, action: 'order' | 'book' | 'dismiss') => {
+    /**
+     * Booking opens the appointment screen rather than posting a slot.
+     *
+     * This button used to request a fixed time — a week out at 10:00 — and report it as
+     * done. Nobody's Tuesday morning is free by default, and the person had no way to see
+     * what had been asked for, let alone change it. The plan item carries the professional
+     * and the clinical reason across, so nothing is retyped.
+     */
+    const book = (item: PlanItem) =>
+        router.push({
+            pathname: '/appointments/book',
+            params: {
+                professionalId: String(item.professionalId),
+                planItemId: item._id,
+                ...(item.description ? { reason: item.description } : {}),
+            },
+        });
+
+    const act = async (item: PlanItem, action: 'order' | 'dismiss') => {
         setBusyId(item._id);
         try {
             if (action === 'order') {
                 await orderPlanItem(item);
                 Toast.show({ type: 'success', text1: 'Ordered', text2: `${item.productName} is on its way` });
-            } else if (action === 'book') {
-                await bookPlanItem(item, defaultSlot());
-                Toast.show({ type: 'success', text1: 'Requested', text2: `Appointment with ${item.professionalName}` });
             } else {
                 await dismissPlanItem(item._id);
                 Toast.show({ type: 'success', text1: 'Dismissed' });
@@ -166,9 +175,8 @@ export default function MyPlansScreen() {
                             </TouchableOpacity>
                         )}
                         {canBook && (
-                            <TouchableOpacity style={styles.primaryAction} onPress={() => act(item, 'book')} disabled={busy}>
-                                {busy ? <ActivityIndicator size="small" color="#fff" />
-                                    : <Text style={styles.primaryActionText}>Book</Text>}
+                            <TouchableOpacity style={styles.primaryAction} onPress={() => book(item)} disabled={busy}>
+                                <Text style={styles.primaryActionText}>Book</Text>
                             </TouchableOpacity>
                         )}
                         {actionable && (
