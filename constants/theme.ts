@@ -30,6 +30,11 @@ export const Palette = {
     // understand a result, so they must stay distinguishable and consistent everywhere.
     success: '#059669',
     successSurface: '#ECFDF5',
+    /**
+     * The in-range band on a reference gauge. `successSurface` is too pale to separate
+     * from the grey track it sits inside, so the band gets its own, stronger mint.
+     */
+    successBand: '#D1FAE5',
     warning: '#B45309',
     warningSurface: '#FFFBEB',
     danger: '#DC2626',
