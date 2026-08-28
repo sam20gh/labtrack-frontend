@@ -177,10 +177,34 @@ export interface Biomarker extends Timestamped {
 }
 
 /** Row in the results grid: latest value plus movement since the previous one. */
+/**
+ * Plain-language explanation of one analyte, served by the API.
+ *
+ * Server-owned rather than bundled: this is clinical copy, and a description that turns out
+ * to mislead has to be fixable without an app-store release. Absent for analytes outside
+ * the catalogue, so every reader must handle `undefined`.
+ */
+export interface BiomarkerExplainer {
+    /**
+     * Properly spelled medical name. Present only for analytes outside the normaliser's
+     * catalogue, whose stored `displayName` is the same run-together slug as `name`
+     * ("redcelldistributionwidth"). Preferred over that slug as the row title.
+     */
+    label?: string;
+    /** Lay label — "Iron stores", "Average red blood cell size". */
+    plainName: string;
+    whatItIs: string;
+    whyItMatters: string;
+    /** What an out-of-range value can point to. Hedged, never a diagnosis. */
+    low: string;
+    high: string;
+}
+
 export interface BiomarkerSummary {
     _id: Id;
     name: string;
     displayName?: string;
+    explainer?: BiomarkerExplainer | null;
     value: number;
     unit: string;
     measuredAt: IsoDate;
@@ -196,6 +220,7 @@ export interface BiomarkerTrend {
     name: string;
     displayName?: string;
     unit?: string;
+    explainer?: BiomarkerExplainer | null;
     series: Pick<Biomarker, 'value' | 'unit' | 'measuredAt' | 'flag' | 'appliedRange' | 'testResultId'>[];
     range: AppliedRange | null;
     summary: {

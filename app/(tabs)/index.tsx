@@ -25,7 +25,10 @@ import Toast from 'react-native-toast-message';
 
 import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
-import { getLatestBiomarkers, byClinicalPriority, describeMovement, formatValue, FLAG_META } from '@/lib/biomarkers';
+import {
+    getLatestBiomarkers, byClinicalPriority, describeMovement, formatValue, FLAG_META,
+    medicalName, plainName,
+} from '@/lib/biomarkers';
 import { getPlan } from '@/lib/plan';
 import {
     getLatestInterpretation, generateInterpretation, hasMeaningfulChanges, isVerified,
@@ -694,14 +697,18 @@ const Section = ({ title, action, onAction, children }: {
 const AttentionCard = ({ biomarker, onPress }: { biomarker: BiomarkerSummary; onPress: () => void }) => {
     const meta = FLAG_META[biomarker.flag];
     const movement = describeMovement(biomarker);
+    // These cards are the first thing a worried person reads. A card that says only
+    // "Ferritin · Low" names a problem in a language they do not speak.
+    const plain = plainName(biomarker);
     return (
         <TouchableOpacity style={[styles.attentionCard, { borderColor: meta.color }]} onPress={onPress} activeOpacity={0.85}>
             <View style={[styles.flagPill, { backgroundColor: meta.bg }]}>
                 <Text style={[styles.flagText, { color: meta.color }]}>{meta.label}</Text>
             </View>
             <Text style={styles.attentionName} numberOfLines={2}>
-                {biomarker.displayName ?? biomarker.name}
+                {medicalName(biomarker)}
             </Text>
+            {plain && <Text style={styles.attentionPlain} numberOfLines={2}>{plain}</Text>}
             <View style={styles.valueRow}>
                 <Text style={[styles.attentionValue, { color: meta.color }]}>{formatValue(biomarker.value)}</Text>
                 <Text style={styles.unit}>{biomarker.unit}</Text>
@@ -1041,6 +1048,7 @@ const styles = StyleSheet.create({
     flagPill: { alignSelf: 'flex-start', paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm },
     flagText: { fontSize: 10, fontFamily: Fonts.bold },
     attentionName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
+    attentionPlain: { fontSize: 11.5, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 2 },
     valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
     attentionValue: { fontSize: 22, fontFamily: Fonts.bold },
     unit: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular },

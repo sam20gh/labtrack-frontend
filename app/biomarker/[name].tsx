@@ -15,7 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import TrendChart from '@/components/TrendChart';
-import { getBiomarkerTrend, FLAG_META, formatValue } from '@/lib/biomarkers';
+import { getBiomarkerTrend, FLAG_META, formatValue, explainFlag, medicalName } from '@/lib/biomarkers';
 import type { BiomarkerTrend } from '@/types/api';
 
 const fmtDate = (iso: string) =>
@@ -50,6 +50,10 @@ export default function BiomarkerTrendScreen() {
     const latest = series[series.length - 1];
     const meta = latest ? FLAG_META[latest.flag] : FLAG_META.unknown;
     const summary = trend?.summary;
+    const explainer = trend?.explainer;
+    // The direction that actually applies to this person's latest value, so the card leads
+    // with the answer to "is this bad" rather than making them read both possibilities.
+    const meaning = latest && explainer ? explainFlag({ explainer, flag: latest.flag }) : null;
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -57,9 +61,18 @@ export default function BiomarkerTrendScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color="#1F2937" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                    {trend?.displayName || String(name)}
-                </Text>
+                <View style={styles.headerText}>
+                    <Text style={styles.headerTitle} numberOfLines={1}>
+                        {medicalName({
+                            explainer,
+                            displayName: trend?.displayName,
+                            name: trend?.name || String(name),
+                        })}
+                    </Text>
+                    {!!explainer?.plainName && (
+                        <Text style={styles.headerSub} numberOfLines={1}>{explainer.plainName}</Text>
+                    )}
+                </View>
                 <View style={styles.backButton} />
             </View>
 
@@ -84,6 +97,32 @@ export default function BiomarkerTrendScreen() {
                             </View>
                         </View>
                         <Text style={styles.heroDate}>Measured {fmtDate(latest.measuredAt)}</Text>
+
+                        {/* What this test is, in plain English. It sits above the chart because a
+                            trend line for something you cannot name is not worth reading yet. */}
+                        {explainer && (
+                            <View style={styles.explainer}>
+                                <Text style={styles.explainerTitle}>What this measures</Text>
+                                <Text style={styles.explainerBody}>{explainer.whatItIs}</Text>
+                                <Text style={[styles.explainerBody, styles.explainerSpaced]}>
+                                    {explainer.whyItMatters}
+                                </Text>
+
+                                {meaning && (
+                                    <View style={[styles.meaningBox, { backgroundColor: meta.bg }]}>
+                                        <Text style={[styles.meaningTitle, { color: meta.color }]}>
+                                            Your result is {meta.label.toLowerCase()}
+                                        </Text>
+                                        <Text style={styles.explainerBody}>{meaning}</Text>
+                                    </View>
+                                )}
+
+                                <Text style={styles.explainerNote}>
+                                    General information about this test, not advice about your health.
+                                    Talk to a doctor about what your result means for you.
+                                </Text>
+                            </View>
+                        )}
 
                         <View style={styles.chartCard}>
                             <TrendChart
@@ -173,6 +212,15 @@ const styles = StyleSheet.create({
     badge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
     badgeText: { fontSize: 12, fontWeight: '700' },
     chartCard: { borderWidth: 1, borderColor: '#F3F4F6', borderRadius: 14, padding: 14 },
+    headerText: { flex: 1 },
+    headerSub: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginTop: 1 },
+    explainer: { backgroundColor: '#FAFAFA', borderRadius: 14, padding: 16, marginBottom: 16 },
+    explainerTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
+    explainerBody: { fontSize: 13.5, lineHeight: 20, color: '#4B5563' },
+    explainerSpaced: { marginTop: 8 },
+    meaningBox: { borderRadius: 10, padding: 12, marginTop: 14 },
+    meaningTitle: { fontSize: 12.5, fontWeight: '700', marginBottom: 5 },
+    explainerNote: { fontSize: 11.5, lineHeight: 17, color: '#9CA3AF', marginTop: 12 },
     statsRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
     stat: { flex: 1, backgroundColor: '#FAFAFA', borderRadius: 12, padding: 12 },
     statLabel: { fontSize: 11, color: '#9CA3AF', fontWeight: '600' },

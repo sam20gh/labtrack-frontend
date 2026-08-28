@@ -19,6 +19,7 @@ import { getPaymentStatus } from '@/lib/payments';
 import * as Notifications from 'expo-notifications';
 import { routeForNotification } from '@/lib/notifications';
 import { useRouter } from 'expo-router';
+import Toast from 'react-native-toast-message';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 ExpoSplashScreen.preventAutoHideAsync();
@@ -104,6 +105,13 @@ export default function RootLayout() {
       </Stack>
 
         <StatusBar style="auto" />
+        {/* One instance at the root, so a screen that reports an outage or a rate limit is
+            actually heard. Several screens still mount their own `<Toast />`; the library
+            keeps a stack of refs and the last mounted wins, so those keep working and this
+            one covers the screens that never had one — the home screen among them, where
+            five Toast.show calls (including the "no new analysis needed" explanation) were
+            landing on no renderer at all. */}
+        <Toast />
       </BasketProvider>
       </StripeProvider>
     </ThemeProvider>

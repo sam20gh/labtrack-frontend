@@ -33,7 +33,10 @@ import Toast from 'react-native-toast-message';
 import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
-import { getLatestBiomarkers, FLAG_META, byClinicalPriority, describeMovement, formatValue } from '@/lib/biomarkers';
+import {
+    getLatestBiomarkers, FLAG_META, byClinicalPriority, describeMovement, formatValue,
+    medicalName, plainName, explainFlag,
+} from '@/lib/biomarkers';
 import { listGenotypeFiles } from '@/lib/genotype';
 import type { BiomarkerSummary, TestResult } from '@/types/api';
 
@@ -440,6 +443,10 @@ export default function ResultsScreen() {
                         {visible.map((b, i) => {
                             const meta = FLAG_META[b.flag];
                             const move = describeMovement(b);
+                            const plain = plainName(b);
+                            // Only on flagged rows: someone whose bloods are fine does not need a
+                            // paragraph per row about what would have been wrong.
+                            const meaning = explainFlag(b);
                             return (
                                 <TouchableOpacity
                                     key={b._id}
@@ -455,12 +462,16 @@ export default function ResultsScreen() {
                                     <View style={styles.rowMain}>
                                         <View style={styles.rowHead}>
                                             <Text style={styles.name} numberOfLines={1}>
-                                                {b.displayName || b.name}
+                                                {medicalName(b)}
                                             </Text>
                                             <View style={[styles.badge, { backgroundColor: meta.bg }]}>
                                                 <Text style={[styles.badgeText, { color: meta.color }]}>{meta.label}</Text>
                                             </View>
                                         </View>
+
+                                        {/* The medical name stays the title because it is what is printed
+                                            on the report in the person's hand. This is the translation. */}
+                                        {plain && <Text style={styles.plainName} numberOfLines={1}>{plain}</Text>}
 
                                         <View style={styles.valueRow}>
                                             <Text style={styles.value}>{formatValue(b.value)}</Text>
@@ -477,6 +488,10 @@ export default function ResultsScreen() {
                                         </View>
 
                                         <RangeGauge b={b} />
+
+                                        {meaning && (
+                                            <Text style={styles.meaning}>{meaning}</Text>
+                                        )}
 
                                         {b.measurementCount > 1 && (
                                             <Text style={styles.count}>
@@ -666,6 +681,11 @@ const styles = StyleSheet.create({
     rowHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     rowChevron: { marginLeft: Spacing.sm, marginTop: 3 },
     name: { flex: 1, fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
+    plainName: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 2 },
+    meaning: {
+        fontFamily: Fonts.regular, fontSize: 12.5, lineHeight: 18,
+        color: Palette.textSecondary, marginTop: 10,
+    },
     valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 6 },
     value: { fontFamily: Fonts.bold, fontSize: 24, color: Palette.text },
     unit: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },

@@ -2,7 +2,7 @@
  * Biomarker client — the time-series half of the product.
  */
 import { api } from './api';
-import type { BiomarkerSummary, BiomarkerTrend, BiomarkerFlag } from '@/types/api';
+import type { BiomarkerSummary, BiomarkerTrend, BiomarkerFlag, BiomarkerExplainer } from '@/types/api';
 
 export const getLatestBiomarkers = () => api.get<{ biomarkers: BiomarkerSummary[] }>('/biomarkers/latest');
 
@@ -58,3 +58,49 @@ export const describeMovement = (b: BiomarkerSummary): { text: string; tone: 'go
 
 export const formatValue = (v: number) =>
     Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2).replace(/0$/, '');
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plain language
+//
+// The people using this app are not clinicians. "MCV 88 fL · Normal" is three
+// pieces of information and none of them are readable without a medical
+// education, so every surface that prints an analyte name also offers the lay
+// version the server sends alongside it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * What to print as the row's title.
+ *
+ * The medical name stays primary on purpose: it is what is printed on the sheet the person
+ * is holding, and renaming "Ferritin" to "Iron stores" outright would leave them unable to
+ * match the app to their own report. The plain name goes underneath instead.
+ */
+export const medicalName = (b: { explainer?: BiomarkerExplainer | null; displayName?: string; name: string }) => {
+    // An analyte outside the normaliser's catalogue is stored with `displayName` set to the
+    // same run-together slug as `name`, so the row would title as "redcelldistributionwidth"
+    // — less readable than the medical term this whole layer exists to translate. The
+    // glossary's spelled-out label wins in exactly that case.
+    if (b.explainer?.label && (!b.displayName || b.displayName === b.name)) return b.explainer.label;
+    return b.displayName || b.name;
+};
+
+/** The lay label, when the server has one and it is not just the medical name again. */
+export const plainName = (b: { explainer?: BiomarkerExplainer | null; displayName?: string; name: string }) => {
+    const plain = b.explainer?.plainName;
+    if (!plain) return null;
+    return plain.toLowerCase() === medicalName(b).toLowerCase() ? null : plain;
+};
+
+/**
+ * The sentence a flagged result should carry: what *this* direction can mean.
+ *
+ * Returns null for in-range and unevaluated values — someone whose results are fine does
+ * not need a paragraph per row explaining what would have been wrong.
+ */
+export const explainFlag = (b: BiomarkerSummary | { explainer?: BiomarkerExplainer | null; flag: BiomarkerFlag }) => {
+    if (!b.explainer) return null;
+    if (['low', 'critical_low'].includes(b.flag)) return b.explainer.low;
+    if (['high', 'critical_high'].includes(b.flag)) return b.explainer.high;
+    return null;
+};
