@@ -5,12 +5,12 @@ import {
     TextInput,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
@@ -70,7 +70,7 @@ const ResetPassword2FAScreen = () => {
     const isCodeComplete = code.every(digit => digit !== '');
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}

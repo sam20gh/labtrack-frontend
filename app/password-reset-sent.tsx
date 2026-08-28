@@ -4,9 +4,9 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
     Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -33,7 +33,7 @@ const PasswordResetSentScreen = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity

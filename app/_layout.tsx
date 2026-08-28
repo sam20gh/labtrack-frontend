@@ -91,6 +91,17 @@ export default function RootLayout() {
         <Stack.Screen name="basket" options={{ headerShown: false }} />
         <Stack.Screen name="clinician" options={{ headerShown: false }} />
         <Stack.Screen name="biomarker/[name]" options={{ headerShown: false }} />
+        {/* Draws its own "Your DNA" header inside a top-inset SafeAreaView, like every
+            other screen here. Without this line the route falls through to the Stack's
+            default header, which stacks a second bar titled "dna/[id]" above it. */}
+        <Stack.Screen name="dna/[id]" options={{ headerShown: false }} />
+        {/* The password-reset flow. Each screen draws its own header inside a top-inset
+            SafeAreaView, so the Stack must not add a second one above it. */}
+        <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+        <Stack.Screen name="reset-password-email" options={{ headerShown: false }} />
+        <Stack.Screen name="reset-password-sms" options={{ headerShown: false }} />
+        <Stack.Screen name="reset-password-2fa" options={{ headerShown: false }} />
+        <Stack.Screen name="password-reset-sent" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={{ headerShown: false }} />
         <Stack.Screen name="assistant/intro" options={{ headerShown: false }} />
         <Stack.Screen name="assistant/immersive" options={{ headerShown: false }} />
