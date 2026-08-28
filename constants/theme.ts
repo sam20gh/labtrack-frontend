@@ -41,6 +41,12 @@ export const Palette = {
     dangerSurface: '#FEF2F2',
     info: '#1D4ED8',
     infoSurface: '#EFF6FF',
+    /**
+     * The kit's amber, used only where a number is being *earned* rather than judged —
+     * the symptom checker's finding score. `warning` is the brown-amber a clinical flag
+     * is drawn in, and reusing it here would make a progress meter read as a caution.
+     */
+    amber: '#EA8C00',
 
     // Neutrals
     text: '#1F2937',

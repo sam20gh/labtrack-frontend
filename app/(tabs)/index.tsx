@@ -297,6 +297,7 @@ export default function HomeScreen() {
                         <Section title="Quick actions">
                             <View style={styles.actionRow}>
                                 <QuickAction icon="add-circle-outline" label="Add result" onPress={() => router.push('/add-result')} />
+                                <QuickAction icon="pulse-outline" label="Symptoms" onPress={() => router.push('/symptoms')} />
                                 <QuickAction icon="flask-outline" label="Order test" onPress={() => router.push('/(tabs)/orders')} />
                                 <QuickAction icon="calendar-outline" label="My plan" onPress={() => router.push('/myplans')} />
                                 <QuickAction icon="restaurant-outline" label="Nutrition" onPress={() => router.push('/nutrition')} />

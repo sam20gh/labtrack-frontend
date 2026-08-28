@@ -91,6 +91,10 @@ export default function RootLayout() {
         <Stack.Screen name="basket" options={{ headerShown: false }} />
         <Stack.Screen name="clinician" options={{ headerShown: false }} />
         <Stack.Screen name="biomarker/[name]" options={{ headerShown: false }} />
+        {/* The symptom checker draws its own back bar inside a top-inset SafeAreaView.
+            The root Stack has no default screenOptions, so a route left off this list
+            gets a second header titled after its folder. */}
+        <Stack.Screen name="symptoms" options={{ headerShown: false }} />
         {/* Draws its own "Your DNA" header inside a top-inset SafeAreaView, like every
             other screen here. Without this line the route falls through to the Stack's
             default header, which stacks a second bar titled "dna/[id]" above it. */}
