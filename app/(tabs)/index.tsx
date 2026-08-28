@@ -30,6 +30,7 @@ import {
     medicalName, plainName,
 } from '@/lib/biomarkers';
 import { getPlan } from '@/lib/plan';
+import { getDay as getNutritionDay } from '@/lib/nutrition';
 import {
     getLatestInterpretation, generateInterpretation, hasMeaningfulChanges, isVerified,
     RISK_META, byRiskSeverity, type LatestInterpretation,
@@ -37,7 +38,7 @@ import {
 import { computeHealthScore, BAND_META, SCORE_DISCLAIMER, type HealthScore } from '@/lib/healthScore';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 import ScoreRadar from '@/components/home/ScoreRadar';
-import type { BiomarkerSummary, PlanItem, Product, User } from '@/types/api';
+import type { BiomarkerSummary, NutritionDay, PlanItem, Product, User } from '@/types/api';
 
 const EMPTY_SCORE: HealthScore = {
     value: null, band: 'unknown', headline: 'Add a result to unlock your score', pillars: [], coverage: 0,
@@ -68,6 +69,7 @@ export default function HomeScreen() {
     const [planItems, setPlanItems] = useState<PlanItem[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [analysis, setAnalysis] = useState<LatestInterpretation | null>(null);
+    const [nutrition, setNutrition] = useState<NutritionDay | null>(null);
     const [generating, setGenerating] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -89,7 +91,7 @@ export default function HomeScreen() {
 
         // Settled rather than all: a home screen that renders nothing because the plan
         // endpoint hiccuped is worse than one missing a section.
-        const [userRes, biomarkerRes, planRes, productRes, analysisRes] = await Promise.allSettled([
+        const [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes] = await Promise.allSettled([
             userId ? api.get<User>(`/users/${userId}`) : Promise.reject(new Error('no user id')),
             getLatestBiomarkers(),
             getPlan(),
@@ -98,6 +100,7 @@ export default function HomeScreen() {
             // the same document. Scoped by the token, so it does not depend on the cached
             // user id the way the old /test-results?user_id= path did.
             getLatestInterpretation(),
+            getNutritionDay(),
         ]);
 
         if (userRes.status === 'fulfilled') setUser(userRes.value);
@@ -105,8 +108,9 @@ export default function HomeScreen() {
         if (planRes.status === 'fulfilled') setPlanItems(planRes.value.items ?? []);
         if (productRes.status === 'fulfilled') setProducts(Array.isArray(productRes.value) ? productRes.value.slice(0, 6) : []);
         if (analysisRes.status === 'fulfilled') setAnalysis(analysisRes.value);
+        if (nutritionRes.status === 'fulfilled') setNutrition(nutritionRes.value);
 
-        const rejected = [userRes, biomarkerRes, planRes, productRes, analysisRes]
+        const rejected = [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes]
             .filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
             router.replace('/(auth)/loginscreen');
@@ -295,6 +299,7 @@ export default function HomeScreen() {
                                 <QuickAction icon="add-circle-outline" label="Add result" onPress={() => router.push('/add-result')} />
                                 <QuickAction icon="flask-outline" label="Order test" onPress={() => router.push('/(tabs)/orders')} />
                                 <QuickAction icon="calendar-outline" label="My plan" onPress={() => router.push('/myplans')} />
+                                <QuickAction icon="restaurant-outline" label="Nutrition" onPress={() => router.push('/nutrition')} />
                                 <QuickAction icon="people-outline" label="Consult" onPress={() => router.push('/(tabs)/professionals')} />
                             </View>
                         </Section>
@@ -317,6 +322,14 @@ export default function HomeScreen() {
                                 <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
                             </TouchableOpacity>
                         )}
+
+                        <Section
+                            title="Today's nutrition"
+                            action={nutrition?.meals.length ? 'Full tracker' : undefined}
+                            onAction={nutrition?.meals.length ? () => router.push('/nutrition') : undefined}
+                        >
+                            <NutritionSummaryCard day={nutrition} onPress={() => router.push('/nutrition')} />
+                        </Section>
 
                         {upcoming.length > 0 && (
                             <Section title="Next up" action="Full plan" onAction={() => router.push('/myplans')}>
@@ -763,6 +776,79 @@ const PlanRow = ({ item, onPress }: { item: PlanItem; onPress: () => void }) => 
     );
 };
 
+/**
+ * Today's nutrition, on the home screen.
+ *
+ * A compact read of the same day the tracker shows, with the plan's dietary advice named
+ * rather than implied. "Mediterranean" on the home screen is what connects a calorie bar to
+ * the interpretation that asked for it; without it this is a widget from a different app.
+ *
+ * Three states, because they call for different things: no targets yet (set them up),
+ * targets but nothing eaten (log something), and a day in progress (see how it is going).
+ */
+const NutritionSummaryCard = ({ day, onPress }: { day: NutritionDay | null; onPress: () => void }) => {
+    const target = day?.targets && 'calories' in day.targets ? day.targets.calories : 0;
+    const consumed = day?.totals.calories ?? 0;
+    const pattern = day?.plan?.guidance?.find((g) => g.kind === 'pattern')?.label
+        ?? day?.plan?.guidance?.[0]?.label;
+
+    if (!day?.plan || !target) {
+        return (
+            <TouchableOpacity style={styles.nutritionCard} onPress={onPress} activeOpacity={0.85}>
+                <View style={styles.nutritionIcon}>
+                    <Ionicons name="restaurant-outline" size={20} color={Palette.primary} />
+                </View>
+                <View style={styles.flex}>
+                    <Text style={styles.nutritionTitle}>Set up nutrition tracking</Text>
+                    <Text style={styles.nutritionBody}>
+                        Targets built from your profile and the dietary advice on your plan.
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+            </TouchableOpacity>
+        );
+    }
+
+    const ratio = Math.min(1, consumed / target);
+    const over = consumed > target;
+
+    return (
+        <TouchableOpacity style={styles.nutritionCard} onPress={onPress} activeOpacity={0.85}>
+            <View style={styles.flex}>
+                <View style={styles.nutritionTop}>
+                    <Text style={styles.nutritionValue}>
+                        {Math.round(consumed).toLocaleString()}
+                        <Text style={styles.nutritionOf}> / {target.toLocaleString()} kcal</Text>
+                    </Text>
+                    {!!pattern && (
+                        <View style={styles.nutritionChip}>
+                            <Text style={styles.nutritionChipText}>{pattern}</Text>
+                        </View>
+                    )}
+                </View>
+
+                <View style={styles.nutritionTrack}>
+                    <View
+                        style={[
+                            styles.nutritionFill,
+                            { width: `${ratio * 100}%`, backgroundColor: over ? Palette.warning : Palette.primary },
+                        ]}
+                    />
+                </View>
+
+                <Text style={styles.nutritionBody}>
+                    {day.meals.length === 0
+                        ? "Nothing logged yet today."
+                        : day.adherence.assessed > 0
+                            ? `${day.adherence.aligned + day.adherence.partial} of ${day.adherence.assessed} meals moved you towards your plan.`
+                            : `${day.meals.length} ${day.meals.length === 1 ? 'meal' : 'meals'} logged.`}
+                </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+        </TouchableOpacity>
+    );
+};
+
 const MetricCard = ({ biomarker, onPress }: { biomarker: BiomarkerSummary; onPress: () => void }) => {
     const meta = FLAG_META[biomarker.flag];
     const movement = describeMovement(biomarker);
@@ -951,6 +1037,45 @@ const styles = StyleSheet.create({
     heroHeadline: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.88)', fontFamily: Fonts.regular },
 
     // Sections
+    nutritionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        backgroundColor: Palette.background,
+        borderRadius: Radius.lg,
+        borderWidth: 1,
+        borderColor: Palette.borderSlate,
+        padding: Spacing.lg,
+        ...Shadow.card,
+    },
+    nutritionIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: Radius.md,
+        backgroundColor: Palette.primarySurface,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    nutritionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    nutritionTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
+    nutritionValue: { fontSize: 20, color: Palette.text, fontFamily: Fonts.bold },
+    nutritionOf: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    nutritionChip: {
+        backgroundColor: Palette.primarySurface,
+        borderRadius: Radius.pill,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 3,
+    },
+    nutritionChipText: { fontSize: 11, color: Palette.primaryDark, fontFamily: Fonts.semibold },
+    nutritionTrack: {
+        height: 6,
+        borderRadius: Radius.pill,
+        backgroundColor: Palette.borderLight,
+        overflow: 'hidden',
+        marginVertical: Spacing.sm,
+    },
+    nutritionFill: { height: '100%', borderRadius: Radius.pill },
+    nutritionBody: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 17 },
     section: { marginTop: Spacing.xxl },
     sectionHeader: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

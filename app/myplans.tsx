@@ -99,6 +99,10 @@ export default function MyPlansScreen() {
         const actionable = ['urgent', 'due', 'upcoming'].includes(item.status);
         const canOrder = actionable && Boolean(item.productId);
         const canBook = actionable && Boolean(item.professionalId);
+        // Dietary advice is the one lifestyle item the app can actually help with day to
+        // day: the nutrition tracker derives its targets from this item and scores every
+        // meal against it. Without this link the advice is a sentence nobody acts on.
+        const canTrack = item.type === 'lifestyle' && item.condition === 'diet';
 
         return (
             <View key={item._id} style={[styles.card, item.status === 'urgent' && styles.cardUrgent]}>
@@ -139,6 +143,14 @@ export default function MyPlansScreen() {
 
                 {/* A recommendation with nothing behind it says so, rather than showing a
                     button that cannot work */}
+                {canTrack ? (
+                    <TouchableOpacity style={styles.trackLink} onPress={() => router.push('/nutrition')}>
+                        <Ionicons name="restaurant-outline" size={14} color="#7C3AED" />
+                        <Text style={styles.trackLinkText}>Track this in your nutrition log</Text>
+                        <Ionicons name="chevron-forward" size={14} color="#7C3AED" />
+                    </TouchableOpacity>
+                ) : null}
+
                 {actionable && item.type !== 'lifestyle' && !canOrder && !canBook ? (
                     <Text style={styles.unavailable}>
                         Not yet available to book through LabTrack — ask your clinician about this one.
@@ -275,6 +287,17 @@ const styles = StyleSheet.create({
     description: { fontSize: 13, color: '#6B7280', lineHeight: 19, marginTop: 10 },
     linked: { fontSize: 12, color: '#6B7280', marginTop: 8 },
     unavailable: { fontSize: 12, color: '#9CA3AF', marginTop: 10, fontStyle: 'italic' },
+    trackLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#F5F3FF',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginTop: 10,
+    },
+    trackLinkText: { flex: 1, fontSize: 13, color: '#7C3AED', fontWeight: '600' },
     actions: { flexDirection: 'row', gap: 8, marginTop: 14 },
     primaryAction: {
         backgroundColor: '#7C3AED', paddingVertical: 11, paddingHorizontal: 20,

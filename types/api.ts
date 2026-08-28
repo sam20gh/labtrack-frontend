@@ -482,3 +482,138 @@ export interface AppointmentsResponse { appointments: Appointment[] }
 export interface DnaReportsResponse { reports: DnaReport[] }
 export interface PlansResponse { plans: Plan[] }
 export interface HealthAssessmentResponse { healthAssessment: HealthAssessment }
+
+// ---------------------------------------------------------------------------
+// Nutrition
+// ---------------------------------------------------------------------------
+
+/**
+ * One dietary directive, derived from a `PlanItem` of type 'lifestyle' with
+ * condition 'diet'. `directive` is the interpretation's own wording — the tracker shows it
+ * verbatim rather than paraphrasing clinical advice.
+ */
+export interface NutritionGuidance {
+    planItemId?: Id;
+    key: string;
+    kind: 'pattern' | 'emphasise' | 'reduce' | 'other';
+    label?: string;
+    directive: string;
+    rationale?: string;
+    emphasise?: string[];
+    reduce?: string[];
+}
+
+export interface NutritionTargets {
+    calories: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+    water?: number | null;
+}
+
+export interface NutritionPlan extends Timestamped {
+    _id: Id;
+    userId: Id;
+    targets: NutritionTargets;
+    split?: { protein: number; carbs: number; fat: number };
+    basis?: {
+        method: 'mifflin_st_jeor' | 'user';
+        bmr?: number;
+        activity?: string;
+        activityFactor?: number;
+        calories?: number;
+    };
+    guidance: NutritionGuidance[];
+    calorieOverride?: number | null;
+    mealsPerDay?: number;
+    dietaryPreferences?: string[];
+    notes?: string;
+    allergies?: string[];
+    guidanceSyncedAt?: IsoDate;
+}
+
+export type MealAlignment = 'aligned' | 'partial' | 'off_plan' | 'unassessed';
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MealSource = 'photo' | 'description' | 'manual' | 'swap';
+
+export interface MealItem {
+    name: string;
+    quantity?: string;
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+}
+
+export interface MealAnalysis {
+    confidence?: number;
+    alignment: MealAlignment;
+    rationale?: string;
+    guidanceKeys?: string[];
+    swap?: {
+        name: string;
+        why: string;
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+    };
+    model?: string;
+}
+
+export interface MealLog extends Timestamped {
+    _id: Id;
+    userId: Id;
+    eatenAt: IsoDate;
+    /** Local calendar day, `YYYY-MM-DD`. */
+    day: string;
+    mealType: MealType;
+    name: string;
+    servings: number;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fibre?: number;
+    sodium?: number;
+    items?: MealItem[];
+    source: MealSource;
+    imageUrl?: string | null;
+    analysis?: MealAnalysis;
+}
+
+/** A meal the analyser proposed. Not saved until the person confirms it. */
+export type MealDraft = Omit<MealLog, '_id' | 'userId' | 'eatenAt' | 'day' | 'createdAt' | 'updatedAt'>;
+
+export interface NutritionAdherence {
+    assessed: number;
+    aligned: number;
+    partial: number;
+    offPlan: number;
+    /** Null when no meal had guidance to be measured against — not the same as zero. */
+    score: number | null;
+}
+
+export interface NutritionDay {
+    day: string;
+    plan: NutritionPlan | null;
+    meals: MealLog[];
+    totals: { calories: number; protein: number; carbs: number; fat: number };
+    targets: NutritionTargets | Record<string, never>;
+    remaining: number | null;
+    overBy: number;
+    adherence: NutritionAdherence;
+}
+
+export interface NutritionHistoryEntry extends Omit<NutritionDay, 'plan' | 'meals'> {
+    mealCount: number;
+}
+
+export interface NutritionStatus {
+    photoAnalysis: boolean;
+    descriptionAnalysis: boolean;
+    manualEntry: boolean;
+    model: string | null;
+    acceptedTypes: string[];
+    maxBytes: number;
+}
