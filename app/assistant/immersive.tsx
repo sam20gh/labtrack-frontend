@@ -10,19 +10,25 @@
  * conversation on the server — switching modes does not fork the history, it changes how
  * the same history is presented, and the last exchange is what this shows on open.
  *
- * The kit drives its orb with voice input. There is no audio capture in the app yet
- * (`expo-av` is not installed, and `voice-analysis.tsx` only simulates recording), so the
- * orb here responds to request state rather than to a microphone. The visual is real; the
- * microphone is the piece still missing, and it is marked as such rather than faked with a
- * button that records nothing.
+ * The kit drives its orb with voice input, and that is now real: the composer's microphone
+ * opens `assistant/voice.tsx`, which records, transcribes, and hands the words back here as
+ * a param for this screen to send — so the answer generates under the orb rather than on a
+ * screen the person has left. The orb itself still responds to request state rather than to
+ * live microphone level, because while a question is being answered there is no microphone
+ * running to respond to.
+ *
+ * Both of the kit's non-text inputs depend on server keys the app cannot see, so
+ * `capabilities` on the conversation decides what the composer offers. Voice in particular
+ * needs a transcription key that is frequently unset; the microphone is then drawn greyed
+ * and says why, rather than failing on tap.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, Easing,
-    ScrollView, KeyboardAvoidingView, Platform,
+    ScrollView, KeyboardAvoidingView, Platform, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ApiError } from '@/lib/api';
@@ -31,8 +37,17 @@ import AssistantWidgetCard from '@/components/assistant/AssistantWidget';
 import InputDock from '@/components/assistant/InputDock';
 import {
     getConversation, sendMessage, savePreferences, STARTERS,
-    type AssistantMessage,
+    type AssistantMessage, type AssistantCapabilities, type ImageUpload,
 } from '@/lib/assistant';
+
+/**
+ * What the composer may offer before the server has said.
+ *
+ * Text on, the rest off. The alternative — assume everything works and switch controls off
+ * when the conversation loads — flashes a live microphone for as long as the request takes
+ * and disables it under the person's thumb.
+ */
+const NO_CAPABILITIES: AssistantCapabilities = { text: true, vision: false, voice: false };
 
 /**
  * The orb.
@@ -95,11 +110,17 @@ const Orb = ({ busy }: { busy: boolean }) => {
 
 export default function ImmersiveAssistant() {
     const router = useRouter();
+    // Set by `assistant/voice.tsx` when a transcript has been read back and confirmed.
+    const params = useLocalSearchParams<{ spoken?: string }>();
+
     const [last, setLast] = useState<AssistantMessage | null>(null);
     const [asked, setAsked] = useState<string | null>(null);
+    /** The photograph on the question currently being shown, so it stays visible with it. */
+    const [askedImage, setAskedImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [capabilities, setCapabilities] = useState<AssistantCapabilities>(NO_CAPABILITIES);
 
     useEffect(() => {
         (async () => {
@@ -109,6 +130,7 @@ export default function ImmersiveAssistant() {
                     router.replace('/assistant/intro');
                     return;
                 }
+                setCapabilities(conversation.capabilities ?? NO_CAPABILITIES);
                 // Open on the last *exchange*, so returning to the screen resumes rather
                 // than resets. Taken as a pair from the end rather than as "the last
                 // assistant message" and "the last user message" independently — when a
@@ -120,9 +142,14 @@ export default function ImmersiveAssistant() {
                     setLast(tail);
                     const before = messages[messages.length - 2];
                     setAsked(before?.role === 'user' ? before.text : null);
+                    // Only a stored URL can be redrawn — the local file the picker handed
+                    // us is gone by the next launch, and `attachment.url` is null when the
+                    // server could not keep a copy.
+                    setAskedImage(before?.attachment?.kind === 'image' ? before.attachment.url : null);
                 } else if (tail?.role === 'user') {
                     setLast(null);
                     setAsked(tail.text);
+                    setAskedImage(tail.attachment?.kind === 'image' ? tail.attachment.url : null);
                 }
             } catch (err) {
                 if (err instanceof ApiError && err.isAuthError) {
@@ -136,13 +163,20 @@ export default function ImmersiveAssistant() {
         })();
     }, [router]);
 
-    const send = useCallback(async (text: string) => {
+    const send = useCallback(async (
+        text: string,
+        image: ImageUpload | null = null,
+        spoken = false
+    ) => {
         setAsked(text);
+        // The local file, not a stored URL: it is on the device already and shows while the
+        // upload is still in flight. The server's copy replaces it on the next load.
+        setAskedImage(image?.uri ?? null);
         setLast(null);
         setSending(true);
         setError(null);
         try {
-            const { message } = await sendMessage(text);
+            const { message } = await sendMessage(text, { image, spoken });
             setLast(message);
         } catch (err) {
             if (err instanceof ApiError && err.isAuthError) {
@@ -154,6 +188,23 @@ export default function ImmersiveAssistant() {
             setSending(false);
         }
     }, [router]);
+
+    /**
+     * Send a question that arrived from Voice Mode.
+     *
+     * The param is cleared the moment it is taken, for two reasons: a re-render must not
+     * resend, and asking the same thing twice must still work — a guard that remembered the
+     * last transcript would silently swallow the repeat.
+     */
+    const consuming = useRef(false);
+    useEffect(() => {
+        const spoken = typeof params.spoken === 'string' ? params.spoken.trim() : '';
+        if (!spoken || loading || consuming.current) return;
+
+        consuming.current = true;
+        router.setParams({ spoken: '' });
+        send(spoken, null, true).finally(() => { consuming.current = false; });
+    }, [params.spoken, loading, router, send]);
 
     /** Switch to chat mode and stay there — the preference is what the tab reads on open. */
     const switchToChat = async () => {
@@ -198,6 +249,14 @@ export default function ImmersiveAssistant() {
                     >
                         <ScrollView contentContainerStyle={styles.body} keyboardDismissMode="interactive">
                             <Text style={styles.headline}>{headline}</Text>
+
+                            {askedImage ? (
+                                <Image
+                                    source={{ uri: askedImage }}
+                                    style={styles.askedImage}
+                                    accessibilityLabel="The photo you sent"
+                                />
+                            ) : null}
 
                             {asked ? <Text style={styles.asked}>You asked: {asked}</Text> : null}
 
@@ -246,6 +305,15 @@ export default function ImmersiveAssistant() {
                                 onSend={send}
                                 busy={sending}
                                 placeholder="Type anything to LabTrack AI…"
+                                allowImages={capabilities.vision}
+                                onVoice={() => router.push({
+                                    pathname: '/assistant/voice',
+                                    params: { returnTo: '/assistant/immersive' },
+                                })}
+                                voiceDisabledReason={capabilities.voice
+                                    ? null
+                                    : 'This LabTrack server has no speech-to-text configured, '
+                                      + 'so questions have to be typed for now.'}
                             />
                         </View>
                     </KeyboardAvoidingView>
@@ -274,6 +342,12 @@ const styles = StyleSheet.create({
         marginTop: Spacing.lg,
     },
     asked: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.primaryLight },
+    // 16:10 rather than square: a photograph of a rash or a printed result is almost never
+    // square, and cropping one to fit is cropping away the thing being asked about.
+    askedImage: {
+        width: '100%', aspectRatio: 1.6, borderRadius: Radius.lg,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+    },
 
     orbWrap: { alignItems: 'center', justifyContent: 'center', height: 220, marginVertical: Spacing.md },
     halo: {

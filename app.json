@@ -34,13 +34,19 @@
         "projectId": "8a44b0f8-69d5-432b-bdcf-f9a1406bff3e"
       }
     },
-    "runtimeVersion": "1.4.0",
+    "runtimeVersion": "1.5.0",
     "plugins": [
       [
         "expo-image-picker",
         {
-          "photosPermission": "LabTrack needs access to your photos so you can upload a lab report.",
-          "cameraPermission": "LabTrack needs camera access so you can photograph a lab report."
+          "photosPermission": "LabTrack needs access to your photos so you can upload a lab report or show the assistant a picture.",
+          "cameraPermission": "LabTrack needs camera access so you can photograph a lab report or show the assistant a symptom."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "LabTrack needs microphone access so you can ask the health assistant a question out loud."
         }
       ],
       [

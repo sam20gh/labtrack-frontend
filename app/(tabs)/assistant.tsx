@@ -11,14 +11,14 @@
  *   - the precautions have not been accepted → `/assistant/intro`
  *   - they chose Immersive Mode → `/assistant/immersive`
  */
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity,
     KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
@@ -27,17 +27,23 @@ import TypingIndicator from '@/components/assistant/TypingIndicator';
 import InputDock from '@/components/assistant/InputDock';
 import {
     getConversation, sendMessage, STARTERS,
-    type AssistantMessage,
+    type AssistantMessage, type AssistantCapabilities, type ImageUpload,
 } from '@/lib/assistant';
+
+/** Text on, the rest off, until the server has said otherwise. See `assistant/immersive.tsx`. */
+const NO_CAPABILITIES: AssistantCapabilities = { text: true, vision: false, voice: false };
 
 export default function AssistantScreen() {
     const router = useRouter();
+    // Set by `assistant/voice.tsx` when a transcript has been read back and confirmed.
+    const params = useLocalSearchParams<{ spoken?: string }>();
     const scrollRef = useRef<ScrollView>(null);
     const [messages, setMessages] = useState<AssistantMessage[]>([]);
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [available, setAvailable] = useState(true);
+    const [capabilities, setCapabilities] = useState<AssistantCapabilities>(NO_CAPABILITIES);
 
     const load = useCallback(async () => {
         try {
@@ -54,6 +60,7 @@ export default function AssistantScreen() {
 
             setMessages(conversation.messages);
             setAvailable(conversation.available !== false);
+            setCapabilities(conversation.capabilities ?? NO_CAPABILITIES);
             setError(null);
         } catch (err) {
             if (err instanceof ApiError && err.isAuthError) {
@@ -71,12 +78,26 @@ export default function AssistantScreen() {
     /** Scroll after layout has settled, or the new message is still above the fold. */
     const scrollToEnd = () => requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
 
-    const send = useCallback(async (text: string) => {
+    const send = useCallback(async (
+        text: string,
+        image: ImageUpload | null = null,
+        spoken = false
+    ) => {
         // The person's message is rendered immediately rather than after the round-trip.
         // The server persists it before calling the model, so the optimistic bubble is not
         // a lie about what was saved — it matches what the server already has.
+        //
+        // The picture is shown from the local file the picker returned. The server's stored
+        // copy takes over on the next load, and `url: null` there is what the bubble falls
+        // back to when storage refused it.
         const optimistic: AssistantMessage = {
-            role: 'user', text, widget: null, suggestions: [], escalate: false,
+            role: 'user',
+            text,
+            attachment: image
+                ? { kind: 'image', url: image.uri, mimeType: image.mimeType }
+                : spoken ? { kind: 'voice', url: null, mimeType: null }
+                    : null,
+            widget: null, suggestions: [], escalate: false,
             createdAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, optimistic]);
@@ -85,7 +106,7 @@ export default function AssistantScreen() {
         scrollToEnd();
 
         try {
-            const { message } = await sendMessage(text);
+            const { message } = await sendMessage(text, { image, spoken });
             setMessages((prev) => [...prev, message]);
             scrollToEnd();
         } catch (err) {
@@ -100,6 +121,22 @@ export default function AssistantScreen() {
             setSending(false);
         }
     }, [router]);
+
+    /**
+     * Send a question that arrived from Voice Mode.
+     *
+     * Cleared the moment it is taken so a re-render cannot resend and so asking the same
+     * thing twice still works. Mirrors `assistant/immersive.tsx`.
+     */
+    const consuming = useRef(false);
+    useEffect(() => {
+        const spoken = typeof params.spoken === 'string' ? params.spoken.trim() : '';
+        if (!spoken || loading || consuming.current) return;
+
+        consuming.current = true;
+        router.setParams({ spoken: '' });
+        send(spoken, null, true).finally(() => { consuming.current = false; });
+    }, [params.spoken, loading, router, send]);
 
     if (loading) {
         return (
@@ -186,7 +223,19 @@ export default function AssistantScreen() {
                 </ScrollView>
 
                 {available ? (
-                    <InputDock onSend={send} busy={sending} />
+                    <InputDock
+                        onSend={send}
+                        busy={sending}
+                        allowImages={capabilities.vision}
+                        onVoice={() => router.push({
+                            pathname: '/assistant/voice',
+                            params: { returnTo: '/(tabs)/assistant' },
+                        })}
+                        voiceDisabledReason={capabilities.voice
+                            ? null
+                            : 'This LabTrack server has no speech-to-text configured, '
+                              + 'so questions have to be typed for now.'}
+                    />
                 ) : (
                     <View style={styles.unavailable}>
                         <Text style={styles.unavailableText}>

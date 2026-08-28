@@ -7,7 +7,7 @@
  * bubble so much as a block, while the person's messages are short and read better hugged.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
 import AssistantWidgetCard from './AssistantWidget';
@@ -23,12 +23,49 @@ export default function MessageBubble({ message, onSuggestion }: Props) {
     const mine = message.role === 'user';
 
     if (mine) {
+        const attachment = message.attachment;
         return (
             <View style={styles.mineWrap}>
+                {/*
+                  The photograph sits above the bubble rather than inside it. Inside, it
+                  would have to be clipped to the bubble's asymmetric corners and constrained
+                  to the bubble's width, and a picture someone sent so it could be looked at
+                  is the one thing on this screen that should not be made smaller.
+
+                  `url` is null when the server could not keep a copy. The line below is
+                  shown instead — the message reads as incomplete without some acknowledgement
+                  that a picture was part of it.
+                */}
+                {attachment?.kind === 'image' ? (
+                    attachment.url ? (
+                        <Image
+                            source={{ uri: attachment.url }}
+                            style={styles.mineImage}
+                            accessibilityLabel="The photo you sent"
+                        />
+                    ) : (
+                        <View style={styles.missingImage}>
+                            <Ionicons name="image-outline" size={14} color={Palette.textMuted} />
+                            <Text style={styles.missingImageText}>Photo sent — no longer stored</Text>
+                        </View>
+                    )
+                ) : null}
+
                 <View style={styles.mineBubble}>
                     <Text style={styles.mineText}>{message.text}</Text>
                 </View>
-                <Text style={styles.mineTime}>{messageTime(message.createdAt)}</Text>
+
+                <View style={styles.mineMeta}>
+                    {/*
+                      Spoken questions are marked. A transcription can mishear a drug name,
+                      and someone rereading an answer that does not match what they meant
+                      needs to be able to see that these were not the words they typed.
+                    */}
+                    {attachment?.kind === 'voice' ? (
+                        <Ionicons name="mic" size={11} color={Palette.textMuted} />
+                    ) : null}
+                    <Text style={styles.mineTime}>{messageTime(message.createdAt)}</Text>
+                </View>
             </View>
         );
     }
@@ -83,6 +120,19 @@ export default function MessageBubble({ message, onSuggestion }: Props) {
 
 const styles = StyleSheet.create({
     mineWrap: { alignItems: 'flex-end', marginBottom: Spacing.lg, gap: 4 },
+    mineImage: {
+        width: '72%',
+        aspectRatio: 1.6,
+        borderRadius: Radius.xl,
+        backgroundColor: Palette.borderLight,
+    },
+    missingImage: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        paddingVertical: 6, paddingHorizontal: Spacing.md,
+        borderRadius: Radius.pill, backgroundColor: Palette.borderLight,
+    },
+    missingImageText: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    mineMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 4 },
     mineBubble: {
         maxWidth: '82%',
         backgroundColor: Palette.primary,
@@ -92,7 +142,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
     },
     mineText: { fontSize: 14, lineHeight: 20, color: Palette.white, fontFamily: Fonts.regular },
-    mineTime: { fontSize: 10, color: Palette.textMuted, fontFamily: Fonts.regular, marginRight: 4 },
+    mineTime: { fontSize: 10, color: Palette.textMuted, fontFamily: Fonts.regular },
 
     theirsWrap: { alignItems: 'stretch', marginBottom: Spacing.lg },
     theirsHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },

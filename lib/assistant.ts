@@ -48,9 +48,24 @@ export type AssistantWidget = {
     progress: { label: string; value: number; max: number } | null;
 };
 
+/**
+ * How a message arrived, when it arrived as more than typed text.
+ *
+ * `image` carries the stored copy so the transcript can redraw the picture on reopen; `url`
+ * is null when the server could not store it, and the bubble then says a photo was sent
+ * without showing it. `voice` carries nothing — the words in `text` are the transcript, and
+ * the recording itself is not kept. See `AttachmentSchema` in the backend's Conversation model.
+ */
+export type Attachment = {
+    kind: 'image' | 'voice';
+    url: string | null;
+    mimeType: string | null;
+};
+
 export type AssistantMessage = {
     role: 'user' | 'assistant';
     text: string;
+    attachment: Attachment | null;
     widget: AssistantWidget | null;
     suggestions: string[];
     /** The assistant judged this warrants speaking to a clinician promptly. */
@@ -60,6 +75,20 @@ export type AssistantMessage = {
 
 export type AssistantMode = 'chat' | 'immersive';
 
+/**
+ * Which inputs the composer may offer.
+ *
+ * Read from the server rather than assumed, because both depend on keys the app cannot
+ * see: `vision` on the Claude key, `voice` on a separate transcription key that is
+ * frequently unset. A microphone that looks live and fails on tap is worse than one that
+ * arrives disabled with a reason — the line `nutrition/log.tsx` already takes.
+ */
+export type AssistantCapabilities = {
+    text: boolean;
+    vision: boolean;
+    voice: boolean;
+};
+
 export type Conversation = {
     mode: AssistantMode;
     acceptedPrecautions: boolean;
@@ -68,12 +97,63 @@ export type Conversation = {
     messages: AssistantMessage[];
     /** False when the server has no model key configured. */
     available?: boolean;
+    capabilities?: AssistantCapabilities;
 };
+
+/** A picture chosen from the camera or the library, in the shape `FormData` wants. */
+export type ImageUpload = { uri: string; name: string; mimeType: string };
 
 export const getConversation = () => api.get<Conversation>('/assistant/conversation');
 
-export const sendMessage = (message: string) =>
-    api.post<{ message: AssistantMessage; lifetimeMessages: number }>('/assistant/chat', { message });
+export const getCapabilities = () => api.get<AssistantCapabilities>('/assistant/status');
+
+type ChatResponse = { message: AssistantMessage; lifetimeMessages: number };
+
+/**
+ * Send one message.
+ *
+ * JSON when it is only words, multipart when a photograph comes with it. Kept as one
+ * function because the caller's concern is the same either way — the branch is a transport
+ * detail, and every screen that sends would otherwise have to know about it.
+ *
+ * `spoken` marks a transcript from Voice Mode. It changes nothing about the answer; it is
+ * recorded so the bubble can show the words were spoken, which is what makes a
+ * mis-transcription legible rather than baffling.
+ */
+export const sendMessage = (
+    message: string,
+    options: { image?: ImageUpload | null; spoken?: boolean } = {}
+) => {
+    const { image, spoken } = options;
+
+    if (!image) {
+        return api.post<ChatResponse>('/assistant/chat', { message, spoken: Boolean(spoken) });
+    }
+
+    const form = new FormData();
+    form.append('message', message);
+    if (spoken) form.append('spoken', 'true');
+    // React Native's FormData takes this shape for file parts.
+    form.append('image', { uri: image.uri, name: image.name, type: image.mimeType } as any);
+
+    return api.post<ChatResponse>('/assistant/chat', form);
+};
+
+/**
+ * Turn a recording into text. Writes nothing to the conversation.
+ *
+ * The separation is the point: Voice Mode shows the person their transcript and lets them
+ * discard it, and that choice is only real if transcribing has not already sent anything.
+ */
+export const transcribe = async (
+    recording: { uri: string; name: string; mimeType: string }
+): Promise<string> => {
+    const form = new FormData();
+    form.append('audio', { uri: recording.uri, name: recording.name, type: recording.mimeType } as any);
+
+    const { text } = await api.post<{ text: string }>('/assistant/transcribe', form);
+    return text;
+};
 
 export const clearConversation = () => api.delete<Conversation>('/assistant/conversation');
 

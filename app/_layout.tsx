@@ -91,6 +91,10 @@ export default function RootLayout() {
         <Stack.Screen name="basket" options={{ headerShown: false }} />
         <Stack.Screen name="clinician" options={{ headerShown: false }} />
         <Stack.Screen name="biomarker/[name]" options={{ headerShown: false }} />
+        {/* The nutrition tracker draws its own back bar inside a top-inset SafeAreaView.
+            Left off this list it fell through to the Stack's default header, stacking a
+            second bar titled "nutrition" above its own on every screen in the folder. */}
+        <Stack.Screen name="nutrition" options={{ headerShown: false }} />
         {/* The symptom checker draws its own back bar inside a top-inset SafeAreaView.
             The root Stack has no default screenOptions, so a route left off this list
             gets a second header titled after its folder. */}
@@ -109,6 +113,9 @@ export default function RootLayout() {
         <Stack.Screen name="profile" options={{ headerShown: false }} />
         <Stack.Screen name="assistant/intro" options={{ headerShown: false }} />
         <Stack.Screen name="assistant/immersive" options={{ headerShown: false }} />
+        {/* Voice Mode is a full-screen takeover with its own close control and badge; a
+            default header would stack a second bar titled "voice" above it. */}
+        <Stack.Screen name="assistant/voice" options={{ headerShown: false }} />
         <Stack.Screen name="assistant/settings" options={{ headerShown: false }} />
         <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
         <Stack.Screen name="order-details" options={{ headerShown: false }} />
