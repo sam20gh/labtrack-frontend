@@ -19,21 +19,22 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.1</string>
+    <string>1.0.4</string>
     <key>CFBundleSignature</key>
     <string>????</string>
-    <!-- Required for expo-image-picker; iOS crashes the app without these strings -->
-    <key>NSCameraUsageDescription</key>
-    <string>LabTrack needs camera access so you can photograph a lab report.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>LabTrack needs access to your photos so you can upload a lab report.</string>
     <key>CFBundleURLTypes</key>
     <array>
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.labtrack.app</string>
           <string>labtrack</string>
+          <string>com.labtrack.app</string>
+        </array>
+      </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+labtrack</string>
         </array>
       </dict>
     </array>
@@ -50,6 +51,18 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSCameraUsageDescription</key>
+    <string>LabTrack needs camera access so you can photograph a lab report or show the assistant a symptom.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>LabTrack needs microphone access so you can ask the health assistant a question out loud.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>LabTrack needs access to your photos so you can upload a lab report or show the assistant a picture.</string>
+    <key>NSUserActivityTypes</key>
+    <array>
+      <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
+    </array>
+    <key>RCTNewArchEnabled</key>
+    <true/>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

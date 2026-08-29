@@ -26,10 +26,19 @@ export interface NotificationPreferences {
     quietHours: { start: number; end: number };
 }
 
-/** Foreground behaviour: show the banner rather than swallowing it silently. */
+/**
+ * Foreground behaviour: show the banner rather than swallowing it silently.
+ *
+ * `shouldShowAlert` was split into `shouldShowBanner` and `shouldShowList` in expo-notifications
+ * for SDK 53+, because the two are separately controllable on iOS — a reminder can appear as a
+ * heads-up banner, in Notification Centre, or both. Both are on here: a health reminder that
+ * flashes past while the phone is face-down and leaves nothing behind is a reminder that did
+ * not happen.
+ */
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
-        shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
     }),
