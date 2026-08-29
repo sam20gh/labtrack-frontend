@@ -29,6 +29,7 @@ import {
     type ActivitySummary, type ActivitySession, type WearableStatus,
 } from '@/lib/activity';
 import { probe, type HealthCapability } from '@/lib/health';
+import { runSync } from '@/lib/health/sync';
 import { ApiError } from '@/lib/api';
 
 export default function ActivityDashboard() {
@@ -47,6 +48,12 @@ export default function ActivityDashboard() {
     const load = useCallback(async () => {
         try {
             setError(null);
+
+            // Pull anything new off the watch before reading the summary, so opening the
+            // screen after a run shows the run. Throttled and non-throwing — a sync that
+            // cannot happen leaves the dashboard showing what it already has.
+            await runSync();
+
             const [s, day, st, cap] = await Promise.all([
                 getSummary(range),
                 getDay(),
@@ -162,6 +169,8 @@ export default function ActivityDashboard() {
                             <SourceBanner
                                 capability={capability}
                                 sources={status?.sources || []}
+                                onConnect={() => router.push('/activity/sources')}
+                                onManage={() => router.push('/activity/sources')}
                                 onLogManually={() => router.push('/activity/log')}
                             />
                         </View>

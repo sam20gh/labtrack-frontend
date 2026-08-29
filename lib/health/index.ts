@@ -1,19 +1,15 @@
 /**
  * The device health store, behind one interface.
  *
- * Two platforms, two completely different APIs, and **neither native module is installed
- * yet**. `react-native-health-connect` v4 wants `compileSdk 36` and Expo SDK 52 ships 35,
- * so adding it today breaks the Android build; the Expo upgrade is separate, prior work
- * (see `docs/ACTIVITY-TRACKER-PLAN.md` §5).
+ * Two platforms, two completely different APIs, one shape for the rest of the app.
+ * `@kingstinct/react-native-healthkit` on iOS, `react-native-health-connect` on Android,
+ * both normalising into the vocabulary in `./types` before anything else sees them.
  *
- * So the readers live in a registry that is empty today (see `READERS` below). The
- * consequence is the point: every screen in this feature builds, runs and is usable now
- * against manually logged activities, `probe()` reports `available: false` with a reason a
- * person can read, and registering the two readers later lights sync up without a single
- * screen changing.
- *
- * A missing reader is not an error state. Someone on an Android 12 phone with no Health
- * Connect installed is a normal user, and the connect screen tells them what to do.
+ * A missing or unavailable reader is not an error state, and every caller has to treat it
+ * as ordinary. Someone on an Android 12 phone with no Health Connect installed, someone who
+ * declined the prompt, and someone on a build older than these modules are all normal users
+ * — `probe()` returns `available: false` with a `reason` written to be shown to them, and
+ * the screens offer manual logging instead of a control that fails on tap.
  */
 import { Platform } from 'react-native';
 import type {
@@ -23,29 +19,23 @@ import type {
 export * from './types';
 
 /**
- * The platform readers, registered rather than imported.
+ * The platform readers, loaded lazily and per-platform.
  *
- * **This map is empty on purpose, and it is the one thing to change when the native
- * modules land.** Metro resolves `require` statically, so a top-level import of a package
- * that is not installed fails the whole bundle — a try/catch around it does not help. A
- * registry keeps the resolution out of the module graph entirely.
+ * `require` inside the factory rather than a top-level import, and that placement is
+ * load-bearing: `@kingstinct/react-native-healthkit` is iOS-only and
+ * `react-native-health-connect` is Android-only, so importing both at module scope would
+ * pull an unusable native module into the other platform's bundle. The factory only runs
+ * once `platformFor()` has already decided which one this device is.
  *
- * To turn sync on, once `@kingstinct/react-native-healthkit` and
- * `react-native-health-connect` are installed and the Expo SDK is on a version that can
- * compile them:
- *
- *   import { reader as healthKitReader } from './healthkit';
- *   import { reader as healthConnectReader } from './healthConnect';
- *
- *   const READERS = {
- *       apple_health: () => healthKitReader,
- *       health_connect: () => healthConnectReader,
- *   };
- *
- * Nothing else in the app changes. Every screen already handles `available: false`,
- * because until that day every device reports it.
+ * The try/catch is the second half of that. A build that predates one of the modules, or a
+ * device where the native side failed to link, returns null and every screen falls through
+ * to the `available: false` path it already handles — the same path every device was on
+ * before these were installed.
  */
-const READERS: Partial<Record<HealthPlatform, () => HealthReader>> = {};
+const READERS: Partial<Record<HealthPlatform, () => HealthReader>> = {
+    apple_health: () => require('./healthkit').reader as HealthReader,
+    health_connect: () => require('./healthConnect').reader as HealthReader,
+};
 
 const loadReader = (platform: HealthPlatform): HealthReader | null => {
     const factory = READERS[platform];

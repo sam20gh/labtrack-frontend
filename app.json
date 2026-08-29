@@ -24,7 +24,20 @@
     },
     "android": {
       "package": "com.labtrack.app",
-      "versionCode": 2
+      "versionCode": 2,
+      "permissions": [
+        "android.permission.health.READ_EXERCISE",
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.READ_TOTAL_CALORIES_BURNED",
+        "android.permission.health.READ_DISTANCE",
+        "android.permission.health.READ_FLOORS_CLIMBED",
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_RESTING_HEART_RATE",
+        "android.permission.health.READ_HEART_RATE_VARIABILITY",
+        "android.permission.health.READ_VO2_MAX"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -76,7 +89,15 @@
             "targetSdkVersion": 36
           }
         }
-      ]
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "LabTrack reads your workouts, sleep and heart rate from Apple Health so your activity tracker and health plan reflect what you actually did.",
+          "background": false
+        }
+      ],
+      "react-native-health-connect"
     ]
   }
 }

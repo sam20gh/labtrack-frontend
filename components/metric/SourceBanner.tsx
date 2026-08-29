@@ -24,6 +24,8 @@ interface Props {
     capability: HealthCapability | null;
     sources: WearableStatus['sources'];
     onConnect?: () => void;
+    /** Tapping a connected source opens the sources screen. */
+    onManage?: () => void;
     onLogManually?: () => void;
 }
 
@@ -38,14 +40,19 @@ const relativeTime = (iso: string | null): string => {
     return `${Math.round(hours / 24)}d ago`;
 };
 
-export function SourceBanner({ capability, sources, onConnect, onLogManually }: Props) {
+export function SourceBanner({ capability, sources, onConnect, onManage, onLogManually }: Props) {
     const connected = sources.filter((s) => s.status === 'connected');
 
     if (connected.length > 0) {
         const source = connected[0];
         const device = source.devices?.[0];
         return (
-            <View style={[styles.card, styles.ok]}>
+            <Pressable
+                onPress={onManage}
+                style={[styles.card, styles.ok]}
+                accessibilityRole={onManage ? 'button' : undefined}
+                accessibilityLabel="Manage connected sources"
+            >
                 <Ionicons name="watch-outline" size={20} color={Palette.success} />
                 <View style={styles.body}>
                     <Text style={styles.title}>
@@ -56,7 +63,8 @@ export function SourceBanner({ capability, sources, onConnect, onLogManually }: 
                         Last synced {relativeTime(source.lastSyncAt)}
                     </Text>
                 </View>
-            </View>
+                {onManage && <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />}
+            </Pressable>
         );
     }
 
