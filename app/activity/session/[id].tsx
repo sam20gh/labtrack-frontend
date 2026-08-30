@@ -117,33 +117,45 @@ export default function ActivityDetail() {
     const ended = session.endedAt ? new Date(session.endedAt) : null;
     const time = (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-    // Built from what is actually present. See the note at the top of the file.
-    const stats: { label: string; value: string }[] = [];
-    stats.push({ label: 'Start', value: time(started) });
-    if (ended) stats.push({ label: 'End', value: time(ended) });
-    stats.push({ label: 'Active minutes', value: formatDuration(session.durationSec) });
+    /**
+     * Built from what is actually present. See the note at the top of the file.
+     *
+     * Each row carries a glyph, as frame 8 of `Design/activity.svg` draws them — on a list
+     * this long the icon is what lets someone find the one figure they came for without
+     * reading nine labels.
+     */
+    const stats: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
+    stats.push({ icon: 'flag-outline', label: 'Start', value: time(started) });
+    if (ended) stats.push({ icon: 'flag', label: 'End', value: time(ended) });
+    stats.push({ icon: 'stopwatch-outline', label: 'Active minutes', value: formatDuration(session.durationSec) });
 
     const distance = formatDistance(session.distanceM);
-    if (distance) stats.push({ label: 'Distance', value: distance });
+    if (distance) stats.push({ icon: 'location-outline', label: 'Total distance', value: distance });
 
     // Derived from distance and duration, not read from anywhere — see `formatPace`. The
     // kit's 80mph jog is the placeholder this replaces.
     const pace = formatPace(session.distanceM, session.durationSec);
-    if (pace) stats.push({ label: pace.endsWith('/km') ? 'Average pace' : 'Average speed', value: pace });
+    if (pace) {
+        stats.push({
+            icon: 'speedometer-outline',
+            label: pace.endsWith('/km') ? 'Average pace' : 'Average speed',
+            value: pace,
+        });
+    }
     if (Number.isFinite(session.activeKcal as number)) {
-        stats.push({ label: 'Calories burned', value: `${Math.round(session.activeKcal as number)} kcal` });
+        stats.push({ icon: 'flame-outline', label: 'Calories burned', value: `${Math.round(session.activeKcal as number)} kcal` });
     }
     if (Number.isFinite(session.avgBpm as number)) {
-        stats.push({ label: 'Average heart rate', value: `${Math.round(session.avgBpm as number)} bpm` });
+        stats.push({ icon: 'heart-outline', label: 'Average heart rate', value: `${Math.round(session.avgBpm as number)} bpm` });
     }
     if (Number.isFinite(session.maxBpm as number)) {
-        stats.push({ label: 'Peak heart rate', value: `${Math.round(session.maxBpm as number)} bpm` });
+        stats.push({ icon: 'pulse-outline', label: 'Peak heart rate', value: `${Math.round(session.maxBpm as number)} bpm` });
     }
     if (Number.isFinite(session.elevationM as number)) {
-        stats.push({ label: 'Elevation', value: `${Math.round(session.elevationM as number)} m` });
+        stats.push({ icon: 'trending-up-outline', label: 'Elevation', value: `${Math.round(session.elevationM as number)} m` });
     }
     if (Number.isFinite(session.cadence as number)) {
-        stats.push({ label: 'Cadence', value: `${Math.round(session.cadence as number)} spm` });
+        stats.push({ icon: 'footsteps-outline', label: 'Cadence', value: `${Math.round(session.cadence as number)} spm` });
     }
 
     return (
@@ -178,6 +190,7 @@ export default function ActivityDetail() {
                 <View style={styles.card}>
                     {stats.map((s, i) => (
                         <View key={s.label} style={[styles.row, i === stats.length - 1 && styles.rowLast]}>
+                            <Ionicons name={s.icon} size={17} color={Palette.textMuted} />
                             <Text style={styles.rowLabel}>{s.label}</Text>
                             <Text style={styles.rowValue}>{s.value}</Text>
                         </View>
@@ -281,14 +294,14 @@ const styles = StyleSheet.create({
     card: { backgroundColor: Palette.surface, borderRadius: Radius.lg, paddingHorizontal: Spacing.lg },
     row: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        gap: Spacing.md,
         paddingVertical: Spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: Palette.borderLight,
     },
     rowLast: { borderBottomWidth: 0 },
-    rowLabel: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    rowLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary },
     rowValue: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
 
     efforts: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.lg },

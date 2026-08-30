@@ -33,6 +33,59 @@ interface Props {
 
 const PADDING = { top: 14, right: 10, bottom: 24, left: 34 };
 
+/**
+ * A smooth path through the points, using **monotone** cubic interpolation.
+ *
+ * The design draws the series as a curve rather than a polyline, and a naive spline is the
+ * wrong way to get one here: Catmull-Rom overshoots between points, so a week of
+ * 0-0-8000-0 steps would bulge above 8,000 and dip below zero — inventing a step count
+ * nobody took and a negative one nobody could. Fritsch–Carlson clamps the tangents so the
+ * curve never leaves the range of the points it joins, which is the difference between a
+ * chart that is prettier and a chart that is wrong.
+ */
+const smoothPath = (pts: { x: number; y: number }[]): string => {
+    if (pts.length < 2) return pts.length ? `M${pts[0].x},${pts[0].y}` : '';
+    if (pts.length === 2) return `M${pts[0].x},${pts[0].y} L${pts[1].x},${pts[1].y}`;
+
+    const n = pts.length;
+    const h: number[] = [];
+    const delta: number[] = [];
+    for (let i = 0; i < n - 1; i += 1) {
+        h.push(pts[i + 1].x - pts[i].x);
+        delta.push((pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x));
+    }
+
+    const m: number[] = new Array(n);
+    m[0] = delta[0];
+    m[n - 1] = delta[n - 2];
+    for (let i = 1; i < n - 1; i += 1) {
+        // A local extreme gets a flat tangent, which is what stops the curve turning a peak
+        // into two peaks with a dip between them.
+        m[i] = delta[i - 1] * delta[i] <= 0 ? 0 : (delta[i - 1] + delta[i]) / 2;
+    }
+
+    for (let i = 0; i < n - 1; i += 1) {
+        if (delta[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+        const a = m[i] / delta[i];
+        const b = m[i + 1] / delta[i];
+        const sq = a * a + b * b;
+        if (sq > 9) {
+            const tau = 3 / Math.sqrt(sq);
+            m[i] = tau * a * delta[i];
+            m[i + 1] = tau * b * delta[i];
+        }
+    }
+
+    let d = `M${pts[0].x},${pts[0].y}`;
+    for (let i = 0; i < n - 1; i += 1) {
+        const third = h[i] / 3;
+        d += ` C${pts[i].x + third},${pts[i].y + m[i] * third}`
+            + ` ${pts[i + 1].x - third},${pts[i + 1].y - m[i + 1] * third}`
+            + ` ${pts[i + 1].x},${pts[i + 1].y}`;
+    }
+    return d;
+};
+
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const labelFor = (day: string, total: number): string => {
@@ -81,16 +134,19 @@ export function MetricAreaChart({
         });
         if (run.length) runs.push(run);
 
-        const linePaths = runs.map((r) =>
-            r.map((pt, k) => `${k === 0 ? 'M' : 'L'}${x(pt.i)},${y(pt.value)}`).join(' ')
-        );
+        const screen = (r: { i: number; value: number }[]) =>
+            r.map((pt) => ({ x: x(pt.i), y: y(pt.value) }));
 
+        const linePaths = runs.map((r) => smoothPath(screen(r)));
+
+        // The fill reuses the line's own path so the two can never disagree about where the
+        // curve went — closing it down to the baseline and back is all that differs.
         const areaPaths = runs
             .filter((r) => r.length > 1)
             .map((r) => {
-                const top = r.map((pt, k) => `${k === 0 ? 'M' : 'L'}${x(pt.i)},${y(pt.value)}`).join(' ');
                 const baseline = PADDING.top + plotH;
-                return `${top} L${x(r[r.length - 1].i)},${baseline} L${x(r[0].i)},${baseline} Z`;
+                return `${smoothPath(screen(r))} L${x(r[r.length - 1].i)},${baseline}`
+                    + ` L${x(r[0].i)},${baseline} Z`;
             });
 
         // A single reported day cannot draw a line, so mark it

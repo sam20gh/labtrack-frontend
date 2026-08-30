@@ -80,6 +80,22 @@ export interface ActivitySeriesPoint {
     score: number | null;
 }
 
+/**
+ * Anything at all was reported for this day.
+ *
+ * Broader than "a workout happened" on purpose: a day of 9,000 steps and no session is not
+ * an empty day, and a calendar that marked it as one would be telling somebody their walk
+ * did not count.
+ */
+export const dayHasData = (p: ActivitySeriesPoint): boolean =>
+    p.sessions > 0
+    || Number.isFinite(p.steps as number)
+    || Number.isFinite(p.activeKcal as number)
+    || Number.isFinite(p.exerciseMin as number)
+    || Number.isFinite(p.distanceM as number)
+    || Number.isFinite(p.restingBpm as number)
+    || Number.isFinite(p.avgBpm as number);
+
 /** An average, and how many days actually reported it. Null when none did. */
 export interface MetricAverage {
     value: number;
@@ -229,6 +245,28 @@ export interface DayMetrics {
     };
     reportedAt?: string;
 }
+
+/**
+ * One month for the calendar grid.
+ *
+ * `progress` is that day's share of the weekly minutes target, 0–1, and **null when no
+ * target exists** — the client draws a plain marker for those rather than an empty ring,
+ * because a ring at zero on a plan nobody set reads as a failure.
+ */
+export interface CalendarDay {
+    day: string;
+    sessions: number;
+    exerciseMin: number | null;
+    activeKcal: number | null;
+    steps: number | null;
+    score: number | null;
+    progress: number | null;
+}
+
+export const getCalendar = (month: string) =>
+    api.get<{ month: string; days: CalendarDay[]; hasTarget: boolean }>(
+        `/activity/calendar?month=${month}&tzOffset=${tzOffset()}`
+    );
 
 export const getDay = (date?: string) =>
     api.get<{ day: string; sessions: ActivitySession[]; metrics: DayMetrics | null }>(

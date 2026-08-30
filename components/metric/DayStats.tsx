@@ -111,38 +111,40 @@ export function DayStats({ metrics, emptyNote }: Props) {
     }
 
     return (
-        <View style={styles.grid}>
-            {tiles.map((t) => (
-                <View key={t.key} style={styles.tile}>
-                    <Ionicons name={t.icon} size={16} color={t.tint} />
-                    <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-                        {t.value}
-                        {t.unit ? <Text style={styles.unit}> {t.unit}</Text> : null}
-                    </Text>
-                    <Text style={styles.label} numberOfLines={2}>{t.label}</Text>
-                </View>
-            ))}
+        <View style={styles.card}>
+            <View style={styles.grid}>
+                {tiles.map((t) => (
+                    <View key={t.key} style={styles.tile}>
+                        <Ionicons name={t.icon} size={15} color={t.tint} />
+                        <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                            {t.value}
+                            {t.unit ? <Text style={styles.unit}> {t.unit}</Text> : null}
+                        </Text>
+                        <Text style={styles.label} numberOfLines={2}>{t.label}</Text>
+                    </View>
+                ))}
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: Spacing.sm,
-    },
-    tile: {
-        // Three to a row at phone widths, and the last row is left-aligned rather than
-        // stretched — a lone stretched tile reads as a different kind of thing.
-        flexGrow: 1,
-        flexBasis: '30%',
-        minWidth: 96,
-        gap: 4,
-        backgroundColor: Palette.surface,
+    // One bordered card holding the grid, matching the way the design's insight and goal
+    // cards are set — a page of individually-shaded tiles reads as a control panel.
+    card: {
+        borderWidth: 1,
+        borderColor: Palette.border,
         borderRadius: Radius.lg,
-        paddingVertical: Spacing.md,
-        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.lg,
+        paddingHorizontal: Spacing.sm,
+    },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: Spacing.lg },
+    tile: {
+        // Three to a row, fixed rather than grown, so the last row lines up under the first
+        // instead of stretching two tiles across the card.
+        width: '33.333%',
+        gap: 3,
+        paddingHorizontal: Spacing.sm,
     },
     value: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     unit: { fontSize: 11, fontFamily: Fonts.medium, color: Palette.textSecondary },
@@ -152,7 +154,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.sm,
-        backgroundColor: Palette.surface,
+        borderWidth: 1,
+        borderColor: Palette.border,
         borderRadius: Radius.lg,
         padding: Spacing.lg,
     },

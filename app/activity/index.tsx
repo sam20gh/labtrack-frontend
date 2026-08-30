@@ -23,7 +23,7 @@ import {
     View, Text, ScrollView, Pressable, StyleSheet, useWindowDimensions,
     ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,16 +31,17 @@ import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import { MetricPicker, availableMetrics, CHART_METRICS } from '@/components/metric/MetricPicker';
-import { DayStrip, hasData } from '@/components/metric/DayStrip';
+import { ActivityCalendar } from '@/components/metric/ActivityCalendar';
 import { DayStats } from '@/components/metric/DayStats';
+import { HighlightCard } from '@/components/metric/HighlightCard';
 import { SessionCard } from '@/components/metric/SessionCard';
 import { SourceBanner } from '@/components/metric/SourceBanner';
 import { GoalRings } from '@/components/metric/GoalRings';
 import { PlanGuidanceCard } from '@/components/metric/PlanGuidanceCard';
 import {
-    getSummary, getDay, getWearableStatus, today, formatDistance,
+    getSummary, getDay, getCalendar, getWearableStatus, today, formatDistance, dayHasData,
     type ActivitySummary, type ActivitySession, type WearableStatus,
-    type ActivityMetricKey, type DayMetrics,
+    type ActivityMetricKey, type DayMetrics, type CalendarDay,
 } from '@/lib/activity';
 import { probe, type HealthCapability } from '@/lib/health';
 import { runSync } from '@/lib/health/sync';
@@ -88,6 +89,7 @@ const averageLine = (
 export default function ActivityDashboard() {
     const router = useRouter();
     const { width } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
 
     const [range, setRange] = useState<MetricRange>('1w');
     const [metric, setMetric] = useState<ActivityMetricKey>('exerciseMin');
@@ -95,6 +97,9 @@ export default function ActivityDashboard() {
     const [selectedDay, setSelectedDay] = useState<string>(today);
     const [sessions, setSessions] = useState<ActivitySession[]>([]);
     const [dayMetrics, setDayMetrics] = useState<DayMetrics | null>(null);
+    const [month, setMonth] = useState<string>(() => today().slice(0, 7));
+    const [calendar, setCalendar] = useState<CalendarDay[]>([]);
+    const [calendarLoading, setCalendarLoading] = useState(true);
     const [status, setStatus] = useState<WearableStatus | null>(null);
     const [capability, setCapability] = useState<HealthCapability | null>(null);
     const [loading, setLoading] = useState(true);
@@ -153,6 +158,9 @@ export default function ActivityDashboard() {
             if (result.daysUpdated.includes(selectedDayRef.current)) {
                 await loadDayRef.current(selectedDayRef.current);
             }
+            if (result.daysUpdated.some((d) => d.startsWith(monthRef.current))) {
+                await loadMonthRef.current(monthRef.current);
+            }
         } catch {
             // The sync landed; only the redraw failed. What is on screen is still true.
         }
@@ -161,9 +169,9 @@ export default function ActivityDashboard() {
     /**
      * The selected day, fetched on its own.
      *
-     * Separate from `load` so moving along the strip is one small request rather than a
-     * re-sync and a full summary refetch — the difference between a day picker that feels
-     * like a control and one that feels like a page load.
+     * Separate from `load` so tapping a date on the calendar is one small request rather
+     * than a re-sync and a full summary refetch — the difference between a day picker that
+     * feels like a control and one that feels like a page load.
      */
     const loadDay = useCallback(async (day: string) => {
         try {
@@ -184,16 +192,47 @@ export default function ActivityDashboard() {
     }, [router]);
 
     /**
+     * The visible month of the calendar grid.
+     *
+     * Its own request rather than a slice of the summary: `/summary` answers "the last N
+     * days" and a calendar asks about a named month, and the two disagree about their edges
+     * on every screen that draws both. The grid keeps the month it has while the next one
+     * loads, so paging back does not flash an empty month.
+     */
+    const loadMonth = useCallback(async (target: string) => {
+        setCalendarLoading(true);
+        try {
+            const result = await getCalendar(target);
+            setCalendar(result.days);
+        } catch (err) {
+            if (err instanceof ApiError && err.isAuthError) {
+                router.replace('/(auth)/loginscreen');
+                return;
+            }
+            setCalendar([]);
+        } finally {
+            setCalendarLoading(false);
+        }
+    }, [router]);
+
+    useEffect(() => { loadMonth(month); }, [month, loadMonth]);
+
+    /**
      * Read through a ref rather than a dependency.
      *
-     * `load` runs on focus and after a range change. Depending on `selectedDay` would make
-     * every tap on the day strip re-run the whole load — sync included — which is the exact
-     * cost `loadDay` exists to avoid.
+     * `load` runs on focus and after a range change. Depending on `selectedDay` or `month`
+     * would make every tap on the calendar re-run the whole load — sync included — which is
+     * the exact cost `loadDay` and `loadMonth` exist to avoid.
      */
     const selectedDayRef = useRef(selectedDay);
     const loadDayRef = useRef(loadDay);
+    const monthRef = useRef(month);
+    const loadMonthRef = useRef(loadMonth);
     useEffect(() => { selectedDayRef.current = selectedDay; }, [selectedDay]);
     useEffect(() => { loadDayRef.current = loadDay; }, [loadDay]);
+    useEffect(() => { monthRef.current = month; }, [month]);
+    useEffect(() => { loadMonthRef.current = loadMonth; }, [loadMonth]);
+
 
     // Refetch on focus: someone logs an activity, comes back, and expects to see it.
     useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -226,12 +265,14 @@ export default function ActivityDashboard() {
     const sessionCount = summary?.totals.sessions || 0;
     // A phone that synced a week of steps and no workouts has data. Telling that person to
     // "log your first activity" reads as the app not having seen anything at all.
-    const hasMeasured = series.some(hasData);
+    const hasMeasured = series.some(dayHasData);
 
     // The range summary, in the order a person reads them. Each is dropped when no day in
     // the range reported it, so this row is never a list of dashes.
     const averages = ([
-        'steps', 'activeKcal', 'distanceM', 'restingBpm',
+        // Calories are the highlight card's headline; repeating them here would make the
+        // same number look like two findings.
+        'steps', 'distanceM', 'restingBpm',
     ] as ActivityMetricKey[])
         .map((key) => ({ key, line: averageLine(summary, key) }))
         .filter((a): a is { key: ActivityMetricKey; line: NonNullable<ReturnType<typeof averageLine>> } => Boolean(a.line));
@@ -241,21 +282,16 @@ export default function ActivityDashboard() {
     // The note only claims one figure when one figure is true.
     const averageDays = [...new Set(averages.map((a) => a.line.days))];
 
+    // The design's highlight figure: the range's average daily burn.
+    const burn = summary?.averages?.activeKcal || null;
+
     const isToday = selectedDay === today();
 
-    /**
-     * Changing the range can strand the selected day outside it.
-     *
-     * A day picked three weeks back then a switch to `1w` leaves the header naming a date
-     * the strip below no longer contains. Snapping back to today is the only option that
-     * leaves the two agreeing.
-     */
-    useEffect(() => {
-        if (series.length && !series.some((p) => p.day === selectedDay)) setSelectedDay(today());
-    }, [series, selectedDay]);
 
     return (
-        <SafeAreaView style={styles.screen} edges={['top']}>
+        // No `top` edge: the wash has to run under the status bar the way the design draws
+        // it, so the inset is applied as padding inside the gradient instead.
+        <SafeAreaView style={styles.screen} edges={[]}>
             <ScrollView
                 contentContainerStyle={styles.content}
                 refreshControl={
@@ -266,27 +302,50 @@ export default function ActivityDashboard() {
                     />
                 }
             >
+                {/*
+                  Frame 7's header: a vertical wash from the accent to the page, not a
+                  rounded purple card. The gradient's last stop is the page background, so
+                  the range tabs below sit on white with no seam — which is why the text in
+                  here is `Palette.text` rather than white. The two round buttons keep the
+                  only elements over the saturated top on a white ground; dark glyphs
+                  directly on that purple sit at about 3:1.
+                */}
                 <LinearGradient
-                    colors={Palette.heroGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.hero}
+                    colors={[Palette.primary, Palette.primaryLight, Palette.background]}
+                    locations={[0, 0.45, 1]}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={[styles.hero, { paddingTop: insets.top + Spacing.md }]}
                 >
                     <View style={styles.heroBar}>
                         <Pressable
                             onPress={() => router.back()}
                             hitSlop={12}
+                            style={styles.heroButton}
                             accessibilityRole="button"
                             accessibilityLabel="Go back"
                         >
-                            <Ionicons name="chevron-back" size={24} color={Palette.white} />
+                            <Ionicons name="chevron-back" size={20} color={Palette.text} />
                         </Pressable>
                         <Text style={styles.heroDate}>
-                            {new Date().toLocaleDateString(undefined, {
+                            {new Date(`${selectedDay}T00:00:00`).toLocaleDateString(undefined, {
                                 month: 'short', day: 'numeric', year: 'numeric',
                             })}
                         </Text>
-                        <View style={{ width: 24 }} />
+                        <Pressable
+                            onPress={() => router.push('/notification-settings')}
+                            hitSlop={12}
+                            style={styles.heroButton}
+                            accessibilityRole="button"
+                            accessibilityLabel="Reminder settings"
+                        >
+                            {/*
+                              No unread dot. The design draws one, and nothing in the app can
+                              say whether there is anything unread — a badge that is always
+                              on is a badge nobody looks at twice.
+                            */}
+                            <Ionicons name="notifications-outline" size={19} color={Palette.text} />
+                        </Pressable>
                     </View>
 
                     {/*
@@ -312,7 +371,7 @@ export default function ActivityDashboard() {
                     </Text>
                 </LinearGradient>
 
-                <View style={styles.section}>
+                <View style={[styles.section, styles.sectionTight]}>
                     <RangeTabs value={range} onChange={setRange} />
                     {syncing && (
                         // Said out loud because the first sync after an update is a 90-day
@@ -362,23 +421,38 @@ export default function ActivityDashboard() {
 
                         {summary && summary.streak > 0 && (
                             <View style={styles.section}>
+                                {/* Frame 7's amber streak card, with the day count set in the badge. */}
                                 <View style={styles.streak}>
-                                    <Ionicons name="flame" size={22} color={Palette.amber} />
+                                    <View style={styles.streakBadge}>
+                                        <Ionicons name="flame" size={26} color={Palette.white} />
+                                        <Text style={styles.streakBadgeText}>{summary.streak}</Text>
+                                    </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.streakTitle}>
                                             {summary.streak}-day streak
                                         </Text>
                                         <Text style={styles.streakBody}>
-                                            You’ve been active {summary.streak} days running. Keep it up.
+                                            You’ve been active {summary.streak} days running. Keep it up!
                                         </Text>
                                     </View>
                                 </View>
                             </View>
                         )}
 
-                        {averages.length > 0 && (
+                        {burn && (
                             <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>Daily average</Text>
+                                <Text style={styles.sectionTitle}>Activity highlight</Text>
+                                <HighlightCard
+                                    kcal={burn.value}
+                                    days={burn.days}
+                                    score={summary?.score ?? null}
+                                    band={summary?.band?.label ?? null}
+                                />
+                            </View>
+                        )}
+
+                        {averages.length > 0 && (
+                            <View style={[styles.section, styles.sectionClose]}>
                                 <View style={styles.averages}>
                                     {averages.map(({ key, line }) => (
                                         <View key={key} style={styles.average}>
@@ -394,7 +468,7 @@ export default function ActivityDashboard() {
                                 */}
                                 <Text style={styles.averageNote}>
                                     {averageDays.length === 1
-                                        ? `Across ${averageDays[0]} ${averageDays[0] === 1 ? 'day' : 'days'} with data`
+                                        ? `Daily average across ${averageDays[0]} ${averageDays[0] === 1 ? 'day' : 'days'} with data`
                                         : 'Each averaged over the days it was recorded'}
                                     {summary ? ` in the last ${summary.days.length} days` : ''}
                                 </Text>
@@ -402,20 +476,20 @@ export default function ActivityDashboard() {
                         )}
 
                         <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>{dayLabel(selectedDay)}</Text>
-                                <Pressable
-                                    onPress={() => router.push('/activity/history')}
-                                    accessibilityRole="button"
-                                >
-                                    <Text style={styles.link}>See all</Text>
-                                </Pressable>
-                            </View>
+                            <Text style={styles.sectionTitle}>Activity calendar</Text>
+                            <ActivityCalendar
+                                month={month}
+                                days={calendar}
+                                value={selectedDay}
+                                today={today()}
+                                loading={calendarLoading}
+                                onChangeMonth={setMonth}
+                                onSelect={setSelectedDay}
+                            />
+                        </View>
 
-                            {/* Any day the loaded range covers, not just today. */}
-                            <DayStrip series={series} value={selectedDay} onChange={setSelectedDay} />
-
-                            <View style={{ height: Spacing.md }} />
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>{dayLabel(selectedDay)}</Text>
 
                             <DayStats
                                 metrics={dayMetrics}
@@ -429,7 +503,20 @@ export default function ActivityDashboard() {
                                 }
                             />
 
-                            <View style={{ height: Spacing.md }} />
+                            {/*
+                              The activities belong to the day named above, so they sit under
+                              it rather than in a section of their own. "See all" is the way
+                              out to the unscoped history list.
+                            */}
+                            <View style={[styles.sectionHeader, styles.subHeader]}>
+                                <Text style={styles.subTitle}>Activities</Text>
+                                <Pressable
+                                    onPress={() => router.push('/activity/history')}
+                                    accessibilityRole="button"
+                                >
+                                    <Text style={styles.link}>See all</Text>
+                                </Pressable>
+                            </View>
 
                             {sessions.length === 0 ? (
                                 <View style={styles.empty}>
@@ -474,7 +561,7 @@ export default function ActivityDashboard() {
                         {summary?.goal && (
                             <View style={styles.section}>
                                 <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionTitle}>Weekly goal</Text>
+                                    <Text style={[styles.sectionTitle, styles.titleFlush]}>Activity goal</Text>
                                     <Pressable
                                         onPress={() => router.push('/activity/goal')}
                                         accessibilityRole="button"
@@ -514,9 +601,7 @@ const styles = StyleSheet.create({
     hero: {
         paddingHorizontal: Spacing.xl,
         paddingTop: Spacing.md,
-        paddingBottom: Spacing.xxxl,
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
+        paddingBottom: Spacing.xl,
         alignItems: 'center',
     },
     heroBar: {
@@ -524,20 +609,31 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         alignSelf: 'stretch',
-        marginBottom: Spacing.xl,
+        marginBottom: Spacing.xxl,
     },
-    heroDate: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.white },
-    score: { fontSize: 56, fontFamily: Fonts.bold, color: Palette.white, lineHeight: 62 },
-    scoreLabel: { fontSize: 18, fontFamily: Fonts.semibold, color: Palette.white },
+    heroButton: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: Palette.white,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    heroDate: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.text },
+    score: { fontSize: 54, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 62 },
+    scoreLabel: { fontSize: 20, fontFamily: Fonts.semibold, color: Palette.text },
     scoreCaption: {
         fontSize: 13,
         fontFamily: Fonts.regular,
-        color: Palette.white,
-        opacity: 0.85,
+        color: Palette.textSecondary,
         marginTop: 4,
+        textAlign: 'center',
     },
 
     section: { paddingHorizontal: Spacing.xl, marginTop: Spacing.xl },
+    sectionTight: { marginTop: 0 },
+    /** A block that continues the one above it rather than starting a new subject. */
+    sectionClose: { marginTop: Spacing.md },
     syncing: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.md },
     syncingText: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
     sectionHeader: {
@@ -547,23 +643,46 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.md,
     },
     sectionTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text, marginBottom: Spacing.md },
+    /** The same title, with the margin dropped for when it sits in a header row. */
+    titleFlush: { marginBottom: 0 },
+    subHeader: { marginTop: Spacing.lg },
+    subTitle: { fontSize: 13.5, fontFamily: Fonts.semibold, color: Palette.textSecondary },
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
     error: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.danger, marginBottom: Spacing.sm },
 
     streak: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: Spacing.md,
+        gap: Spacing.lg,
         backgroundColor: Palette.warningSurface,
+        borderWidth: 1,
+        borderColor: '#FDE68A',
         borderRadius: Radius.lg,
         padding: Spacing.lg,
+    },
+    streakBadge: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: Palette.amber,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    // Set over the flame, the way the design stamps the day count into the badge.
+    streakBadgeText: {
+        position: 'absolute',
+        fontSize: 13,
+        fontFamily: Fonts.bold,
+        color: Palette.white,
+        marginTop: 3,
     },
     streakTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
     streakBody: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
 
     averages: {
         flexDirection: 'row',
-        backgroundColor: Palette.surface,
+        borderWidth: 1,
+        borderColor: Palette.border,
         borderRadius: Radius.lg,
         paddingVertical: Spacing.lg,
     },
