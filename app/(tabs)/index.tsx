@@ -35,14 +35,39 @@ import {
     getLatestInterpretation, generateInterpretation, hasMeaningfulChanges, isVerified,
     RISK_META, byRiskSeverity, type LatestInterpretation,
 } from '@/lib/interpretation';
-import { computeHealthScore, BAND_META, SCORE_DISCLAIMER, type HealthScore } from '@/lib/healthScore';
+import { getScore, bandMeta, isMostlyReported, SOURCE_META, type HealthScore } from '@/lib/score';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 import ScoreRadar from '@/components/home/ScoreRadar';
 import type { BiomarkerSummary, NutritionDay, PlanItem, Product, User } from '@/types/api';
 
+/**
+ * What the hero shows before the score has loaded, or for a signed-out visitor.
+ *
+ * A placeholder rather than a zero. A score of 0 on first launch is a claim about someone's
+ * health made before anything is known about them.
+ */
 const EMPTY_SCORE: HealthScore = {
-    value: null, band: 'unknown', headline: 'Add a result to unlock your score', pillars: [], coverage: 0,
+    value: null,
+    band: null,
+    bandLabel: null,
+    headline: 'Log a day or upload a result to unlock your score',
+    pillars: [],
+    coverage: { scored: 0, observed: 0, reported: 0, total: 0, observedWeight: 0 },
+    windowDays: 30,
+    computedAt: new Date().toISOString(),
+    change: null,
+    disclaimer: '',
+    bands: [],
 };
+
+/**
+ * The six pillars the hero radar plots, in axis order starting at 12 o'clock.
+ *
+ * Chosen so every axis is something one of the trackers moves — a radar whose axes a person
+ * cannot change is decoration. `plan` and `mind` are scored but left off: the first is not a
+ * behaviour and the second has a whole screen of its own.
+ */
+const RADAR_PILLARS = ['biomarkers', 'activity', 'sleep', 'nutrition', 'medication', 'vitals'] as const;
 
 const greetingFor = (hour: number) =>
     hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -70,6 +95,7 @@ export default function HomeScreen() {
     const [products, setProducts] = useState<Product[]>([]);
     const [analysis, setAnalysis] = useState<LatestInterpretation | null>(null);
     const [nutrition, setNutrition] = useState<NutritionDay | null>(null);
+    const [score, setScore] = useState<HealthScore>(EMPTY_SCORE);
     const [generating, setGenerating] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -91,7 +117,7 @@ export default function HomeScreen() {
 
         // Settled rather than all: a home screen that renders nothing because the plan
         // endpoint hiccuped is worse than one missing a section.
-        const [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes] = await Promise.allSettled([
+        const [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes, scoreRes] = await Promise.allSettled([
             userId ? api.get<User>(`/users/${userId}`) : Promise.reject(new Error('no user id')),
             getLatestBiomarkers(),
             getPlan(),
@@ -101,6 +127,9 @@ export default function HomeScreen() {
             // user id the way the old /test-results?user_id= path did.
             getLatestInterpretation(),
             getNutritionDay(),
+            // The score is computed server-side now — it reads a month of activity, sleep,
+            // meals and doses this screen never loads. See the header of `lib/score.ts`.
+            getScore(),
         ]);
 
         if (userRes.status === 'fulfilled') setUser(userRes.value);
@@ -109,8 +138,9 @@ export default function HomeScreen() {
         if (productRes.status === 'fulfilled') setProducts(Array.isArray(productRes.value) ? productRes.value.slice(0, 6) : []);
         if (analysisRes.status === 'fulfilled') setAnalysis(analysisRes.value);
         if (nutritionRes.status === 'fulfilled') setNutrition(nutritionRes.value);
+        if (scoreRes.status === 'fulfilled') setScore(scoreRes.value);
 
-        const rejected = [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes]
+        const rejected = [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes, scoreRes]
             .filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
             router.replace('/(auth)/loginscreen');
@@ -191,18 +221,7 @@ export default function HomeScreen() {
         }
     }, [analysis, load]);
 
-    const score = useMemo(
-        () => (signedIn
-            ? computeHealthScore({
-                biomarkers,
-                planItems,
-                heightCm: user?.height,
-                weightKg: user?.weight,
-                assessment: user?.healthAssessment,
-            })
-            : EMPTY_SCORE),
-        [signedIn, biomarkers, planItems, user],
-    );
+
 
     /** Out-of-range markers, worst first — the reason someone opens a health app. */
     const attention = useMemo(
@@ -253,7 +272,11 @@ export default function HomeScreen() {
                             onPressAvatar={() => router.push('/profile')}
                         />
 
-                        <ScoreHero score={score} onExplain={() => setExplainerOpen(true)} />
+                        <ScoreHero
+                            score={score}
+                            onExplain={() => setExplainerOpen(true)}
+                            onOpen={() => router.push('/score')}
+                        />
 
                         {analysis?.latestResult && (
                             <Section
@@ -419,12 +442,29 @@ const Greeting = ({ name, initials, onPressAvatar }: { name: string; initials: s
  * with values — it communicates shape (which pillar is dented), and the sheet behind the
  * info button carries the detail.
  */
-const ScoreHero = ({ score, onExplain }: { score: HealthScore; onExplain: () => void }) => {
-    const band = BAND_META[score.band];
+const ScoreHero = ({ score, onExplain, onOpen }: {
+    score: HealthScore; onExplain: () => void; onOpen: () => void;
+}) => {
+    const band = bandMeta(score.band);
+    const mostlyReported = isMostlyReported(score);
     // The radar shares its row with the score, so it takes what is left of the width
     // rather than a fixed size that overflows on a 360pt phone.
     const { width } = useWindowDimensions();
     const radarSize = Math.max(96, Math.min(132, width - 236));
+
+    /**
+     * Six axes, not nine.
+     *
+     * The engine scores nine pillars; the kit's polygon has six, and it is right — a
+     * nine-sided shape at 130pt is a blob, and the hero's job is to show *shape* (which
+     * axis is dented) rather than to enumerate. `RADAR_PILLARS` picks the six the trackers
+     * feed, so the dent a person sees is one they can act on today. The breakdown screen
+     * lists all nine.
+     */
+    const radarPillars = RADAR_PILLARS
+        .map((key) => score.pillars.find((p) => p.key === key))
+        .filter((p): p is NonNullable<typeof p> => Boolean(p));
+
     return (
         <LinearGradient
             colors={Palette.heroGradient}
@@ -448,12 +488,59 @@ const ScoreHero = ({ score, onExplain }: { score: HealthScore; onExplain: () => 
                     </View>
                 </View>
 
-                {score.pillars.length > 0 && (
-                    <ScoreRadar pillars={score.pillars} size={radarSize} />
+                {radarPillars.length > 0 && (
+                    <ScoreRadar pillars={radarPillars} size={radarSize} />
                 )}
             </View>
 
             <Text style={styles.heroHeadline}>{score.headline}</Text>
+
+            {/*
+              * The provenance line.
+              *
+              * The whole point of the score change is that this number now comes from what
+              * the trackers measured rather than what someone typed at onboarding. When it
+              * is still mostly the latter it has to say so — a person who trusts a
+              * self-assessment as though it were a measurement is exactly who this feature
+              * was supposed to stop creating.
+              */}
+            {score.value !== null && (
+                <View style={styles.heroFooter}>
+                    {mostlyReported ? (
+                        <View style={styles.provenanceChip}>
+                            <Ionicons name="alert-circle-outline" size={13} color={SOURCE_META.reported.color} />
+                            <Text style={styles.provenanceText}>
+                                {score.coverage.observedWeight}% measured
+                            </Text>
+                        </View>
+                    ) : (
+                        <View style={styles.provenanceChip}>
+                            <Ionicons name="pulse-outline" size={13} color="rgba(255,255,255,0.9)" />
+                            <Text style={styles.provenanceText}>
+                                From {score.coverage.observed} tracked source{score.coverage.observed === 1 ? '' : 's'}
+                            </Text>
+                        </View>
+                    )}
+
+                    {score.change && score.change.delta !== 0 && (
+                        <View style={styles.provenanceChip}>
+                            <Ionicons
+                                name={score.change.delta > 0 ? 'trending-up' : 'trending-down'}
+                                size={13}
+                                color={score.change.delta > 0 ? '#34D399' : '#FB7185'}
+                            />
+                            <Text style={styles.provenanceText}>
+                                {score.change.delta > 0 ? '+' : ''}{score.change.delta} this week
+                            </Text>
+                        </View>
+                    )}
+
+                    <TouchableOpacity style={styles.heroLink} onPress={onOpen} hitSlop={8}>
+                        <Text style={styles.heroLinkText}>Breakdown</Text>
+                        <Ionicons name="chevron-forward" size={13} color="#FFFFFF" />
+                    </TouchableOpacity>
+                </View>
+            )}
         </LinearGradient>
     );
 };
@@ -901,8 +988,9 @@ const ScoreExplainer = ({ visible, score, onClose }: { visible: boolean; score: 
                 <View style={styles.sheetHandle} />
                 <Text style={styles.sheetTitle}>How your score works</Text>
                 <Text style={styles.sheetBody}>
-                    Six pillars, weighted by how much each one tells us about your health. Measured
-                    markers count for more than anything you self-report.
+                    Nine pillars, weighted by how much each one tells us about your health. Anything
+                    your devices and logs measured counts for more than anything you told us in the
+                    health assessment — and replaces it outright once it exists.
                 </Text>
 
                 <View style={styles.stack}>
@@ -910,7 +998,12 @@ const ScoreExplainer = ({ visible, score, onClose }: { visible: boolean; score: 
                         <View key={p.key} style={styles.pillarRow}>
                             <View style={styles.pillarHeader}>
                                 <Text style={styles.pillarLabel}>{p.label}</Text>
-                                <Text style={styles.pillarValue}>{p.value == null ? 'No data' : `${p.value}`}</Text>
+                                <View style={styles.pillarMeta}>
+                                    <Text style={[styles.pillarSource, { color: SOURCE_META[p.source].color }]}>
+                                        {SOURCE_META[p.source].label}
+                                    </Text>
+                                    <Text style={styles.pillarValue}>{p.value == null ? '--' : `${p.value}`}</Text>
+                                </View>
                             </View>
                             <View style={styles.pillarTrack}>
                                 <View style={[styles.pillarFill, { width: `${p.value ?? 0}%` }]} />
@@ -920,7 +1013,7 @@ const ScoreExplainer = ({ visible, score, onClose }: { visible: boolean; score: 
                     ))}
                 </View>
 
-                <Text style={styles.disclaimer}>{SCORE_DISCLAIMER}</Text>
+                <Text style={styles.disclaimer}>{score.disclaimer}</Text>
 
                 <TouchableOpacity style={styles.primaryButton} onPress={onClose}>
                     <Text style={styles.primaryButtonText}>Got it</Text>
@@ -1029,6 +1122,49 @@ const styles = StyleSheet.create({
     },
     heroBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     heroFigures: { gap: Spacing.sm },
+    heroFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: Spacing.sm,
+    },
+    provenanceChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: Radius.pill,
+        backgroundColor: 'rgba(255,255,255,0.16)',
+    },
+    provenanceText: {
+        fontFamily: Fonts.medium,
+        fontSize: 11,
+        color: '#FFFFFF',
+    },
+    heroLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+        marginLeft: 'auto',
+    },
+    heroLinkText: {
+        fontFamily: Fonts.semibold,
+        fontSize: 12,
+        color: '#FFFFFF',
+    },
+    pillarMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    pillarSource: {
+        fontFamily: Fonts.medium,
+        fontSize: 10,
+        textTransform: 'uppercase',
+        letterSpacing: 0.4,
+    },
     heroScore: {
         fontSize: 56, lineHeight: 62, color: Palette.white, fontFamily: Fonts.bold,
     },

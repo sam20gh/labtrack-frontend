@@ -42,9 +42,23 @@ import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Palette, Fonts, Radius, Spacing } from '@/constants/theme';
 import { getLatestBiomarkers } from '@/lib/biomarkers';
-import { getPlan } from '@/lib/plan';
-import { computeHealthScore, SCORE_DISCLAIMER, type HealthScore } from '@/lib/healthScore';
-import type { User, BiomarkerSummary, PlanItem } from '@/types/api';
+import { getScore, type HealthScore } from '@/lib/score';
+import type { User, BiomarkerSummary } from '@/types/api';
+/** Shown until the score loads. A placeholder, never a zero — see `lib/score.ts`. */
+const EMPTY_SCORE: HealthScore = {
+  value: null,
+  band: null,
+  bandLabel: null,
+  headline: 'Log a day or upload a result to unlock your score',
+  pillars: [],
+  coverage: { scored: 0, observed: 0, reported: 0, total: 0, observedWeight: 0 },
+  windowDays: 30,
+  computedAt: new Date().toISOString(),
+  change: null,
+  disclaimer: '',
+  bands: [],
+};
+
 
 type IconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -66,8 +80,12 @@ const ProfileScreen = () => {
   const router = useRouter();
   const [user, setUser] = useState<ProfileUser>({});
   const [biomarkers, setBiomarkers] = useState<BiomarkerSummary[]>([]);
-  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
   const [loading, setLoading] = useState(true);
+  /**
+   * The score comes from the server now, so this screen and the home screen cannot disagree
+   * about one number — the concern the header of this file already raises. See `lib/score.ts`.
+   */
+  const [score, setScore] = useState<HealthScore>(EMPTY_SCORE);
 
   const load = useCallback(async () => {
     const userId = await getUserId();
@@ -78,10 +96,12 @@ const ProfileScreen = () => {
 
     // Settled rather than all: the settings rows below do not depend on the score, so a
     // biomarker or plan hiccup should cost the hero, not the whole screen.
-    const [userRes, bioRes, planRes] = await Promise.allSettled([
+    // The plan is no longer fetched here: the score's plan pillar is computed server-side
+    // now, and this screen has nothing else to say about it.
+    const [userRes, bioRes, scoreRes] = await Promise.allSettled([
       api.get<ProfileUser>(`/users/${userId}`),
       getLatestBiomarkers(),
-      getPlan(),
+      getScore(),
     ]);
 
     if (userRes.status === 'fulfilled') {
@@ -94,7 +114,7 @@ const ProfileScreen = () => {
     }
 
     if (bioRes.status === 'fulfilled') setBiomarkers(bioRes.value.biomarkers ?? []);
-    if (planRes.status === 'fulfilled') setPlanItems(planRes.value.items ?? []);
+    if (scoreRes.status === 'fulfilled') setScore(scoreRes.value);
     setLoading(false);
   }, [router]);
 
@@ -102,16 +122,7 @@ const ProfileScreen = () => {
   // ever set true on mount, so returning to the screen does not flash a spinner.
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const score = useMemo(
-    () => computeHealthScore({
-      biomarkers,
-      planItems,
-      heightCm: user.height,
-      weightKg: user.weight,
-      assessment: user.healthAssessment,
-    }),
-    [biomarkers, planItems, user],
-  );
+
 
   /** The two counts the kit puts under the number, each pointing at a real record. */
   const outOfRange = useMemo(
@@ -297,7 +308,7 @@ const ScoreHero = ({
         </View>
       )}
 
-      <Text style={styles.heroDisclaimer}>{SCORE_DISCLAIMER}</Text>
+      <Text style={styles.heroDisclaimer}>{score.disclaimer}</Text>
     </LinearGradient>
   );
 };

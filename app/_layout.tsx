@@ -110,6 +110,7 @@ export default function RootLayout() {
             routes register individually and each one falls through to a second header
             titled "activity/index". */}
         <Stack.Screen name="activity" options={{ headerShown: false }} />
+        <Stack.Screen name="score" options={{ headerShown: false }} />
         {/* Draws its own "Your DNA" header inside a top-inset SafeAreaView, like every
             other screen here. Without this line the route falls through to the Stack's
             default header, which stacks a second bar titled "dna/[id]" above it. */}

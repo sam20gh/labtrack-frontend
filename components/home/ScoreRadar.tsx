@@ -3,15 +3,17 @@
  *
  * The turing kit draws the health score as a six-axis polygon with the axis labels sitting
  * outside the rings (Calorie / Steps / BMI / Sleep / BPM / Hydration). LabTrack's axes are
- * the six score pillars instead, because those are the dimensions this product actually
- * measures.
+ * the score pillars instead, because those are the dimensions this product actually
+ * measures — and, since the score moved server-side, the dimensions it actually measured
+ * rather than the ones someone described in onboarding. The caller picks which pillars to
+ * plot; six is still the shape that reads best.
  *
  * Built on `react-native-svg` for the same reason `TrendChart` is: one shape, six points,
  * no need for a charting dependency.
  */
 import React from 'react';
 import Svg, { Polygon, Circle, Line, Text as SvgText, G } from 'react-native-svg';
-import type { Pillar } from '@/lib/healthScore';
+import type { Pillar } from '@/lib/score';
 import { Fonts } from '@/constants/theme';
 
 interface Props {
