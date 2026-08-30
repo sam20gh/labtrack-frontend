@@ -303,6 +303,7 @@ export default function HomeScreen() {
                                 <QuickAction icon="restaurant-outline" label="Nutrition" onPress={() => router.push('/nutrition')} />
                                 {/* Not a sixth tab: the bar is full at five and the fifth is the assistant. */}
                                 <QuickAction icon="fitness-outline" label="Activity" onPress={() => router.push('/activity')} />
+                                <QuickAction icon="medkit-outline" label="Medications" onPress={() => router.push('/medications')} />
                                 <QuickAction icon="people-outline" label="Consult" onPress={() => router.push('/(tabs)/professionals')} />
                             </View>
                         </Section>

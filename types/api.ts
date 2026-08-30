@@ -617,3 +617,294 @@ export interface NutritionStatus {
     acceptedTypes: string[];
     maxBytes: number;
 }
+
+// ---------------------------------------------------------------------------
+// Medications
+// ---------------------------------------------------------------------------
+
+export type MedicationForm =
+    | 'tablet' | 'capsule' | 'liquid' | 'injection' | 'inhaler' | 'patch' | 'drops' | 'cream' | 'other';
+
+export type MedicationFrequency =
+    | 'once' | 'daily' | 'twice_daily' | 'three_times_daily' | 'weekly' | 'specific_days' | 'as_needed';
+
+export type MedicationShape =
+    | 'round' | 'oval' | 'oblong' | 'capsule' | 'square' | 'triangle' | 'diamond' | 'pentagon'
+    | 'hexagon' | 'teardrop' | 'shield' | 'trapezoid' | 'long' | 'rectangle' | 'circle' | 'other';
+
+export type DoseStatus = 'scheduled' | 'taken' | 'skipped';
+
+/** Worst first. There is no "none" — an absent severity is `null`, and never means "safe". */
+export type InteractionSeverity = 'severe' | 'moderate' | 'mild';
+
+export type InteractionKind = 'drug' | 'food' | 'condition' | 'timing' | 'duplicate';
+
+/**
+ * Where a finding came from.
+ *
+ * `rule` is the deterministic table in `medicationCatalogue.js` and is reproducible.
+ * `model` was added by Claude on top of it. The UI labels them differently: someone
+ * deciding whether to ring their pharmacy is entitled to know which they are reading.
+ */
+export type FindingSource = 'rule' | 'model';
+
+/** Plain-language copy for one drug, served from the backend catalogue. */
+export interface MedicationCatalogueEntry {
+    key: string;
+    plainName: string;
+    brandNames: string[];
+    treats?: string;
+    whatItIs?: string;
+    whyItMatters?: string;
+    form?: MedicationForm;
+    prescriptionOnly?: boolean;
+    storage?: string;
+    sideEffects?: { minor: string[]; serious: string[] };
+    classes?: string[];
+}
+
+export interface MedicationIdentification {
+    confidence?: number;
+    basis?: string;
+    surface?: string;
+    alternatives?: { name: string; why: string }[];
+    warnings?: string[];
+    model?: string;
+}
+
+/**
+ * A medicine on the person's tracked list — the medication checker's own collection.
+ *
+ * Deliberately NOT the `Medication` interface above. That one mirrors
+ * `User.healthAssessment.medications`: free text captured once during onboarding, a snapshot
+ * of what someone typed in a form. This one has a schedule, a dose history and an
+ * interaction check hanging off it, and is authoritative for the checker.
+ *
+ * They are reconciled in one direction only, by `importFromAssessment`. See the note at the
+ * bottom of `labtrack-backend/models/Medication.js`.
+ */
+export interface TrackedMedication extends Timestamped {
+    _id: Id;
+    userId: Id;
+    name: string;
+    brandName?: string | null;
+    strength?: string | null;
+    form: MedicationForm;
+    shape?: MedicationShape | null;
+    colour?: string | null;
+    imprint?: string | null;
+
+    frequency: MedicationFrequency;
+    times: string[];
+    daysOfWeek: number[];
+    intervalDays?: number;
+    startDay: string;
+    endDay?: string | null;
+    tzOffset: number;
+
+    dose?: string | null;
+    withFood?: 'before_meal' | 'with_meal' | 'after_meal' | 'any' | null;
+
+    remainingDoses?: number | null;
+    refillReminder: boolean;
+    refillThreshold: number;
+
+    source: 'scan' | 'search' | 'catalogue' | 'manual' | 'assessment';
+    identification?: MedicationIdentification;
+    imageUrl?: string | null;
+    notes?: string | null;
+
+    active: boolean;
+    archivedAt?: IsoDate | null;
+    remindersEnabled: boolean;
+
+    /** Attached by the API where the catalogue knows the drug. Absent is normal. */
+    catalogue?: MedicationCatalogueEntry | null;
+    needsRefill?: boolean;
+}
+
+/** A medication the scanner proposed. Not saved until the person confirms it. */
+export interface TrackedMedicationDraft {
+    name: string;
+    brandName?: string | null;
+    strength?: string | null;
+    form: MedicationForm;
+    shape?: MedicationShape | null;
+    colour?: string | null;
+    imprint?: string | null;
+    source: 'scan';
+    identification: MedicationIdentification;
+    imageUrl?: string | null;
+}
+
+export interface MedicationDose {
+    _id: Id;
+    userId: Id;
+    medicationId: Id;
+    day: string;
+    time: string;
+    scheduledFor: IsoDate;
+    status: DoseStatus;
+    takenAt?: IsoDate | null;
+    rescheduledTo?: IsoDate | null;
+    note?: string | null;
+    medicationName: string;
+    /** Computed server-side from `takenAt` against `scheduledFor`. Null unless taken. */
+    punctuality?: 'on_time' | 'late' | null;
+    medication?: {
+        _id: Id;
+        name: string;
+        brandName?: string | null;
+        strength?: string | null;
+        form: MedicationForm;
+        shape?: MedicationShape | null;
+        colour?: string | null;
+        dose?: string | null;
+        withFood?: string | null;
+        plainName?: string | null;
+    } | null;
+}
+
+/**
+ * Adherence over a set of doses.
+ *
+ * `score` is null, never 0, when nothing has come due — the same distinction
+ * `NutritionAdherence` makes. Rendering 0% tells someone they failed at something that has
+ * not happened yet.
+ */
+export interface MedicationAdherence {
+    assessed: number;
+    taken: number;
+    onTime: number;
+    late: number;
+    skipped: number;
+    missed: number;
+    pending: number;
+    score: number | null;
+    onTimeRate: number | null;
+    lateRate: number | null;
+    missedRate: number | null;
+}
+
+export interface MedicationScheduleDay {
+    day: string;
+    doses: MedicationDose[];
+    adherence: MedicationAdherence;
+}
+
+export interface CalendarDay {
+    day: string;
+    total: number;
+    taken: number;
+    skipped: number;
+    missed: number;
+    pending: number;
+    status: 'taken' | 'partial' | 'missed' | 'skipped' | 'upcoming';
+}
+
+export interface MedicationCalendar {
+    from: string;
+    to: string;
+    days: CalendarDay[];
+    adherence: MedicationAdherence;
+}
+
+export interface InteractionFinding {
+    id?: string;
+    kind: InteractionKind;
+    severity: InteractionSeverity;
+    source: FindingSource;
+    /** Exactly two: two medicines, or a medicine and a food, condition or activity. */
+    between: string[];
+    effect: string;
+    action: string;
+}
+
+export interface MedicationCheck extends Timestamped {
+    _id: Id;
+    userId: Id;
+    medicationNames: string[];
+    summary: string;
+    findings: InteractionFinding[];
+    /**
+     * Medicines the catalogue could not classify.
+     *
+     * Must be rendered. These were not tested against anything, and findings shown without
+     * them imply a completeness the check does not have.
+     */
+    uncheckable: string[];
+    checkedCount: number;
+    timingAdvice: { medication: string; advice: string }[];
+    questionsForClinician: string[];
+    worstSeverity: InteractionSeverity | null;
+    /** The check ran on rules alone because no model was available. Still valid, still labelled. */
+    degraded: boolean;
+    model?: string | null;
+    generatedAt: IsoDate;
+}
+
+export interface MedicationCheckResponse {
+    check: MedicationCheck | null;
+    /** The medication list has changed since this check ran. Offer to re-run it. */
+    stale: boolean;
+    medicationCount: number;
+    safetyNote: string;
+}
+
+/** "What if I added this?" — rules only, instant, writes nothing. */
+export interface InteractionPreview {
+    name: string;
+    known: boolean;
+    catalogue: MedicationCatalogueEntry | null;
+    /** Only what this addition would introduce, not what the person already had. */
+    introduced: InteractionFinding[];
+    worstSeverity: InteractionSeverity | null;
+    /** True when the candidate could not be classified — an empty list is NOT reassurance. */
+    uncheckable: boolean;
+    safetyNote: string;
+}
+
+export interface MedicationIdentifyResult {
+    detected: boolean;
+    message?: string;
+    hint?: string;
+    draft?: TrackedMedicationDraft;
+    catalogue?: MedicationCatalogueEntry | null;
+    confidence?: number;
+    /** The identification rests on appearance alone; show alternatives, not one answer. */
+    needsConfirmation?: boolean;
+    alternatives?: { name: string; why: string }[];
+    warnings?: string[];
+    basis?: string;
+    model?: string;
+}
+
+export interface MedicationInsight {
+    from: string;
+    to: string;
+    days: number;
+    totalTaken: number;
+    adherence: MedicationAdherence;
+    mostConsumed: { medicationId: Id; name: string; taken: number } | null;
+    perMedication: {
+        medicationId: Id;
+        name: string;
+        plainName: string | null;
+        taken: number;
+        adherence: MedicationAdherence;
+    }[];
+    weekdays: { taken: number; late: number; missed: number }[];
+}
+
+export interface MedicationStatus {
+    scan: boolean;
+    /** True even without an API key — the rule table needs no model. */
+    interactionCheck: boolean;
+    aiReview: boolean;
+    catalogueSize: number;
+    identifyModel: string | null;
+    reviewModel: string | null;
+    acceptedTypes: string[];
+    maxBytes: number;
+    confidenceThreshold: number;
+}
