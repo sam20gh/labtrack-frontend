@@ -1321,8 +1321,31 @@ const styles = StyleSheet.create({
     movement: { fontSize: 11, fontFamily: Fonts.semibold },
 
     // Quick actions
-    actionRow: { flexDirection: 'row', paddingHorizontal: GUTTER, gap: Spacing.md },
-    action: { flex: 1, alignItems: 'center', gap: Spacing.sm },
+    /**
+     * A wrapping grid, not a single row.
+     *
+     * These were `flex: 1` children of a non-wrapping row, so all nine shared one line and
+     * the 48pt icons overlapped each other. Columns are a fixed fraction rather than `flex`
+     * because flex children do not wrap onto even columns — the width has to be the thing
+     * that is fixed. Three across divides the nine actions into a clean 3x3 and leaves the
+     * labels enough room that "Medications" does not wrap.
+     *
+     * The horizontal gap comes from padding inside each cell rather than `gap` on the row,
+     * so the columns stay exact at any screen width instead of overflowing and re-wrapping
+     * unevenly on a narrow phone.
+     */
+    actionRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: GUTTER - Spacing.xs,
+        rowGap: Spacing.lg,
+    },
+    action: {
+        width: '33.333%',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        paddingHorizontal: Spacing.xs,
+    },
     actionIcon: {
         width: 48, height: 48, borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',

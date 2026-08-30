@@ -70,7 +70,6 @@ export default function HealthMetricsScreen() {
                 <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
                     <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
-                <View style={{ width: 24 }} />
             </View>
 
             <ScrollView
@@ -251,7 +250,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm },
+    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm },
     content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: Spacing.xl * 2, gap: Spacing.sm },
 
     title: { fontFamily: Fonts.bold, fontSize: 28, color: Palette.text },
