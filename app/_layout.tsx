@@ -99,6 +99,12 @@ export default function RootLayout() {
             The root Stack has no default screenOptions, so a route left off this list
             gets a second header titled after its folder. */}
         <Stack.Screen name="symptoms" options={{ headerShown: false }} />
+        {/* The activity tracker: dashboard, goal, log, history, sources, session detail.
+            Every screen draws its own header inside a top-inset SafeAreaView, and the
+            folder has its own Stack in activity/_layout.tsx — without that layout the
+            routes register individually and each one falls through to a second header
+            titled "activity/index". */}
+        <Stack.Screen name="activity" options={{ headerShown: false }} />
         {/* Draws its own "Your DNA" header inside a top-inset SafeAreaView, like every
             other screen here. Without this line the route falls through to the Stack's
             default header, which stacks a second bar titled "dna/[id]" above it. */}

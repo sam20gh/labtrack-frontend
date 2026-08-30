@@ -24,7 +24,7 @@
     },
     "android": {
       "package": "com.labtrack.app",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "android.permission.health.READ_EXERCISE",
         "android.permission.health.READ_SLEEP",
@@ -47,7 +47,9 @@
         "projectId": "8a44b0f8-69d5-432b-bdcf-f9a1406bff3e"
       }
     },
-    "runtimeVersion": "2.0.0",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
     "plugins": [
       [
         "expo-image-picker",
