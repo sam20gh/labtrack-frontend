@@ -5,12 +5,17 @@
  * under the title. Any of them can be missing: a yoga session has no distance, a manually
  * logged walk has no calorie estimate. Missing figures are dropped rather than rendered as
  * a dash or a zero, because "0 km" for a swim is wrong in a way "nothing here" is not.
+ *
+ * Pace and average heart rate join them when the session carries what they need — both come
+ * from the health store's neighbouring records rather than the session record itself, so
+ * before `enrich()` in the Health Connect reader every synced workout had only a duration
+ * to show and this card looked like it was broken.
  */
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
-import { formatDuration, formatDistance, formatType, type ActivitySession } from '@/lib/activity';
+import { formatDuration, formatDistance, formatPace, formatType, type ActivitySession } from '@/lib/activity';
 
 /** The design's ten types, and something reasonable for everything else. */
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -39,9 +44,14 @@ export function SessionCard({ session, onPress }: Props) {
     const dateLabel = when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
     const distance = formatDistance(session.distanceM);
+    const pace = formatPace(session.distanceM, session.durationSec);
 
     const stats: { icon: keyof typeof Ionicons.glyphMap; text: string; color: string }[] = [];
     if (distance) stats.push({ icon: 'location-outline', text: distance, color: Palette.textSecondary });
+    if (pace) stats.push({ icon: 'speedometer-outline', text: pace, color: Palette.textSecondary });
+    if (Number.isFinite(session.avgBpm as number)) {
+        stats.push({ icon: 'heart-outline', text: `${Math.round(session.avgBpm as number)} bpm`, color: Palette.danger });
+    }
     if (session.scoreDelta > 0) {
         stats.push({ icon: 'add-circle-outline', text: `+${session.scoreDelta} score`, color: Palette.primary });
     }
@@ -69,7 +79,7 @@ export function SessionCard({ session, onPress }: Props) {
 
                 <View style={styles.stats}>
                     {stats.map((s) => (
-                        <View key={s.text} style={styles.stat}>
+                        <View key={`${s.icon}-${s.text}`} style={styles.stat}>
                             <Ionicons name={s.icon} size={13} color={s.color} />
                             <Text style={styles.statText}>{s.text}</Text>
                         </View>

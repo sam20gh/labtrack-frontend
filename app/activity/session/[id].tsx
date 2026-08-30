@@ -20,7 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import {
     getSession, updateSession, deleteSession,
-    formatDuration, formatDistance, formatType, type ActivitySession,
+    formatDuration, formatDistance, formatPace, formatType, type ActivitySession,
 } from '@/lib/activity';
 import { ApiError } from '@/lib/api';
 
@@ -125,6 +125,11 @@ export default function ActivityDetail() {
 
     const distance = formatDistance(session.distanceM);
     if (distance) stats.push({ label: 'Distance', value: distance });
+
+    // Derived from distance and duration, not read from anywhere — see `formatPace`. The
+    // kit's 80mph jog is the placeholder this replaces.
+    const pace = formatPace(session.distanceM, session.durationSec);
+    if (pace) stats.push({ label: pace.endsWith('/km') ? 'Average pace' : 'Average speed', value: pace });
     if (Number.isFinite(session.activeKcal as number)) {
         stats.push({ label: 'Calories burned', value: `${Math.round(session.activeKcal as number)} kcal` });
     }

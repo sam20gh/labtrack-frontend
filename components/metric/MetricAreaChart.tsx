@@ -96,7 +96,10 @@ export function MetricAreaChart({
         // A single reported day cannot draw a line, so mark it
         const dots = runs.filter((r) => r.length === 1).map((r) => ({ cx: x(r[0].i), cy: y(r[0].value) }));
 
-        const ticks = [min, min + span / 2, min + span].map((v) => ({ v, y: y(v) }));
+        // A distance chart runs 0–8 km and a step chart runs 0–12,000. Rounding both to
+        // whole numbers turns the first into three identical-looking gridlines.
+        const label = (v: number) => (span < 10 ? String(Math.round(v * 10) / 10) : Math.round(v).toLocaleString());
+        const ticks = [min, min + span / 2, min + span].map((v) => ({ v, label: label(v), y: y(v) }));
 
         const step = Math.max(1, Math.ceil(points.length / maxXLabels));
         const xLabels = points
@@ -135,7 +138,7 @@ export function MetricAreaChart({
                             fill={Palette.textMuted}
                             textAnchor="end"
                         >
-                            {Math.round(t.v)}
+                            {t.label}
                         </SvgText>
                     </React.Fragment>
                 ))}

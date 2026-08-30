@@ -26,6 +26,8 @@ import {
     getGrantedPermissions,
     getChanges,
     readRecords,
+    aggregateRecord,
+    aggregateGroupByDuration,
     openHealthConnectSettings,
     SdkAvailabilityStatus,
     SleepStageType,
@@ -37,7 +39,10 @@ import type {
 
 /** Read permissions, grouped by the scope a person grants. */
 const SCOPES: Record<HealthScope, readonly string[]> = {
-    activity: ['ExerciseSession', 'Steps', 'ActiveCaloriesBurned', 'TotalCaloriesBurned', 'Distance', 'FloorsClimbed'],
+    activity: [
+        'ExerciseSession', 'Steps', 'ActiveCaloriesBurned', 'TotalCaloriesBurned',
+        'Distance', 'FloorsClimbed', 'ElevationGained',
+    ],
     sleep: ['SleepSession'],
     heart: ['HeartRate', 'RestingHeartRate', 'HeartRateVariabilityRmssd', 'Vo2Max'],
 };
@@ -53,6 +58,31 @@ const WATCHED: any[] = ['ExerciseSession', 'SleepSession'];
 
 const BACKFILL_DAYS = 90;
 
+/**
+ * Bumped whenever this reader starts collecting something it did not collect before.
+ *
+ * The cursor is what makes a sync incremental, and it is also what makes an *upgrade*
+ * invisible: someone who already synced has a valid changes token, so the reader that now
+ * knows how to read heart rate, floors and per-session distance would only ever apply that
+ * knowledge to the next seven days and the person would see the same near-empty dashboard
+ * they were complaining about. Stamping the version into the cursor turns the first sync
+ * after an upgrade back into a full backfill, once, without a migration or a support step.
+ */
+const READER_VERSION = 'v2';
+
+const encodeCursor = (token: string | null) => (token ? `${READER_VERSION}:${token}` : null);
+
+/** The token inside a cursor this reader wrote, or null — which means backfill. */
+const decodeCursor = (cursor: string | null): string | null => {
+    if (!cursor) return null;
+    const separator = cursor.indexOf(':');
+    if (separator < 0) return null;
+    // A token from an older reader. Not an error: it is a cursor that cannot speak for the
+    // data this version knows how to fetch.
+    if (cursor.slice(0, separator) !== READER_VERSION) return null;
+    return cursor.slice(separator + 1) || null;
+};
+
 const iso = (v: string | Date) => new Date(v).toISOString();
 
 const backfillFrom = () => {
@@ -60,6 +90,59 @@ const backfillFrom = () => {
     d.setDate(d.getDate() - BACKFILL_DAYS);
     return d;
 };
+
+/**
+ * Read every page of a record type, not just the first.
+ *
+ * `readRecords` returns one page — 1000 rows by default — and a `pageToken` for the rest.
+ * Reads are **ascending** by default, so a query that overflows a page silently drops the
+ * *most recent* days: a 90-day backfill of a phone that writes a step record every few
+ * minutes stops somewhere in month one, and the dashboard shows two days with data and
+ * calls that the whole history. That is not a rare edge — it is the normal shape of step
+ * and distance data — so every read here pages.
+ */
+const PAGE_SIZE = 1000;
+const MAX_PAGES = 25;
+
+const readAll = async (recordType: string, timeRangeFilter: any): Promise<any[]> => {
+    const rows: any[] = [];
+    let pageToken: string | undefined;
+
+    for (let page = 0; page < MAX_PAGES; page += 1) {
+        const result: any = await readRecords(recordType as any, {
+            timeRangeFilter,
+            pageSize: PAGE_SIZE,
+            ...(pageToken ? { pageToken } : {}),
+        });
+
+        const records = result?.records || [];
+        rows.push(...records);
+
+        pageToken = result?.pageToken;
+        if (!pageToken || records.length === 0) break;
+    }
+
+    return rows;
+};
+
+/**
+ * One aggregate, or null.
+ *
+ * A record type the person did not grant, or one their phone has never written, throws.
+ * Neither is a failure of the sync — the rest of the session still reads — so this returns
+ * null and every caller treats a missing figure as missing rather than as zero.
+ */
+const aggregateOrNull = async (recordType: string, timeRangeFilter: any): Promise<any | null> => {
+    try {
+        return await aggregateRecord({ recordType, timeRangeFilter } as any);
+    } catch {
+        return null;
+    }
+};
+
+/** A number that is actually a number and actually says something. Zero distance is not a distance. */
+const positive = (v: any): number | undefined =>
+    (Number.isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : undefined);
 
 const deviceOf = (record: any): SourceDevice | undefined => {
     const device = record?.metadata?.device;
@@ -122,6 +205,78 @@ const toActivityRow = (r: any): ActivityRow | null => {
     };
 };
 
+/**
+ * Fill in everything an `ExerciseSession` record does not carry.
+ *
+ * A Health Connect exercise session is only a type and a pair of timestamps. The distance
+ * covered, the calories burned, the heart rate and the climb are separate record types
+ * written alongside it, and nothing joins them — so a session synced from the record alone
+ * arrives as a duration and nothing else, which is what the history list and the session
+ * detail screen were showing.
+ *
+ * Aggregating over the session's own window is the join. Five aggregate calls per session,
+ * each independently allowed to fail, and every figure omitted rather than zeroed when the
+ * phone never recorded it: a pool swim has no GPS distance and a yoga session has no climb,
+ * and "0 km" for either is a wrong number where a blank is an honest one.
+ *
+ * Capped at the most recent `ENRICH_LIMIT` sessions. A first sync of a heavy user is 90
+ * days of workouts, and enriching all of them would put hundreds of native round-trips in
+ * front of the first screen the person sees. Older sessions still sync — with the duration
+ * they always had.
+ */
+const ENRICH_LIMIT = 60;
+
+const enrich = async (row: ActivityRow): Promise<ActivityRow> => {
+    if (!row.endedAt) return row;
+
+    const timeRangeFilter = {
+        operator: 'between' as const,
+        startTime: row.startedAt,
+        endTime: row.endedAt,
+    };
+
+    const [distance, active, heart, elevation, steps] = await Promise.all([
+        aggregateOrNull('Distance', timeRangeFilter),
+        aggregateOrNull('ActiveCaloriesBurned', timeRangeFilter),
+        aggregateOrNull('HeartRate', timeRangeFilter),
+        aggregateOrNull('ElevationGained', timeRangeFilter),
+        aggregateOrNull('Steps', timeRangeFilter),
+    ]);
+
+    const distanceM = positive(distance?.DISTANCE?.inMeters);
+    const durationMin = (row.durationSec || 0) / 60;
+
+    return {
+        ...row,
+        distanceM,
+        activeKcal: positive(active?.ACTIVE_CALORIES_TOTAL?.inKilocalories),
+        elevationM: positive(elevation?.ELEVATION_GAINED_TOTAL?.inMeters),
+        // A count of zero means the watch was off the wrist for this one, not a heart rate
+        // of zero — hence the guard rather than trusting BPM_AVG on its own.
+        avgBpm: heart?.MEASUREMENTS_COUNT > 0 ? positive(heart?.BPM_AVG) : undefined,
+        maxBpm: heart?.MEASUREMENTS_COUNT > 0 ? positive(heart?.BPM_MAX) : undefined,
+        // Steps per minute. Only meaningful when the session was actually walked or run,
+        // which is exactly when Health Connect wrote step records inside its window.
+        cadence: durationMin > 0 && positive(steps?.COUNT_TOTAL)
+            ? Math.round((steps.COUNT_TOTAL / durationMin) * 10) / 10
+            : undefined,
+    };
+};
+
+/** Enrich the newest sessions, in small batches so the native bridge is not flooded. */
+const enrichAll = async (rows: ActivityRow[]): Promise<ActivityRow[]> => {
+    const ordered = [...rows].sort((a, b) => (a.startedAt < b.startedAt ? 1 : -1));
+    const head = ordered.slice(0, ENRICH_LIMIT);
+    const tail = ordered.slice(ENRICH_LIMIT);
+
+    const enriched: ActivityRow[] = [];
+    for (let i = 0; i < head.length; i += 5) {
+        enriched.push(...await Promise.all(head.slice(i, i + 5).map(enrich)));
+    }
+
+    return [...enriched, ...tail];
+};
+
 const toSleepRow = (r: any): SleepRow | null => {
     if (!r?.startTime || !r?.endTime) return null;
 
@@ -152,6 +307,10 @@ const localDayKey = (d: Date) =>
  * files an evening walk in the Americas under the following day — the exact bug the whole
  * feature's `tzOffset` handling exists to avoid. Summing by local day here is a few more
  * lines and the right answer.
+ *
+ * Each entry is read independently and a failure is swallowed, because a partial grant is
+ * the normal case: somebody who shared steps and refused heart rate should get their steps,
+ * not an empty day.
  */
 const DAILY: { recordType: string; field: keyof DayRow; value: (r: any) => number | undefined }[] = [
     { recordType: 'Steps', field: 'steps', value: (r) => r.count },
@@ -160,7 +319,54 @@ const DAILY: { recordType: string; field: keyof DayRow; value: (r: any) => numbe
     { recordType: 'FloorsClimbed', field: 'floors', value: (r) => r.floors },
 ];
 
-const readDays = async (from: Date) => {
+/**
+ * The day's heart rate, aggregated rather than read.
+ *
+ * A worn watch writes a heart-rate sample every few seconds — a 90-day backfill is
+ * hundreds of thousands of rows, and nothing in the app plots that stream. What the
+ * dashboards need is the day's low, average and peak, which `aggregateGroupByDuration`
+ * returns in one call per window instead of one row per beat.
+ *
+ * Bucketed from **local midnight** so each 24-hour slice is a calendar day the person would
+ * recognise. A DST change misaligns one boundary by an hour twice a year, which moves a
+ * minimum or a maximum between two adjacent days and is worth it here — unlike step totals,
+ * where an hour of steps landing on the wrong day is a number somebody would notice, so
+ * those stay summed from records above.
+ */
+const readDailyHeart = async (from: Date): Promise<Map<string, Partial<DayRow>>> => {
+    const start = new Date(from);
+    start.setHours(0, 0, 0, 0);
+
+    const byDay = new Map<string, Partial<DayRow>>();
+
+    try {
+        const groups: any[] = await aggregateGroupByDuration({
+            recordType: 'HeartRate',
+            timeRangeFilter: {
+                operator: 'between',
+                startTime: start.toISOString(),
+                endTime: new Date().toISOString(),
+            },
+            timeRangeSlicer: { duration: 'DAYS', length: 1 },
+        } as any);
+
+        for (const group of groups || []) {
+            const result = group?.result;
+            if (!group?.startTime || !(result?.MEASUREMENTS_COUNT > 0)) continue;
+            byDay.set(localDayKey(new Date(group.startTime)), {
+                minBpm: positive(result.BPM_MIN),
+                avgBpm: positive(result.BPM_AVG),
+                maxBpm: positive(result.BPM_MAX),
+            });
+        }
+    } catch {
+        // Heart rate was not granted, or this phone has never recorded any.
+    }
+
+    return byDay;
+};
+
+const readDays = async (from: Date): Promise<DayRow[]> => {
     const timeRangeFilter = {
         operator: 'between' as const,
         startTime: from.toISOString(),
@@ -173,11 +379,14 @@ const readDays = async (from: Date) => {
         (row as any)[field] = ((row as any)[field] || 0) + amount;
         byDay.set(day, row);
     };
+    const put = (day: string, patch: Partial<DayRow>) => {
+        const row = byDay.get(day) || { day };
+        byDay.set(day, { ...row, ...patch, day });
+    };
 
     for (const spec of DAILY) {
         try {
-            const result = await readRecords(spec.recordType as any, { timeRangeFilter });
-            for (const r of (result as any).records || []) {
+            for (const r of await readAll(spec.recordType, timeRangeFilter)) {
                 const when = r.startTime || r.time;
                 const amount = spec.value(r);
                 if (!when || !Number.isFinite(amount)) continue;
@@ -188,15 +397,40 @@ const readDays = async (from: Date) => {
         }
     }
 
+    /**
+     * Resting energy, derived rather than read.
+     *
+     * Health Connect has no resting-calories record: it has `TotalCaloriesBurned`, which
+     * already includes the active burn. Sending the total as `restingKcal` would double-count
+     * the workout in every screen that adds the two, so the basal figure is the difference.
+     * Floored at zero — the two records can come from different apps and disagree, and a
+     * negative resting burn is not a thing a person can be shown.
+     */
+    try {
+        const totals = new Map<string, number>();
+        for (const r of await readAll('TotalCaloriesBurned', timeRangeFilter)) {
+            const when = r.startTime || r.time;
+            const kcal = r.energy?.inKilocalories;
+            if (!when || !Number.isFinite(kcal)) continue;
+            const day = localDayKey(new Date(when));
+            totals.set(day, (totals.get(day) || 0) + kcal);
+        }
+        for (const [day, total] of totals) {
+            const active = (byDay.get(day) as any)?.activeKcal || 0;
+            put(day, { restingKcal: Math.max(0, total - active) });
+        }
+    } catch {
+        // Not granted. Active calories still stand on their own.
+    }
+
     // Resting heart rate and HRV are averaged rather than summed
     for (const [recordType, field, pick] of [
         ['RestingHeartRate', 'restingBpm', (r: any) => r.beatsPerMinute],
         ['HeartRateVariabilityRmssd', 'hrvMs', (r: any) => r.heartRateVariabilityMillis],
     ] as const) {
         try {
-            const result = await readRecords(recordType as any, { timeRangeFilter });
             const buckets = new Map<string, number[]>();
-            for (const r of (result as any).records || []) {
+            for (const r of await readAll(recordType, timeRangeFilter)) {
                 const when = r.time || r.startTime;
                 const v = pick(r);
                 if (!when || !Number.isFinite(v)) continue;
@@ -205,14 +439,14 @@ const readDays = async (from: Date) => {
             }
             for (const [day, values] of buckets) {
                 const mean = values.reduce((a, b) => a + b, 0) / values.length;
-                const row = byDay.get(day) || { day };
-                (row as any)[field] = Math.round(mean);
-                byDay.set(day, row);
+                put(day, { [field]: Math.round(mean) } as Partial<DayRow>);
             }
         } catch {
             // Not granted, or not recorded by this device
         }
     }
+
+    for (const [day, heart] of await readDailyHeart(from)) put(day, heart);
 
     for (const row of byDay.values()) {
         for (const k of Object.keys(row) as (keyof DayRow)[]) {
@@ -292,13 +526,15 @@ export const reader: HealthReader = {
     async readSince(cursor) {
         await initialize();
 
+        const token = decodeCursor(cursor);
+
         let activities: ActivityRow[] = [];
         let sleep: SleepRow[] = [];
         let nextToken: string | null = null;
         let windowFrom = backfillFrom();
 
-        if (cursor) {
-            const changes = await getChanges({ changesToken: cursor });
+        if (token) {
+            const changes = await getChanges({ changesToken: token });
 
             if (changes.changesTokenExpired) {
                 // More than ~30 days since the last sync. Re-read a window rather than
@@ -321,7 +557,7 @@ export const reader: HealthReader = {
             }
         }
 
-        if (!cursor || nextToken === null) {
+        if (!token || nextToken === null) {
             // First sync, or a token that expired: read the backfill window directly.
             const timeRangeFilter = {
                 operator: 'between' as const,
@@ -330,15 +566,13 @@ export const reader: HealthReader = {
             };
 
             try {
-                const result = await readRecords('ExerciseSession' as any, { timeRangeFilter });
-                activities = ((result as any).records || [])
+                activities = (await readAll('ExerciseSession', timeRangeFilter))
                     .map(toActivityRow)
                     .filter(Boolean) as ActivityRow[];
             } catch { /* not granted */ }
 
             try {
-                const result = await readRecords('SleepSession' as any, { timeRangeFilter });
-                sleep = ((result as any).records || [])
+                sleep = (await readAll('SleepSession', timeRangeFilter))
                     .map(toSleepRow)
                     .filter(Boolean) as SleepRow[];
             } catch { /* not granted */ }
@@ -352,13 +586,17 @@ export const reader: HealthReader = {
             }
         }
 
+        // A session record is a type and two timestamps; everything else it is worth
+        // showing lives in neighbouring record types. See `enrich`.
+        activities = await enrichAll(activities);
+
         const days = await readDays(windowFrom);
         const granted = await getGrantedPermissions();
 
         return {
             platform: 'health_connect',
             tzOffset: new Date().getTimezoneOffset(),
-            cursor: nextToken,
+            cursor: encodeCursor(nextToken),
             providerLabel: 'Health Connect',
             permissions: scopesFromPermissions(granted),
             devices: activities

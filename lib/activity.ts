@@ -56,15 +56,40 @@ export interface ActivitySession {
     };
 }
 
+/**
+ * One day of the summary series.
+ *
+ * Every measured figure is `number | null`, never `0` for missing. A day a watch was not
+ * worn and a day of no steps are different facts: the chart draws the first as a gap and
+ * the stat grid hides the tile, where a zero would claim the person walked nowhere.
+ */
 export interface ActivitySeriesPoint {
     day: string;
     sessions: number;
     exerciseMin: number | null;
     activeKcal: number | null;
+    restingKcal: number | null;
     steps: number | null;
     distanceM: number | null;
+    floors: number | null;
+    restingBpm: number | null;
+    avgBpm: number | null;
+    minBpm: number | null;
+    maxBpm: number | null;
+    hrvMs: number | null;
     score: number | null;
 }
+
+/** An average, and how many days actually reported it. Null when none did. */
+export interface MetricAverage {
+    value: number;
+    days: number;
+}
+
+/** The keys of `ActivitySeriesPoint` that carry a measured quantity. */
+export type ActivityMetricKey =
+    'exerciseMin' | 'activeKcal' | 'restingKcal' | 'steps' | 'distanceM' | 'floors'
+    | 'restingBpm' | 'avgBpm' | 'minBpm' | 'maxBpm' | 'hrvMs';
 
 export interface GoalProgress {
     done: number;
@@ -93,7 +118,18 @@ export interface ActivitySummary {
     range: ActivityRange;
     days: string[];
     series: ActivitySeriesPoint[];
-    totals: { sessions: number; exerciseMin: number; activeKcal: number; distanceM: number };
+    totals: {
+        sessions: number;
+        exerciseMin: number;
+        activeKcal: number;
+        distanceM: number;
+        /** Null when nothing in the range reported it, rather than a zero total. */
+        steps: number | null;
+        floors: number | null;
+        restingKcal: number | null;
+    };
+    /** Per metric, averaged over the days that reported it. Null where none did. */
+    averages: Partial<Record<ActivityMetricKey, MetricAverage | null>>;
     streak: number;
     highlight: { avgKcal: number | null; daysReported: number };
     /**
@@ -158,8 +194,44 @@ export const savePlan = (body: {
 export const getSummary = (range: ActivityRange = '1w') =>
     api.get<ActivitySummary>(`/activity/summary?range=${range}&tzOffset=${tzOffset()}`);
 
+/**
+ * One day's rollup, as `DailyMetrics` stores it.
+ *
+ * Nulls throughout for the same reason the series carries them: this is what a source
+ * reported, and "not reported" is a state the screens have to be able to draw.
+ */
+export interface DayMetrics {
+    day: string;
+    activity: {
+        steps: number | null;
+        activeKcal: number | null;
+        restingKcal: number | null;
+        exerciseMin: number | null;
+        distanceM: number | null;
+        floors: number | null;
+        sessions: number;
+        score: number | null;
+    };
+    heart: {
+        restingBpm: number | null;
+        minBpm: number | null;
+        maxBpm: number | null;
+        avgBpm: number | null;
+        hrvMs: number | null;
+        samples: number;
+    };
+    sleep: {
+        asleepMin: number | null;
+        inBedMin: number | null;
+        efficiency: number | null;
+        score: number | null;
+        sessions: number;
+    };
+    reportedAt?: string;
+}
+
 export const getDay = (date?: string) =>
-    api.get<{ day: string; sessions: ActivitySession[]; metrics: any | null }>(
+    api.get<{ day: string; sessions: ActivitySession[]; metrics: DayMetrics | null }>(
         `/activity/day?tzOffset=${tzOffset()}${date ? `&date=${date}` : ''}`
     );
 
@@ -270,6 +342,31 @@ export const formatDistance = (metres?: number | null): string | null => {
     if (!Number.isFinite(metres as number)) return null;
     const km = (metres as number) / 1000;
     return km >= 1 ? `${km.toFixed(km >= 10 ? 0 : 1)} km` : `${Math.round(metres as number)} m`;
+};
+
+/**
+ * Average pace, derived from distance and duration rather than read from anywhere.
+ *
+ * Neither health store reports a session pace, and the design kit's "80mph average speed"
+ * for a jog is exactly the placeholder this feature was told not to carry through. Distance
+ * over time is the same number every running app shows and is honest about where it came
+ * from. Returned as null for anything without both, so a yoga session shows nothing.
+ */
+export const formatPace = (metres?: number | null, seconds?: number | null): string | null => {
+    if (!Number.isFinite(metres as number) || !Number.isFinite(seconds as number)) return null;
+    if ((metres as number) < 100 || (seconds as number) <= 0) return null;
+
+    const secPerKm = (seconds as number) / ((metres as number) / 1000);
+    // Above ~20 min/km a "pace" is not what anybody is doing — that is a walk with a long
+    // stop in it, and speed reads better than a pace nobody paced.
+    if (secPerKm > 20 * 60) {
+        const kmh = ((metres as number) / 1000) / ((seconds as number) / 3600);
+        return `${kmh.toFixed(1)} km/h`;
+    }
+
+    const min = Math.floor(secPerKm / 60);
+    const sec = Math.round(secPerKm % 60);
+    return `${min}:${String(sec).padStart(2, '0')} /km`;
 };
 
 /** Title-case a type the server may have passed through unmapped, e.g. 'kitesurfing'. */

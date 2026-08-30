@@ -116,8 +116,19 @@ const capability = (available: boolean, reason?: string): HealthCapability => ({
     reason,
 });
 
+/**
+ * Bumped whenever this reader starts collecting something it did not collect before.
+ *
+ * An anchor makes a sync incremental, and it also makes an *upgrade* invisible: someone who
+ * already synced would have the reader's new knowledge — the day's heart-rate spread, here —
+ * applied only to samples written from now on. Stamping the version into the cursor turns
+ * the first sync after an upgrade into one full backfill, without a migration.
+ */
+const READER_VERSION = 2;
+
 /** The composite cursor. HealthKit hands out one anchor per query, so they travel together. */
 interface Anchors {
+    v?: number;
     workouts?: string;
     sleep?: string;
     /** ISO date of the last daily-statistics sync, since statistics queries take no anchor. */
@@ -127,7 +138,10 @@ interface Anchors {
 const parseAnchors = (cursor: string | null): Anchors => {
     if (!cursor) return {};
     try {
-        return JSON.parse(cursor) as Anchors;
+        const parsed = JSON.parse(cursor) as Anchors;
+        // Anchors from an older reader. Not an error: they cannot speak for the data this
+        // version knows how to fetch, so they are dropped and the window is re-read.
+        return parsed.v === READER_VERSION ? parsed : {};
     } catch {
         // An unreadable cursor is not worth failing a sync over — fall back to a backfill.
         return {};
@@ -256,6 +270,12 @@ const DAILY: { identifier: string; unit: string; field: keyof DayRow; stat: stri
     { identifier: 'HKQuantityTypeIdentifierFlightsClimbed', unit: 'count', field: 'floors', stat: 'cumulativeSum' },
     { identifier: 'HKQuantityTypeIdentifierRestingHeartRate', unit: 'count/min', field: 'restingBpm', stat: 'discreteAverage' },
     { identifier: 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN', unit: 'ms', field: 'hrvMs', stat: 'discreteAverage' },
+    // The day's heart-rate spread. Asked of HealthKit as three statistics over the same
+    // type rather than by reading the samples: a worn watch writes one every few seconds,
+    // and the dashboards only ever draw the low, the average and the peak.
+    { identifier: 'HKQuantityTypeIdentifierHeartRate', unit: 'count/min', field: 'minBpm', stat: 'discreteMin' },
+    { identifier: 'HKQuantityTypeIdentifierHeartRate', unit: 'count/min', field: 'avgBpm', stat: 'discreteAverage' },
+    { identifier: 'HKQuantityTypeIdentifierHeartRate', unit: 'count/min', field: 'maxBpm', stat: 'discreteMax' },
 ];
 
 const localDayKey = (d: Date) =>
@@ -290,8 +310,14 @@ const readDays = async (since?: string) => {
             if (!start) continue;
             const day = localDayKey(new Date(start));
 
-            const value = (entry as any).sumQuantity?.quantity
-                ?? (entry as any).averageQuantity?.quantity;
+            // Read the statistic that was asked for. `minimumQuantity` and `maximumQuantity`
+            // are only populated for the discrete stats, and falling through to the average
+            // would quietly file the day's mean under `maxBpm`.
+            const value = spec.stat === 'discreteMin'
+                ? (entry as any).minimumQuantity?.quantity
+                : spec.stat === 'discreteMax'
+                    ? (entry as any).maximumQuantity?.quantity
+                    : (entry as any).sumQuantity?.quantity ?? (entry as any).averageQuantity?.quantity;
             if (!Number.isFinite(value)) continue;
 
             const row = byDay.get(day) || { day };
@@ -339,6 +365,7 @@ export const reader: HealthReader = {
             platform: 'apple_health',
             tzOffset: new Date().getTimezoneOffset(),
             cursor: JSON.stringify({
+                v: READER_VERSION,
                 workouts: workouts.anchor,
                 sleep: sleep.anchor,
                 statsThrough: days.through,
