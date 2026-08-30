@@ -27,7 +27,7 @@ const tzOffset = () => new Date().getTimezoneOffset();
 
 export type PillarKey =
     | 'biomarkers' | 'activity' | 'sleep' | 'nutrition'
-    | 'medication' | 'vitals' | 'body' | 'plan' | 'mind';
+    | 'medication' | 'vitals' | 'body' | 'plan' | 'mind' | 'hydration';
 
 export type ScoreBand = 'healthy' | 'suboptimal' | 'attention';
 
@@ -151,6 +151,7 @@ export const SOURCE_META: Record<PillarSource, { label: string; color: string }>
 
 /** The icon each pillar carries, matching the metric list in the kit. */
 export const PILLAR_ICON: Record<PillarKey, string> = {
+    hydration: 'water-outline',
     biomarkers: 'water-outline',
     activity: 'walk-outline',
     sleep: 'moon-outline',
@@ -178,8 +179,11 @@ export const PILLAR_ROUTE: Partial<Record<PillarKey, string>> = {
     sleep: '/activity/sources',
     nutrition: '/nutrition',
     medication: '/medications',
-    vitals: '/activity/sources',
+    // Vitals and body are now fillable by hand, so they point at the screen that fills them
+    // rather than at a device-pairing screen the person may have no device for.
+    vitals: '/metrics/blood-pressure',
+    body: '/metrics/weight',
+    hydration: '/metrics/water',
     biomarkers: '/add-result',
     plan: '/myplans',
-    body: '/profile',
 };
