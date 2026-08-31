@@ -1,85 +1,82 @@
-import React, { useState, useMemo } from 'react';
+/**
+ * Sign up. The third and fourth frames of `Design/auth.png`.
+ *
+ * Two things the design encodes and the code has to keep:
+ *
+ * 1. **The primary action is disabled until the form is actually valid**, and the disabled
+ *    state is a pale lavender with lavender text — a button that reads as "not yet",
+ *    not as "broken". Grey would have said the control was unavailable rather than waiting.
+ * 2. **The strength meter never gates on a promise it cannot keep.** It grades composition
+ *    only; see `lib/password.ts`.
+ */
+import React, { useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
   ActivityIndicator,
-  TouchableOpacity,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { signUpWithEmail } from '@/lib/auth';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
+import AuthErrorBanner from '@/components/auth/AuthErrorBanner';
+import AuthField from '@/components/auth/AuthField';
+import AuthHeader from '@/components/auth/AuthHeader';
+import PasswordStrength from '@/components/auth/PasswordStrength';
+import { authStyles } from '@/components/auth/styles';
+import { Fonts, Palette } from '@/constants/theme';
+import { signUpWithEmail } from '@/lib/auth';
+import { MIN_ACCEPTED_LEVEL, scorePassword } from '@/lib/password';
 
 const RegisterScreen = () => {
   const router = useRouter();
-  const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    username: '',
-    email: '',
-    phone: '',
-    dob: '',
-    password: '',
-    confirmPassword: '',
-  });
+  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleChange = (name: string, value: string) => {
+  const handleChange = (name: 'email' | 'password' | 'confirmPassword', value: string) => {
     setForm({ ...form, [name]: value });
+    setError('');
   };
 
-  // Password strength calculation
-  const passwordStrength = useMemo(() => {
-    const password = form.password;
-    if (!password) return { level: 0, text: '', color: '#E5E7EB' };
+  const strength = useMemo(() => scorePassword(form.password), [form.password]);
 
-    let strength = 0;
-    if (password.length >= 6) strength++;
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[0-9]/.test(password)) strength++;
-    if (/[^A-Za-z0-9]/.test(password)) strength++;
+  const passwordsMatch = Boolean(
+    form.password && form.confirmPassword && form.password === form.confirmPassword
+  );
+  const confirmMismatch = Boolean(form.confirmPassword) && !passwordsMatch;
 
-    if (strength <= 1) return { level: 1, text: 'Weak! Add Strength!', color: '#EF4444', emoji: '💪' };
-    if (strength <= 2) return { level: 2, text: 'Fair', color: '#F59E0B', emoji: '👍' };
-    if (strength <= 3) return { level: 3, text: 'Good', color: '#10B981', emoji: '✨' };
-    return { level: 4, text: 'Amazing!', color: '#7C3AED', emoji: '🎉' };
-  }, [form.password]);
-
-  const passwordsMatch = form.password && form.confirmPassword && form.password === form.confirmPassword;
+  const isFormValid = Boolean(
+    form.email && passwordsMatch && strength.level >= MIN_ACCEPTED_LEVEL
+  );
 
   const handleSignup = async () => {
-    if (!form.email || !form.password || !form.confirmPassword) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Please fill in all required fields' });
-      return;
-    }
-
-    if (form.password !== form.confirmPassword) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Passwords do not match' });
-      return;
-    }
-
-    if (passwordStrength.level < 2) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Please choose a stronger password' });
+    if (!isFormValid) {
+      setError(
+        !form.email
+          ? 'Please enter your email address'
+          : strength.level < MIN_ACCEPTED_LEVEL
+            ? 'Please choose a stronger password'
+            : 'Passwords do not match'
+      );
       return;
     }
 
     setLoading(true);
+    setError('');
     const result = await signUpWithEmail(form.email, form.password);
     setLoading(false);
 
     if (!result.ok) {
-      Toast.show({ type: 'error', text1: 'Error', text2: result.error || 'Signup failed' });
+      setError(result.error || 'Signup failed');
       return;
     }
 
@@ -95,18 +92,16 @@ const RegisterScreen = () => {
     router.replace('/(tabs)');
   };
 
-  const isFormValid = form.email && form.password && form.confirmPassword && passwordsMatch && passwordStrength.level >= 2;
-
   if (awaitingConfirmation) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={authStyles.screen} edges={['top', 'bottom']}>
         <View style={confirmStyles.wrap}>
           <View style={confirmStyles.iconCircle}>
-            <Ionicons name="mail-outline" size={40} color="#7C3AED" />
+            <Ionicons name="mail-outline" size={40} color={Palette.primary} />
           </View>
           <Text style={confirmStyles.title}>Check your email</Text>
           <Text style={confirmStyles.body}>
-            We've sent a confirmation link to{'\n'}
+            We&apos;ve sent a confirmation link to{'\n'}
             <Text style={confirmStyles.email}>{form.email}</Text>
           </Text>
           <Text style={confirmStyles.hint}>
@@ -114,10 +109,11 @@ const RegisterScreen = () => {
           </Text>
 
           <TouchableOpacity
-            style={confirmStyles.primaryButton}
+            style={[authStyles.primaryButton, confirmStyles.fullWidth]}
             onPress={() => router.replace('/(auth)/loginscreen')}
+            accessibilityRole="button"
           >
-            <Text style={confirmStyles.primaryButtonText}>Back to Sign In</Text>
+            <Text style={authStyles.primaryButtonText}>Back to Sign In</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -130,127 +126,144 @@ const RegisterScreen = () => {
               );
             }}
           >
-            <Text style={confirmStyles.resend}>Didn't get it? Resend email</Text>
+            <Text style={confirmStyles.resend}>Didn&apos;t get it? Resend email</Text>
           </TouchableOpacity>
         </View>
+        <Toast />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={authStyles.screen} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={authStyles.flex}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={authStyles.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <Ionicons name="add" size={32} color="#7C3AED" />
+          {error ? (
+            <View style={styles.bannerSlot}>
+              <AuthErrorBanner message={error} onDismiss={() => setError('')} />
             </View>
-            <Text style={styles.logoText}>LabTrack</Text>
-          </View>
+          ) : null}
 
-          {/* Tagline */}
-          <Text style={styles.tagline}>Let's sign up to get intelligent health.</Text>
+          <AuthHeader tagline="Let's sign up to get intelligent health." />
 
-          {/* Email Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                placeholder="elementary221b@gmail.com"
-                placeholderTextColor="#9CA3AF"
-                value={form.email}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                onChangeText={(text) => handleChange('email', text)}
-                style={styles.input}
-              />
-            </View>
-          </View>
+          <View style={styles.form}>
+            <AuthField
+              label="Email Address"
+              icon="mail-outline"
+              placeholder="Enter your email address..."
+              value={form.email}
+              onChangeText={(text) => handleChange('email', text)}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              returnKeyType="next"
+            />
 
-          {/* Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
-              <TextInput
-                placeholder="••••"
-                placeholderTextColor="#9CA3AF"
+            <View style={styles.passwordGroup}>
+              <AuthField
+                label="Password"
+                icon="lock-closed-outline"
+                placeholder="Create a password"
                 value={form.password}
-                autoCapitalize="none"
-                secureTextEntry={!showPassword}
                 onChangeText={(text) => handleChange('password', text)}
-                style={[styles.input, styles.passwordInput]}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-            {/* Password Strength Indicator */}
-            {form.password ? (
-              <View style={styles.strengthContainer}>
-                <Text style={styles.strengthLabel}>Password strength: </Text>
-                <Text style={[styles.strengthText, { color: passwordStrength.color }]}>
-                  {passwordStrength.text} {passwordStrength.emoji}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-
-          {/* Confirm Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={[styles.inputContainer, passwordsMatch && styles.inputContainerSuccess]}>
-              <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
-              <TextInput
-                placeholder="••••••••••••••"
-                placeholderTextColor="#9CA3AF"
-                value={form.confirmPassword}
                 autoCapitalize="none"
-                secureTextEntry={!showConfirmPassword}
-                onChangeText={(text) => handleChange('confirmPassword', text)}
-                style={[styles.input, styles.passwordInput]}
+                autoComplete="new-password"
+                secureTextEntry={!showPassword}
+                attached
+                accessory={
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                      size={20}
+                      color={Palette.textSecondary}
+                    />
+                  </TouchableOpacity>
+                }
               />
-              {passwordsMatch ? (
-                <View style={styles.checkIcon}>
-                  <Ionicons name="checkmark-circle" size={20} color="#10B981" />
-                </View>
-              ) : (
-                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                  <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-              )}
+              <PasswordStrength strength={strength} />
             </View>
+
+            <AuthField
+              label="Confirm Password"
+              icon="lock-closed-outline"
+              placeholder="Re-enter your password"
+              value={form.confirmPassword}
+              onChangeText={(text) => handleChange('confirmPassword', text)}
+              autoCapitalize="none"
+              autoComplete="new-password"
+              secureTextEntry={!showConfirmPassword}
+              invalid={confirmMismatch}
+              returnKeyType="go"
+              onSubmitEditing={handleSignup}
+              accessory={
+                passwordsMatch ? (
+                  <Ionicons name="checkmark-circle" size={20} color={Palette.meterStrong} />
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                      size={20}
+                      color={Palette.textSecondary}
+                    />
+                  </TouchableOpacity>
+                )
+              }
+            />
+
+            <TouchableOpacity
+              style={[
+                authStyles.primaryButton,
+                styles.submit,
+                !isFormValid && authStyles.primaryButtonDisabled,
+              ]}
+              onPress={handleSignup}
+              disabled={loading || !isFormValid}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !isFormValid }}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={Palette.white} />
+              ) : (
+                <>
+                  <Text
+                    style={[
+                      authStyles.primaryButtonText,
+                      !isFormValid && authStyles.primaryButtonTextDisabled,
+                    ]}
+                  >
+                    Sign Up
+                  </Text>
+                  <Ionicons
+                    name="log-out-outline"
+                    size={20}
+                    color={isFormValid ? Palette.white : Palette.primaryLight}
+                  />
+                </>
+              )}
+            </TouchableOpacity>
           </View>
 
-          {/* Sign Up Button */}
-          <TouchableOpacity
-            style={[styles.signUpButton, !isFormValid && styles.signUpButtonDisabled]}
-            onPress={handleSignup}
-            disabled={loading || !isFormValid}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Text style={styles.signUpButtonText}>Sign Up</Text>
-                <Ionicons name="arrow-forward" size={20} color="#fff" />
-              </>
-            )}
-          </TouchableOpacity>
-
-          {/* Login Link */}
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>I already have </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/loginscreen')}>
-              <Text style={styles.loginLink}>an account</Text>
+          <View style={authStyles.footer}>
+            <Text style={authStyles.footerText}>I already have </Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/loginscreen')} hitSlop={8}>
+              <Text style={authStyles.footerLink}>an account</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -261,146 +274,51 @@ const RegisterScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-  logoContainer: {
-    alignItems: 'center',
+  bannerSlot: {
     marginBottom: 16,
   },
-  logoIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    backgroundColor: '#F3E8FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
+  form: {
+    marginTop: 44,
   },
-  logoText: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#7C3AED',
+  passwordGroup: {
+    marginBottom: 23,
   },
-  tagline: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    backgroundColor: '#F9FAFB',
-  },
-  inputContainerSuccess: {
-    borderColor: '#10B981',
-    backgroundColor: '#F0FDF4',
-  },
-  inputIcon: {
-    marginLeft: 16,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  passwordInput: {
-    paddingLeft: 8,
-  },
-  eyeIcon: {
-    padding: 16,
-  },
-  checkIcon: {
-    padding: 16,
-  },
-  strengthContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  strengthLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  strengthText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  signUpButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#7C3AED',
-    borderRadius: 12,
-    paddingVertical: 16,
-    marginTop: 8,
-    gap: 8,
-  },
-  signUpButtonDisabled: {
-    backgroundColor: '#D1D5DB',
-  },
-  signUpButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 32,
-  },
-  loginText: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  loginLink: {
-    fontSize: 14,
-    color: '#7C3AED',
-    textDecorationLine: 'underline',
+  submit: {
+    marginTop: 12,
   },
 });
-
-export default RegisterScreen;
 
 const confirmStyles = StyleSheet.create({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   iconCircle: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: '#F3E8FF',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 24,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Palette.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
-  title: { fontSize: 24, fontWeight: '700', color: '#1F2937', marginBottom: 12 },
-  body: { fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginBottom: 16 },
-  email: { fontWeight: '600', color: '#1F2937' },
-  hint: { fontSize: 13, color: '#9CA3AF', textAlign: 'center', lineHeight: 20, marginBottom: 32 },
-  primaryButton: {
-    backgroundColor: '#7C3AED', paddingVertical: 16, paddingHorizontal: 48,
-    borderRadius: 12, marginBottom: 20, width: '100%', alignItems: 'center',
+  title: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text, marginBottom: 12 },
+  body: {
+    fontSize: 15,
+    fontFamily: Fonts.regular,
+    color: Palette.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 16,
   },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  resend: { color: '#7C3AED', fontSize: 14, fontWeight: '500' },
+  email: { fontFamily: Fonts.semibold, color: Palette.text },
+  hint: {
+    fontSize: 13,
+    fontFamily: Fonts.regular,
+    color: Palette.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 32,
+  },
+  fullWidth: { alignSelf: 'stretch', marginBottom: 20 },
+  resend: { color: Palette.primary, fontSize: 14, fontFamily: Fonts.semibold },
 });
+
+export default RegisterScreen;

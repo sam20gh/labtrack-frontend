@@ -63,6 +63,23 @@ export const Palette = {
      */
     canvas: '#F8FAFC',
     borderSlate: '#E2E8F0',
+    /**
+     * The next step down the kit's slate ramp. `borderSlate` is what separates a card from
+     * the canvas behind it; this is what draws a *control* — an input, a meter track — that
+     * has to stay visible sitting on pure white. At `#E2E8F0` a 1pt field outline on a white
+     * auth screen is invisible on a phone in daylight.
+     */
+    borderStrong: '#CBD5E1',
+    /**
+     * The kit's password-strength meter, and the one place a red and a green in this app are
+     * *not* clinical. `danger`/`success` are read as a verdict on a result; reusing them to
+     * grade a password would put the same colour on "your potassium is high" and "add a
+     * digit". Same argument `amber` records for the finding score.
+     */
+    meterWeak: '#F43F5E',
+    meterStrong: '#10B981',
+    /** Pure black — the kit's Google button, which is black rather than any of our neutrals. */
+    black: '#000000',
 
     white: '#FFFFFF',
 } as const;

@@ -1,21 +1,33 @@
+/**
+ * Sign in. Drawn from the "Authentication" frames in `Design/auth.png`.
+ *
+ * Everything a person can do here goes through `lib/auth` — the screen never touches
+ * Supabase, a token, or `fetch`. `signInWithEmail` and `signInWithGoogle` both call
+ * `syncAccount()` on success, which is the only thing that creates the LabTrack `User` the
+ * API needs, so there is nothing to do here after they return `ok`.
+ */
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    StyleSheet,
     ActivityIndicator,
-    TouchableOpacity,
-    SafeAreaView,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
+import AuthErrorBanner from '@/components/auth/AuthErrorBanner';
+import AuthField from '@/components/auth/AuthField';
+import AuthHeader from '@/components/auth/AuthHeader';
+import GoogleMark from '@/components/auth/GoogleMark';
+import { authStyles } from '@/components/auth/styles';
+import { Fonts, Palette, Radius } from '@/constants/theme';
 import { signInWithEmail, signInWithGoogle, STORAGE_KEYS } from '@/lib/auth';
 
 const LoginScreen = () => {
@@ -26,7 +38,7 @@ const LoginScreen = () => {
     const [keepSignedIn, setKeepSignedIn] = useState(false);
     const [error, setError] = useState('');
 
-    const handleChange = (name: string, value: string) => {
+    const handleChange = (name: 'email' | 'password', value: string) => {
         setForm({ ...form, [name]: value });
         setError('');
     };
@@ -74,127 +86,122 @@ const LoginScreen = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={authStyles.screen} edges={['top', 'bottom']}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.keyboardView}
+                style={authStyles.flex}
             >
                 <ScrollView
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={authStyles.scroll}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* Logo */}
-                    <View style={styles.logoContainer}>
-                        <View style={styles.logoIcon}>
-                            <Ionicons name="add" size={32} color="#7C3AED" />
-                        </View>
-                        <Text style={styles.logoText}>LabTrack</Text>
-                    </View>
-
-                    {/* Tagline */}
-                    <Text style={styles.tagline}>Sign in to access all-in-one intelligent health.</Text>
-
-                    {/* Error Banner */}
                     {error ? (
-                        <View style={styles.errorBanner}>
-                            <Ionicons name="warning" size={18} color="#DC2626" />
-                            <Text style={styles.errorText}>ERROR: {error}</Text>
-                            <TouchableOpacity onPress={() => setError('')} style={styles.errorClose}>
-                                <Ionicons name="close" size={18} color="#DC2626" />
-                            </TouchableOpacity>
+                        <View style={styles.bannerSlot}>
+                            <AuthErrorBanner message={error} onDismiss={() => setError('')} />
                         </View>
                     ) : null}
 
-                    {/* Email Input */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Email Address</Text>
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                placeholder="Enter your email address..."
-                                placeholderTextColor="#9CA3AF"
-                                value={form.email}
-                                autoCapitalize="none"
-                                keyboardType="email-address"
-                                onChangeText={(text) => handleChange('email', text)}
-                                style={styles.input}
-                            />
-                        </View>
-                    </View>
+                    <AuthHeader tagline="Sign in to access all-in-one intelligent health" />
 
-                    {/* Password Input */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Password</Text>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                            <TextInput
-                                placeholder="••••••••••••••"
-                                placeholderTextColor="#9CA3AF"
-                                value={form.password}
-                                autoCapitalize="none"
-                                secureTextEntry={!showPassword}
-                                onChangeText={(text) => handleChange('password', text)}
-                                style={[styles.input, styles.passwordInput]}
-                            />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#9CA3AF" />
+                    <View style={styles.form}>
+                        <AuthField
+                            label="Email Address"
+                            icon="mail-outline"
+                            placeholder="Enter your email address..."
+                            value={form.email}
+                            onChangeText={(text) => handleChange('email', text)}
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            keyboardType="email-address"
+                            returnKeyType="next"
+                        />
+
+                        <AuthField
+                            label="Password"
+                            icon="lock-closed-outline"
+                            placeholder="••••••••••••••"
+                            value={form.password}
+                            onChangeText={(text) => handleChange('password', text)}
+                            autoCapitalize="none"
+                            autoComplete="current-password"
+                            secureTextEntry={!showPassword}
+                            returnKeyType="go"
+                            onSubmitEditing={handleLogin}
+                            accessory={
+                                <TouchableOpacity
+                                    onPress={() => setShowPassword(!showPassword)}
+                                    hitSlop={10}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    <Ionicons
+                                        name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                                        size={20}
+                                        color={Palette.textSecondary}
+                                    />
+                                </TouchableOpacity>
+                            }
+                        />
+
+                        <View style={styles.optionsRow}>
+                            <TouchableOpacity
+                                style={styles.checkboxRow}
+                                onPress={() => setKeepSignedIn(!keepSignedIn)}
+                                accessibilityRole="checkbox"
+                                accessibilityState={{ checked: keepSignedIn }}
+                                accessibilityLabel="Keep me signed in"
+                            >
+                                <View style={[styles.checkbox, keepSignedIn && styles.checkboxOn]}>
+                                    {keepSignedIn ? (
+                                        <Ionicons name="checkmark" size={13} color={Palette.white} />
+                                    ) : null}
+                                </View>
+                                <Text style={styles.checkboxLabel}>Keep me signed in</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={() => router.push('/forgot-password')} hitSlop={8}>
+                                <Text style={styles.forgotPassword}>Forgot Password</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
 
-                    {/* Keep signed in & Forgot Password */}
-                    <View style={styles.optionsRow}>
                         <TouchableOpacity
-                            style={styles.checkboxContainer}
-                            onPress={() => setKeepSignedIn(!keepSignedIn)}
+                            style={[authStyles.primaryButton, loading && styles.buttonBusy]}
+                            onPress={handleLogin}
+                            disabled={loading}
+                            accessibilityRole="button"
                         >
-                            <View style={[styles.checkbox, keepSignedIn && styles.checkboxChecked]}>
-                                {keepSignedIn && <Ionicons name="checkmark" size={14} color="#fff" />}
-                            </View>
-                            <Text style={styles.checkboxLabel}>Keep me signed in</Text>
+                            {loading ? (
+                                <ActivityIndicator size="small" color={Palette.white} />
+                            ) : (
+                                <>
+                                    <Text style={authStyles.primaryButtonText}>Sign In</Text>
+                                    <Ionicons name="log-in-outline" size={20} color={Palette.white} />
+                                </>
+                            )}
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => router.push('/forgot-password')}>
-                            <Text style={styles.forgotPassword}>Forgot Password</Text>
+
+                        <View style={authStyles.divider}>
+                            <View style={authStyles.dividerLine} />
+                            <Text style={authStyles.dividerText}>OR</Text>
+                            <View style={authStyles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.googleButton}
+                            onPress={handleGoogleSignIn}
+                            disabled={loading}
+                            accessibilityRole="button"
+                        >
+                            <GoogleMark size={20} />
+                            <Text style={styles.googleButtonText}>Sign In With Google</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {/* Sign In Button */}
-                    <TouchableOpacity
-                        style={[styles.signInButton, loading && styles.signInButtonDisabled]}
-                        onPress={handleLogin}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                            <>
-                                <Text style={styles.signInButtonText}>Sign In</Text>
-                                <Ionicons name="arrow-forward" size={20} color="#fff" />
-                            </>
-                        )}
-                    </TouchableOpacity>
-
-                    {/* Divider */}
-                    <View style={styles.divider}>
-                        <View style={styles.dividerLine} />
-                        <Text style={styles.dividerText}>or</Text>
-                        <View style={styles.dividerLine} />
-                    </View>
-
-                    {/* Google Sign In */}
-                    <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
-                        <Image
-                            source={{ uri: 'https://www.google.com/favicon.ico' }}
-                            style={styles.googleIcon}
-                        />
-                        <Text style={styles.googleButtonText}>Sign In With Google</Text>
-                    </TouchableOpacity>
-
-                    {/* Sign Up Link */}
-                    <View style={styles.signUpContainer}>
-                        <Text style={styles.signUpText}>Don't have an account? </Text>
-                        <TouchableOpacity onPress={() => router.push('/signup')}>
-                            <Text style={styles.signUpLink}>Sign Up</Text>
+                    <View style={authStyles.footer}>
+                        <Text style={authStyles.footerText}>Don&apos;t have an account? </Text>
+                        <TouchableOpacity onPress={() => router.push('/signup')} hitSlop={8}>
+                            <Text style={authStyles.footerLink}>Sign Up</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -205,189 +212,69 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    keyboardView: {
-        flex: 1,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        paddingHorizontal: 24,
-        paddingTop: 60,
-        paddingBottom: 40,
-    },
-    logoContainer: {
-        alignItems: 'center',
+    bannerSlot: {
         marginBottom: 16,
     },
-    logoIcon: {
-        width: 56,
-        height: 56,
-        borderRadius: 12,
-        backgroundColor: '#F3E8FF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    logoText: {
-        fontSize: 28,
-        fontWeight: '600',
-        color: '#7C3AED',
-    },
-    tagline: {
-        fontSize: 14,
-        color: '#6B7280',
-        textAlign: 'center',
-        marginBottom: 32,
-    },
-    errorBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FEE2E2',
-        borderRadius: 8,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        marginBottom: 24,
-    },
-    errorText: {
-        flex: 1,
-        fontSize: 14,
-        color: '#DC2626',
-        marginLeft: 8,
-    },
-    errorClose: {
-        padding: 4,
-    },
-    inputGroup: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#374151',
-        marginBottom: 8,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderRadius: 12,
-        backgroundColor: '#F9FAFB',
-    },
-    inputIcon: {
-        marginLeft: 16,
-    },
-    input: {
-        flex: 1,
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        fontSize: 16,
-        color: '#1F2937',
-    },
-    passwordInput: {
-        paddingLeft: 8,
-    },
-    eyeIcon: {
-        padding: 16,
+    form: {
+        marginTop: 44,
     },
     optionsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginTop: 4,
+        marginBottom: 28,
     },
-    checkboxContainer: {
+    checkboxRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 10,
     },
+    /**
+     * Round, not square. The kit draws this one as a filled disc — the only checkbox in the
+     * app that is not a rounded rectangle, and the reason it is styled here rather than
+     * pulled from a shared control.
+     */
     checkbox: {
-        width: 20,
-        height: 20,
-        borderRadius: 4,
-        borderWidth: 2,
-        borderColor: '#7C3AED',
-        justifyContent: 'center',
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 1.5,
+        borderColor: Palette.borderStrong,
         alignItems: 'center',
-        marginRight: 8,
+        justifyContent: 'center',
     },
-    checkboxChecked: {
-        backgroundColor: '#7C3AED',
+    checkboxOn: {
+        backgroundColor: Palette.primary,
+        borderColor: Palette.primary,
     },
     checkboxLabel: {
         fontSize: 14,
-        color: '#374151',
+        fontFamily: Fonts.regular,
+        color: Palette.text,
     },
     forgotPassword: {
         fontSize: 14,
-        color: '#7C3AED',
+        fontFamily: Fonts.bold,
+        color: Palette.primary,
         textDecorationLine: 'underline',
     },
-    signInButton: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#7C3AED',
-        borderRadius: 12,
-        paddingVertical: 16,
-        gap: 8,
-    },
-    signInButtonDisabled: {
-        backgroundColor: '#A78BFA',
-    },
-    signInButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#FFFFFF',
-    },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 24,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#E5E7EB',
-    },
-    dividerText: {
-        marginHorizontal: 16,
-        fontSize: 14,
-        color: '#9CA3AF',
+    buttonBusy: {
+        backgroundColor: Palette.primaryDark,
     },
     googleButton: {
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#1F2937',
-        borderRadius: 12,
-        paddingVertical: 16,
+        justifyContent: 'center',
         gap: 12,
-    },
-    googleIcon: {
-        width: 20,
-        height: 20,
+        height: 48,
+        borderRadius: Radius.sm,
+        backgroundColor: Palette.black,
     },
     googleButtonText: {
         fontSize: 16,
-        fontWeight: '600',
-        color: '#FFFFFF',
-    },
-    signUpContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 32,
-    },
-    signUpText: {
-        fontSize: 14,
-        color: '#6B7280',
-    },
-    signUpLink: {
-        fontSize: 14,
-        color: '#7C3AED',
-        textDecorationLine: 'underline',
+        fontFamily: Fonts.semibold,
+        color: Palette.white,
     },
 });
 
