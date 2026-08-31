@@ -609,6 +609,21 @@ const ScoreHero = ({ score, onExplain, onOpen }: {
 
 
 /**
+ * How a plain-language key point is drawn.
+ *
+ * Three tones rather than the five biomarker flags, and deliberately not the same palette:
+ * these label what the person should *do* about a point, not how far a number sits from a
+ * reference range. `act` is warning-amber and not danger-red — the analysis is a
+ * surveillance read that a clinician has not necessarily signed, and a red card on a home
+ * screen says something this product is careful never to say.
+ */
+const TONE_META: Record<string, { icon: React.ComponentProps<typeof Ionicons>['name']; color: string; bg: string }> = {
+    good: { icon: 'checkmark-circle', color: Palette.success, bg: Palette.successSurface },
+    watch: { icon: 'eye-outline', color: Palette.textSecondary, bg: Palette.surface },
+    act: { icon: 'flag-outline', color: Palette.warning, bg: Palette.warningSurface },
+};
+
+/**
  * Latest AI analysis.
  *
  * Four states, and the two in the middle are the ones the first version got wrong:
@@ -636,6 +651,10 @@ const AnalysisCard = ({
     onRegenerate: () => void;
 }) => {
     const { interpretation, latestResult, source, isForLatestResult, available, verification } = analysis;
+
+    // The version written for the reader rather than for a clinician. Absent on analyses
+    // generated before this layer existed — see the render below for the fallback.
+    const plain = interpretation?.plain_summary;
 
     // Policy currently shows unverified interpretations, so `withheld` is always false
     // today. It is handled anyway: if regulation later requires sign-off first, the server
@@ -711,13 +730,69 @@ const AnalysisCard = ({
                 </View>
             ) : interpretation ? (
                 <>
-                    {/* 5 rather than 4: at 16px the same clamp showed noticeably less
-                        summary than it did at 13px. */}
-                    <Text style={styles.analysisSummary} numberOfLines={expanded ? undefined : 5}>
-                        {interpretation.summary}
-                    </Text>
+                    {/*
+                      * Collapsed, this card is written for the person; expanded, it is the
+                      * clinical read. `plain_summary` is what makes that split possible.
+                      *
+                      * Without it — every analysis generated before the plain-language
+                      * layer existed, and `Interpretation` is append-only so those are
+                      * never rewritten — the clinical summary is shown as it always was.
+                      * A card that renders nothing because one field is missing is worse
+                      * than a card that reads too technically.
+                      */}
+                    {plain ? (
+                        <>
+                            <Text style={styles.plainHeadline}>{plain.headline}</Text>
+                            <Text style={styles.analysisSummary}>{plain.what_it_means}</Text>
 
-                    {hasMeaningfulChanges(interpretation) && (
+                            {plain.key_points?.length > 0 && (
+                                <View style={styles.pointList}>
+                                    {plain.key_points.map((point) => {
+                                        const meta = TONE_META[point.tone] ?? TONE_META.watch;
+                                        return (
+                                            <View key={`${point.label}-${point.detail}`} style={styles.point}>
+                                                <View style={[styles.pointIcon, { backgroundColor: meta.bg }]}>
+                                                    <Ionicons name={meta.icon} size={14} color={meta.color} />
+                                                </View>
+                                                <View style={styles.flex}>
+                                                    <Text style={styles.pointLabel}>{point.label}</Text>
+                                                    <Text style={styles.detailBody}>{point.detail}</Text>
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            )}
+
+                            {/* One thing to do, not a list. Someone who reads only the top
+                                of this card should still leave with an action. */}
+                            {!!plain.next_step && (
+                                <View style={styles.nextStep}>
+                                    <View style={styles.changesHeader}>
+                                        <Ionicons name="arrow-forward-circle-outline" size={15} color={Palette.primary} />
+                                        <Text style={styles.changesLabel}>Your next step</Text>
+                                    </View>
+                                    <Text style={styles.nextStepText}>{plain.next_step}</Text>
+                                </View>
+                            )}
+                        </>
+                    ) : (
+                        /* 5 rather than 4: at 16px the same clamp showed noticeably less
+                           summary than it did at 13px. */
+                        <Text style={styles.analysisSummary} numberOfLines={expanded ? undefined : 5}>
+                            {interpretation.summary}
+                        </Text>
+                    )}
+
+                    {/*
+                      * "What changed" names the values that moved and the directions they
+                      * moved in — by design, and technical by the same token. Where a plain
+                      * summary exists it already tells that story in everyday words, so
+                      * this stays behind the fold and the collapsed card stays readable.
+                      * Without one it is shown as before, because a card that only says
+                      * "your results were interpreted" is worth less than a technical one.
+                      */}
+                    {hasMeaningfulChanges(interpretation) && (!plain || expanded) && (
                         <View style={styles.changesNote}>
                             <View style={styles.changesHeader}>
                                 <Ionicons name="git-compare-outline" size={15} color={Palette.primary} />
@@ -731,6 +806,15 @@ const AnalysisCard = ({
 
                     {expanded && (
                         <View style={styles.analysisDetail}>
+                            {/* The clinical summary, shown here rather than at the top when
+                                a plain one exists. Same words a reviewing clinician reads,
+                                and labelled so nobody mistakes the two for a repetition. */}
+                            {plain && (
+                                <AnalysisBlock title="The detailed read">
+                                    <Text style={styles.detailBody}>{interpretation.summary}</Text>
+                                </AnalysisBlock>
+                            )}
+
                             {interpretation.biomarkers_of_concern?.length > 0 && (
                                 <AnalysisBlock title="Worth attention">
                                     {interpretation.biomarkers_of_concern.map((b) => (
@@ -791,7 +875,9 @@ const AnalysisCard = ({
 
                     <View style={styles.analysisFooter}>
                         <TouchableOpacity onPress={onToggle} hitSlop={8} style={styles.footerLink}>
-                            <Text style={styles.footerLinkText}>{expanded ? 'Show less' : 'Read full analysis'}</Text>
+                            <Text style={styles.footerLinkText}>
+                                {expanded ? 'Show less' : plain ? 'Read the full analysis' : 'Read full analysis'}
+                            </Text>
                             <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={Palette.primary} />
                         </TouchableOpacity>
                         {available && !needsFresh && (
@@ -1301,6 +1387,28 @@ const styles = StyleSheet.create({
     },
     aiBadgeText: { fontSize: 12, color: Palette.primary, fontFamily: Fonts.bold, letterSpacing: 0.5 },
     analysisSummary: { fontSize: 16, lineHeight: 24, color: Palette.text, fontFamily: Fonts.regular },
+
+    /**
+     * The plain-language block.
+     *
+     * Larger and heavier than the clinical summary it replaces at the top of the card,
+     * because it is now the thing most people will read and the only thing some of them
+     * will. No `fontWeight` beside `fontFamily` — Android renders regular when both are
+     * set on a custom face.
+     */
+    plainHeadline: { fontSize: 19, lineHeight: 26, color: Palette.text, fontFamily: Fonts.semibold },
+    pointList: { gap: Spacing.md },
+    point: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
+    pointIcon: {
+        width: 26, height: 26, borderRadius: 13,
+        alignItems: 'center', justifyContent: 'center', marginTop: 1,
+    },
+    pointLabel: { fontSize: 15.5, color: Palette.text, fontFamily: Fonts.semibold, marginBottom: 1 },
+    nextStep: {
+        gap: 5, padding: Spacing.md, borderRadius: Radius.md,
+        backgroundColor: Palette.primarySurface,
+    },
+    nextStepText: { fontSize: 15.5, lineHeight: 22, color: Palette.text, fontFamily: Fonts.medium },
     analysisDetail: { gap: Spacing.lg, paddingTop: Spacing.xs },
     analysisBlock: { gap: 6 },
     analysisBlockTitle: {

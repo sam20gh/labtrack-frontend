@@ -13,7 +13,30 @@ import { api, apiFetch, ApiError } from './api';
 export type RiskLevel = 'low' | 'moderate' | 'high' | 'unknown';
 export type Urgency = 'routine' | 'soon' | 'urgent';
 
+/**
+ * The analysis written for the person rather than for a clinician.
+ *
+ * Optional because it is: `Interpretation` documents generated before this field existed
+ * are append-only records and are never rewritten, so a returning user's newest analysis
+ * may well predate it. Every consumer falls back to `summary`.
+ */
+export interface PlainSummary {
+    /** One short sentence, safe to read on its own. */
+    headline: string;
+    overall: 'mostly_good' | 'some_things_to_watch' | 'needs_attention';
+    /** Two to four short sentences in everyday words. */
+    what_it_means: string;
+    key_points: { label: string; detail: string; tone: 'good' | 'watch' | 'act' }[];
+    /** One thing they can act on today. */
+    next_step: string;
+}
+
 export interface Interpretation {
+    /**
+     * The clinical read. Accurate, and written for a reviewing clinician — which is why it
+     * sits behind "Read full analysis" rather than on the home card. Use `plain_summary`
+     * for anything a member of the public sees first.
+     */
     summary: string;
     risks: { condition: string; level: RiskLevel; basis: string; rationale: string }[];
     recommended_screenings: {
@@ -32,6 +55,8 @@ export interface Interpretation {
     changes_since_last?: string;
     follow_up: string;
     limitations: string[];
+    /** Absent on anything generated before the plain-language layer existed. */
+    plain_summary?: PlainSummary;
 }
 
 export interface GenerateResult {
