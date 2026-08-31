@@ -35,7 +35,7 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-    View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet, Alert, RefreshControl,
+    View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet, Alert, RefreshControl, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -53,8 +53,8 @@ import { getPermissionStatus } from '@/lib/notifications';
 import { Palette, Fonts, Radius, Spacing } from '@/constants/theme';
 import type { User } from '@/types/api';
 
-/** `profileImage` is not on the user model yet; the avatar falls back to initials. */
-type ProfileUser = Partial<User & { profileImage: string; createdAt: string }>;
+/** `createdAt` comes from the model's `timestamps: true` and is not in the `User` type. */
+type ProfileUser = Partial<User & { createdAt: string }>;
 
 const initialsOf = (user: ProfileUser) => {
     const letters = `${user.firstName ?? ''} ${user.lastName ?? ''}`
@@ -284,9 +284,15 @@ export default function ProfileScreen() {
                         accessibilityRole="button"
                         accessibilityLabel="Edit your profile"
                     >
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarInitials}>{initialsOf(user)}</Text>
-                        </View>
+                        {/* Initials are the fallback, not the error state: `profileImage`
+                            is null for everyone who has not picked one. */}
+                        {user.profileImage ? (
+                            <Image source={{ uri: user.profileImage }} style={styles.avatar} />
+                        ) : (
+                            <View style={[styles.avatar, styles.avatarFallback]}>
+                                <Text style={styles.avatarInitials}>{initialsOf(user)}</Text>
+                            </View>
+                        )}
                         <View style={styles.avatarBadge}>
                             <Ionicons name="pencil" size={12} color={Palette.white} />
                         </View>
@@ -616,10 +622,13 @@ const styles = StyleSheet.create({
     avatarWrap: { marginBottom: Spacing.md },
     avatar: {
         width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2,
-        backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 4, borderColor: Palette.canvas,
+        // The canvas ring reads as part of the avatar, so an image that has not loaded
+        // yet shows this rather than a hole in the middle of the identity block.
+        backgroundColor: Palette.primarySurface,
     },
+    avatarFallback: { backgroundColor: Palette.primarySurface },
     avatarInitials: { fontSize: 32, fontFamily: Fonts.bold, color: Palette.primary, includeFontPadding: false },
     avatarBadge: {
         position: 'absolute', right: 0, bottom: 0,

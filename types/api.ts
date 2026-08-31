@@ -134,6 +134,11 @@ export interface User extends Timestamped {
     username?: string;
     email: string;
     phone?: string;
+    /**
+     * Cloudflare delivery URL for the avatar, or null. Never image bytes — see
+     * `lib/avatar.ts` and the field comment on `models/userModel.js`.
+     */
+    profileImage?: string | null;
     dob?: string;
     gender?: Sex | null;
     height?: number | null;

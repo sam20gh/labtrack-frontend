@@ -269,6 +269,7 @@ export default function HomeScreen() {
                         <Greeting
                             name={firstName}
                             initials={initials.toUpperCase()}
+                            photo={user?.profileImage ?? null}
                             onPressAvatar={() => router.push('/profile')}
                         />
 
@@ -424,16 +425,22 @@ export default function HomeScreen() {
 // Pieces
 // ---------------------------------------------------------------------------
 
-const Greeting = ({ name, initials, onPressAvatar }: { name: string; initials: string; onPressAvatar: () => void }) => (
+const Greeting = ({ name, initials, photo, onPressAvatar }: {
+    name: string; initials: string; photo: string | null; onPressAvatar: () => void;
+}) => (
     <View style={styles.greetingRow}>
         <View style={styles.flex}>
             <Text style={styles.greetingLabel}>{greetingFor(new Date().getHours())}</Text>
             <Text style={styles.greetingName} numberOfLines={1}>{name}</Text>
         </View>
+        {/* Three states, in order of what we actually know: a photo, then initials, then
+            the generic glyph for an account that has neither yet. */}
         <TouchableOpacity style={styles.avatar} onPress={onPressAvatar} accessibilityLabel="Your profile">
-            {initials.trim()
-                ? <Text style={styles.avatarText}>{initials}</Text>
-                : <Ionicons name="person" size={18} color={Palette.primary} />}
+            {photo
+                ? <Image source={{ uri: photo }} style={styles.avatarImage} />
+                : initials.trim()
+                    ? <Text style={styles.avatarText}>{initials}</Text>
+                    : <Ionicons name="person" size={18} color={Palette.primary} />}
         </TouchableOpacity>
     </View>
 );
@@ -1110,6 +1117,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     avatarText: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
+    avatarImage: { width: 40, height: 40, borderRadius: Radius.pill },
 
     // Score hero
     hero: {

@@ -11,10 +11,12 @@
  * - **Country and Home Address are not drawn.** `models/userModel.js` has no field for
  *   either. `findByIdAndUpdate` runs in strict mode, so posting them would return 200 and
  *   drop them — a form that reports success and saves nothing.
- * - **The avatar shows initials and does not open a picker.** There is no `profileImage`
- *   on the user model, so an upload would reach Cloudflare (`POST /api/images/upload`
- *   works) and then have nowhere to be stored. The hub already falls back to initials for
- *   the same reason.
+ * - **The avatar uploads before it saves, and saving is still a separate act.**
+ *   `pickAvatar` crops square, sends the file to Cloudflare and returns a delivery URL;
+ *   that URL sits in form state until Save writes it to `User.profileImage`. Backing out
+ *   leaves an orphaned Cloudflare image and an unchanged record, which is the right way
+ *   round — the same checkpoint report ingestion puts between a misread digit and the
+ *   record. Initials remain the fallback and are what everyone sees until they pick one.
  * - **Email is read-only.** Supabase owns the credential; changing it here would move the
  *   LabTrack record away from the address the token is issued against, and the next
  *   `syncAccount()` would link a second account.
@@ -29,8 +31,8 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TextInput, Pressable,
-    ActivityIndicator, KeyboardAvoidingView, Platform,
+    View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image,
+    ActivityIndicator, KeyboardAvoidingView, Platform, ActionSheetIOS, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -43,6 +45,7 @@ import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
 import { useUnits, displayWeight, toCanonicalWeight, unitLabel } from '@/lib/units';
+import { pickAvatar, AvatarError } from '@/lib/avatar';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import type { User } from '@/types/api';
 
@@ -78,6 +81,8 @@ export default function ProfileSettingsScreen() {
     const [bloodType, setBloodType] = useState<string | null>(null);
     const [dob, setDob] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [profileImage, setProfileImage] = useState<string | null>(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [heightCm, setHeightCm] = useState('');
     /** Held in the displayed unit while typing; converted to kg on save. */
     const [weightInput, setWeightInput] = useState('');
@@ -88,6 +93,7 @@ export default function ProfileSettingsScreen() {
         try {
             const user = await api.get<Partial<User> & { bloodType?: string }>(`/users/${userId}`);
             setEmail(user.email ?? '');
+            setProfileImage(user.profileImage ?? null);
             setFirstName(user.firstName ?? '');
             setLastName(user.lastName ?? '');
             setPhone(user.phone ?? '');
@@ -107,6 +113,60 @@ export default function ProfileSettingsScreen() {
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
     const displayName = useMemo(() => `${firstName} ${lastName}`.trim(), [firstName, lastName]);
+
+    /**
+     * Pick, crop, upload — then hold the URL in form state. Nothing is written until Save.
+     *
+     * The source sheet is native on iOS and an Alert on Android, because a three-button
+     * Alert is what Android users expect here and `ActionSheetIOS` does not exist there.
+     * "Remove photo" only appears when there is one, so the sheet never offers to undo
+     * something that has not happened.
+     */
+    const changeAvatar = () => {
+        const run = async (source: 'library' | 'camera') => {
+            setUploadingAvatar(true);
+            try {
+                const url = await pickAvatar(source);
+                if (url) setProfileImage(url);
+            } catch (err) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Could not use that photo',
+                    text2: err instanceof AvatarError ? err.message : 'Please try again.',
+                });
+            } finally {
+                setUploadingAvatar(false);
+            }
+        };
+
+        const labels = ['Take a photo', 'Choose from library'];
+        if (profileImage) labels.push('Remove photo');
+
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                {
+                    options: ['Cancel', ...labels],
+                    cancelButtonIndex: 0,
+                    destructiveButtonIndex: profileImage ? labels.length : undefined,
+                },
+                (index) => {
+                    if (index === 1) run('camera');
+                    if (index === 2) run('library');
+                    if (index === 3) setProfileImage(null);
+                },
+            );
+            return;
+        }
+
+        Alert.alert('Profile photo', undefined, [
+            { text: 'Take a photo', onPress: () => run('camera') },
+            { text: 'Choose from library', onPress: () => run('library') },
+            ...(profileImage
+                ? [{ text: 'Remove photo', style: 'destructive' as const, onPress: () => setProfileImage(null) }]
+                : []),
+            { text: 'Cancel', style: 'cancel' as const },
+        ]);
+    };
 
     const save = async () => {
         const userId = await getUserId();
@@ -129,6 +189,7 @@ export default function ProfileSettingsScreen() {
                 firstName: firstName.trim(),
                 lastName: lastName.trim(),
                 phone: phone.trim(),
+                profileImage,
                 gender,
                 bloodType,
                 dob: formatDob(dob),
@@ -167,9 +228,36 @@ export default function ProfileSettingsScreen() {
                     <ScreenHeader title="Profile Settings" subtitle="Adjust your profile details here" />
 
                     <View style={styles.avatarWrap}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarInitials}>{initialsOf(firstName, lastName, email)}</Text>
-                        </View>
+                        <Pressable
+                            style={styles.avatarPress}
+                            onPress={changeAvatar}
+                            disabled={uploadingAvatar}
+                            accessibilityRole="button"
+                            accessibilityLabel={profileImage ? 'Change your profile photo' : 'Add a profile photo'}
+                        >
+                            {profileImage ? (
+                                <Image source={{ uri: profileImage }} style={styles.avatar} />
+                            ) : (
+                                <View style={[styles.avatar, styles.avatarFallback]}>
+                                    <Text style={styles.avatarInitials}>
+                                        {initialsOf(firstName, lastName, email)}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {/* Covers the avatar rather than sitting beside it: the badge is
+                                the only thing small enough to fit, and a spinner next to an
+                                unchanged photo does not read as "this one is uploading". */}
+                            {uploadingAvatar && (
+                                <View style={[styles.avatar, styles.avatarBusy]}>
+                                    <ActivityIndicator size="small" color={Palette.white} />
+                                </View>
+                            )}
+
+                            <View style={styles.avatarBadge}>
+                                <Ionicons name="pencil" size={12} color={Palette.white} />
+                            </View>
+                        </Pressable>
                         {!!displayName && <Text style={styles.avatarName}>{displayName}</Text>}
                     </View>
 
@@ -354,10 +442,19 @@ const styles = StyleSheet.create({
     scroll: { paddingBottom: 64 },
 
     avatarWrap: { alignItems: 'center', marginTop: Spacing.xl, gap: Spacing.sm },
+    avatarPress: { width: 88, height: 88 },
     avatar: {
         width: 88, height: 88, borderRadius: 44,
-        backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
+    },
+    avatarFallback: { backgroundColor: Palette.primarySurface },
+    avatarBusy: { position: 'absolute', backgroundColor: 'rgba(31,41,55,0.55)' },
+    avatarBadge: {
+        position: 'absolute', right: 0, bottom: 0,
+        width: 28, height: 28, borderRadius: 14,
+        backgroundColor: Palette.primary,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 3, borderColor: Palette.background,
     },
     avatarInitials: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.primary, includeFontPadding: false },
     avatarName: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
