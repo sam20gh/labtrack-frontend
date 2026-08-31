@@ -38,7 +38,8 @@ import {
     RISK_META, byRiskSeverity, type LatestInterpretation,
 } from '@/lib/interpretation';
 import { getScore, bandMeta, isMostlyReported, SOURCE_META, type HealthScore } from '@/lib/score';
-import { RESOURCES_INTRO_KEY } from '@/lib/resources';
+import { listResources, routeFor, RESOURCES_INTRO_KEY, type ResourceCard as ResourceCardType } from '@/lib/resources';
+import { ArticleCard } from '@/components/resources/ResourceCards';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 import ScoreRadar from '@/components/home/ScoreRadar';
 import type { BiomarkerSummary, NutritionDay, PlanItem, Product, User } from '@/types/api';
@@ -90,6 +91,7 @@ const describeDue = (iso: string) => {
 
 export default function HomeScreen() {
     const router = useRouter();
+    const { width } = useWindowDimensions();
 
     /**
      * The health library. First visit gets the value-prop screen, every visit after it goes
@@ -114,6 +116,7 @@ export default function HomeScreen() {
     const [products, setProducts] = useState<Product[]>([]);
     const [analysis, setAnalysis] = useState<LatestInterpretation | null>(null);
     const [nutrition, setNutrition] = useState<NutritionDay | null>(null);
+    const [resources, setResources] = useState<ResourceCardType[]>([]);
     const [score, setScore] = useState<HealthScore>(EMPTY_SCORE);
     const [generating, setGenerating] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -136,7 +139,7 @@ export default function HomeScreen() {
 
         // Settled rather than all: a home screen that renders nothing because the plan
         // endpoint hiccuped is worse than one missing a section.
-        const [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes, scoreRes] = await Promise.allSettled([
+        const [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes, scoreRes, resourceRes] = await Promise.allSettled([
             userId ? api.get<User>(`/users/${userId}`) : Promise.reject(new Error('no user id')),
             getLatestBiomarkers(),
             getPlan(),
@@ -149,6 +152,9 @@ export default function HomeScreen() {
             // The score is computed server-side now — it reads a month of activity, sleep,
             // meals and doses this screen never loads. See the header of `lib/score.ts`.
             getScore(),
+            // The newest of the library, for the rail at the foot of the screen. Six cards,
+            // because this is a rail and nobody scrolls twenty of them sideways.
+            listResources({ limit: 6, sort: 'newest' }),
         ]);
 
         if (userRes.status === 'fulfilled') setUser(userRes.value);
@@ -158,8 +164,9 @@ export default function HomeScreen() {
         if (analysisRes.status === 'fulfilled') setAnalysis(analysisRes.value);
         if (nutritionRes.status === 'fulfilled') setNutrition(nutritionRes.value);
         if (scoreRes.status === 'fulfilled') setScore(scoreRes.value);
+        if (resourceRes.status === 'fulfilled') setResources(resourceRes.value.items ?? []);
 
-        const rejected = [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes, scoreRes]
+        const rejected = [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes, scoreRes, resourceRes]
             .filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
             router.replace('/(auth)/loginscreen');
@@ -425,6 +432,37 @@ export default function HomeScreen() {
                                             key={p._id}
                                             product={p}
                                             onPress={() => router.push({ pathname: '/ProductDetails', params: { productId: p._id } })}
+                                        />
+                                    ))}
+                                </ScrollView>
+                            </Section>
+                        )}
+
+                        {/*
+                            News & Resources.
+                            
+                            The card is `ArticleCard` from `components/resources`, not a
+                            home-screen copy of it. The library already owns the byline, the
+                            category chip and the "2.5k" formatting, and a second version
+                            here is how the same article ends up with two different view
+                            counts on two screens.
+
+                            "See All" goes to the library rather than to a filtered list:
+                            this rail is a sample of everything, so its See All has to be
+                            everything too.
+                        */}
+                        {resources.length > 0 && (
+                            <Section title="News & Resources" action="See All" onAction={openResources}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                                    {resources.map((card) => (
+                                        <ArticleCard
+                                            key={card.id}
+                                            card={card}
+                                            width={Math.min(300, width * 0.8)}
+                                            onPress={() => {
+                                                const { pathname, params } = routeFor(card);
+                                                router.push({ pathname: pathname as any, params });
+                                            }}
                                         />
                                     ))}
                                 </ScrollView>
