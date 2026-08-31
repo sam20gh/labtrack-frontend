@@ -31,7 +31,7 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image,
+    View, Text, StyleSheet, ScrollView, TextInput, Pressable,
     ActivityIndicator, KeyboardAvoidingView, Platform, ActionSheetIOS, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,6 +41,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 
+import { Avatar } from '@/components/Avatar';
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
@@ -235,21 +236,17 @@ export default function ProfileSettingsScreen() {
                             accessibilityRole="button"
                             accessibilityLabel={profileImage ? 'Change your profile photo' : 'Add a profile photo'}
                         >
-                            {profileImage ? (
-                                <Image source={{ uri: profileImage }} style={styles.avatar} />
-                            ) : (
-                                <View style={[styles.avatar, styles.avatarFallback]}>
-                                    <Text style={styles.avatarInitials}>
-                                        {initialsOf(firstName, lastName, email)}
-                                    </Text>
-                                </View>
-                            )}
+                            <Avatar
+                                uri={profileImage}
+                                initials={initialsOf(firstName, lastName, email)}
+                                size={88}
+                            />
 
                             {/* Covers the avatar rather than sitting beside it: the badge is
                                 the only thing small enough to fit, and a spinner next to an
                                 unchanged photo does not read as "this one is uploading". */}
                             {uploadingAvatar && (
-                                <View style={[styles.avatar, styles.avatarBusy]}>
+                                <View style={styles.avatarBusy}>
                                     <ActivityIndicator size="small" color={Palette.white} />
                                 </View>
                             )}
@@ -443,12 +440,11 @@ const styles = StyleSheet.create({
 
     avatarWrap: { alignItems: 'center', marginTop: Spacing.xl, gap: Spacing.sm },
     avatarPress: { width: 88, height: 88 },
-    avatar: {
-        width: 88, height: 88, borderRadius: 44,
+    avatarBusy: {
+        position: 'absolute', width: 88, height: 88, borderRadius: 44,
         alignItems: 'center', justifyContent: 'center',
+        backgroundColor: 'rgba(31,41,55,0.55)',
     },
-    avatarFallback: { backgroundColor: Palette.primarySurface },
-    avatarBusy: { position: 'absolute', backgroundColor: 'rgba(31,41,55,0.55)' },
     avatarBadge: {
         position: 'absolute', right: 0, bottom: 0,
         width: 28, height: 28, borderRadius: 14,
@@ -456,7 +452,6 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 3, borderColor: Palette.background,
     },
-    avatarInitials: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.primary, includeFontPadding: false },
     avatarName: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
 
     body: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, gap: Spacing.lg },

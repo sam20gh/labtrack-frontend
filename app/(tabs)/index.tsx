@@ -21,6 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Avatar } from '@/components/Avatar';
 import Toast from 'react-native-toast-message';
 
 import { api, ApiError } from '@/lib/api';
@@ -433,14 +434,10 @@ const Greeting = ({ name, initials, photo, onPressAvatar }: {
             <Text style={styles.greetingLabel}>{greetingFor(new Date().getHours())}</Text>
             <Text style={styles.greetingName} numberOfLines={1}>{name}</Text>
         </View>
-        {/* Three states, in order of what we actually know: a photo, then initials, then
-            the generic glyph for an account that has neither yet. */}
-        <TouchableOpacity style={styles.avatar} onPress={onPressAvatar} accessibilityLabel="Your profile">
-            {photo
-                ? <Image source={{ uri: photo }} style={styles.avatarImage} />
-                : initials.trim()
-                    ? <Text style={styles.avatarText}>{initials}</Text>
-                    : <Ionicons name="person" size={18} color={Palette.primary} />}
+        {/* Photo, then initials, then the generic glyph — and a photo that fails to load
+            falls back the same way. See `components/Avatar.tsx`. */}
+        <TouchableOpacity onPress={onPressAvatar} accessibilityLabel="Your profile">
+            <Avatar uri={photo} initials={initials} size={40} textStyle={{ fontSize: 14 }} />
         </TouchableOpacity>
     </View>
 );
@@ -1112,12 +1109,6 @@ const styles = StyleSheet.create({
     },
     greetingLabel: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
     greetingName: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold },
-    avatar: {
-        width: 40, height: 40, borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    avatarText: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
-    avatarImage: { width: 40, height: 40, borderRadius: Radius.pill },
 
     // Score hero
     hero: {

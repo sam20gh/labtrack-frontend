@@ -35,7 +35,7 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-    View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet, Alert, RefreshControl, Image,
+    View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet, Alert, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -50,6 +50,7 @@ import { getUserId, signOut } from '@/lib/auth';
 import { getScore, type HealthScore } from '@/lib/score';
 import { getSummary as getActivitySummary, getWearableStatus } from '@/lib/activity';
 import { getPermissionStatus } from '@/lib/notifications';
+import { Avatar } from '@/components/Avatar';
 import { Palette, Fonts, Radius, Spacing } from '@/constants/theme';
 import type { User } from '@/types/api';
 
@@ -284,15 +285,14 @@ export default function ProfileScreen() {
                         accessibilityRole="button"
                         accessibilityLabel="Edit your profile"
                     >
-                        {/* Initials are the fallback, not the error state: `profileImage`
-                            is null for everyone who has not picked one. */}
-                        {user.profileImage ? (
-                            <Image source={{ uri: user.profileImage }} style={styles.avatar} />
-                        ) : (
-                            <View style={[styles.avatar, styles.avatarFallback]}>
-                                <Text style={styles.avatarInitials}>{initialsOf(user)}</Text>
-                            </View>
-                        )}
+                        {/* Initials are the fallback for both "no photo yet" and "that photo
+                            would not load" — see `components/Avatar.tsx`. */}
+                        <Avatar
+                            uri={user.profileImage}
+                            initials={initialsOf(user)}
+                            size={AVATAR}
+                            style={styles.avatarRing}
+                        />
                         <View style={styles.avatarBadge}>
                             <Ionicons name="pencil" size={12} color={Palette.white} />
                         </View>
@@ -620,16 +620,9 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     avatarWrap: { marginBottom: Spacing.md },
-    avatar: {
-        width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2,
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 4, borderColor: Palette.canvas,
-        // The canvas ring reads as part of the avatar, so an image that has not loaded
-        // yet shows this rather than a hole in the middle of the identity block.
-        backgroundColor: Palette.primarySurface,
-    },
-    avatarFallback: { backgroundColor: Palette.primarySurface },
-    avatarInitials: { fontSize: 32, fontFamily: Fonts.bold, color: Palette.primary, includeFontPadding: false },
+    // The ring is the canvas colour, so the avatar reads as sitting on the page rather
+    // than on the cover it straddles.
+    avatarRing: { borderWidth: 4, borderColor: Palette.canvas },
     avatarBadge: {
         position: 'absolute', right: 0, bottom: 0,
         width: 30, height: 30, borderRadius: 15,
