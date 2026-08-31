@@ -21,9 +21,30 @@ interface Props {
     stroke?: number;
     /** Small caption under the numbers, e.g. "580 kcal left". */
     caption?: string;
+    /**
+     * Which ground the ring is drawn on.
+     *
+     * `light` is the default — a white card, where the arc is purple and the numbers are
+     * near-black. `light` on the dashboard's purple hero would put `Palette.primary` on
+     * `Palette.primary` and vanish, so `dark` inverts it: a white arc on a translucent
+     * white track, with white numerals. Two colour sets rather than two components,
+     * because the geometry and the over-target rule are the part worth not duplicating.
+     */
+    tone?: 'light' | 'dark';
 }
 
-export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption }: Props) {
+export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption, tone = 'light' }: Props) {
+    const onDark = tone === 'dark';
+    const colors = {
+        track: onDark ? 'rgba(255,255,255,0.28)' : Palette.borderLight,
+        // Over target, the first arc steps back so the second reads as the overshoot.
+        arc: onDark ? Palette.white : Palette.primary,
+        arcUnderOver: onDark ? 'rgba(255,255,255,0.55)' : Palette.primaryLight,
+        over: onDark ? '#FDE68A' : Palette.warning,
+        value: onDark ? Palette.white : Palette.text,
+        of: onDark ? 'rgba(255,255,255,0.82)' : Palette.textSecondary,
+        caption: onDark ? Palette.white : Palette.primary,
+    };
     const radius = (size - stroke) / 2;
     const circumference = 2 * Math.PI * radius;
 
@@ -41,7 +62,7 @@ export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption
                         cx={size / 2}
                         cy={size / 2}
                         r={radius}
-                        stroke={Palette.borderLight}
+                        stroke={colors.track}
                         strokeWidth={stroke}
                         fill="none"
                     />
@@ -49,7 +70,7 @@ export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption
                         cx={size / 2}
                         cy={size / 2}
                         r={radius}
-                        stroke={over > 0 ? Palette.primaryLight : Palette.primary}
+                        stroke={over > 0 ? colors.arcUnderOver : colors.arc}
                         strokeWidth={stroke}
                         strokeDasharray={circumference}
                         strokeDashoffset={circumference * (1 - filled)}
@@ -61,7 +82,7 @@ export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption
                             cx={size / 2}
                             cy={size / 2}
                             r={radius}
-                            stroke={Palette.warning}
+                            stroke={colors.over}
                             strokeWidth={stroke}
                             strokeDasharray={circumference}
                             strokeDashoffset={circumference * (1 - over)}
@@ -73,11 +94,13 @@ export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption
             </Svg>
 
             <View style={styles.centre} pointerEvents="none">
-                <Text style={styles.value}>{Math.round(consumed).toLocaleString()}</Text>
-                <Text style={styles.of}>
+                <Text style={[styles.value, { color: colors.value }]}>
+                    {Math.round(consumed).toLocaleString()}
+                </Text>
+                <Text style={[styles.of, { color: colors.of }]}>
                     {hasTarget ? `of ${Math.round(target).toLocaleString()} kcal` : 'kcal logged'}
                 </Text>
-                {!!caption && <Text style={styles.caption}>{caption}</Text>}
+                {!!caption && <Text style={[styles.caption, { color: colors.caption }]}>{caption}</Text>}
             </View>
         </View>
     );

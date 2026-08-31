@@ -84,6 +84,9 @@ export default function ReviewMealScreen() {
                         // Logged as `swap` so the record shows the suggestion was taken —
                         // otherwise it is indistinguishable from having cooked it by chance.
                         source: 'swap',
+                        // No photograph: the picture is of the meal they were about to
+                        // eat, not the one they took instead.
+                        imageUrl: null,
                         analysis: {
                             alignment: 'aligned',
                             rationale: swap.why,
@@ -99,6 +102,17 @@ export default function ReviewMealScreen() {
                         protein: Math.round(Number(macros.protein) || 0),
                         carbs: Math.round(Number(macros.carbs) || 0),
                         fat: Math.round(Number(macros.fat) || 0),
+                        /*
+                          The stored copy, not `params.imageUri`.
+                          
+                          `imageUri` is a `file://` path into this app's cache — it renders
+                          on this screen and is gone by next week, so writing it to the
+                          record would fill the gallery with tiles that load on the device
+                          that took them and nowhere else. `parsed.imageUrl` is the
+                          Cloudflare delivery URL the analyse call returned, and is null
+                          when there was no photograph or storage was unavailable.
+                        */
+                        imageUrl: parsed.imageUrl ?? null,
                     }
             );
             // The log screen `replace`d itself with this one, so the stack is

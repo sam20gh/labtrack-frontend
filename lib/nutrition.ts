@@ -15,7 +15,7 @@ import { getAccessToken } from './auth';
 import { API_URL } from '@/constants/config';
 import type {
     MealDraft, MealLog, NutritionDay, NutritionHistoryEntry,
-    NutritionPlan, NutritionStatus, MealAlignment,
+    NutritionPlan, NutritionStatus, MealAlignment, NutritionGallery,
 } from '@/types/api';
 
 /**
@@ -60,8 +60,30 @@ export const getHistory = (days = 14) =>
         `/nutrition/history?days=${days}&tzOffset=${tzOffset()}`
     );
 
+/**
+ * Every meal the person photographed, newest first.
+ *
+ * Cursored on `eatenAt`: meals get logged while someone is scrolling the grid, and an
+ * offset page would then repeat or skip a tile.
+ */
+export const getGallery = (opts: { limit?: number; before?: string } = {}) => {
+    const query = new URLSearchParams();
+    if (opts.limit) query.set('limit', String(opts.limit));
+    if (opts.before) query.set('before', opts.before);
+    const qs = query.toString();
+    return api.get<NutritionGallery>(`/nutrition/gallery${qs ? `?${qs}` : ''}`);
+};
+
 export interface AnalysisResult {
     draft: MealDraft;
+    /**
+     * Where the photograph was stored, when there was one and storage accepted it.
+     *
+     * Null for a described or manually-typed meal, and null when Cloudflare was
+     * unavailable — the estimate is worth more than the thumbnail, so the upload is
+     * best-effort on the server and this field simply does not arrive.
+     */
+    imageUrl?: string | null;
     /** The estimate was low-confidence; the review screen asks the person to check it. */
     needsConfirmation: boolean;
     uncertainties: string[];

@@ -8,6 +8,7 @@ export default function NutritionLayout() {
             <Stack.Screen name="log" />
             <Stack.Screen name="review" />
             <Stack.Screen name="history" />
+            <Stack.Screen name="gallery" />
         </Stack>
     );
 }

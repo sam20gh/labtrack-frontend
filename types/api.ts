@@ -614,6 +614,37 @@ export interface NutritionHistoryEntry extends Omit<NutritionDay, 'plan' | 'meal
     mealCount: number;
 }
 
+/**
+ * One photographed meal, as the gallery lists it.
+ *
+ * A projection of `MealLog`, not the whole document: the gallery draws a tile and a caption
+ * and never needs `items[]` or the analyser's rationale, and a hundred tiles carrying them
+ * is a payload nobody reads.
+ */
+export interface NutritionGalleryItem {
+    _id: Id;
+    imageUrl: string;
+    name: string;
+    mealType: MealType;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    /** Local calendar day, `YYYY-MM-DD` — what the grid groups on. */
+    day: string;
+    eatenAt: IsoDate;
+    source: MealSource;
+    alignment: MealAlignment;
+}
+
+export interface NutritionGallery {
+    items: NutritionGalleryItem[];
+    /** Every photograph on record, so a rail can caption itself without fetching them all. */
+    total: number;
+    /** Pass back as `before` for the next page. Null when this was the last one. */
+    nextCursor: IsoDate | null;
+}
+
 export interface NutritionStatus {
     photoAnalysis: boolean;
     descriptionAnalysis: boolean;
