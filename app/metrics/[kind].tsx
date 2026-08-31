@@ -24,9 +24,12 @@ import Toast from 'react-native-toast-message';
 import { ApiError } from '@/lib/api';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import {
-    getHistory, deleteLog, getHydrationToday, formatMl,
+    getHistory, deleteLog, getHydrationToday,
     type MetricHistory, type MetricLog, type HydrationToday, type LoggableKind,
 } from '@/lib/metrics';
+import {
+    useUnits, unitLabel, displayWeight, displayVolume, formatVolume, type UnitPrefs,
+} from '@/lib/units';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 
 const META: Record<string, { title: string; unit: string; tint: string; logRoute: string }> = {
@@ -47,6 +50,23 @@ export default function MetricDetailScreen() {
     const { width } = useWindowDimensions();
     const { kind } = useLocalSearchParams<{ kind: string }>();
     const meta = META[kind ?? ''] ?? null;
+    const units = useUnits();
+
+    /**
+     * The unit this screen draws in, and the function that gets a stored value there.
+     *
+     * Blood pressure has no alternative unit (see `lib/units.ts`), so it falls through to
+     * the identity — which is also what any metric added later does until someone teaches
+     * `lib/units.ts` about it.
+     */
+    const shownUnit = kind === 'weight' ? unitLabel('weight', units)
+        : kind === 'water' ? unitLabel('volume', units)
+            : meta?.unit ?? '';
+    const toShown = (value: number) => (
+        kind === 'weight' ? displayWeight(value, units)
+            : kind === 'water' ? displayVolume(value, units)
+                : value
+    );
 
     const [history, setHistory] = useState<MetricHistory | null>(null);
     const [hydration, setHydration] = useState<HydrationToday | null>(null);
@@ -138,8 +158,8 @@ export default function MetricDetailScreen() {
                     <View style={styles.card}>
                         <Text style={styles.cardTitle}>Today</Text>
                         <Text style={styles.big}>
-                            {formatMl(hydration.consumedMl)}
-                            <Text style={styles.bigUnit}> of {formatMl(hydration.targetMl)}</Text>
+                            {formatVolume(hydration.consumedMl, units)}
+                            <Text style={styles.bigUnit}> of {formatVolume(hydration.targetMl, units)}</Text>
                         </Text>
 
                         <View style={styles.track}>
@@ -221,11 +241,14 @@ export default function MetricDetailScreen() {
 
                     {history && history.series.some((p) => p.value !== null) ? (
                         <MetricAreaChart
-                            points={history.series.map((p) => ({ day: p.day, value: p.value }))}
+                            points={history.series.map((p) => ({
+                                day: p.day,
+                                value: p.value === null ? null : toShown(p.value),
+                            }))}
                             width={chartWidth}
                             height={160}
                             color={meta.tint}
-                            unit={meta.unit}
+                            unit={shownUnit}
                             maxXLabels={days <= 7 ? 7 : 6}
                         />
                     ) : (
@@ -242,6 +265,7 @@ export default function MetricDetailScreen() {
                                 log={log}
                                 kind={kind as string}
                                 last={i === history.logs.length - 1}
+                                units={units}
                                 onDelete={() => remove(log)}
                             />
                         ))}
@@ -256,12 +280,15 @@ export default function MetricDetailScreen() {
     );
 }
 
-const LogRow = ({ log, kind, last, onDelete }: {
-    log: MetricLog; kind: string; last: boolean; onDelete: () => void;
+const LogRow = ({ log, kind, last, units, onDelete }: {
+    log: MetricLog; kind: string; last: boolean; units: UnitPrefs; onDelete: () => void;
 }) => {
     const when = new Date(log.measuredAt);
-    const value = kind === 'weight' ? `${log.weightKg} kg`
-        : kind === 'water' ? `${log.ml} ml`
+    // Converted for display only — `log.weightKg` and `log.ml` are what the record holds.
+    const value = kind === 'weight'
+        ? `${displayWeight(log.weightKg as number, units)} ${unitLabel('weight', units)}`
+        : kind === 'water'
+            ? `${displayVolume(log.ml as number, units)} ${unitLabel('volume', units)}`
             : `${log.systolic}/${log.diastolic} mmHg`;
 
     return (

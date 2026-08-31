@@ -18,6 +18,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import { getPaymentStatus } from '@/lib/payments';
 import * as Notifications from 'expo-notifications';
 import { routeForNotification } from '@/lib/notifications';
+import { hydrateUnits } from '@/lib/units';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
@@ -36,6 +37,11 @@ export default function RootLayout() {
       .then((s) => setPublishableKey(s.publishableKey))
       .catch(() => setPublishableKey(null));
   }, []);
+
+  // Unit preferences are read synchronously from render by every formatter in
+  // `lib/units.ts`, so the stored value has to be in the module cache before the first
+  // screen paints. Failure is swallowed there and leaves the metric defaults in place.
+  useEffect(() => { hydrateUnits(); }, []);
 
   // A tapped notification should land on the thing it is about, not the home screen
   useEffect(() => {
@@ -124,6 +130,12 @@ export default function RootLayout() {
         <Stack.Screen name="reset-password-2fa" options={{ headerShown: false }} />
         <Stack.Screen name="password-reset-sent" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={{ headerShown: false }} />
+        {/* The account-settings and help folders. Every screen inside draws its own
+            back bar via `components/settings/ScreenHeader`, and each folder has its own
+            Stack in `_layout.tsx` — without these lines the routes register individually
+            and each one falls through to a second header titled "settings/units". */}
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="help" options={{ headerShown: false }} />
         <Stack.Screen name="assistant/intro" options={{ headerShown: false }} />
         <Stack.Screen name="assistant/immersive" options={{ headerShown: false }} />
         {/* Voice Mode is a full-screen takeover with its own close control and badge; a

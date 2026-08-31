@@ -32,6 +32,7 @@ import {
     logWeight, logWater, logBloodPressure, getReference,
     type MetricsReference, type BpCategory,
 } from '@/lib/metrics';
+import { useUnits, unitLabel, toCanonicalWeight, displayWeight } from '@/lib/units';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 
 const TITLES: Record<string, { title: string; blurb: string }> = {
@@ -45,11 +46,13 @@ export default function LogMetricScreen() {
     const { kind } = useLocalSearchParams<{ kind: string }>();
     const meta = TITLES[kind ?? ''] ?? null;
 
+    const units = useUnits();
     const [reference, setReference] = useState<MetricsReference | null>(null);
     const [saving, setSaving] = useState(false);
 
-    // weight
-    const [weightKg, setWeightKg] = useState('');
+    // weight — held in whatever unit Units & Metrics is set to, converted to kg on save.
+    // The API takes kilograms and nothing else; see `lib/units.ts`.
+    const [weightInput, setWeightInput] = useState('');
     // water
     const [container, setContainer] = useState<string | null>('medium');
     const [customMl, setCustomMl] = useState('');
@@ -66,12 +69,15 @@ export default function LogMetricScreen() {
         setSaving(true);
         try {
             if (kind === 'weight') {
-                const res = await logWeight({ weightKg: Number(weightKg) });
+                const kg = toCanonicalWeight(Number(weightInput), units);
+                const res = await logWeight({ weightKg: Math.round(kg * 10) / 10 });
                 Toast.show({
                     type: 'success',
                     text1: 'Weight logged',
+                    // The server answers the change in kilograms; report it in the unit the
+                    // person just typed, or the number they read back will not match.
                     text2: res.changeKg !== null
-                        ? `${res.changeKg > 0 ? '+' : ''}${res.changeKg} kg since last time`
+                        ? `${res.changeKg > 0 ? '+' : ''}${displayWeight(res.changeKg, units)} ${unitLabel('weight', units)} since last time`
                         : res.bmi ? `BMI ${res.bmi}` : undefined,
                 });
                 router.back();
@@ -110,7 +116,7 @@ export default function LogMetricScreen() {
         } finally {
             setSaving(false);
         }
-    }, [kind, weightKg, customMl, container, drinkType, systolic, diastolic, pulse, router]);
+    }, [kind, weightInput, units, customMl, container, drinkType, systolic, diastolic, pulse, router]);
 
     if (!meta) {
         return (
@@ -120,7 +126,7 @@ export default function LogMetricScreen() {
         );
     }
 
-    const canSave = kind === 'weight' ? Number(weightKg) > 0
+    const canSave = kind === 'weight' ? Number(weightInput) > 0
         : kind === 'water' ? Boolean(container || Number(customMl) > 0)
             : Number(systolic) > 0 && Number(diastolic) > 0;
 
@@ -143,14 +149,14 @@ export default function LogMetricScreen() {
                             <View style={styles.bigInputRow}>
                                 <TextInput
                                     style={styles.bigInput}
-                                    value={weightKg}
-                                    onChangeText={setWeightKg}
+                                    value={weightInput}
+                                    onChangeText={setWeightInput}
                                     keyboardType="decimal-pad"
                                     placeholder="0.0"
                                     placeholderTextColor={Palette.textMuted}
                                     autoFocus
                                 />
-                                <Text style={styles.bigUnit}>kg</Text>
+                                <Text style={styles.bigUnit}>{unitLabel('weight', units)}</Text>
                             </View>
                             <Text style={styles.hint}>
                                 Weigh yourself at the same time of day for a trend that means something —

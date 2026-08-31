@@ -30,6 +30,7 @@ import {
     getOverview, METRIC_ICON, METRIC_TINT, METRIC_ROUTE, LOG_ROUTE,
     type MetricCard, type MetricsOverview,
 } from '@/lib/metrics';
+import { presentMetric, useUnits } from '@/lib/units';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 
 export default function HealthMetricsScreen() {
@@ -121,9 +122,20 @@ export default function HealthMetricsScreen() {
 
 const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen: () => void; onLog: () => void }) => {
     const { width } = useWindowDimensions();
+    const units = useUnits();
     const tint = METRIC_TINT[metric.key];
     const sparkWidth = Math.min(120, Math.max(70, width - 260));
     const hasValue = metric.value !== null;
+
+    // Drawn in whatever unit was picked in Units & Metrics. The record stays metric — see
+    // `lib/units.ts`; this only re-presents what the server returned.
+    const shown = presentMetric(metric.key, metric.value, metric.unit, units);
+    const shownFallback = metric.fallback
+        ? presentMetric(metric.key, metric.fallback.value, metric.unit, units)
+        : null;
+    const shownTarget = metric.target != null
+        ? presentMetric(metric.key, metric.target, metric.unit, units)
+        : null;
 
     return (
         <TouchableOpacity style={styles.card} onPress={onOpen} activeOpacity={0.8}>
@@ -153,18 +165,18 @@ const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen: () =
                 <View style={styles.flex}>
                     {hasValue ? (
                         <Text style={styles.cardValue}>
-                            {metric.value}
-                            <Text style={styles.cardUnit}> {metric.unit}</Text>
-                            {metric.target != null && (
-                                <Text style={styles.cardTarget}> / {metric.target}</Text>
+                            {shown.value}
+                            <Text style={styles.cardUnit}> {shown.unit}</Text>
+                            {shownTarget && (
+                                <Text style={styles.cardTarget}> / {shownTarget.value}</Text>
                             )}
                         </Text>
                     ) : metric.fallback ? (
                         // The onboarding figure, shown but never passed off as a measurement.
                         <View>
                             <Text style={styles.cardValueMuted}>
-                                {metric.fallback.value}
-                                <Text style={styles.cardUnit}> {metric.unit}</Text>
+                                {shownFallback?.value}
+                                <Text style={styles.cardUnit}> {shownFallback?.unit}</Text>
                             </Text>
                             <Text style={styles.fallbackNote}>From your health assessment</Text>
                         </View>
