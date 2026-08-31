@@ -13,8 +13,10 @@
  *   - **Like and save are optimistic and reconciled from the response.** The server is the
  *     source of truth for the counter, so a failed request rolls the local state back rather
  *     than leaving a filled heart nobody recorded.
- *   - **Checkout is not wired here.** A paid workshop routes to the existing order flow;
- *     inventing a second payment path beside `/api/payments` is how two of them drift.
+ *   - **Checkout is not wired.** `/api/payments` and `Order` are built around `Product` and
+ *     a workshop is not one, so a paid seat says so plainly and offers to save it. See
+ *     `onJoin`. Inventing a second payment path beside `/api/payments` is how two of them
+ *     drift apart.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -120,9 +122,27 @@ export default function ResourceDetailScreen() {
         const price = resource.workshop?.priceCents ?? null;
 
         if (price && price > 0) {
-            // Paid seats go through the existing order and payment flow. This screen does
-            // not take money — see the file header.
-            router.push({ pathname: '/(tabs)/orders', params: { workshop: resource.slug } });
+            /**
+             * Paid workshop seats have no checkout yet.
+             *
+             * `/api/payments` and `Order` are built around `Product`, and a workshop is not
+             * one — there is no SKU, no line item and no fulfilment path for a seat. Pushing
+             * to the orders tab would drop the person on a list of blood tests with no
+             * explanation, which is worse than saying so. Saving it is the real action
+             * available, so that is what is offered.
+             *
+             * Wiring this means a `Product` per paid workshop (or a workshop line-item type)
+             * and the existing Stripe flow. Nothing on this screen changes but this branch.
+             */
+            Alert.alert(
+                'Not on sale yet',
+                `Seats for this workshop are ${formatPrice(price, resource.workshop?.currency)} `
+                + 'but booking is not open. Save it and we will tell you when it is.',
+                [
+                    { text: 'Not now', style: 'cancel' },
+                    { text: 'Save it', onPress: () => { if (!resource.stats.saved) onToggleSave(); } },
+                ],
+            );
             return;
         }
 
