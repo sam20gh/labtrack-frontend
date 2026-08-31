@@ -23,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/Avatar';
 import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
@@ -37,6 +38,7 @@ import {
     RISK_META, byRiskSeverity, type LatestInterpretation,
 } from '@/lib/interpretation';
 import { getScore, bandMeta, isMostlyReported, SOURCE_META, type HealthScore } from '@/lib/score';
+import { RESOURCES_INTRO_KEY } from '@/lib/resources';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 import ScoreRadar from '@/components/home/ScoreRadar';
 import type { BiomarkerSummary, NutritionDay, PlanItem, Product, User } from '@/types/api';
@@ -88,6 +90,22 @@ const describeDue = (iso: string) => {
 
 export default function HomeScreen() {
     const router = useRouter();
+
+    /**
+     * The health library. First visit gets the value-prop screen, every visit after it goes
+     * straight in — a splash you have to dismiss each time is a tax on the feature it is
+     * advertising. A storage read that fails opens the library rather than the intro: the
+     * worse of the two failures is showing the pitch to someone who has already read it.
+     */
+    const openResources = useCallback(async () => {
+        let seen = 'true';
+        try {
+            seen = (await AsyncStorage.getItem(RESOURCES_INTRO_KEY)) ?? '';
+        } catch {
+            seen = 'true';
+        }
+        router.push(seen ? '/resources' : '/resources/intro');
+    }, [router]);
 
     const [signedIn, setSignedIn] = useState<boolean | null>(null);
     const [user, setUser] = useState<User | null>(null);
@@ -331,6 +349,7 @@ export default function HomeScreen() {
                                 <QuickAction icon="fitness-outline" label="Activity" onPress={() => router.push('/activity')} />
                                 <QuickAction icon="medkit-outline" label="Medications" onPress={() => router.push('/medications')} />
                                 <QuickAction icon="people-outline" label="Consult" onPress={() => router.push('/(tabs)/professionals')} />
+                                <QuickAction icon="library-outline" label="Resources" onPress={openResources} />
                             </View>
                         </Section>
 
