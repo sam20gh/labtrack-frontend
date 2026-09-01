@@ -988,7 +988,9 @@ const NutritionCard = ({ day, onOpen, onLog }: {
                     target={target}
                     size={132}
                     stroke={12}
-                    caption={over ? `${Math.round(consumed - target)} over` : `${remaining} left`}
+                    caption={over
+                        ? `${Math.round(consumed - target).toLocaleString()} over`
+                        : `${remaining.toLocaleString()} left`}
                 />
                 <View style={styles.macroList}>
                     <Macro label="Protein" grams={day.totals.protein} tint={Palette.primary} />

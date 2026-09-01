@@ -48,6 +48,22 @@ export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption
     const radius = (size - stroke) / 2;
     const circumference = 2 * Math.PI * radius;
 
+    /**
+     * Type scaled to the ring, not fixed to it.
+     *
+     * These were the literals 38 / 13 / 12, which fit the tracker dashboard's ring and
+     * nothing else — on the home card's 132 a four-digit calorie count ran out past the
+     * stroke. The ratios are anchored to **168**, the size `app/nutrition/index.tsx`
+     * actually passes, so that hero renders exactly as before and every smaller instance
+     * shrinks with its ring. The two small lines get a floor: a 9pt legend stops being
+     * readable well before it stops fitting.
+     */
+    const type = {
+        value: Math.round(size * (38 / 168)),
+        of: Math.max(11, Math.round(size * (13 / 168))),
+        caption: Math.max(10, Math.round(size * (12 / 168))),
+    };
+
     const hasTarget = target > 0;
     const ratio = hasTarget ? consumed / target : 0;
     const filled = Math.min(1, ratio);
@@ -93,20 +109,43 @@ export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption
                 </G>
             </Svg>
 
-            <View style={styles.centre} pointerEvents="none">
-                <Text style={[styles.value, { color: colors.value }]}>
+            {/* Inset by exactly the stroke, so the label block is bounded by the ring's
+                inner diameter — the widest chord available to text sitting on the centre
+                line. Without it a long number draws straight across the arc. */}
+            <View
+                style={[styles.centre, { paddingHorizontal: stroke }]}
+                pointerEvents="none"
+            >
+                <Text
+                    style={[styles.value, { color: colors.value, fontSize: type.value }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                >
                     {Math.round(consumed).toLocaleString()}
                 </Text>
-                <Text style={[styles.of, { color: colors.of }]}>
+                <Text
+                    style={[styles.of, { color: colors.of, fontSize: type.of }]}
+                    numberOfLines={1}
+                >
                     {hasTarget ? `of ${Math.round(target).toLocaleString()} kcal` : 'kcal logged'}
                 </Text>
-                {!!caption && <Text style={[styles.caption, { color: colors.caption }]}>{caption}</Text>}
+                {!!caption && (
+                    <Text
+                        style={[styles.caption, { color: colors.caption, fontSize: type.caption }]}
+                        numberOfLines={1}
+                    >
+                        {caption}
+                    </Text>
+                )}
             </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    // fontSize on the three below is overridden per-instance from `type` — the values
+    // here are the 180pt defaults, kept so the styles read at a glance.
     centre: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
     value: { fontFamily: Fonts.bold, fontSize: 38, color: Palette.text },
     of: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
