@@ -13,9 +13,12 @@
 import { api, apiFetch } from './api';
 import { getAccessToken } from './auth';
 import { API_URL } from '@/constants/config';
+import { Palette } from '@/constants/theme';
 import type {
     MealDraft, MealLog, NutritionDay, NutritionHistoryEntry,
     NutritionPlan, NutritionStatus, MealAlignment, NutritionGallery,
+    NutritionMealDetail, NutritionInsight, NutritionCalendar, NutritionRecommendations,
+    MealSuggestion,
 } from '@/types/api';
 
 /**
@@ -180,3 +183,78 @@ export const DIETARY_PREFERENCES = [
     { id: 'dairy_free', label: 'Dairy free', icon: 'water-outline' },
     { id: 'low_fodmap', label: 'Low FODMAP', icon: 'medkit-outline' },
 ] as const;
+
+/** One meal, with the day it sat in and the guidance it was judged against. */
+export const getMeal = (id: string) => api.get<NutritionMealDetail>(`/nutrition/meals/${id}`);
+
+/**
+ * The insight window.
+ *
+ * Averages divide by days logged, not by the window, so a fortnight's gap does not read as
+ * a fortnight of starvation — see the server's `nutritionInsight.js`.
+ */
+export const getInsight = (days = 30) =>
+    api.get<NutritionInsight>(`/nutrition/insight?days=${days}&tzOffset=${tzOffset()}`);
+
+/**
+ * Per-day rows for the schedule strip and the month grid.
+ * Days with nothing logged are absent from `days[]`, never present as zeros.
+ */
+export const getCalendar = (from?: string, to?: string) => {
+    const query = new URLSearchParams({ tzOffset: String(tzOffset()) });
+    if (from) query.set('from', from);
+    if (to) query.set('to', to);
+    return api.get<NutritionCalendar>(`/nutrition/calendar?${query}`);
+};
+
+/**
+ * Meal suggestions for the gap that is actually left today.
+ *
+ * Cached server-side on a signature of the plan and the day, so this holds still between
+ * refreshes rather than showing six different meals every time the dashboard opens. Pass
+ * `refresh` when the person asks for different ideas.
+ *
+ * Never rejects for an unconfigured model: `available: false` with a reason is the shape,
+ * because an error card under a working dashboard is louder than the thing that failed.
+ */
+export const getRecommendations = (opts: { refresh?: boolean; date?: string } = {}) => {
+    const query = new URLSearchParams({ tzOffset: String(tzOffset()) });
+    if (opts.refresh) query.set('refresh', '1');
+    if (opts.date) query.set('date', opts.date);
+    return api.get<NutritionRecommendations>(`/nutrition/recommendations?${query}`);
+};
+
+/**
+ * Turn a suggestion into the meal payload `logMeal` takes.
+ *
+ * `source: 'swap'` marks it as something the app proposed rather than something the person
+ * observed, so the record can always tell the two apart. It is still only written when they
+ * confirm — the suggestion rail does not log anything by itself.
+ */
+export const mealFromSuggestion = (s: MealSuggestion) => ({
+    name: s.name,
+    mealType: s.mealType,
+    calories: s.calories,
+    protein: s.protein,
+    carbs: s.carbs,
+    fat: s.fat,
+    fibre: s.fibre,
+    servings: 1,
+    source: 'swap' as const,
+    items: s.ingredients.map((name) => ({ name })),
+});
+
+/** Local `YYYY-MM-DD` a number of days from another one. */
+export const addDays = (day: string, delta: number): string => {
+    const d = new Date(`${day}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + delta);
+    return d.toISOString().slice(0, 10);
+};
+
+/** How each macro is drawn wherever three bars sit side by side. Kept in one place so the
+ *  dashboard, the history rows and the schedule strip cannot disagree on which is which. */
+export const MACRO_META = [
+    { key: 'protein' as const, initial: 'P', label: 'Protein', color: Palette.primary },
+    { key: 'fat' as const, initial: 'F', label: 'Fat', color: Palette.danger },
+    { key: 'carbs' as const, initial: 'C', label: 'Carbs', color: Palette.amber },
+];

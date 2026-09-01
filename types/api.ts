@@ -654,6 +654,127 @@ export interface NutritionStatus {
     maxBytes: number;
 }
 
+/**
+ * One meal, as the Nutrition Details screen reads it.
+ *
+ * `percentOfDay` is null per macro when the plan has no target for it — a bar drawn
+ * against a target nobody set is a number with no denominator, so the screen omits it.
+ */
+export interface NutritionMealDetail {
+    meal: MealLog;
+    targets: NutritionTargets | null;
+    percentOfDay: { calories: number | null; protein: number | null; carbs: number | null; fat: number | null };
+    dayContext: NutritionHistoryEntry;
+    /** The person's own photographs of meals by this name. Never stock imagery. */
+    photos: { _id: Id; imageUrl: string; eatenAt: IsoDate; day: string }[];
+    /** The plan guidance this meal was actually judged against. */
+    guidance: NutritionGuidance[];
+}
+
+/** Average intake for one weekday over the window. Null where that weekday was never logged. */
+export interface NutritionWeekday {
+    label: string;
+    days: number;
+    calories: number | null;
+    protein: number | null;
+    fat: number | null;
+    carbs: number | null;
+}
+
+export interface NutritionGoalProgress {
+    key: 'protein' | 'carbs' | 'fat';
+    average: number | null;
+    target: number | null;
+    /** average / target, uncapped so an overshoot is visible. Null when either is missing. */
+    ratio: number | null;
+    reached: boolean | null;
+}
+
+/**
+ * The Nutrition Insight window.
+ *
+ * `averages` divides by `loggedDays`, not by `windowDays`. A blank day is absent from
+ * `days[]` rather than present as a zero, so a fortnight's gap does not read as a
+ * fortnight of starvation.
+ */
+export interface NutritionInsight {
+    from: string;
+    to: string;
+    windowDays: number;
+    loggedDays: number;
+    mealCount: number;
+    targets: NutritionTargets | null;
+    guidance: NutritionGuidance[];
+    totals: { calories: number; protein: number; carbs: number; fat: number; fibre: number };
+    averages: {
+        calories: number; protein: number; carbs: number; fat: number; fibre: number; meals: number;
+    } | null;
+    days: { day: string; mealCount: number; totals: { calories: number; protein: number; carbs: number; fat: number; fibre: number } }[];
+    weekdays: NutritionWeekday[];
+    goals: NutritionGoalProgress[];
+    averageCalories: number | null;
+    calorieTarget: number | null;
+}
+
+/** One day that had meals on it. Days with nothing logged are absent, never zeroed. */
+export interface NutritionCalendarDay {
+    day: string;
+    mealCount: number;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    mealTypes: MealType[];
+    /** Null, not false, when no calorie target is set. */
+    meetsTarget: boolean | null;
+}
+
+export interface NutritionCalendar {
+    from: string;
+    to: string;
+    target: number | null;
+    days: NutritionCalendarDay[];
+}
+
+/**
+ * One suggested meal.
+ *
+ * Every one of these has already passed `nutritionSafety.screen()` on the server, which
+ * drops rather than flags: a suggestion that reaches the client is one the person can eat.
+ * `ingredients` is listed on the detail sheet so they can check for themselves anyway.
+ */
+export interface MealSuggestion {
+    name: string;
+    mealType: MealType;
+    why?: string;
+    ingredients: string[];
+    tags: string[];
+    prepMinutes?: number;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fibre?: number;
+    guidanceKeys: string[];
+}
+
+export interface NutritionRecommendations {
+    /** False when the model is unreachable. The rail then draws a reason, not an error. */
+    available: boolean;
+    reason?: string;
+    headline?: string;
+    suggestions: MealSuggestion[];
+    /**
+     * Whether the person's health plan actually had dietary advice behind this set. When
+     * false the rail says the suggestions are general — generic advice must not borrow the
+     * plan's authority, the same line `alignment: 'unassessed'` holds.
+     */
+    grounded: boolean;
+    day?: string;
+    cached?: boolean;
+    createdAt?: IsoDate;
+}
+
 // ---------------------------------------------------------------------------
 // Medications
 // ---------------------------------------------------------------------------

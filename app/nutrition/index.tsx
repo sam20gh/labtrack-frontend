@@ -24,42 +24,60 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ApiError } from '@/lib/api';
-import { getDay, deleteMeal, getGallery } from '@/lib/nutrition';
+import { getDay, getGallery, getInsight, getRecommendations, MACRO_META } from '@/lib/nutrition';
 import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { MacroBars } from '@/components/nutrition/MacroBars';
 import { PlanGuidanceCard } from '@/components/nutrition/PlanGuidanceCard';
 import { MealCard } from '@/components/nutrition/MealCard';
 import { MealGallery } from '@/components/nutrition/MealGallery';
+import { SuggestionCard } from '@/components/nutrition/SuggestionCard';
 import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
-import type { NutritionDay, NutritionGallery } from '@/types/api';
+import type {
+    NutritionDay, NutritionGallery, NutritionInsight, NutritionRecommendations,
+} from '@/types/api';
 
 /** Thumbnails on the dashboard rail. The rest live behind "See all". */
 const GALLERY_PREVIEW = 12;
+
+/** The insight card's strip. A week is the shortest span where a pattern is a pattern. */
+const INSIGHT_WINDOW = 7;
+
+/** Suggestions on the rail. The rest live behind "See all". */
+const SUGGESTION_PREVIEW = 4;
 
 export default function NutritionScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [data, setData] = useState<NutritionDay | null>(null);
     const [gallery, setGallery] = useState<NutritionGallery | null>(null);
+    const [insight, setInsight] = useState<NutritionInsight | null>(null);
+    const [suggestions, setSuggestions] = useState<NutritionRecommendations | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const load = useCallback(async () => {
         try {
             /*
-              The gallery is settled separately from the day.
-              
-              `Promise.all` would let a gallery failure take the dashboard down with it, and
-              the photographs are the least important thing on this screen. A day that loads
-              without its rail is fine; a blank screen because a thumbnail query timed out
-              is not.
+              Everything but the day is settled separately from it.
+
+              `Promise.all` would let any one rail take the dashboard down with it, and the
+              day — what did I eat, what is left — is the only thing on this screen that has
+              to arrive. A day that loads without its photographs, its weekly strip or its
+              suggestions is fine; a blank screen because a thumbnail query timed out is not.
+
+              The suggestions call is the one that can reach a model, so it is also the one
+              most likely to be slow. It never blocks a number the person already has.
             */
-            const [day, photos] = await Promise.allSettled([
+            const [day, photos, week, ideas] = await Promise.allSettled([
                 getDay(),
                 getGallery({ limit: GALLERY_PREVIEW }),
+                getInsight(INSIGHT_WINDOW),
+                getRecommendations(),
             ]);
 
             if (photos.status === 'fulfilled') setGallery(photos.value);
+            if (week.status === 'fulfilled') setInsight(week.value);
+            if (ideas.status === 'fulfilled') setSuggestions(ideas.value);
             if (day.status === 'rejected') throw day.reason;
             setData(day.value);
         } catch (error) {
@@ -76,24 +94,6 @@ export default function NutritionScreen() {
 
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
-    const removeMeal = (id: string, name: string) => {
-        // Frame 367 in the design: deleting a meal changes the day's totals, so it asks.
-        Alert.alert('Delete this meal?', `"${name}" will be removed from today.`, [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Delete',
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        await deleteMeal(id);
-                        await load();
-                    } catch (error) {
-                        Alert.alert('Could not delete', error instanceof Error ? error.message : 'Please try again.');
-                    }
-                },
-            },
-        ]);
-    };
     if (loading) {
         return (
             <View style={styles.container}>
@@ -147,8 +147,8 @@ export default function NutritionScreen() {
                         </TouchableOpacity>
                         <Text style={styles.title}>Nutrition</Text>
                         <View style={styles.headerActions}>
-                            <TouchableOpacity onPress={() => router.push('/nutrition/history')} hitSlop={8}>
-                                <Ionicons name="stats-chart-outline" size={20} color={Palette.white} />
+                            <TouchableOpacity onPress={() => router.push('/nutrition/schedule')} hitSlop={8}>
+                                <Ionicons name="calendar-outline" size={20} color={Palette.white} />
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => router.push('/nutrition/setup')} hitSlop={8}>
                                 <Ionicons name="options-outline" size={20} color={Palette.white} />
@@ -222,6 +222,129 @@ export default function NutritionScreen() {
                     />
 
                     {/*
+                      The kit's AI Recommendations rail.
+
+                      Drawn only when the server actually returned something. An unavailable
+                      model gets no card here at all — a "suggestions unavailable" panel
+                      under a working dashboard is the loudest thing on a screen whose real
+                      job is fine, and the See All screen says so properly for anyone who
+                      goes looking.
+                    */}
+                    {suggestions?.available && suggestions.suggestions.length > 0 && (
+                        <View style={styles.section}>
+                            <View style={styles.sectionHead}>
+                                <View style={styles.sectionTitleRow}>
+                                    <Ionicons name="sparkles-outline" size={16} color={Palette.primary} />
+                                    <Text style={styles.sectionTitle}>AI Recommendations</Text>
+                                </View>
+                                <TouchableOpacity onPress={() => router.push('/nutrition/recommendations')} hitSlop={8}>
+                                    <Text style={styles.seeAll}>See All</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/*
+                              `grounded` is why this caption exists. A set built with no
+                              dietary advice on the plan is ordinary good advice, and letting
+                              it borrow the plan's authority is the mistake
+                              `alignment: 'unassessed'` exists to avoid.
+                            */}
+                            <Text style={styles.sectionCaption}>
+                                {suggestions.grounded
+                                    ? 'From your plan\u2019s dietary advice and what is left of today.'
+                                    : 'General suggestions \u2014 your plan has no dietary advice on it yet.'}
+                            </Text>
+
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                style={styles.bleed}
+                                contentContainerStyle={styles.rail}
+                            >
+                                {suggestions.suggestions.slice(0, SUGGESTION_PREVIEW).map((s, i) => (
+                                    <SuggestionCard
+                                        key={`${s.name}-${i}`}
+                                        suggestion={s}
+                                        onPress={() => router.push('/nutrition/recommendations')}
+                                    />
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+
+                    {/*
+                      Nutrition Insight, in miniature. Seven bars and the week's average —
+                      enough to say whether the week has a shape, with the reading itself
+                      behind See All. A weekday with nothing logged draws no bar, the same
+                      rule the full chart follows.
+                    */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHead}>
+                            <Text style={styles.sectionTitle}>Nutrition Insight</Text>
+                            <TouchableOpacity onPress={() => router.push('/nutrition/insight')} hitSlop={8}>
+                                <Text style={styles.seeAll}>See All</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {!insight || insight.loggedDays === 0 ? (
+                            <TouchableOpacity style={styles.prompt} onPress={() => router.push('/nutrition/log')}>
+                                <Ionicons name="analytics-outline" size={20} color={Palette.primary} />
+                                <Text style={styles.promptText}>
+                                    Log your first meal to see your weekly pattern here.
+                                </Text>
+                                <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity
+                                style={styles.insightCard}
+                                activeOpacity={0.85}
+                                onPress={() => router.push('/nutrition/insight')}
+                            >
+                                <Text style={styles.insightValue}>
+                                    {insight.averageCalories?.toLocaleString()}
+                                    <Text style={styles.insightUnit}>kcal</Text>
+                                </Text>
+                                <Text style={styles.insightLabel}>
+                                    average day across {insight.loggedDays}
+                                    {insight.loggedDays === 1 ? ' logged day' : ' logged days'} this week
+                                </Text>
+
+                                <View style={styles.miniChart}>
+                                    {insight.weekdays.map((w) => {
+                                        const peak = Math.max(
+                                            1,
+                                            ...insight.weekdays.map((x) => x.calories ?? 0)
+                                        );
+                                        return (
+                                            <View key={w.label} style={styles.miniCol}>
+                                                <View style={styles.miniTrack}>
+                                                    {w.calories != null && (
+                                                        <View style={[
+                                                            styles.miniBar,
+                                                            { height: `${Math.max(8, (w.calories / peak) * 100)}%` },
+                                                        ]} />
+                                                    )}
+                                                </View>
+                                                <Text style={styles.miniLabel}>{w.label.slice(0, 1)}</Text>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+
+                                <View style={styles.miniLegend}>
+                                    {MACRO_META.map((m) => (
+                                        <View key={m.key} style={styles.miniLegendItem}>
+                                            <View style={[styles.miniLegendDot, { backgroundColor: m.color }]} />
+                                            <Text style={styles.miniLegendText}>
+                                                {m.label} {insight.averages?.[m.key]}g
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    {/*
                       Adherence is only rendered when meals were actually assessed against
                       guidance. Someone whose plan says nothing about diet has not failed at
                       anything, and a 0% on their dashboard would say they had.
@@ -252,11 +375,9 @@ export default function NutritionScreen() {
                     <View style={styles.section}>
                         <View style={styles.sectionHead}>
                             <Text style={styles.sectionTitle}>Today&apos;s meals</Text>
-                            {meals.length > 0 && (
-                                <TouchableOpacity onPress={() => router.push('/nutrition/history')} hitSlop={8}>
-                                    <Text style={styles.seeAll}>See all</Text>
-                                </TouchableOpacity>
-                            )}
+                            <TouchableOpacity onPress={() => router.push('/nutrition/history')} hitSlop={8}>
+                                <Text style={styles.seeAll}>See All</Text>
+                            </TouchableOpacity>
                         </View>
 
                         {meals.length === 0 ? (
@@ -270,10 +391,16 @@ export default function NutritionScreen() {
                         ) : (
                             <View style={{ gap: Spacing.md }}>
                                 {meals.map((meal) => (
+                                    /*
+                                      Tapping a card opens it. It used to offer to delete it,
+                                      which put a destructive action on the whole surface of
+                                      the primary row — deleting now lives on the detail
+                                      screen and on the schedule's own row control.
+                                    */
                                     <MealCard
                                         key={meal._id}
                                         meal={meal}
-                                        onPress={() => removeMeal(meal._id, meal.name)}
+                                        onPress={() => router.push(`/nutrition/${meal._id}`)}
                                     />
                                 ))}
                             </View>
@@ -341,6 +468,9 @@ const styles = StyleSheet.create({
     },
 
     content: { padding: Spacing.lg, paddingTop: 0, gap: Spacing.xl },
+    // Cancels `content`'s horizontal padding so a horizontal rail can bleed to both edges;
+    // the rail's own contentContainerStyle puts the gutter back on its first card.
+    bleed: { marginHorizontal: -Spacing.lg },
     macroCard: {
         backgroundColor: Palette.background,
         borderRadius: Radius.lg,
@@ -363,8 +493,48 @@ const styles = StyleSheet.create({
 
     section: { gap: Spacing.md },
     sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     sectionTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
+    sectionCaption: {
+        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary,
+        lineHeight: 17, marginTop: -Spacing.xs,
+    },
     seeAll: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
+
+    // The suggestion rail. Negative margins let the cards run to the screen edge inside a
+    // padded content column, so the last one is visibly clipped rather than looking final.
+    rail: { gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingRight: Spacing.xxxl },
+
+    prompt: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
+        borderWidth: 1, borderColor: Palette.borderSlate, padding: Spacing.lg,
+    },
+    promptText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
+
+    insightCard: {
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
+        borderWidth: 1, borderColor: Palette.borderSlate, padding: Spacing.lg,
+    },
+    insightValue: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.text },
+    insightUnit: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textMuted },
+    insightLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+
+    miniChart: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg },
+    miniCol: { flex: 1, alignItems: 'center', gap: Spacing.xs },
+    miniTrack: { width: '100%', height: 56, justifyContent: 'flex-end' },
+    // No bar at all on a weekday with nothing logged — never a bar at zero
+    miniBar: { width: '100%', borderRadius: Radius.sm, backgroundColor: Palette.primaryLight },
+    miniLabel: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted },
+
+    miniLegend: {
+        flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md,
+        marginTop: Spacing.lg, paddingTop: Spacing.md,
+        borderTopWidth: 1, borderTopColor: Palette.border,
+    },
+    miniLegendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    miniLegendDot: { width: 7, height: 7, borderRadius: 4 },
+    miniLegendText: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
 
     empty: {
         alignItems: 'center',

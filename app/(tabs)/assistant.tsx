@@ -35,8 +35,15 @@ const NO_CAPABILITIES: AssistantCapabilities = { text: true, vision: false, voic
 
 export default function AssistantScreen() {
     const router = useRouter();
-    // Set by `assistant/voice.tsx` when a transcript has been read back and confirmed.
-    const params = useLocalSearchParams<{ spoken?: string }>();
+    /**
+     * `spoken` is set by `assistant/voice.tsx` when a transcript has been read back and
+     * confirmed; `prompt` by any screen that hands the assistant a question already worded
+     * — the metrics insight cards and the nutrition detail screen both do.
+     *
+     * They are consumed identically, differing only in whether the message is marked as
+     * having been spoken.
+     */
+    const params = useLocalSearchParams<{ spoken?: string; prompt?: string }>();
     const scrollRef = useRef<ScrollView>(null);
     const [messages, setMessages] = useState<AssistantMessage[]>([]);
     const [loading, setLoading] = useState(true);
@@ -123,7 +130,7 @@ export default function AssistantScreen() {
     }, [router]);
 
     /**
-     * Send a question that arrived from Voice Mode.
+     * Send a question that arrived from another screen.
      *
      * Cleared the moment it is taken so a re-render cannot resend and so asking the same
      * thing twice still works. Mirrors `assistant/immersive.tsx`.
@@ -131,12 +138,14 @@ export default function AssistantScreen() {
     const consuming = useRef(false);
     useEffect(() => {
         const spoken = typeof params.spoken === 'string' ? params.spoken.trim() : '';
-        if (!spoken || loading || consuming.current) return;
+        const typed = typeof params.prompt === 'string' ? params.prompt.trim() : '';
+        const question = spoken || typed;
+        if (!question || loading || consuming.current) return;
 
         consuming.current = true;
-        router.setParams({ spoken: '' });
-        send(spoken, null, true).finally(() => { consuming.current = false; });
-    }, [params.spoken, loading, router, send]);
+        router.setParams({ spoken: '', prompt: '' });
+        send(question, null, Boolean(spoken)).finally(() => { consuming.current = false; });
+    }, [params.spoken, params.prompt, loading, router, send]);
 
     if (loading) {
         return (
