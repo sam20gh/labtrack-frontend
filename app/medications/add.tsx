@@ -13,13 +13,15 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-    Switch, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
+    Switch, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { createMedication, today, FREQUENCY_LABEL, FORM_LABEL, WEEKDAYS, formatTime } from '@/lib/medications';
 import { PillGlyph } from '@/components/medications/PillGlyph';
+import { ensureRemindersReady } from '@/lib/notifications';
+import { warnRemindersUnavailable } from '@/lib/medicationReminders';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import type { MedicationFrequency, MedicationForm, MedicationShape } from '@/types/api';
 
@@ -142,6 +144,20 @@ export default function AddMedicationScreen() {
                 source: identification ? 'scan' : 'manual',
                 ...(identification ? { identification } : {}),
             } as any);
+
+            /**
+             * A reminder is a server push, and the server can only send one to a device it
+             * knows about. Ask here rather than at first launch: this is the moment the app
+             * has actually promised to remind them, which is the moment the permission
+             * prompt makes sense — and asking before that is how a permanent iOS denial
+             * happens. Never blocks the save; the medication is already stored.
+             */
+            if (reminders && frequency !== 'as_needed') {
+                const state = await ensureRemindersReady();
+                if (!state.ready) {
+                    warnRemindersUnavailable(state, () => Linking.openSettings());
+                }
+            }
 
             // Back to the hub, which refetches on focus and will show the new medication
             // and a stale interaction check prompting a re-run.

@@ -13,7 +13,7 @@
  */
 import React, { useCallback, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -24,6 +24,8 @@ import {
     scheduleSummary, FORM_LABEL, WITH_FOOD_LABEL,
 } from '@/lib/medications';
 import { PillGlyph } from '@/components/medications/PillGlyph';
+import { ensureRemindersReady } from '@/lib/notifications';
+import { warnRemindersUnavailable } from '@/lib/medicationReminders';
 import { FindingCard } from '@/components/medications/FindingCard';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import type { TrackedMedication, MedicationCatalogueEntry, InteractionFinding, MedicationInsight } from '@/types/api';
@@ -85,9 +87,17 @@ export default function MedicationDetailScreen() {
 
     const toggleReminders = async () => {
         if (!medication) return;
+        const turningOn = !medication.remindersEnabled;
         try {
-            await updateMedication(medication._id, { remindersEnabled: !medication.remindersEnabled });
+            await updateMedication(medication._id, { remindersEnabled: turningOn });
             await load();
+
+            // Switching this on is a promise that a notification will arrive. It only can
+            // if the account has a device registered — see `ensureRemindersReady`.
+            if (turningOn) {
+                const state = await ensureRemindersReady();
+                if (!state.ready) warnRemindersUnavailable(state, () => Linking.openSettings());
+            }
         } catch (error) {
             Alert.alert('Could not update', error instanceof Error ? error.message : 'Please try again.');
         }

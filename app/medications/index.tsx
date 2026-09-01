@@ -13,7 +13,7 @@
 import React, { useCallback, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, Alert,
+    ActivityIndicator, RefreshControl, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -25,6 +25,7 @@ import {
     listMedications, getSchedule, getCheck, updateDose,
     interactionVerdict, SEVERITY_META, scheduleSummary, today,
 } from '@/lib/medications';
+import { ensureRemindersReady, reminderState, type ReminderState } from '@/lib/notifications';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { PillGlyph } from '@/components/medications/PillGlyph';
 import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
@@ -40,6 +41,7 @@ export default function MedicationsScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [busyDose, setBusyDose] = useState<string | null>(null);
+    const [reminders, setReminders] = useState<ReminderState | null>(null);
 
     const load = useCallback(async () => {
         try {
@@ -52,6 +54,11 @@ export default function MedicationsScreen() {
             ]);
 
             if (medsRes.status === 'fulfilled') setMedications(medsRes.value.medications);
+
+            // Whether a dose reminder can actually be delivered. Checked here rather than
+            // assumed, because a schedule that quietly notifies nobody is the one failure
+            // this screen cannot show any other way.
+            reminderState().then(setReminders).catch(() => setReminders(null));
             if (dayRes.status === 'fulfilled') setDay(dayRes.value);
             if (checkRes.status === 'fulfilled') setCheck(checkRes.value);
 
@@ -94,6 +101,17 @@ export default function MedicationsScreen() {
     }
 
     const doses = day?.doses || [];
+    const wantsReminders = medications.some((m) => m.active !== false && m.remindersEnabled);
+    const needsReminderSetup = wantsReminders && reminders !== null && reminders !== 'ready';
+
+    const enableReminders = async () => {
+        if (reminders === 'unsupported') return;
+        if (reminders === 'denied') { Linking.openSettings(); return; }
+        const result = await ensureRemindersReady();
+        setReminders(result.state);
+        if (!result.ready && result.state === 'denied') Linking.openSettings();
+    };
+
     const pending = doses.filter((d) => d.status === 'scheduled');
     const adherence = day?.adherence;
     const verdict = interactionVerdict(check?.check || null);
@@ -217,6 +235,36 @@ export default function MedicationsScreen() {
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
                 </TouchableOpacity>
+
+                {/*
+                  Reminders that cannot arrive.
+                  A dose reminder is a server push, so a medication with "Remind me" on and
+                  no registered device is a schedule that will never make a sound. Saying so
+                  is the same call the assistant's greyed-out microphone makes: a control
+                  that silently does nothing is worse than one that explains itself.
+                */}
+                {needsReminderSetup ? (
+                    <TouchableOpacity
+                        style={styles.reminderBanner}
+                        onPress={enableReminders}
+                        activeOpacity={0.85}
+                    >
+                        <Ionicons name="notifications-off-outline" size={19} color="#B45309" />
+                        <View style={styles.reminderBody}>
+                            <Text style={styles.reminderTitle}>Dose reminders are not arriving</Text>
+                            <Text style={styles.reminderDetail}>
+                                {reminders === 'denied'
+                                    ? 'Notifications are turned off for LabTrack. Tap to open your device settings.'
+                                    : reminders === 'unsupported'
+                                        ? 'Push notifications do not work on a simulator.'
+                                        : 'This device is not set up to receive them yet. Tap to turn them on.'}
+                            </Text>
+                        </View>
+                        {reminders !== 'unsupported' ? (
+                            <Ionicons name="chevron-forward" size={18} color="#B45309" />
+                        ) : null}
+                    </TouchableOpacity>
+                ) : null}
 
                 {/* Quick actions, from the design's icon row */}
                 <View style={styles.actionRow}>
@@ -369,6 +417,20 @@ const styles = StyleSheet.create({
     statPercent: { fontSize: 13, fontFamily: Fonts.regular },
     statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.85)', fontFamily: Fonts.regular, marginTop: 2 },
 
+    reminderBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        backgroundColor: '#FEF3C7',
+        borderWidth: 1,
+        borderColor: '#FDE68A',
+        borderRadius: Radius.lg,
+        padding: Spacing.md,
+        marginBottom: Spacing.md,
+    },
+    reminderBody: { flex: 1 },
+    reminderTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: '#92400E' },
+    reminderDetail: { fontFamily: Fonts.regular, fontSize: 12, color: '#B45309', marginTop: 2, lineHeight: 17 },
     checkCard: {
         flexDirection: 'row',
         alignItems: 'center',

@@ -17,7 +17,7 @@ import { BasketProvider } from '@/lib/basket';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { getPaymentStatus } from '@/lib/payments';
 import * as Notifications from 'expo-notifications';
-import { routeForNotification } from '@/lib/notifications';
+import { routeForNotification, syncRegistration } from '@/lib/notifications';
 import { hydrateUnits } from '@/lib/units';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
@@ -42,6 +42,11 @@ export default function RootLayout() {
   // `lib/units.ts`, so the stored value has to be in the module cache before the first
   // screen paints. Failure is swallowed there and leaves the metric defaults in place.
   useEffect(() => { hydrateUnits(); }, []);
+
+  // A device whose permission was granted but whose token never reached the account gets
+  // no reminders at all, and looks identical to one that opted out. Re-register on every
+  // launch: the endpoint is idempotent, and this is the only thing that heals it.
+  useEffect(() => { syncRegistration().catch(() => { /* nothing to tell the user here */ }); }, []);
 
   // A tapped notification should land on the thing it is about, not the home screen
   useEffect(() => {
