@@ -10,6 +10,8 @@
  * the app, and a card that rounds differently from the one beside it looks like a bug in the
  * number rather than in the formatter.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Router } from 'expo-router';
 import { api } from './api';
 
 export type ResourceType = 'article' | 'short' | 'course' | 'workshop' | 'audio';
@@ -259,6 +261,27 @@ export const followAuthor = (slug: string, value?: boolean) =>
  * importing a route module and pulling that whole screen into its bundle.
  */
 export const RESOURCES_INTRO_KEY = 'resourcesIntroSeen';
+
+/**
+ * Open the library, showing the value-prop screen only on a first visit.
+ *
+ * Here rather than in each caller because there are three of them now — the home rail, the
+ * home quick-action grid, and the tab bar's shortcut sheet — and a gate implemented three
+ * times is a gate that eventually disagrees with itself.
+ *
+ * A storage read that fails opens the library rather than the intro: a splash you have to
+ * dismiss on every visit is a tax on the feature it is advertising, and the worse of the two
+ * failures is showing the pitch to someone who has already read it.
+ */
+export const openResourcesHub = async (router: Router): Promise<void> => {
+    let seen = 'true';
+    try {
+        seen = (await AsyncStorage.getItem(RESOURCES_INTRO_KEY)) ?? '';
+    } catch {
+        seen = 'true';
+    }
+    router.push((seen ? '/resources' : '/resources/intro') as never);
+};
 
 /** How often a player reports position. Every second would be 300 writes per audio piece. */
 export const PROGRESS_INTERVAL_MS = 10000;

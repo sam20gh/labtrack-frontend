@@ -19,14 +19,14 @@
  */
 import React, { useCallback, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity,
-    Image, Alert, Share,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getMeal, deleteMeal, ALIGNMENT_META, MEAL_TYPE_LABEL, MACRO_META } from '@/lib/nutrition';
+import { SkeletonGroup, SkeletonBlock, SkeletonCard } from '@/components/nutrition/Skeleton';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import type { NutritionMealDetail } from '@/types/api';
 
@@ -75,10 +75,60 @@ export default function NutritionDetailsScreen() {
         ]);
     };
 
+    /*
+      A skeleton rather than a spinner.
+
+      This screen is one request, so there is nothing to stream in progressively — but a
+      centred spinner on a white page says "something is happening somewhere", where a
+      skeleton in the shape of the meal says what is arriving and how much of it. It also
+      keeps the header and the back button live, so a slow response is never a screen
+      someone is stuck on.
+    */
     if (loading || !data) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
-                <ActivityIndicator style={{ marginTop: 120 }} color={Palette.primary} />
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
+                        <Ionicons name="chevron-back" size={24} color={Palette.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Nutrition Details</Text>
+                    <View style={{ width: 20 }} />
+                </View>
+
+                <SkeletonGroup>
+                    <ScrollView contentContainerStyle={styles.scroll} scrollEnabled={false}>
+                        <View style={styles.hero}>
+                            <SkeletonBlock width={64} height={64} radius={Radius.xl} style={{ marginBottom: Spacing.lg }} />
+                            <SkeletonBlock width={160} height={34} radius={Radius.sm} />
+                            <SkeletonBlock width={200} height={18} style={{ marginTop: Spacing.sm }} />
+                            <SkeletonBlock width={140} height={12} style={{ marginTop: Spacing.md }} />
+                        </View>
+
+                        <View style={styles.section}>
+                            <SkeletonBlock width={90} height={15} style={{ marginBottom: Spacing.md }} />
+                            <SkeletonCard>
+                                {[0, 1, 2].map((i) => (
+                                    <View key={i} style={styles.skeletonRow}>
+                                        <SkeletonBlock width={24} height={24} radius={12} />
+                                        <SkeletonBlock width={100} height={14} />
+                                        <View style={{ flex: 1 }} />
+                                        <SkeletonBlock width={48} height={20} />
+                                    </View>
+                                ))}
+                            </SkeletonCard>
+                        </View>
+
+                        <View style={styles.section}>
+                            <SkeletonBlock width={110} height={15} style={{ marginBottom: Spacing.md }} />
+                            <SkeletonCard>
+                                <SkeletonBlock width={130} height={20} />
+                                <SkeletonBlock width="100%" height={12} />
+                                <SkeletonBlock width="70%" height={12} />
+                                <SkeletonBlock width="100%" height={44} radius={Radius.sm} />
+                            </SkeletonCard>
+                        </View>
+                    </ScrollView>
+                </SkeletonGroup>
             </SafeAreaView>
         );
     }
@@ -424,6 +474,7 @@ const styles = StyleSheet.create({
         padding: Spacing.lg,
     },
 
+    skeletonRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
     statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing.md },
     divided: { borderTopWidth: 1, borderTopColor: Palette.border },
     statLabel: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },

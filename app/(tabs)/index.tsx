@@ -23,7 +23,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/Avatar';
 import Toast from 'react-native-toast-message';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
@@ -38,7 +37,8 @@ import {
     RISK_META, byRiskSeverity, type LatestInterpretation,
 } from '@/lib/interpretation';
 import { getScore, bandMeta, isMostlyReported, SOURCE_META, type HealthScore } from '@/lib/score';
-import { listResources, routeFor, RESOURCES_INTRO_KEY, type ResourceCard as ResourceCardType } from '@/lib/resources';
+import { listResources, routeFor, openResourcesHub, type ResourceCard as ResourceCardType } from '@/lib/resources';
+import { QUICK_ACTIONS, openQuickAction } from '@/lib/quickActions';
 import { ArticleCard } from '@/components/resources/ResourceCards';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 import ScoreRadar from '@/components/home/ScoreRadar';
@@ -93,21 +93,8 @@ export default function HomeScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
 
-    /**
-     * The health library. First visit gets the value-prop screen, every visit after it goes
-     * straight in — a splash you have to dismiss each time is a tax on the feature it is
-     * advertising. A storage read that fails opens the library rather than the intro: the
-     * worse of the two failures is showing the pitch to someone who has already read it.
-     */
-    const openResources = useCallback(async () => {
-        let seen = 'true';
-        try {
-            seen = (await AsyncStorage.getItem(RESOURCES_INTRO_KEY)) ?? '';
-        } catch {
-            seen = 'true';
-        }
-        router.push(seen ? '/resources' : '/resources/intro');
-    }, [router]);
+    /** The library, with its first-run gate. Shared with the quick actions — see `lib/resources.ts`. */
+    const openResources = useCallback(() => openResourcesHub(router), [router]);
 
     const [signedIn, setSignedIn] = useState<boolean | null>(null);
     const [user, setUser] = useState<User | null>(null);
@@ -344,19 +331,22 @@ export default function HomeScreen() {
                             </Section>
                         )}
 
+                        {/*
+                          The same nine shortcuts the tab bar's centre button opens, from
+                          `lib/quickActions.ts`. Two hand-maintained copies would drift the
+                          first time a tracker was added — and did, which is why the list
+                          moved out of this file.
+                        */}
                         <Section title="Quick actions">
                             <View style={styles.actionRow}>
-                                <QuickAction icon="add-circle-outline" label="Add result" onPress={() => router.push('/add-result')} />
-                                <QuickAction icon="analytics-outline" label="Metrics" onPress={() => router.push('/metrics')} />
-                                <QuickAction icon="pulse-outline" label="Symptoms" onPress={() => router.push('/symptoms')} />
-                                <QuickAction icon="flask-outline" label="Order test" onPress={() => router.push('/(tabs)/orders')} />
-                                <QuickAction icon="calendar-outline" label="My plan" onPress={() => router.push('/myplans')} />
-                                <QuickAction icon="restaurant-outline" label="Nutrition" onPress={() => router.push('/nutrition')} />
-                                {/* Not a sixth tab: the bar is full at five and the fifth is the assistant. */}
-                                <QuickAction icon="fitness-outline" label="Activity" onPress={() => router.push('/activity')} />
-                                <QuickAction icon="medkit-outline" label="Medications" onPress={() => router.push('/medications')} />
-                                <QuickAction icon="people-outline" label="Consult" onPress={() => router.push('/(tabs)/professionals')} />
-                                <QuickAction icon="library-outline" label="Resources" onPress={openResources} />
+                                {QUICK_ACTIONS.map((action) => (
+                                    <QuickAction
+                                        key={action.id}
+                                        icon={action.icon}
+                                        label={action.label}
+                                        onPress={() => openQuickAction(router, action)}
+                                    />
+                                ))}
                             </View>
                         </Section>
 

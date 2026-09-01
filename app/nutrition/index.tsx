@@ -13,7 +13,7 @@
  * The gallery rail is loaded beside the day but settled independently. It is the least
  * important thing on the screen and must never be able to take the day down with it.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, ActivityIndicator,
     TouchableOpacity, RefreshControl, Alert,
@@ -31,6 +31,7 @@ import { PlanGuidanceCard } from '@/components/nutrition/PlanGuidanceCard';
 import { MealCard } from '@/components/nutrition/MealCard';
 import { MealGallery } from '@/components/nutrition/MealGallery';
 import { SuggestionCard } from '@/components/nutrition/SuggestionCard';
+import { SkeletonGroup, SkeletonBlock } from '@/components/nutrition/Skeleton';
 import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
 import type {
     NutritionDay, NutritionGallery, NutritionInsight, NutritionRecommendations,
@@ -53,31 +54,35 @@ export default function NutritionScreen() {
     const [insight, setInsight] = useState<NutritionInsight | null>(null);
     const [suggestions, setSuggestions] = useState<NutritionRecommendations | null>(null);
     const [loading, setLoading] = useState(true);
+    // Tracked apart from `loading`: the rail arrives after the screen does, and the rest of
+    // the dashboard must never wait on it.
+    const [suggestionsLoading, setSuggestionsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
+    /*
+      The three database reads. All of them are fast, all of them are settled separately, and
+      the screen paints the moment they are in.
+
+      `Promise.all` would let any one rail take the dashboard down with it, and the day —
+      what did I eat, what is left — is the only thing here that has to arrive. A day that
+      loads without its photographs or its weekly strip is fine; a blank screen because a
+      thumbnail query timed out is not.
+
+      **Suggestions are deliberately not in this list.** `/nutrition/recommendations` can end
+      in a model call on a cache miss, which is seconds rather than milliseconds, and awaiting
+      it here held the entire dashboard behind a spinner — including on every return from
+      another screen, because `useFocusEffect` refires. It now runs on its own timeline below.
+    */
     const load = useCallback(async () => {
         try {
-            /*
-              Everything but the day is settled separately from it.
-
-              `Promise.all` would let any one rail take the dashboard down with it, and the
-              day — what did I eat, what is left — is the only thing on this screen that has
-              to arrive. A day that loads without its photographs, its weekly strip or its
-              suggestions is fine; a blank screen because a thumbnail query timed out is not.
-
-              The suggestions call is the one that can reach a model, so it is also the one
-              most likely to be slow. It never blocks a number the person already has.
-            */
-            const [day, photos, week, ideas] = await Promise.allSettled([
+            const [day, photos, week] = await Promise.allSettled([
                 getDay(),
                 getGallery({ limit: GALLERY_PREVIEW }),
                 getInsight(INSIGHT_WINDOW),
-                getRecommendations(),
             ]);
 
             if (photos.status === 'fulfilled') setGallery(photos.value);
             if (week.status === 'fulfilled') setInsight(week.value);
-            if (ideas.status === 'fulfilled') setSuggestions(ideas.value);
             if (day.status === 'rejected') throw day.reason;
             setData(day.value);
         } catch (error) {
@@ -92,7 +97,35 @@ export default function NutritionScreen() {
         }
     }, [router]);
 
-    useFocusEffect(useCallback(() => { load(); }, [load]));
+    /**
+     * The suggestion rail, fetched after the screen is already on screen.
+     *
+     * Failures are swallowed rather than alerted: the rail simply does not draw, and the See
+     * All screen explains why for anyone who goes looking. A dialog about meal ideas over a
+     * dashboard whose numbers all arrived would be the loudest thing on a working screen.
+     *
+     * `mounted` guards the state writes because this call outlives the focus that started
+     * it — a model call can still be in flight when the person is two screens away.
+     */
+    const mounted = useRef(true);
+    useEffect(() => () => { mounted.current = false; }, []);
+
+    const loadSuggestions = useCallback(async () => {
+        setSuggestionsLoading(true);
+        try {
+            const ideas = await getRecommendations();
+            if (mounted.current) setSuggestions(ideas);
+        } catch {
+            if (mounted.current) setSuggestions(null);
+        } finally {
+            if (mounted.current) setSuggestionsLoading(false);
+        }
+    }, []);
+
+    useFocusEffect(useCallback(() => {
+        load();
+        loadSuggestions();
+    }, [load, loadSuggestions]));
 
     if (loading) {
         return (
@@ -120,7 +153,13 @@ export default function NutritionScreen() {
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
-                        onRefresh={() => { setRefreshing(true); load(); }}
+                        onRefresh={() => {
+                            setRefreshing(true);
+                            load();
+                            // Refreshed too, but not waited on: the spinner belongs to the
+                            // day's numbers, and the rail redraws itself when it lands.
+                            loadSuggestions();
+                        }}
                         tintColor={Palette.primary}
                     />
                 }
@@ -224,12 +263,50 @@ export default function NutritionScreen() {
                     {/*
                       The kit's AI Recommendations rail.
 
-                      Drawn only when the server actually returned something. An unavailable
-                      model gets no card here at all — a "suggestions unavailable" panel
-                      under a working dashboard is the loudest thing on a screen whose real
-                      job is fine, and the See All screen says so properly for anyone who
-                      goes looking.
+                      Three states, and the difference between the last two is the point:
+                      still arriving (a skeleton), arrived with something (the cards), and
+                      arrived with nothing or unavailable (**no section at all**). A
+                      "suggestions unavailable" panel under a dashboard whose numbers are all
+                      fine is the loudest thing on a working screen; the See All screen
+                      explains it properly for anyone who goes looking.
                     */}
+                    {suggestionsLoading && !suggestions && (
+                        <View style={styles.section}>
+                            <View style={styles.sectionHead}>
+                                <View style={styles.sectionTitleRow}>
+                                    <Ionicons name="sparkles-outline" size={16} color={Palette.primary} />
+                                    <Text style={styles.sectionTitle}>AI Recommendations</Text>
+                                </View>
+                                <ActivityIndicator size="small" color={Palette.primary} />
+                            </View>
+                            <Text style={styles.sectionCaption}>
+                                Reading your plan and what is left of today…
+                            </Text>
+
+                            <SkeletonGroup>
+                                <ScrollView
+                                    horizontal
+                                    scrollEnabled={false}
+                                    showsHorizontalScrollIndicator={false}
+                                    style={styles.bleed}
+                                    contentContainerStyle={styles.rail}
+                                >
+                                    {[0, 1].map((i) => (
+                                        <View key={i} style={styles.suggestionSkeleton}>
+                                            <SkeletonBlock width="100%" height={96} radius={0} />
+                                            <View style={styles.suggestionSkeletonBody}>
+                                                <SkeletonBlock width="80%" height={16} />
+                                                <SkeletonBlock width="100%" height={12} />
+                                                <SkeletonBlock width="60%" height={12} />
+                                                <SkeletonBlock width="70%" height={13} style={{ marginTop: Spacing.xs }} />
+                                            </View>
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            </SkeletonGroup>
+                        </View>
+                    )}
+
                     {suggestions?.available && suggestions.suggestions.length > 0 && (
                         <View style={styles.section}>
                             <View style={styles.sectionHead}>
@@ -504,6 +581,17 @@ const styles = StyleSheet.create({
     // The suggestion rail. Negative margins let the cards run to the screen edge inside a
     // padded content column, so the last one is visibly clipped rather than looking final.
     rail: { gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingRight: Spacing.xxxl },
+
+    // Matches SuggestionCard's rail geometry, so nothing shifts when the real cards land
+    suggestionSkeleton: {
+        width: 250,
+        backgroundColor: Palette.background,
+        borderRadius: Radius.lg,
+        borderWidth: 1,
+        borderColor: Palette.borderSlate,
+        overflow: 'hidden',
+    },
+    suggestionSkeletonBody: { padding: Spacing.md, gap: Spacing.sm },
 
     prompt: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
