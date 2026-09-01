@@ -1,51 +1,80 @@
 /**
  * Home.
  *
- * Rebuilt against the turing kit's "Home & Smart Health Metrics" flow. The kit leads with
- * one AI-derived score drawn as a six-axis polygon, an explainer sheet behind it, and then
- * short, scannable sections underneath. This screen follows that shape with LabTrack's own
- * data: the pillars are the things the app measures, not step counts it has never held.
+ * Rebuilt against `Design/index.svg` — the kit's full "Home" frame. That mockup is a
+ * scroll of one tracker section per feature, each headed by a title and a "See All", under
+ * a purple header and a score card that overlaps it. This screen follows that shape with
+ * LabTrack's own data, plus one section the mockup does not have: **Latest Analysis**,
+ * which sits directly under the score because the interpretation is what this product is
+ * for.
  *
- * The previous version opened with a coral gradient, a score derived from BMI alone, and a
- * "Get AI Analysis" button as the primary action — it showed the same screen whether every
- * marker was normal or three were critical. The ordering here is clinical: what is wrong
- * comes first, what is due comes next, and shopping comes last.
+ * Two places the mockup is deliberately not reproduced, both for the reason this codebase
+ * keeps giving — a control or a number the backend cannot honestly back is worse than none:
+ *
+ *   - The kit's sleep card draws a four-stage hypnogram (Awake / REM / Deep / Light).
+ *     `DailyMetrics.sleep` records duration, time in bed, efficiency and a score, and
+ *     nothing reports stages, so this draws the nights it actually has.
+ *   - The kit's symptom card lists "Recent Checks" with risk levels. There is no diagnosis
+ *     engine and no stored check — see **Symptom checker** in CLAUDE.md — so the card is
+ *     the search and the common symptoms, which is what `app/symptoms` really does.
+ *
+ * The header is drawn under the status bar, so the root is *not* wrapped in a top-inset
+ * SafeAreaView the way the other tab screens are; the gradient takes `insets.top` as
+ * padding instead. Same rule, applied to a screen whose first element is full-bleed.
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
-    RefreshControl, Image, Modal, Pressable, useWindowDimensions,
+    RefreshControl, Image, useWindowDimensions,
+    type NativeSyntheticEvent, type NativeScrollEvent,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle } from 'react-native-svg';
 import { Avatar } from '@/components/Avatar';
 import Toast from 'react-native-toast-message';
 
 import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
-import {
-    getLatestBiomarkers, byClinicalPriority, describeMovement, formatValue, FLAG_META,
-    medicalName, plainName,
-} from '@/lib/biomarkers';
-import { getPlan } from '@/lib/plan';
+import { getLatestBiomarkers, byClinicalPriority } from '@/lib/biomarkers';
 import { getDay as getNutritionDay } from '@/lib/nutrition';
 import {
     getLatestInterpretation, generateInterpretation, hasMeaningfulChanges, isVerified,
     RISK_META, byRiskSeverity, type LatestInterpretation,
 } from '@/lib/interpretation';
-import { getScore, bandMeta, isMostlyReported, SOURCE_META, type HealthScore } from '@/lib/score';
+import { getScore, bandMeta, isMostlyReported, type HealthScore } from '@/lib/score';
+import {
+    getOverview, METRIC_ICON, METRIC_TINT, METRIC_ROUTE,
+    type MetricCard as MetricCardData,
+} from '@/lib/metrics';
+import {
+    getSummary as getActivitySummary, getDay as getActivityDay,
+    formatDuration, formatDistance, formatType,
+    type ActivitySummary, type ActivitySession, type DayMetrics,
+} from '@/lib/activity';
+import {
+    getSchedule as getMedicationSchedule, updateDose,
+} from '@/lib/medications';
+import {
+    getAppointments, professionalOf, nameOf, initialsOf, isLive,
+    formatTime as formatApptTime, formatRelativeDay,
+} from '@/lib/appointments';
+import { getConversation, messageTime, type Conversation } from '@/lib/assistant';
+import { SYMPTOMS } from '@/lib/symptoms';
 import { listResources, routeFor, openResourcesHub, type ResourceCard as ResourceCardType } from '@/lib/resources';
-import { QUICK_ACTIONS, openQuickAction } from '@/lib/quickActions';
 import { ArticleCard } from '@/components/resources/ResourceCards';
+import { CalorieRing } from '@/components/nutrition/CalorieRing';
+import { DoseRow } from '@/components/medications/DoseRow';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
-import ScoreRadar from '@/components/home/ScoreRadar';
-import type { BiomarkerSummary, NutritionDay, PlanItem, Product, User } from '@/types/api';
+import type {
+    BiomarkerSummary, MedicationScheduleDay, NutritionDay, Product, User, Appointment,
+} from '@/types/api';
 
 /**
- * What the hero shows before the score has loaded, or for a signed-out visitor.
+ * What the score card shows before the score has loaded, or for a signed-out visitor.
  *
  * A placeholder rather than a zero. A score of 0 on first launch is a claim about someone's
  * health made before anything is known about them.
@@ -64,34 +93,22 @@ const EMPTY_SCORE: HealthScore = {
     bands: [],
 };
 
-/**
- * The six pillars the hero radar plots, in axis order starting at 12 o'clock.
- *
- * Chosen so every axis is something one of the trackers moves — a radar whose axes a person
- * cannot change is decoration. `plan` and `mind` are scored but left off: the first is not a
- * behaviour and the second has a whole screen of its own.
- */
-const RADAR_PILLARS = ['biomarkers', 'activity', 'sleep', 'nutrition', 'medication', 'vitals'] as const;
+/** The six the kit's carousel shows, in its order. Anything the server omits drops out. */
+const METRIC_ORDER = ['heart_rate', 'blood_pressure', 'weight', 'sleep', 'hydration', 'steps'] as const;
 
-const greetingFor = (hour: number) =>
-    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+/** The chips under the symptom search — the everyday ones, from the real catalogue. */
+const COMMON_SYMPTOM_IDS = ['headache', 'fever', 'nausea', 'fatigue', 'dry-cough'];
 
 const DAY = 24 * 60 * 60 * 1000;
 
-/** "Overdue", "Due today", "In 12 days" — a date on its own makes the reader do the maths. */
-const describeDue = (iso: string) => {
-    const days = Math.round((new Date(iso).getTime() - Date.now()) / DAY);
-    if (Number.isNaN(days)) return { text: 'Scheduled', overdue: false };
-    if (days < 0) return { text: `${Math.abs(days)}d overdue`, overdue: true };
-    if (days === 0) return { text: 'Due today', overdue: true };
-    if (days === 1) return { text: 'Due tomorrow', overdue: false };
-    if (days < 30) return { text: `In ${days} days`, overdue: false };
-    return { text: `In ${Math.round(days / 30)} months`, overdue: false };
-};
+/** "Wed, Jun 25" — the date line above the greeting. */
+const formatToday = () =>
+    new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
 export default function HomeScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
 
     /** The library, with its first-run gate. Shared with the quick actions — see `lib/resources.ts`. */
     const openResources = useCallback(() => openResourcesHub(router), [router]);
@@ -99,17 +116,23 @@ export default function HomeScreen() {
     const [signedIn, setSignedIn] = useState<boolean | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [biomarkers, setBiomarkers] = useState<BiomarkerSummary[]>([]);
-    const [planItems, setPlanItems] = useState<PlanItem[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [analysis, setAnalysis] = useState<LatestInterpretation | null>(null);
     const [nutrition, setNutrition] = useState<NutritionDay | null>(null);
     const [resources, setResources] = useState<ResourceCardType[]>([]);
     const [score, setScore] = useState<HealthScore>(EMPTY_SCORE);
+    const [metrics, setMetrics] = useState<MetricCardData[]>([]);
+    const [activity, setActivity] = useState<ActivitySummary | null>(null);
+    const [sessions, setSessions] = useState<ActivitySession[]>([]);
+    const [dayMetrics, setDayMetrics] = useState<DayMetrics | null>(null);
+    const [medications, setMedications] = useState<MedicationScheduleDay | null>(null);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [conversation, setConversation] = useState<Conversation | null>(null);
     const [generating, setGenerating] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [explainerOpen, setExplainerOpen] = useState(false);
     const [analysisExpanded, setAnalysisExpanded] = useState(false);
+    const [busyDose, setBusyDose] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         const loggedIn = await isSignedIn();
@@ -124,37 +147,55 @@ export default function HomeScreen() {
 
         const userId = await getUserId();
 
-        // Settled rather than all: a home screen that renders nothing because the plan
-        // endpoint hiccuped is worse than one missing a section.
-        const [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes, scoreRes, resourceRes] = await Promise.allSettled([
+        // Settled rather than all: a home screen that renders nothing because one tracker
+        // hiccuped is worse than one missing a section. Every call here is a database
+        // read — nothing model-backed is awaited before the first paint, which is the rule
+        // `app/nutrition/index.tsx` records.
+        const results = await Promise.allSettled([
             userId ? api.get<User>(`/users/${userId}`) : Promise.reject(new Error('no user id')),
             getLatestBiomarkers(),
-            getPlan(),
-            api.get<Product[]>('/products'),
             // One call: the newest result, the newest interpretation, and whether they are
             // the same document. Scoped by the token, so it does not depend on the cached
             // user id the way the old /test-results?user_id= path did.
             getLatestInterpretation(),
             getNutritionDay(),
-            // The score is computed server-side now — it reads a month of activity, sleep,
+            // The score is computed server-side — it reads a month of activity, sleep,
             // meals and doses this screen never loads. See the header of `lib/score.ts`.
             getScore(),
+            getOverview(7),
+            getActivitySummary('1w'),
+            getActivityDay(),
+            getMedicationSchedule(),
+            getAppointments(),
+            getConversation(),
             // The newest of the library, for the rail at the foot of the screen. Six cards,
             // because this is a rail and nobody scrolls twenty of them sideways.
             listResources({ limit: 6, sort: 'newest' }),
         ]);
 
-        if (userRes.status === 'fulfilled') setUser(userRes.value);
+        const [
+            userRes, biomarkerRes, analysisRes, nutritionRes, scoreRes, metricsRes,
+            activityRes, activityDayRes, medicationRes, appointmentRes, conversationRes,
+            resourceRes,
+        ] = results;
+
+        if (userRes.status === 'fulfilled') setUser(userRes.value as User);
         if (biomarkerRes.status === 'fulfilled') setBiomarkers(biomarkerRes.value.biomarkers ?? []);
-        if (planRes.status === 'fulfilled') setPlanItems(planRes.value.items ?? []);
-        if (productRes.status === 'fulfilled') setProducts(Array.isArray(productRes.value) ? productRes.value.slice(0, 6) : []);
         if (analysisRes.status === 'fulfilled') setAnalysis(analysisRes.value);
         if (nutritionRes.status === 'fulfilled') setNutrition(nutritionRes.value);
         if (scoreRes.status === 'fulfilled') setScore(scoreRes.value);
+        if (metricsRes.status === 'fulfilled') setMetrics(metricsRes.value.metrics ?? []);
+        if (activityRes.status === 'fulfilled') setActivity(activityRes.value);
+        if (activityDayRes.status === 'fulfilled') {
+            setSessions(activityDayRes.value.sessions ?? []);
+            setDayMetrics(activityDayRes.value.metrics ?? null);
+        }
+        if (medicationRes.status === 'fulfilled') setMedications(medicationRes.value);
+        if (appointmentRes.status === 'fulfilled') setAppointments(appointmentRes.value ?? []);
+        if (conversationRes.status === 'fulfilled') setConversation(conversationRes.value);
         if (resourceRes.status === 'fulfilled') setResources(resourceRes.value.items ?? []);
 
-        const rejected = [userRes, biomarkerRes, planRes, productRes, analysisRes, nutritionRes, scoreRes, resourceRes]
-            .filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+        const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
             router.replace('/(auth)/loginscreen');
         } else if (rejected.length) {
@@ -182,7 +223,6 @@ export default function HomeScreen() {
         setRefreshing(false);
     }, [load]);
 
-
     /**
      * Generate (or regenerate) the interpretation for the newest result.
      *
@@ -190,8 +230,7 @@ export default function HomeScreen() {
      * just the ones on this document — so an analysis generated against the newest result
      * already accounts for everything that came before it.
      *
-     * Generating also rebuilds the plan, so a fresh run reloads the whole screen: "Next up"
-     * would otherwise show the previous plan beside the new analysis.
+     * Generating also rebuilds the plan, so a fresh run reloads the whole screen.
      */
     const handleGenerate = useCallback(async (force = false) => {
         const targetId = analysis?.latestResult?.id;
@@ -216,8 +255,7 @@ export default function HomeScreen() {
             const message = error instanceof ApiError ? error.message : 'Could not generate an analysis';
 
             // 429 is the rate limiter, and it is not a failure — the server is saying the
-            // analysis would be identical, or that enough have been run today. The user
-            // still has their existing analysis, so this reads as information.
+            // analysis would be identical, or that enough have been run today.
             if (error instanceof ApiError && error.status === 429) {
                 Toast.show({ type: 'info', text1: 'No new analysis needed', text2: message });
                 return;
@@ -234,31 +272,55 @@ export default function HomeScreen() {
         }
     }, [analysis, load]);
 
+    /**
+     * Take, skip or undo one of today's doses from the home card.
+     *
+     * The row is optimistic about nothing: the schedule is refetched, because the server
+     * recomputes adherence and this card draws it. `scoreController.touch()` runs on that
+     * write too, so the score above is stale by one pull-to-refresh — which is the trade
+     * the score's own design accepts rather than blocking a write on a scorer.
+     */
+    const handleDose = useCallback(async (id: string, action: 'take' | 'skip' | 'undo') => {
+        setBusyDose(id);
+        try {
+            await updateDose(id, action);
+            setMedications(await getMedicationSchedule());
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Could not update that dose',
+                text2: error instanceof ApiError ? error.message : undefined,
+            });
+        } finally {
+            setBusyDose(null);
+        }
+    }, []);
 
-
-    /** Out-of-range markers, worst first — the reason someone opens a health app. */
+    /** Out-of-range markers, worst first. Counted on the score card rather than railed. */
     const attention = useMemo(
-        () => biomarkers.filter((b) => b.flag !== 'normal' && b.flag !== 'unknown').sort(byClinicalPriority).slice(0, 6),
+        () => biomarkers.filter((b) => b.flag !== 'normal' && b.flag !== 'unknown').sort(byClinicalPriority),
         [biomarkers],
     );
 
-    /** The next few things actually due, soonest first. Completed and dismissed drop out. */
-    const upcoming = useMemo(
-        () => planItems
-            .filter((i) => i.status !== 'completed' && i.status !== 'dismissed')
-            .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-            .slice(0, 3),
-        [planItems],
+    /** The carousel, in the kit's order, with anything the server did not report removed. */
+    const metricCards = useMemo(
+        () => METRIC_ORDER
+            .map((key) => metrics.find((m) => m.key === key))
+            .filter((m): m is MetricCardData => Boolean(m)),
+        [metrics],
     );
 
-    const movers = useMemo(
-        () => biomarkers.filter((b) => b.measurementCount > 1 && b.delta != null).slice(0, 4),
-        [biomarkers],
+    /** The next appointment, and the ones after it. Cancelled and completed drop out. */
+    const liveAppointments = useMemo(
+        () => appointments
+            .filter(isLive)
+            .filter((a) => new Date(a.scheduledFor).getTime() > Date.now() - DAY)
+            .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime()),
+        [appointments],
     );
 
     const firstName = user?.firstName?.trim() || 'there';
-    const initials = (user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '');
-    const assessmentDone = user?.healthAssessment?.isComplete;
+    const initials = ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase();
 
     if (loading && signedIn === null) {
         return (
@@ -269,7 +331,7 @@ export default function HomeScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={[]}>
             <ScrollView
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
@@ -279,22 +341,31 @@ export default function HomeScreen() {
             >
                 {signedIn ? (
                     <>
-                        <Greeting
+                        <HomeHeader
                             name={firstName}
-                            initials={initials.toUpperCase()}
+                            initials={initials}
                             photo={user?.profileImage ?? null}
+                            streak={activity?.streak ?? 0}
+                            topInset={insets.top}
+                            onSearch={() => router.push('/resources/search')}
                             onPressAvatar={() => router.push('/profile')}
                         />
 
-                        <ScoreHero
+                        <ScoreCard
                             score={score}
-                            onExplain={() => setExplainerOpen(true)}
-                            onOpen={() => router.push('/score')}
+                            attention={attention.length}
+                            onPress={() => router.push('/score')}
                         />
 
+                        {/*
+                          Latest analysis — the one section `Design/index.svg` does not
+                          carry. It sits first because the interpretation is the product:
+                          every other card here reports a measurement, and this one is the
+                          only thing that says what the measurements mean.
+                        */}
                         {analysis?.latestResult && (
                             <Section
-                                title="Latest analysis"
+                                title="Latest Analysis"
                                 action={analysis.interpretation ? 'View plan' : undefined}
                                 onAction={analysis.interpretation ? () => router.push('/myplans') : undefined}
                             >
@@ -309,128 +380,82 @@ export default function HomeScreen() {
                             </Section>
                         )}
 
-                        {attention.length > 0 && (
-                            <Section
-                                title="Needs attention"
-                                action="All results"
-                                onAction={() => router.push('/(tabs)/results')}
-                            >
-                                <ScrollView
-                                    horizontal
-                                    showsHorizontalScrollIndicator={false}
-                                    contentContainerStyle={styles.hScroll}
-                                >
-                                    {attention.map((b) => (
-                                        <AttentionCard
-                                            key={b._id}
-                                            biomarker={b}
-                                            onPress={() => router.push({ pathname: '/biomarker/[name]', params: { name: b.name } })}
-                                        />
-                                    ))}
-                                </ScrollView>
+                        {metricCards.length > 0 && (
+                            <Section title="Health Metrics" action="See All" onAction={() => router.push('/metrics')}>
+                                <MetricsRail cards={metricCards} router={router} />
                             </Section>
                         )}
 
-                        {/*
-                          The same nine shortcuts the tab bar's centre button opens, from
-                          `lib/quickActions.ts`. Two hand-maintained copies would drift the
-                          first time a tracker was added — and did, which is why the list
-                          moved out of this file.
-                        */}
-                        <Section title="Quick actions">
-                            <View style={styles.actionRow}>
-                                {QUICK_ACTIONS.map((action) => (
-                                    <QuickAction
-                                        key={action.id}
-                                        icon={action.icon}
-                                        label={action.label}
-                                        onPress={() => openQuickAction(router, action)}
-                                    />
-                                ))}
-                            </View>
+                        <Section title="Activity" action="See All" onAction={() => router.push('/activity')}>
+                            <ActivityCard
+                                summary={activity}
+                                sessions={sessions}
+                                onLog={() => router.push('/activity/log')}
+                                onSession={(id) => router.push({ pathname: '/activity/session/[id]', params: { id } })}
+                            />
                         </Section>
 
-                        {!assessmentDone && (
-                            <TouchableOpacity
-                                style={styles.assessmentCard}
-                                activeOpacity={0.85}
-                                onPress={() => router.push('/health-assessment')}
-                            >
-                                <View style={styles.assessmentIcon}>
-                                    <Ionicons name="clipboard-outline" size={20} color={Palette.primary} />
-                                </View>
-                                <View style={styles.flex}>
-                                    <Text style={styles.assessmentTitle}>Complete your health profile</Text>
-                                    <Text style={styles.assessmentBody}>
-                                        Sleep, activity and history sharpen every insight LabTrack gives you.
-                                    </Text>
-                                </View>
-                                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-                            </TouchableOpacity>
-                        )}
+                        <Section title="Sleep" action="See All" onAction={() => router.push('/activity')}>
+                            <SleepCard
+                                card={metrics.find((m) => m.key === 'sleep') ?? null}
+                                today={dayMetrics}
+                                onOpen={() => router.push('/activity')}
+                            />
+                        </Section>
+
+                        <Section title="Nutrition" action="See All" onAction={() => router.push('/nutrition')}>
+                            <NutritionCard
+                                day={nutrition}
+                                onOpen={() => router.push('/nutrition')}
+                                onLog={() => router.push('/nutrition/log')}
+                            />
+                        </Section>
 
                         <Section
-                            title="Today's nutrition"
-                            action={nutrition?.meals.length ? 'Full tracker' : undefined}
-                            onAction={nutrition?.meals.length ? () => router.push('/nutrition') : undefined}
+                            title="Doctor Appointment"
+                            action="See All"
+                            onAction={() => router.push('/appointments')}
                         >
-                            <NutritionSummaryCard day={nutrition} onPress={() => router.push('/nutrition')} />
+                            <AppointmentsCard
+                                appointments={liveAppointments}
+                                onOpen={() => router.push('/appointments')}
+                                onBook={() => router.push('/(tabs)/professionals')}
+                            />
                         </Section>
 
-                        {upcoming.length > 0 && (
-                            <Section title="Next up" action="Full plan" onAction={() => router.push('/myplans')}>
-                                <View style={styles.stack}>
-                                    {upcoming.map((item) => (
-                                        <PlanRow key={item._id} item={item} onPress={() => router.push('/myplans')} />
-                                    ))}
-                                </View>
-                            </Section>
-                        )}
+                        <Section
+                            title="Medications"
+                            action="See All"
+                            onAction={() => router.push('/medications')}
+                        >
+                            <MedicationsCard
+                                schedule={medications}
+                                busyDose={busyDose}
+                                onDose={handleDose}
+                                onAdd={() => router.push('/medications/add')}
+                                onOpen={(id) => router.push({ pathname: '/medications/[id]', params: { id } })}
+                            />
+                        </Section>
 
-                        {movers.length > 0 && (
-                            <Section title="Recent movement" action="All results" onAction={() => router.push('/(tabs)/results')}>
-                                <View style={styles.metricGrid}>
-                                    {movers.map((b) => (
-                                        <MetricCard
-                                            key={b._id}
-                                            biomarker={b}
-                                            onPress={() => router.push({ pathname: '/biomarker/[name]', params: { name: b.name } })}
-                                        />
-                                    ))}
-                                </View>
-                            </Section>
-                        )}
+                        <Section title="Symptom Checker">
+                            <SymptomCheckerCard
+                                onSearch={() => router.push('/symptoms')}
+                                onSymptom={(id) => router.push({ pathname: '/symptoms', params: { symptom: id } })}
+                            />
+                        </Section>
 
-                        {biomarkers.length === 0 && !analysis?.latestResult && (
-                            <View style={styles.emptyCard}>
-                                <Ionicons name="document-text-outline" size={40} color={Palette.primaryLight} />
-                                <Text style={styles.emptyTitle}>No results yet</Text>
-                                <Text style={styles.emptyBody}>
-                                    Upload a lab report or order a test, and your score and trends start building.
-                                </Text>
-                                <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/add-result')}>
-                                    <Text style={styles.primaryButtonText}>Add a result</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
+                        <Section title="AI Health Assistant">
+                            <AssistantCard
+                                conversation={conversation}
+                                onOpen={() => router.push('/(tabs)/assistant')}
+                            />
+                        </Section>
 
-                        {products.length > 0 && (
-                            <Section title="Recommended tests" action="See all" onAction={() => router.push('/(tabs)/orders')}>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-                                    {products.map((p) => (
-                                        <ProductCard
-                                            key={p._id}
-                                            product={p}
-                                            onPress={() => router.push({ pathname: '/ProductDetails', params: { productId: p._id } })}
-                                        />
-                                    ))}
-                                </ScrollView>
-                            </Section>
-                        )}
+                        <SupportBanner onPress={() => router.push('/help')} />
 
                         {/*
                             News & Resources.
-                            
+
                             The card is `ArticleCard` from `components/resources`, not a
                             home-screen copy of it. The library already owns the byline, the
                             category chip and the "2.5k" formatting, and a second version
@@ -460,143 +485,850 @@ export default function HomeScreen() {
                         )}
                     </>
                 ) : (
-                    <SignedOut products={products} router={router} />
+                    <SignedOut products={products} router={router} topInset={insets.top} />
                 )}
             </ScrollView>
-
-            <ScoreExplainer visible={explainerOpen} score={score} onClose={() => setExplainerOpen(false)} />
         </SafeAreaView>
     );
 }
 
 // ---------------------------------------------------------------------------
-// Pieces
+// Header and score
 // ---------------------------------------------------------------------------
 
-const Greeting = ({ name, initials, photo, onPressAvatar }: {
-    name: string; initials: string; photo: string | null; onPressAvatar: () => void;
+/**
+ * The purple header.
+ *
+ * Full-bleed to the top of the screen, so it takes the status-bar inset as padding rather
+ * than sitting under a SafeAreaView. Its bottom padding is deep enough for the score card
+ * to overlap it by half — the card is pulled up with a negative margin instead of being
+ * absolutely positioned, so the sections below still flow underneath it.
+ *
+ * The kit puts a green presence dot on the avatar. LabTrack models no presence, so there
+ * is none here; the streak chip beside the date is real (`ActivitySummary.streak`) and is
+ * hidden rather than shown as a zero.
+ */
+const HomeHeader = ({ name, initials, photo, streak, topInset, onSearch, onPressAvatar }: {
+    name: string;
+    initials: string;
+    photo: string | null;
+    streak: number;
+    topInset: number;
+    onSearch: () => void;
+    onPressAvatar: () => void;
 }) => (
-    <View style={styles.greetingRow}>
-        <View style={styles.flex}>
-            <Text style={styles.greetingLabel}>{greetingFor(new Date().getHours())}</Text>
-            <Text style={styles.greetingName} numberOfLines={1}>{name}</Text>
+    <LinearGradient
+        colors={Palette.heroGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: topInset + Spacing.lg }]}
+    >
+        <View style={styles.headerRow}>
+            <View style={styles.flex}>
+                <View style={styles.dateRow}>
+                    <Text style={styles.headerDate}>{formatToday()}</Text>
+                    {streak > 0 && (
+                        <View style={styles.streakChip}>
+                            <Ionicons name="flame" size={12} color={Palette.white} />
+                            <Text style={styles.streakText}>{streak}</Text>
+                        </View>
+                    )}
+                </View>
+                <Text style={styles.headerGreeting} numberOfLines={1}>Hello, {name}!</Text>
+            </View>
+
+            <TouchableOpacity style={styles.headerSearch} onPress={onSearch} accessibilityLabel="Search">
+                <Ionicons name="search" size={20} color={Palette.primaryDark} />
+            </TouchableOpacity>
+
+            {/* Photo, then initials, then the generic glyph — and a photo that fails to
+                load falls back the same way. See `components/Avatar.tsx`. */}
+            <TouchableOpacity onPress={onPressAvatar} accessibilityLabel="Your profile">
+                <Avatar uri={photo} initials={initials} size={44} style={styles.headerAvatar} textStyle={{ fontSize: 15 }} />
+            </TouchableOpacity>
         </View>
-        {/* Photo, then initials, then the generic glyph — and a photo that fails to load
-            falls back the same way. See `components/Avatar.tsx`. */}
-        <TouchableOpacity onPress={onPressAvatar} accessibilityLabel="Your profile">
-            <Avatar uri={photo} initials={initials} size={40} textStyle={{ fontSize: 14 }} />
-        </TouchableOpacity>
-    </View>
+    </LinearGradient>
 );
 
 /**
- * The score hero. The number is deliberately large and the radar deliberately unlabelled
- * with values — it communicates shape (which pillar is dented), and the sheet behind the
- * info button carries the detail.
+ * The score card, overlapping the header.
+ *
+ * The kit's second meta chip reads "plus User" — a subscription badge. This shows the thing
+ * a person actually needs to see beside a health score: how many of their markers are out
+ * of range, or, when none are, how much of the score was measured rather than reported.
+ * That provenance line used to live on the old hero and is the whole point of the score
+ * being computed from the trackers — see **The LabTrack score** in CLAUDE.md.
  */
-const ScoreHero = ({ score, onExplain, onOpen }: {
-    score: HealthScore; onExplain: () => void; onOpen: () => void;
+const ScoreCard = ({ score, attention, onPress }: {
+    score: HealthScore; attention: number; onPress: () => void;
 }) => {
     const band = bandMeta(score.band);
     const mostlyReported = isMostlyReported(score);
-    // The radar shares its row with the score, so it takes what is left of the width
-    // rather than a fixed size that overflows on a 360pt phone.
-    const { width } = useWindowDimensions();
-    const radarSize = Math.max(96, Math.min(132, width - 236));
-
-    /**
-     * Six axes, not nine.
-     *
-     * The engine scores nine pillars; the kit's polygon has six, and it is right — a
-     * nine-sided shape at 130pt is a blob, and the hero's job is to show *shape* (which
-     * axis is dented) rather than to enumerate. `RADAR_PILLARS` picks the six the trackers
-     * feed, so the dent a person sees is one they can act on today. The breakdown screen
-     * lists all nine.
-     */
-    const radarPillars = RADAR_PILLARS
-        .map((key) => score.pillars.find((p) => p.key === key))
-        .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
     return (
-        <LinearGradient
-            colors={Palette.heroGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.hero}
-        >
-            <View style={styles.heroTop}>
-                <Text style={styles.heroEyebrow}>LabTrack score</Text>
-                <TouchableOpacity onPress={onExplain} hitSlop={12} accessibilityLabel="How your score is calculated">
-                    <Ionicons name="information-circle-outline" size={20} color="rgba(255,255,255,0.8)" />
-                </TouchableOpacity>
+        <TouchableOpacity style={styles.scoreCard} onPress={onPress} activeOpacity={0.85}>
+            <View style={styles.scoreBox}>
+                <Text style={styles.scoreValue}>{score.value ?? '--'}</Text>
             </View>
 
-            <View style={styles.heroBody}>
-                <View style={styles.heroFigures}>
-                    <Text style={styles.heroScore}>{score.value ?? '--'}</Text>
-                    <View style={[styles.bandPill, { backgroundColor: `${band.color}33` }]}>
-                        <View style={[styles.bandDot, { backgroundColor: band.color }]} />
-                        <Text style={styles.bandText}>{band.label}</Text>
+            <View style={styles.flex}>
+                <Text style={styles.scoreBand} numberOfLines={1}>
+                    {score.value === null ? 'No score yet' : `${band.label} health`}
+                </Text>
+
+                <View style={styles.scoreMetaRow}>
+                    <View style={styles.scoreMeta}>
+                        <Ionicons name="heart" size={14} color={band.color} />
+                        <Text style={styles.scoreMetaText}>{band.label}</Text>
                     </View>
-                </View>
 
-                {radarPillars.length > 0 && (
-                    <ScoreRadar pillars={radarPillars} size={radarSize} />
-                )}
-            </View>
+                    {score.value !== null && <Text style={styles.scoreDot}>·</Text>}
 
-            <Text style={styles.heroHeadline}>{score.headline}</Text>
-
-            {/*
-              * The provenance line.
-              *
-              * The whole point of the score change is that this number now comes from what
-              * the trackers measured rather than what someone typed at onboarding. When it
-              * is still mostly the latter it has to say so — a person who trusts a
-              * self-assessment as though it were a measurement is exactly who this feature
-              * was supposed to stop creating.
-              */}
-            {score.value !== null && (
-                <View style={styles.heroFooter}>
-                    {mostlyReported ? (
-                        <View style={styles.provenanceChip}>
-                            <Ionicons name="alert-circle-outline" size={13} color={SOURCE_META.reported.color} />
-                            <Text style={styles.provenanceText}>
-                                {score.coverage.observedWeight}% measured
+                    {score.value !== null && (attention > 0 ? (
+                        <View style={styles.scoreMeta}>
+                            <Ionicons name="alert-circle" size={14} color={Palette.danger} />
+                            <Text style={[styles.scoreMetaText, { color: Palette.danger }]}>
+                                {attention} need{attention === 1 ? 's' : ''} attention
                             </Text>
                         </View>
                     ) : (
-                        <View style={styles.provenanceChip}>
-                            <Ionicons name="pulse-outline" size={13} color="rgba(255,255,255,0.9)" />
-                            <Text style={styles.provenanceText}>
-                                From {score.coverage.observed} tracked source{score.coverage.observed === 1 ? '' : 's'}
-                            </Text>
-                        </View>
-                    )}
-
-                    {score.change && score.change.delta !== 0 && (
-                        <View style={styles.provenanceChip}>
+                        <View style={styles.scoreMeta}>
                             <Ionicons
-                                name={score.change.delta > 0 ? 'trending-up' : 'trending-down'}
-                                size={13}
-                                color={score.change.delta > 0 ? '#34D399' : '#FB7185'}
+                                name={mostlyReported ? 'clipboard-outline' : 'pulse'}
+                                size={14}
+                                color={mostlyReported ? Palette.warning : Palette.success}
                             />
-                            <Text style={styles.provenanceText}>
-                                {score.change.delta > 0 ? '+' : ''}{score.change.delta} this week
+                            <Text style={styles.scoreMetaText}>
+                                {score.coverage.observedWeight}% measured
                             </Text>
                         </View>
-                    )}
-
-                    <TouchableOpacity style={styles.heroLink} onPress={onOpen} hitSlop={8}>
-                        <Text style={styles.heroLinkText}>Breakdown</Text>
-                        <Ionicons name="chevron-forward" size={13} color="#FFFFFF" />
-                    </TouchableOpacity>
+                    ))}
                 </View>
-            )}
-        </LinearGradient>
+            </View>
+
+            <Ionicons name="chevron-forward" size={22} color={Palette.textMuted} />
+        </TouchableOpacity>
     );
 };
 
+// ---------------------------------------------------------------------------
+// Health metrics
+// ---------------------------------------------------------------------------
+
+/**
+ * The metrics carousel and its page dots.
+ *
+ * The dots are driven by the real scroll offset rather than by a paged ScrollView: the
+ * cards are narrower than the screen, so paging would snap two-and-a-bit cards at a time
+ * and leave the last one unreachable. `CARD_PITCH` is the card plus its gap.
+ */
+const METRIC_CARD_WIDTH = 152;
+const METRIC_CARD_PITCH = METRIC_CARD_WIDTH + Spacing.md;
+
+const MetricsRail = ({ cards, router }: { cards: MetricCardData[]; router: Router }) => {
+    const [page, setPage] = useState(0);
+    const lastPage = useRef(0);
+
+    const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const next = Math.round(e.nativeEvent.contentOffset.x / METRIC_CARD_PITCH);
+        if (next !== lastPage.current) {
+            lastPage.current = next;
+            setPage(next);
+        }
+    };
+
+    return (
+        <>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.hScroll}
+                onScroll={onScroll}
+                scrollEventThrottle={32}
+            >
+                {cards.map((card) => (
+                    <MetricTile
+                        key={card.key}
+                        card={card}
+                        onPress={() => router.push(METRIC_ROUTE[card.key] as any)}
+                    />
+                ))}
+            </ScrollView>
+
+            <View style={styles.dots}>
+                {cards.map((card, i) => (
+                    <View
+                        key={card.key}
+                        style={[styles.dot, i === Math.min(page, cards.length - 1) && styles.dotActive]}
+                    />
+                ))}
+            </View>
+        </>
+    );
+};
+
+/**
+ * One metric tile.
+ *
+ * `fallback` is drawn as a value with a label saying where it came from, never passed off
+ * as a reading — the same rule the metrics screen follows. A metric with neither a value
+ * nor a fallback shows a dash and its status line, because "--" and "0" are different
+ * claims.
+ */
+const MetricTile = ({ card, onPress }: { card: MetricCardData; onPress: () => void }) => {
+    const tint = METRIC_TINT[card.key];
+    const value = card.value ?? card.fallback?.value ?? null;
+    const reported = card.value == null && card.fallback != null;
+
+    return (
+        <TouchableOpacity style={styles.metricTile} onPress={onPress} activeOpacity={0.85}>
+            <View style={[styles.metricTileIcon, { backgroundColor: `${tint}1A` }]}>
+                <Ionicons name={METRIC_ICON[card.key] as any} size={22} color={tint} />
+            </View>
+
+            <View style={styles.valueRow}>
+                <Text style={styles.metricTileValue} numberOfLines={1}>
+                    {value === null ? '--' : typeof value === 'number' ? Math.round(value * 10) / 10 : value}
+                </Text>
+                <Text style={styles.unit}>{card.unit}</Text>
+            </View>
+
+            <Text style={styles.metricTileLabel} numberOfLines={1}>{card.label}</Text>
+            {reported && <Text style={styles.metricTileNote}>From your profile</Text>}
+            {card.urgent && (
+                <Text style={[styles.metricTileNote, { color: Palette.danger }]}>Crisis reading</Text>
+            )}
+        </TouchableOpacity>
+    );
+};
+
+// ---------------------------------------------------------------------------
+// Activity
+// ---------------------------------------------------------------------------
+
+/** An arc, for the goal ring in the activity card. `react-native-svg` is already a dep. */
+const ProgressRing = ({ done, total, size = 66, stroke = 6 }: {
+    done: number; total: number; size?: number; stroke?: number;
+}) => {
+    const r = (size - stroke) / 2;
+    const c = 2 * Math.PI * r;
+    const ratio = total > 0 ? Math.min(1, done / total) : 0;
+
+    return (
+        <View style={{ width: size, height: size }}>
+            <Svg width={size} height={size}>
+                <Circle
+                    cx={size / 2} cy={size / 2} r={r}
+                    stroke={Palette.borderLight} strokeWidth={stroke} fill="none"
+                />
+                {ratio > 0 && (
+                    <Circle
+                        cx={size / 2} cy={size / 2} r={r}
+                        stroke={Palette.primary} strokeWidth={stroke} fill="none"
+                        strokeDasharray={`${c * ratio} ${c}`}
+                        strokeLinecap="round"
+                        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                    />
+                )}
+            </Svg>
+            <View style={styles.ringCentre}>
+                <Text style={styles.ringText}>{total > 0 ? `${done}/${total}` : done}</Text>
+            </View>
+        </View>
+    );
+};
+
+/**
+ * Activity.
+ *
+ * `summary.band` is the server's own wording ("Very Active" in the kit) and `goal` is null
+ * — never zero — when nobody has set a plan to measure against, which is when the ring is
+ * dropped rather than drawn empty. Same call `alignment: 'unassessed'` makes in nutrition.
+ */
+const ActivityCard = ({ summary, sessions, onLog, onSession }: {
+    summary: ActivitySummary | null;
+    sessions: ActivitySession[];
+    onLog: () => void;
+    onSession: (id: string) => void;
+}) => {
+    const goal = summary?.goal;
+    const done = goal?.sessions.done ?? 0;
+    const target = goal?.sessions.target ?? 0;
+    const recent = sessions.slice(0, 2);
+
+    return (
+        <View style={styles.card}>
+            <View style={styles.cardHead}>
+                <View style={styles.flex}>
+                    <Text style={styles.cardTitle}>
+                        {summary?.band?.label ?? (recent.length ? 'Active today' : 'Nothing logged today')}
+                    </Text>
+                    <Text style={styles.cardBody}>
+                        {goal && target > done
+                            ? `You need ${target - done} more ${target - done === 1 ? 'session' : 'sessions'} this week.`
+                            : goal
+                                ? "You've hit this week's target."
+                                : 'Set a weekly target and this starts tracking against it.'}
+                    </Text>
+                </View>
+                {goal && <ProgressRing done={done} total={target} />}
+            </View>
+
+            {recent.length > 0 && (
+                <View style={styles.rowList}>
+                    {recent.map((session) => (
+                        <SessionRow key={session._id} session={session} onPress={() => onSession(session._id)} />
+                    ))}
+                </View>
+            )}
+
+            <CardFooterAction label="Log Activity" onPress={onLog} />
+        </View>
+    );
+};
+
+const SESSION_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+    walking: 'walk-outline',
+    running: 'walk-outline',
+    jogging: 'walk-outline',
+    hiking: 'trail-sign-outline',
+    cycling: 'bicycle-outline',
+    biking: 'bicycle-outline',
+    swimming: 'water-outline',
+    yoga: 'body-outline',
+    rowing: 'boat-outline',
+    weightlifting: 'barbell-outline',
+};
+
+const SessionRow = ({ session, onPress }: { session: ActivitySession; onPress: () => void }) => {
+    const when = new Date(session.startedAt);
+    const distance = formatDistance(session.distanceM);
+
+    return (
+        <TouchableOpacity style={styles.rowItem} onPress={onPress} activeOpacity={0.85}>
+            <Ionicons
+                name={SESSION_ICON[session.type] ?? 'fitness-outline'}
+                size={24}
+                color={Palette.text}
+            />
+            <View style={styles.flex}>
+                <Text style={styles.rowTitle}>{formatType(session.type)}</Text>
+                <Text style={styles.rowMeta}>
+                    {when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    {', '}
+                    {when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                </Text>
+                <View style={styles.statRow}>
+                    <Stat icon="time-outline" tint={Palette.textSecondary} text={formatDuration(session.durationSec)} />
+                    {session.activeKcal != null && (
+                        <Stat icon="flame-outline" tint="#F59E0B" text={`${Math.round(session.activeKcal)} kcal`} />
+                    )}
+                    {distance && <Stat icon="location-outline" tint={Palette.danger} text={distance} />}
+                    {session.scoreDelta > 0 && (
+                        <Stat icon="add-circle-outline" tint={Palette.primary} text={`${session.scoreDelta} score`} />
+                    )}
+                </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+        </TouchableOpacity>
+    );
+};
+
+const Stat = ({ icon, tint, text }: {
+    icon: keyof typeof Ionicons.glyphMap; tint: string; text: string;
+}) => (
+    <View style={styles.stat}>
+        <Ionicons name={icon} size={13} color={tint} />
+        <Text style={styles.statText}>{text}</Text>
+    </View>
+);
+
+// ---------------------------------------------------------------------------
+// Sleep
+// ---------------------------------------------------------------------------
+
+/**
+ * Sleep.
+ *
+ * The kit draws a four-stage hypnogram (Awake / REM / Deep / Light). Nothing in this app
+ * reports stages — `DailyMetrics.sleep` carries `asleepMin`, `inBedMin`, `efficiency` and
+ * a score, and that is all `healthSync` receives — so this draws the week it actually has:
+ * one bar per night, in hours, with a gap for a night nothing was recorded. Inventing a
+ * stage split to fill the kit's shape would be a chart about nothing.
+ *
+ * The figures come from the metrics overview's own sleep card rather than from a second
+ * query, so the number here and the number on `app/metrics` cannot disagree. `efficiency`
+ * is the one thing that card does not carry, and it is read from today's rollup — only
+ * when today is the night being shown, or it would caption Tuesday's hours with Monday's
+ * efficiency.
+ */
+const SleepCard = ({ card, today, onOpen }: {
+    card: MetricCardData | null; today: DayMetrics | null; onOpen: () => void;
+}) => {
+    const hours = typeof card?.value === 'number' ? card.value : null;
+    const nights = (card?.series ?? []).slice(-7);
+    const peak = Math.max(1, ...nights.map((n) => n.value ?? 0));
+    const hasNights = nights.some((n) => (n.value ?? 0) > 0);
+
+    // Only when the card's newest night IS today, so the caption cannot describe one night
+    // with another night's number.
+    const efficiency = card?.at && card.at === today?.day ? today.sleep.efficiency : null;
+
+    if (hours === null && !hasNights) {
+        return (
+            <TouchableOpacity style={styles.card} onPress={onOpen} activeOpacity={0.85}>
+                <View style={styles.cardHead}>
+                    <View style={styles.flex}>
+                        <Text style={styles.cardTitle}>No sleep recorded</Text>
+                        <Text style={styles.cardBody}>
+                            Connect a watch or a phone health store and your nights appear here. Nothing
+                            on this device measures sleep on its own.
+                        </Text>
+                    </View>
+                    <Ionicons name="moon-outline" size={26} color={Palette.primaryLight} />
+                </View>
+            </TouchableOpacity>
+        );
+    }
+
+    const whole = hours === null ? null : Math.floor(hours);
+    const mins = hours === null ? null : Math.round((hours - Math.floor(hours)) * 60);
+
+    return (
+        <TouchableOpacity style={styles.card} onPress={onOpen} activeOpacity={0.85}>
+            <View style={styles.cardHead}>
+                <View style={styles.flex}>
+                    {hours !== null ? (
+                        <Text style={styles.bigFigure}>
+                            {whole}<Text style={styles.bigUnit}> hr </Text>
+                            {mins}<Text style={styles.bigUnit}> min</Text>
+                        </Text>
+                    ) : (
+                        <Text style={styles.cardTitle}>Your recorded nights</Text>
+                    )}
+                    <Text style={styles.cardBody}>
+                        {efficiency !== null && efficiency !== undefined
+                            ? `${Math.round(efficiency)}% of your time in bed was spent asleep.`
+                            : card?.status ?? 'Your recorded nights over the past week.'}
+                    </Text>
+                </View>
+                <View style={styles.roundButton}>
+                    <Ionicons name="chevron-forward" size={20} color={Palette.white} />
+                </View>
+            </View>
+
+            {hasNights && (
+                <View style={styles.sleepChart}>
+                    {nights.map((night) => (
+                        <View key={night.day} style={styles.sleepColumn}>
+                            <View style={styles.sleepTrack}>
+                                {(night.value ?? 0) > 0 && (
+                                    <View style={[styles.sleepBar, { height: `${((night.value as number) / peak) * 100}%` }]} />
+                                )}
+                            </View>
+                            <Text style={styles.sleepLabel}>
+                                {new Date(`${night.day}T00:00:00`).toLocaleDateString(undefined, { weekday: 'narrow' })}
+                            </Text>
+                        </View>
+                    ))}
+                </View>
+            )}
+        </TouchableOpacity>
+    );
+};
+
+// ---------------------------------------------------------------------------
+// Nutrition
+// ---------------------------------------------------------------------------
+
+/**
+ * Nutrition.
+ *
+ * The kit's ring and macro read-out, using the tracker's own `CalorieRing` rather than a
+ * home-screen copy — it already knows how to draw an over-target day as an overshoot arc
+ * rather than a ring pinned at 100%.
+ *
+ * The plan's dietary guidance is named on the card because that is what connects a calorie
+ * ring to the interpretation that asked for it; without it this is a widget from a
+ * different app. See **Nutrition tracker** in CLAUDE.md.
+ */
+const NutritionCard = ({ day, onOpen, onLog }: {
+    day: NutritionDay | null; onOpen: () => void; onLog: () => void;
+}) => {
+    const target = day?.targets && 'calories' in day.targets ? day.targets.calories : 0;
+    const consumed = day?.totals.calories ?? 0;
+    const pattern = day?.plan?.guidance?.find((g) => g.kind === 'pattern')?.label
+        ?? day?.plan?.guidance?.[0]?.label;
+
+    if (!day?.plan || !target) {
+        return (
+            <TouchableOpacity style={styles.cardRow} onPress={onOpen} activeOpacity={0.85}>
+                <View style={styles.roundIcon}>
+                    <Ionicons name="restaurant-outline" size={20} color={Palette.primary} />
+                </View>
+                <View style={styles.flex}>
+                    <Text style={styles.cardTitle}>Set up nutrition tracking</Text>
+                    <Text style={styles.cardBody}>
+                        Targets built from your profile and the dietary advice on your plan.
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+            </TouchableOpacity>
+        );
+    }
+
+    const remaining = Math.max(0, Math.round(target - consumed));
+    const over = consumed > target;
+
+    return (
+        <View style={styles.card}>
+            <TouchableOpacity style={styles.nutritionTop} onPress={onOpen} activeOpacity={0.85}>
+                <CalorieRing
+                    consumed={consumed}
+                    target={target}
+                    size={132}
+                    stroke={12}
+                    caption={over ? `${Math.round(consumed - target)} over` : `${remaining} left`}
+                />
+                <View style={styles.macroList}>
+                    <Macro label="Protein" grams={day.totals.protein} tint={Palette.primary} />
+                    <Macro label="Fat" grams={day.totals.fat} tint="#FB7185" />
+                    <Macro label="Carbs" grams={day.totals.carbs} tint="#F59E0B" />
+                </View>
+            </TouchableOpacity>
+
+            <View>
+                <Text style={styles.cardTitle}>
+                    {day.meals.length === 0
+                        ? 'Nothing logged yet today'
+                        : over ? "You're over today's target" : "You're on track!"}
+                </Text>
+                <Text style={styles.cardBody}>
+                    {day.adherence.assessed > 0
+                        ? `${day.adherence.aligned + day.adherence.partial} of ${day.adherence.assessed} meals moved you towards your plan.`
+                        : pattern
+                            ? `Your plan asks for a ${pattern.toLowerCase()} pattern. Log a meal and it is scored against that.`
+                            : `${day.meals.length} ${day.meals.length === 1 ? 'meal' : 'meals'} logged.`}
+                </Text>
+            </View>
+
+            <CardFooterAction label="Log Meal" onPress={onLog} />
+        </View>
+    );
+};
+
+const Macro = ({ label, grams, tint }: { label: string; grams: number; tint: string }) => (
+    <View style={styles.macro}>
+        <View style={[styles.macroDot, { borderColor: tint }]} />
+        <View>
+            <Text style={styles.macroLabel}>{label}</Text>
+            <Text style={styles.macroValue}>{Math.round(grams)}g</Text>
+        </View>
+    </View>
+);
+
+// ---------------------------------------------------------------------------
+// Appointments
+// ---------------------------------------------------------------------------
+
+/**
+ * Doctor Appointment.
+ *
+ * The kit labels its featured doctor "Available Remotely" and gives every card a star
+ * rating. Neither is modelled — nothing holds a professional's working hours and there is
+ * no patient review model (see **Roadmap** in CLAUDE.md) — so the card shows the booking's
+ * own status, which is the one per-appointment signal the API can actually back.
+ */
+const AppointmentsCard = ({ appointments, onOpen, onBook }: {
+    appointments: Appointment[]; onOpen: () => void; onBook: () => void;
+}) => {
+    if (appointments.length === 0) {
+        return (
+            <TouchableOpacity style={styles.cardRow} onPress={onBook} activeOpacity={0.85}>
+                <View style={styles.roundIcon}>
+                    <Ionicons name="calendar-outline" size={20} color={Palette.primary} />
+                </View>
+                <View style={styles.flex}>
+                    <Text style={styles.cardTitle}>No appointments booked</Text>
+                    <Text style={styles.cardBody}>
+                        Browse specialists and request a consultation about your results.
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+            </TouchableOpacity>
+        );
+    }
+
+    const [next, ...rest] = appointments;
+    const professional = professionalOf(next);
+    const when = new Date(next.scheduledFor);
+
+    return (
+        <View style={styles.card}>
+            <TouchableOpacity style={styles.doctorRow} onPress={onOpen} activeOpacity={0.85}>
+                <Avatar
+                    uri={professional?.profile_image ?? null}
+                    initials={initialsOf(professional)}
+                    size={52}
+                />
+                <View style={styles.flex}>
+                    <Text style={styles.rowTitle}>{nameOf(professional)}</Text>
+                    <Text style={styles.rowMeta}>
+                        {when.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {', '}
+                        {formatApptTime(when)}
+                    </Text>
+                    <Text style={styles.rowMeta}>
+                        {(professional?.speciality ?? []).join(' · ') || 'Consultation'}
+                        {' · '}
+                        {next.durationMinutes ?? 30}m
+                    </Text>
+                    <View style={styles.statusRow}>
+                        <View style={[
+                            styles.statusDot,
+                            { backgroundColor: next.status === 'confirmed' ? Palette.success : Palette.warning },
+                        ]} />
+                        <Text style={[
+                            styles.statusText,
+                            { color: next.status === 'confirmed' ? Palette.success : Palette.warning },
+                        ]}>
+                            {next.status === 'confirmed' ? 'Confirmed' : 'Awaiting confirmation'}
+                        </Text>
+                    </View>
+                </View>
+            </TouchableOpacity>
+
+            {rest.length > 0 && (
+                <>
+                    <View style={styles.divider} />
+                    <Text style={styles.subHeading}>Upcoming Appointments</Text>
+                    <View style={styles.rowList}>
+                        {rest.slice(0, 3).map((appointment) => {
+                            const p = professionalOf(appointment);
+                            const at = new Date(appointment.scheduledFor);
+                            return (
+                                <TouchableOpacity
+                                    key={appointment._id}
+                                    style={styles.upcomingRow}
+                                    onPress={onOpen}
+                                    activeOpacity={0.85}
+                                >
+                                    <View style={styles.dateChip}>
+                                        <Text style={styles.dateChipDay}>{at.getDate()}</Text>
+                                        <Text style={styles.dateChipWeekday}>
+                                            {at.toLocaleDateString(undefined, { weekday: 'short' })}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.flex}>
+                                        <Text style={styles.rowTitle} numberOfLines={1}>{nameOf(p)}</Text>
+                                        <Text style={styles.rowMeta} numberOfLines={1}>
+                                            {formatRelativeDay(at)} · {formatApptTime(at)}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.rowMeta}>{appointment.durationMinutes ?? 30}m</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </>
+            )}
+        </View>
+    );
+};
+
+// ---------------------------------------------------------------------------
+// Medications
+// ---------------------------------------------------------------------------
+
+/**
+ * Today's doses, with the kit's Skipped / Taken pair.
+ *
+ * `DoseRow` is the medications hub's own row, not a copy — it already handles the settled
+ * state, the undo, and the overdue wording. Two versions of a control that records whether
+ * someone took a medicine is exactly the drift this codebase keeps refusing.
+ *
+ * A dose scheduled for tonight is neither taken nor missed, which is why the header counts
+ * what is *left* rather than showing an adherence percentage a day can never reach yet.
+ */
+const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
+    schedule: MedicationScheduleDay | null;
+    busyDose: string | null;
+    onDose: (id: string, action: 'take' | 'skip' | 'undo') => void;
+    onAdd: () => void;
+    onOpen: (id: string) => void;
+}) => {
+    const doses = schedule?.doses ?? [];
+
+    if (doses.length === 0) {
+        return (
+            <TouchableOpacity style={styles.cardRow} onPress={onAdd} activeOpacity={0.85}>
+                <View style={styles.roundIcon}>
+                    <Ionicons name="medkit-outline" size={20} color={Palette.primary} />
+                </View>
+                <View style={styles.flex}>
+                    <Text style={styles.cardTitle}>Nothing scheduled today</Text>
+                    <Text style={styles.cardBody}>
+                        Add a medication to track doses and check it against the ones you already take.
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+            </TouchableOpacity>
+        );
+    }
+
+    const pending = doses.filter((d) => d.status === 'scheduled').length;
+
+    return (
+        <View style={styles.card}>
+            <Text style={styles.cardBody}>
+                {pending === 0
+                    ? 'Every dose today has been recorded.'
+                    : `${pending} dose${pending === 1 ? '' : 's'} left today.`}
+            </Text>
+
+            <View style={styles.rowList}>
+                {doses.slice(0, 3).map((dose) => (
+                    <DoseRow
+                        key={dose._id}
+                        dose={dose}
+                        busy={busyDose === dose._id}
+                        onTake={() => onDose(dose._id, 'take')}
+                        onSkip={() => onDose(dose._id, 'skip')}
+                        onUndo={() => onDose(dose._id, 'undo')}
+                        onPress={() => onOpen(dose.medicationId)}
+                    />
+                ))}
+            </View>
+        </View>
+    );
+};
+
+// ---------------------------------------------------------------------------
+// Symptom checker, assistant, support
+// ---------------------------------------------------------------------------
+
+/**
+ * Symptom checker.
+ *
+ * The kit ends this flow on a "Your Possible Conditions" list with match percentages, and
+ * its home card previews "Recent Checks" with risk levels. There is no diagnosis engine
+ * and no stored check — `app/symptoms` composes a message and sends it to the assistant,
+ * which answers against the person's own records. So the card is the entry point: the
+ * search, and the symptoms people actually start from.
+ */
+const SymptomCheckerCard = ({ onSearch, onSymptom }: {
+    onSearch: () => void; onSymptom: (id: string) => void;
+}) => {
+    const common = COMMON_SYMPTOM_IDS
+        .map((id) => SYMPTOMS.find((s) => s.id === id))
+        .filter((s): s is NonNullable<typeof s> => Boolean(s));
+
+    return (
+        <View style={styles.card}>
+            <TouchableOpacity style={styles.searchField} onPress={onSearch} activeOpacity={0.85}>
+                <Ionicons name="search" size={18} color={Palette.textMuted} />
+                <Text style={styles.searchPlaceholder}>Search for a symptom…</Text>
+            </TouchableOpacity>
+
+            <View style={styles.chipRow}>
+                <Text style={styles.chipLead}>Most common</Text>
+                {common.map((symptom) => (
+                    <TouchableOpacity
+                        key={symptom.id}
+                        style={styles.chip}
+                        onPress={() => onSymptom(symptom.id)}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.chipText}>{symptom.label}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <Text style={styles.cardNote}>
+                What you pick is composed into a question for the assistant, which answers with your
+                results and plan in front of it. It does not diagnose.
+            </Text>
+        </View>
+    );
+};
+
+/**
+ * AI Health Assistant.
+ *
+ * Shows the last thing the assistant actually said, so the bubble is a resumption rather
+ * than a stock line. With no conversation yet it says what the assistant is for; with no
+ * model key on the server it says that instead of offering a chat that answers 503.
+ */
+const AssistantCard = ({ conversation, onOpen }: {
+    conversation: Conversation | null; onOpen: () => void;
+}) => {
+    const last = [...(conversation?.messages ?? [])].reverse().find((m) => m.role === 'assistant');
+    const unavailable = conversation?.available === false;
+
+    return (
+        <View style={styles.card}>
+            <View style={styles.bubbleRow}>
+                <View style={styles.botIcon}>
+                    <Ionicons name="sparkles" size={18} color={Palette.primary} />
+                </View>
+                <View style={styles.bubble}>
+                    <Text style={styles.bubbleText}>
+                        {unavailable
+                            ? 'The assistant is unavailable on this server right now. Your results and trackers are unaffected.'
+                            : last?.text
+                                ?? 'Ask me anything about your results, your plan, or a symptom — I read your own records before answering.'}
+                    </Text>
+                    {!!last && (
+                        <View style={styles.bubbleFoot}>
+                            <Text style={styles.bubbleTime}>{messageTime(last.createdAt)}</Text>
+                            <Ionicons name="checkmark-done" size={14} color={Palette.success} />
+                        </View>
+                    )}
+                </View>
+            </View>
+
+            {!unavailable && (
+                <>
+                    <View style={styles.divider} />
+                    <TouchableOpacity style={styles.footerAction} onPress={onOpen} activeOpacity={0.8}>
+                        <Text style={styles.footerActionText}>
+                            {last ? 'Continue the conversation' : 'Chat with LabTrack AI'}
+                        </Text>
+                        <Ionicons name="chatbubble-ellipses-outline" size={17} color={Palette.primary} />
+                    </TouchableOpacity>
+                </>
+            )}
+        </View>
+    );
+};
+
+const SupportBanner = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={styles.support} onPress={onPress} activeOpacity={0.85}>
+        <View style={styles.flex}>
+            <Text style={styles.supportBody}>
+                Need help? Our Help Center has the FAQ, and you can email support from there.
+            </Text>
+            <Text style={styles.supportLink}>Get support</Text>
+        </View>
+        <Ionicons name="headset-outline" size={40} color={Palette.primaryLight} />
+    </TouchableOpacity>
+);
+
+/** The kit's underlined footer action — "Log Activity +" — above a hairline rule. */
+const CardFooterAction = ({ label, onPress }: { label: string; onPress: () => void }) => (
+    <>
+        <View style={styles.divider} />
+        <TouchableOpacity style={styles.footerAction} onPress={onPress} activeOpacity={0.8}>
+            <Text style={styles.footerActionText}>{label}</Text>
+            <Ionicons name="add" size={18} color={Palette.primary} />
+        </TouchableOpacity>
+    </>
+);
+
+// ---------------------------------------------------------------------------
+// Latest analysis
+// ---------------------------------------------------------------------------
 
 /**
  * How a plain-language key point is drawn.
@@ -620,10 +1352,7 @@ const TONE_META: Record<string, { icon: React.ComponentProps<typeof Ionicons>['n
  *
  *   - no analysis at all              → the card is the call to action
  *   - analysis, but of an OLDER result → show it, say so plainly, and offer to analyse the
- *                                        new one. Previously this rendered nothing, so a
- *                                        person with a perfectly good analysis on their
- *                                        first result saw an empty home screen after
- *                                        adding a second.
+ *                                        new one.
  *   - analysis of the newest result    → the normal case
  *   - AI unavailable on the server     → no button to press
  *
@@ -727,8 +1456,6 @@ const AnalysisCard = ({
                       * Without it — every analysis generated before the plain-language
                       * layer existed, and `Interpretation` is append-only so those are
                       * never rewritten — the clinical summary is shown as it always was.
-                      * A card that renders nothing because one field is missing is worse
-                      * than a card that reads too technically.
                       */}
                     {plain ? (
                         <>
@@ -779,8 +1506,6 @@ const AnalysisCard = ({
                       * moved in — by design, and technical by the same token. Where a plain
                       * summary exists it already tells that story in everyday words, so
                       * this stays behind the fold and the collapsed card stays readable.
-                      * Without one it is shown as before, because a card that only says
-                      * "your results were interpreted" is worth less than a technical one.
                       */}
                     {hasMeaningfulChanges(interpretation) && (!plain || expanded) && (
                         <View style={styles.changesNote}>
@@ -936,172 +1661,9 @@ const Section = ({ title, action, onAction, children }: {
     </View>
 );
 
-const AttentionCard = ({ biomarker, onPress }: { biomarker: BiomarkerSummary; onPress: () => void }) => {
-    const meta = FLAG_META[biomarker.flag];
-    const movement = describeMovement(biomarker);
-    // These cards are the first thing a worried person reads. A card that says only
-    // "Ferritin · Low" names a problem in a language they do not speak.
-    const plain = plainName(biomarker);
-    return (
-        <TouchableOpacity style={[styles.attentionCard, { borderColor: meta.color }]} onPress={onPress} activeOpacity={0.85}>
-            <View style={[styles.flagPill, { backgroundColor: meta.bg }]}>
-                <Text style={[styles.flagText, { color: meta.color }]}>{meta.label}</Text>
-            </View>
-            <Text style={styles.attentionName} numberOfLines={2}>
-                {medicalName(biomarker)}
-            </Text>
-            {plain && <Text style={styles.attentionPlain} numberOfLines={2}>{plain}</Text>}
-            <View style={styles.valueRow}>
-                <Text style={[styles.attentionValue, { color: meta.color }]}>{formatValue(biomarker.value)}</Text>
-                <Text style={styles.unit}>{biomarker.unit}</Text>
-            </View>
-            {movement && (
-                <Text style={[styles.movement, { color: movement.tone === 'good' ? Palette.success : movement.tone === 'bad' ? Palette.danger : Palette.textSecondary }]}>
-                    {movement.text} since last
-                </Text>
-            )}
-        </TouchableOpacity>
-    );
-};
-
-const QuickAction = ({ icon, label, onPress }: {
-    icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void;
-}) => (
-    <TouchableOpacity style={styles.action} onPress={onPress} activeOpacity={0.75}>
-        <View style={styles.actionIcon}>
-            <Ionicons name={icon} size={22} color={Palette.primary} />
-        </View>
-        <Text style={styles.actionLabel}>{label}</Text>
-    </TouchableOpacity>
-);
-
-const PLAN_ICON: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
-    test: 'flask-outline',
-    scan: 'scan-outline',
-    consultation: 'person-outline',
-    assessment: 'clipboard-outline',
-    lifestyle: 'leaf-outline',
-};
-
-const PlanRow = ({ item, onPress }: { item: PlanItem; onPress: () => void }) => {
-    const due = describeDue(item.dueDate);
-    return (
-        <TouchableOpacity style={styles.planRow} onPress={onPress} activeOpacity={0.85}>
-            <View style={[styles.planIcon, due.overdue && { backgroundColor: Palette.dangerSurface }]}>
-                <Ionicons
-                    name={PLAN_ICON[item.type] ?? 'flask-outline'}
-                    size={18}
-                    color={due.overdue ? Palette.danger : Palette.primary}
-                />
-            </View>
-            <View style={styles.flex}>
-                <Text style={styles.planTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.planMeta} numberOfLines={1}>
-                    {item.condition ?? item.speciality ?? item.frequency ?? 'Scheduled'}
-                </Text>
-            </View>
-            <Text style={[styles.planDue, due.overdue && { color: Palette.danger }]}>{due.text}</Text>
-        </TouchableOpacity>
-    );
-};
-
-/**
- * Today's nutrition, on the home screen.
- *
- * A compact read of the same day the tracker shows, with the plan's dietary advice named
- * rather than implied. "Mediterranean" on the home screen is what connects a calorie bar to
- * the interpretation that asked for it; without it this is a widget from a different app.
- *
- * Three states, because they call for different things: no targets yet (set them up),
- * targets but nothing eaten (log something), and a day in progress (see how it is going).
- */
-const NutritionSummaryCard = ({ day, onPress }: { day: NutritionDay | null; onPress: () => void }) => {
-    const target = day?.targets && 'calories' in day.targets ? day.targets.calories : 0;
-    const consumed = day?.totals.calories ?? 0;
-    const pattern = day?.plan?.guidance?.find((g) => g.kind === 'pattern')?.label
-        ?? day?.plan?.guidance?.[0]?.label;
-
-    if (!day?.plan || !target) {
-        return (
-            <TouchableOpacity style={styles.nutritionCard} onPress={onPress} activeOpacity={0.85}>
-                <View style={styles.nutritionIcon}>
-                    <Ionicons name="restaurant-outline" size={20} color={Palette.primary} />
-                </View>
-                <View style={styles.flex}>
-                    <Text style={styles.nutritionTitle}>Set up nutrition tracking</Text>
-                    <Text style={styles.nutritionBody}>
-                        Targets built from your profile and the dietary advice on your plan.
-                    </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-            </TouchableOpacity>
-        );
-    }
-
-    const ratio = Math.min(1, consumed / target);
-    const over = consumed > target;
-
-    return (
-        <TouchableOpacity style={styles.nutritionCard} onPress={onPress} activeOpacity={0.85}>
-            <View style={styles.flex}>
-                <View style={styles.nutritionTop}>
-                    <Text style={styles.nutritionValue}>
-                        {Math.round(consumed).toLocaleString()}
-                        <Text style={styles.nutritionOf}> / {target.toLocaleString()} kcal</Text>
-                    </Text>
-                    {!!pattern && (
-                        <View style={styles.nutritionChip}>
-                            <Text style={styles.nutritionChipText}>{pattern}</Text>
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.nutritionTrack}>
-                    <View
-                        style={[
-                            styles.nutritionFill,
-                            { width: `${ratio * 100}%`, backgroundColor: over ? Palette.warning : Palette.primary },
-                        ]}
-                    />
-                </View>
-
-                <Text style={styles.nutritionBody}>
-                    {day.meals.length === 0
-                        ? "Nothing logged yet today."
-                        : day.adherence.assessed > 0
-                            ? `${day.adherence.aligned + day.adherence.partial} of ${day.adherence.assessed} meals moved you towards your plan.`
-                            : `${day.meals.length} ${day.meals.length === 1 ? 'meal' : 'meals'} logged.`}
-                </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-        </TouchableOpacity>
-    );
-};
-
-const MetricCard = ({ biomarker, onPress }: { biomarker: BiomarkerSummary; onPress: () => void }) => {
-    const meta = FLAG_META[biomarker.flag];
-    const movement = describeMovement(biomarker);
-    return (
-        <TouchableOpacity style={styles.metricCard} onPress={onPress} activeOpacity={0.85}>
-            <View style={styles.metricTop}>
-                <Text style={styles.metricName} numberOfLines={1}>
-                    {biomarker.displayName ?? biomarker.name}
-                </Text>
-                <View style={[styles.statusDot, { backgroundColor: meta.color }]} />
-            </View>
-            <View style={styles.valueRow}>
-                <Text style={styles.metricValue}>{formatValue(biomarker.value)}</Text>
-                <Text style={styles.unit}>{biomarker.unit}</Text>
-            </View>
-            <Text
-                style={[styles.movement, { color: movement?.tone === 'good' ? Palette.success : movement?.tone === 'bad' ? Palette.danger : Palette.textSecondary }]}
-                numberOfLines={1}
-            >
-                {movement ? `${movement.text} since last` : `${biomarker.measurementCount} readings`}
-            </Text>
-        </TouchableOpacity>
-    );
-};
+// ---------------------------------------------------------------------------
+// Signed out
+// ---------------------------------------------------------------------------
 
 const ProductCard = ({ product, onPress }: { product: Product; onPress: () => void }) => (
     <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.85}>
@@ -1115,52 +1677,6 @@ const ProductCard = ({ product, onPress }: { product: Product; onPress: () => vo
     </TouchableOpacity>
 );
 
-/**
- * Score explainer. The kit ships a dedicated "What is the nightingale score" screen for a
- * reason: a number a person cannot interrogate is a number they do not act on.
- */
-const ScoreExplainer = ({ visible, score, onClose }: { visible: boolean; score: HealthScore; onClose: () => void }) => (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-        <Pressable style={styles.backdrop} onPress={onClose}>
-            <Pressable style={styles.sheet} onPress={() => {}}>
-                <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>How your score works</Text>
-                <Text style={styles.sheetBody}>
-                    Nine pillars, weighted by how much each one tells us about your health. Anything
-                    your devices and logs measured counts for more than anything you told us in the
-                    health assessment — and replaces it outright once it exists.
-                </Text>
-
-                <View style={styles.stack}>
-                    {score.pillars.map((p) => (
-                        <View key={p.key} style={styles.pillarRow}>
-                            <View style={styles.pillarHeader}>
-                                <Text style={styles.pillarLabel}>{p.label}</Text>
-                                <View style={styles.pillarMeta}>
-                                    <Text style={[styles.pillarSource, { color: SOURCE_META[p.source].color }]}>
-                                        {SOURCE_META[p.source].label}
-                                    </Text>
-                                    <Text style={styles.pillarValue}>{p.value == null ? '--' : `${p.value}`}</Text>
-                                </View>
-                            </View>
-                            <View style={styles.pillarTrack}>
-                                <View style={[styles.pillarFill, { width: `${p.value ?? 0}%` }]} />
-                            </View>
-                            <Text style={styles.pillarDetail}>{p.detail}</Text>
-                        </View>
-                    ))}
-                </View>
-
-                <Text style={styles.disclaimer}>{score.disclaimer}</Text>
-
-                <TouchableOpacity style={styles.primaryButton} onPress={onClose}>
-                    <Text style={styles.primaryButtonText}>Got it</Text>
-                </TouchableOpacity>
-            </Pressable>
-        </Pressable>
-    </Modal>
-);
-
 const BENEFITS: { icon: React.ComponentProps<typeof Ionicons>['name']; title: string; body: string }[] = [
     { icon: 'sparkles-outline', title: 'AI interpretation', body: 'Your results explained in plain language.' },
     { icon: 'trending-up-outline', title: 'Track over time', body: 'Every marker charted against your own range.' },
@@ -1168,13 +1684,15 @@ const BENEFITS: { icon: React.ComponentProps<typeof Ionicons>['name']; title: st
     { icon: 'shield-checkmark-outline', title: 'Genetic context', body: 'Ranges narrowed to your DNA where it matters.' },
 ];
 
-const SignedOut = ({ products, router }: { products: Product[]; router: ReturnType<typeof useRouter> }) => (
+const SignedOut = ({ products, router, topInset }: {
+    products: Product[]; router: Router; topInset: number;
+}) => (
     <>
         <LinearGradient
             colors={Palette.heroGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.hero}
+            style={[styles.welcomeHero, { paddingTop: topInset + Spacing.xxl }]}
         >
             <Text style={styles.heroEyebrow}>LabTrack</Text>
             <Text style={styles.welcomeTitle}>Understand what your results actually mean</Text>
@@ -1192,10 +1710,10 @@ const SignedOut = ({ products, router }: { products: Product[]; router: ReturnTy
         </LinearGradient>
 
         <Section title="Why LabTrack">
-            <View style={styles.metricGrid}>
+            <View style={styles.benefitGrid}>
                 {BENEFITS.map((b) => (
                     <View key={b.title} style={styles.benefitCard}>
-                        <View style={styles.actionIcon}>
+                        <View style={styles.benefitIcon}>
                             <Ionicons name={b.icon} size={20} color={Palette.primary} />
                         </View>
                         <Text style={styles.benefitTitle}>{b.title}</Text>
@@ -1222,7 +1740,7 @@ const SignedOut = ({ products, router }: { products: Product[]; router: ReturnTy
 );
 
 // ---------------------------------------------------------------------------
-// Styles — 16pt gutter and 8pt card radius, matching the turing kit.
+// Styles — 16pt gutter and the kit's card radius.
 // ---------------------------------------------------------------------------
 
 const GUTTER = Spacing.lg;
@@ -1232,135 +1750,195 @@ const styles = StyleSheet.create({
     center: { alignItems: 'center', justifyContent: 'center' },
     content: { paddingBottom: Spacing.xxxl },
     flex: { flex: 1 },
-    stack: { gap: Spacing.sm },
     hScroll: { paddingHorizontal: GUTTER, gap: Spacing.md },
 
-    // Greeting
-    greetingRow: {
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        paddingHorizontal: GUTTER, paddingTop: Spacing.lg, paddingBottom: Spacing.md,
+    // Header ---------------------------------------------------------------
+    header: {
+        paddingHorizontal: GUTTER,
+        // Deep enough that the score card, pulled up by half its height, still leaves the
+        // gradient reading as a band rather than as a stripe behind a card.
+        paddingBottom: Spacing.xxxl + Spacing.xxl,
     },
-    greetingLabel: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    greetingName: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold },
+    headerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    dateRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    headerDate: { fontSize: 13, color: 'rgba(255,255,255,0.85)', fontFamily: Fonts.medium },
+    streakChip: {
+        flexDirection: 'row', alignItems: 'center', gap: 3,
+        backgroundColor: '#F59E0B', borderRadius: Radius.sm,
+        paddingHorizontal: 7, paddingVertical: 2,
+    },
+    streakText: { fontSize: 12, color: Palette.white, fontFamily: Fonts.bold },
+    headerGreeting: { fontSize: 26, color: Palette.white, fontFamily: Fonts.bold, marginTop: 6 },
+    headerSearch: {
+        width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.white,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    headerAvatar: { borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' },
 
-    // Score hero
-    hero: {
-        marginHorizontal: GUTTER, borderRadius: Radius.xl, padding: Spacing.xl,
-        gap: Spacing.md, ...Shadow.card,
+    // Score card -----------------------------------------------------------
+    scoreCard: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.lg,
+        marginHorizontal: GUTTER, marginTop: -Spacing.xxxl - Spacing.md,
+        padding: Spacing.lg, borderRadius: Radius.xl,
+        backgroundColor: Palette.white, ...Shadow.card,
+        shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
     },
-    heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    heroEyebrow: {
-        fontSize: 12, letterSpacing: 0.8,
-        color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', fontFamily: Fonts.bold,
+    scoreBox: {
+        width: 66, height: 66, borderRadius: Radius.lg,
+        backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
     },
-    heroBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    heroFigures: { gap: Spacing.sm },
-    heroFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginTop: Spacing.sm,
-    },
-    provenanceChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: Radius.pill,
-        backgroundColor: 'rgba(255,255,255,0.16)',
-    },
-    provenanceText: {
-        fontFamily: Fonts.medium,
-        fontSize: 11,
-        color: '#FFFFFF',
-    },
-    heroLink: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 2,
-        marginLeft: 'auto',
-    },
-    heroLinkText: {
-        fontFamily: Fonts.semibold,
-        fontSize: 12,
-        color: '#FFFFFF',
-    },
-    pillarMeta: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    pillarSource: {
-        fontFamily: Fonts.medium,
-        fontSize: 10,
-        textTransform: 'uppercase',
-        letterSpacing: 0.4,
-    },
-    heroScore: {
-        fontSize: 56, lineHeight: 62, color: Palette.white, fontFamily: Fonts.bold,
-    },
-    bandPill: {
-        flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
-        paddingHorizontal: Spacing.md, paddingVertical: 5, borderRadius: Radius.pill,
-    },
-    bandDot: { width: 7, height: 7, borderRadius: Radius.pill },
-    bandText: { fontSize: 12, color: Palette.white, fontFamily: Fonts.semibold },
-    heroHeadline: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.88)', fontFamily: Fonts.regular },
+    scoreValue: { fontSize: 28, color: Palette.primary, fontFamily: Fonts.bold },
+    scoreBand: { fontSize: 18, color: Palette.text, fontFamily: Fonts.bold },
+    scoreMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' },
+    scoreMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    scoreMetaText: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    scoreDot: { fontSize: 13, color: Palette.textMuted },
 
-    // Sections
-    nutritionCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.md,
-        backgroundColor: Palette.background,
-        borderRadius: Radius.lg,
-        borderWidth: 1,
-        borderColor: Palette.borderSlate,
-        padding: Spacing.lg,
-        ...Shadow.card,
-    },
-    nutritionIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: Radius.md,
-        backgroundColor: Palette.primarySurface,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    nutritionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    nutritionTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
-    nutritionValue: { fontSize: 20, color: Palette.text, fontFamily: Fonts.bold },
-    nutritionOf: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    nutritionChip: {
-        backgroundColor: Palette.primarySurface,
-        borderRadius: Radius.pill,
-        paddingHorizontal: Spacing.md,
-        paddingVertical: 3,
-    },
-    nutritionChipText: { fontSize: 11, color: Palette.primaryDark, fontFamily: Fonts.semibold },
-    nutritionTrack: {
-        height: 6,
-        borderRadius: Radius.pill,
-        backgroundColor: Palette.borderLight,
-        overflow: 'hidden',
-        marginVertical: Spacing.sm,
-    },
-    nutritionFill: { height: '100%', borderRadius: Radius.pill },
-    nutritionBody: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 17 },
+    // Sections -------------------------------------------------------------
     section: { marginTop: Spacing.xxl },
     sectionHeader: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: GUTTER, marginBottom: Spacing.md,
     },
-    sectionTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
-    sectionAction: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.semibold },
+    sectionTitle: { fontSize: 18, color: Palette.text, fontFamily: Fonts.bold },
+    sectionAction: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.semibold },
 
+    // The shared card the kit draws every section in.
+    card: {
+        marginHorizontal: GUTTER, padding: Spacing.lg, borderRadius: Radius.xl,
+        backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.borderLight,
+        gap: Spacing.md,
+    },
+    cardRow: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+        marginHorizontal: GUTTER, padding: Spacing.lg, borderRadius: Radius.xl,
+        backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.borderLight,
+    },
+    cardHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
+    cardTitle: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
+    cardBody: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 3 },
+    cardNote: { fontSize: 12, lineHeight: 17, color: Palette.textMuted, fontFamily: Fonts.regular },
+    bigFigure: { fontSize: 30, color: Palette.text, fontFamily: Fonts.bold },
+    bigUnit: { fontSize: 15, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    divider: { height: 1, backgroundColor: Palette.border },
+    subHeading: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
+    roundIcon: {
+        width: 42, height: 42, borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    roundButton: {
+        width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.primary,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    footerAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+    footerActionText: { fontSize: 15, color: Palette.primary, fontFamily: Fonts.semibold },
+    rowList: { gap: Spacing.md },
+    rowItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    rowTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
+    rowMeta: { fontSize: 12.5, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 1 },
+    statRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: 5 },
+    stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    statText: { fontSize: 12.5, color: Palette.text, fontFamily: Fonts.semibold },
+    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
+    statusDot: { width: 7, height: 7, borderRadius: Radius.pill },
+    statusText: { fontSize: 13, fontFamily: Fonts.semibold },
 
-    // Latest analysis
+    // Health metrics -------------------------------------------------------
+    metricTile: {
+        width: METRIC_CARD_WIDTH, padding: Spacing.lg, borderRadius: Radius.xl,
+        backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.borderLight,
+        gap: Spacing.sm,
+    },
+    metricTileIcon: {
+        width: 40, height: 40, borderRadius: Radius.md,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    metricTileValue: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold },
+    metricTileLabel: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    metricTileNote: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.medium },
+    valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+    unit: { fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.regular },
+    dots: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: Spacing.md },
+    dot: { width: 18, height: 5, borderRadius: Radius.pill, backgroundColor: Palette.border },
+    dotActive: { width: 26, backgroundColor: Palette.primary },
+
+    // Activity -------------------------------------------------------------
+    ringCentre: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+    ringText: { fontSize: 15, color: Palette.text, fontFamily: Fonts.bold },
+
+    // Sleep ----------------------------------------------------------------
+    sleepChart: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.sm, height: 86 },
+    sleepColumn: { flex: 1, alignItems: 'center', gap: 5 },
+    sleepTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
+    sleepBar: {
+        width: '100%', borderRadius: Radius.sm, backgroundColor: Palette.primary, minHeight: 4,
+    },
+    sleepLabel: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.medium },
+
+    // Nutrition ------------------------------------------------------------
+    nutritionTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
+    macroList: { flex: 1, gap: Spacing.md },
+    macro: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    macroDot: { width: 26, height: 26, borderRadius: 13, borderWidth: 3 },
+    macroLabel: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    macroValue: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
+
+    // Appointments ---------------------------------------------------------
+    doctorRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    upcomingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    dateChip: {
+        width: 46, height: 46, borderRadius: Radius.md, borderWidth: 1,
+        borderColor: Palette.border, backgroundColor: Palette.white,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    dateChipDay: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
+    dateChipWeekday: { fontSize: 10, color: Palette.textSecondary, fontFamily: Fonts.medium },
+
+    // Symptoms -------------------------------------------------------------
+    searchField: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+        borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.border,
+        backgroundColor: Palette.white, paddingHorizontal: Spacing.lg, paddingVertical: 13,
+    },
+    searchPlaceholder: { fontSize: 14, color: Palette.textMuted, fontFamily: Fonts.regular },
+    chipRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.sm },
+    chipLead: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    chip: {
+        borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.border,
+        backgroundColor: Palette.white, paddingHorizontal: Spacing.md, paddingVertical: 6,
+    },
+    chipText: { fontSize: 13, color: Palette.text, fontFamily: Fonts.medium },
+
+    // Assistant ------------------------------------------------------------
+    bubbleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
+    botIcon: {
+        width: 40, height: 40, borderRadius: 20, backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    bubble: {
+        flex: 1, backgroundColor: Palette.white, borderRadius: Radius.lg,
+        borderWidth: 1, borderColor: Palette.borderLight,
+        padding: Spacing.md, gap: 4,
+    },
+    bubbleText: { fontSize: 14.5, lineHeight: 21, color: Palette.text, fontFamily: Fonts.regular },
+    bubbleFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
+    bubbleTime: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular },
+
+    // Support --------------------------------------------------------------
+    support: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+        marginHorizontal: GUTTER, marginTop: Spacing.xxl,
+        padding: Spacing.lg, borderRadius: Radius.xl,
+        backgroundColor: Palette.primarySurface,
+        borderWidth: 1, borderColor: '#E9D5FF',
+    },
+    supportBody: { fontSize: 14, lineHeight: 20, color: Palette.text, fontFamily: Fonts.regular },
+    supportLink: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold, marginTop: 6 },
+
+    // Latest analysis ------------------------------------------------------
     analysisCard: {
-        marginHorizontal: GUTTER, padding: Spacing.lg, borderRadius: Radius.lg,
+        marginHorizontal: GUTTER, padding: Spacing.lg, borderRadius: Radius.xl,
         backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
         gap: Spacing.md,
     },
@@ -1460,107 +2038,6 @@ const styles = StyleSheet.create({
         color: Palette.textMuted, fontFamily: Fonts.bold,
     },
 
-    // Attention
-    attentionCard: {
-        width: 150, padding: Spacing.lg, borderRadius: Radius.lg, borderWidth: 1,
-        backgroundColor: Palette.white, gap: 6, ...Shadow.card,
-    },
-    flagPill: { alignSelf: 'flex-start', paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm },
-    flagText: { fontSize: 10, fontFamily: Fonts.bold },
-    attentionName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
-    attentionPlain: { fontSize: 11.5, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 2 },
-    valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-    attentionValue: { fontSize: 22, fontFamily: Fonts.bold },
-    unit: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular },
-    movement: { fontSize: 11, fontFamily: Fonts.semibold },
-
-    // Quick actions
-    /**
-     * A wrapping grid, not a single row.
-     *
-     * These were `flex: 1` children of a non-wrapping row, so all nine shared one line and
-     * the 48pt icons overlapped each other. Columns are a fixed fraction rather than `flex`
-     * because flex children do not wrap onto even columns — the width has to be the thing
-     * that is fixed. Three across divides the nine actions into a clean 3x3 and leaves the
-     * labels enough room that "Medications" does not wrap.
-     *
-     * The horizontal gap comes from padding inside each cell rather than `gap` on the row,
-     * so the columns stay exact at any screen width instead of overflowing and re-wrapping
-     * unevenly on a narrow phone.
-     */
-    actionRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        paddingHorizontal: GUTTER - Spacing.xs,
-        rowGap: Spacing.lg,
-    },
-    action: {
-        width: '33.333%',
-        alignItems: 'center',
-        gap: Spacing.sm,
-        paddingHorizontal: Spacing.xs,
-    },
-    actionIcon: {
-        width: 48, height: 48, borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    actionLabel: { fontSize: 12, color: Palette.textSecondary, textAlign: 'center', fontFamily: Fonts.semibold },
-
-    // Assessment nudge
-    assessmentCard: {
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        marginHorizontal: GUTTER, marginTop: Spacing.xxl, padding: Spacing.lg,
-        borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
-    },
-    assessmentIcon: {
-        width: 38, height: 38, borderRadius: Radius.md, backgroundColor: Palette.white,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    assessmentTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold },
-    assessmentBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary, marginTop: 2, fontFamily: Fonts.regular },
-
-    // Plan
-    planRow: {
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        marginHorizontal: GUTTER, padding: Spacing.lg, borderRadius: Radius.lg,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
-    },
-    planIcon: {
-        width: 36, height: 36, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    planTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold },
-    planMeta: { fontSize: 12, color: Palette.textSecondary, marginTop: 2, fontFamily: Fonts.regular },
-    planDue: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.semibold },
-
-    // Metric grid
-    metricGrid: {
-        flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, paddingHorizontal: GUTTER,
-    },
-    metricCard: {
-        flexGrow: 1, flexBasis: '46%', padding: Spacing.lg, borderRadius: Radius.lg,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border, gap: 6,
-    },
-    metricTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    metricName: { flex: 1, fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.semibold },
-    statusDot: { width: 8, height: 8, borderRadius: Radius.pill },
-    metricValue: { fontSize: 22, color: Palette.text, fontFamily: Fonts.bold },
-
-    // Products
-    productCard: { width: 152, gap: 6 },
-    productImage: { width: 152, height: 104, borderRadius: Radius.lg, backgroundColor: Palette.surface },
-    productPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-    productName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
-    productPrice: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
-
-    // Empty
-    emptyCard: {
-        alignItems: 'center', gap: Spacing.sm, marginHorizontal: GUTTER, marginTop: Spacing.xxl,
-        padding: Spacing.xxl, borderRadius: Radius.lg, backgroundColor: Palette.surface,
-    },
-    emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
-    emptyBody: { fontSize: 13, lineHeight: 19, color: Palette.textSecondary, textAlign: 'center', fontFamily: Fonts.regular },
-
     primaryButton: {
         backgroundColor: Palette.primary, borderRadius: Radius.md,
         paddingVertical: 14, paddingHorizontal: Spacing.xxl, alignItems: 'center', marginTop: Spacing.sm,
@@ -1568,10 +2045,16 @@ const styles = StyleSheet.create({
     },
     primaryButtonText: { color: Palette.white, fontSize: 15, fontFamily: Fonts.semibold },
 
-    // Signed out
-    welcomeTitle: {
-        fontSize: 26, lineHeight: 34, color: Palette.white, fontFamily: Fonts.bold,
+    // Signed out -----------------------------------------------------------
+    welcomeHero: {
+        paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxl, gap: Spacing.md,
     },
+    heroEyebrow: {
+        fontSize: 12, letterSpacing: 0.8,
+        color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', fontFamily: Fonts.bold,
+    },
+    heroHeadline: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.88)', fontFamily: Fonts.regular },
+    welcomeTitle: { fontSize: 26, lineHeight: 34, color: Palette.white, fontFamily: Fonts.bold },
     ctaRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
     ctaPrimary: {
         flex: 1, backgroundColor: Palette.white, borderRadius: Radius.md,
@@ -1583,30 +2066,24 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)',
     },
     ctaSecondaryText: { color: Palette.white, fontSize: 14, fontFamily: Fonts.semibold },
+    benefitGrid: {
+        flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, paddingHorizontal: GUTTER,
+    },
     benefitCard: {
         flexGrow: 1, flexBasis: '46%', padding: Spacing.lg, borderRadius: Radius.lg,
         backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border, gap: Spacing.sm,
     },
+    benefitIcon: {
+        width: 48, height: 48, borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
     benefitTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold },
     benefitBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary, fontFamily: Fonts.regular },
 
-    // Explainer sheet
-    backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.64)', justifyContent: 'flex-end' },
-    sheet: {
-        backgroundColor: Palette.background, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-        padding: Spacing.xl, paddingBottom: Spacing.xxxl, gap: Spacing.md,
-    },
-    sheetHandle: {
-        width: 40, height: 4, borderRadius: Radius.pill, backgroundColor: Palette.border, alignSelf: 'center',
-    },
-    sheetTitle: { fontSize: 20, color: Palette.text, fontFamily: Fonts.bold },
-    sheetBody: { fontSize: 13, lineHeight: 19, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    pillarRow: { gap: 5 },
-    pillarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    pillarLabel: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
-    pillarValue: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.bold },
-    pillarTrack: { height: 6, borderRadius: Radius.pill, backgroundColor: Palette.borderLight, overflow: 'hidden' },
-    pillarFill: { height: 6, borderRadius: Radius.pill, backgroundColor: Palette.primary },
-    pillarDetail: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    disclaimer: { fontSize: 11, lineHeight: 16, color: Palette.textMuted, marginTop: Spacing.sm, fontFamily: Fonts.regular },
+    // Products -------------------------------------------------------------
+    productCard: { width: 152, gap: 6 },
+    productImage: { width: 152, height: 104, borderRadius: Radius.lg, backgroundColor: Palette.surface },
+    productPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+    productName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
+    productPrice: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
 });

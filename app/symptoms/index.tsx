@@ -30,7 +30,7 @@ import {
     ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
@@ -48,6 +48,7 @@ import type { User } from '@/types/api';
 
 export default function SymptomsScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ symptom?: string }>();
     const inputRef = useRef<TextInput>(null);
 
     const [firstName, setFirstName] = useState<string | null>(null);
@@ -73,6 +74,23 @@ export default function SymptomsScreen() {
             }
         })();
         return () => { cancelled = true; };
+    }, []);
+
+    /**
+     * A symptom handed in by whoever pushed this screen — the home card's "most common"
+     * chips do it, so tapping "Headache" there arrives here with it already chosen rather
+     * than on an empty search the person has to retype it into.
+     *
+     * Seeded once and only when the draft is still empty, so returning to this screen
+     * cannot re-add a symptom the person has just removed. An id the catalogue does not
+     * know is ignored rather than added as a stray chip.
+     */
+    useEffect(() => {
+        const id = params.symptom;
+        if (!id || !symptomById(id)) return;
+        setDraft((prev) => (prev.symptomIds.length ? prev : { ...prev, symptomIds: [id] }));
+        // Once, on arrival. `params.symptom` is stable for the life of this route entry.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const suggestions = useMemo(() => searchSymptoms(query), [query]);
