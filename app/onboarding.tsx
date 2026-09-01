@@ -5,7 +5,10 @@
  *
  * - **Slide 1** is the welcome: line-art hero, headline, and a full-width primary CTA with
  *   a sign-in escape hatch underneath, for people who already have an account and should
- *   not have to swipe through eleven feature slides to reach it.
+ *   not have to swipe through eleven feature slides to reach it. Its metrics are measured
+ *   off the export rather than chosen: 320pt hero, 16pt gutter, a 343x50 button on the
+ *   kit's radius of 6. The kit's gutter here is **16, not the 24 the rest of the app
+ *   uses** — a wider one narrows the button and stops it reading as the page's one action.
  * - **Slides 2-12** are feature slides: a segmented progress bar, a lavender stage with a
  *   phone body rising from the bottom and the feature's card floating over its top edge,
  *   then a white sheet carrying the copy and the prev/next controls.
@@ -45,7 +48,7 @@ interface OnboardingSlide {
 const slides: OnboardingSlide[] = [
     {
         id: '1',
-        title: 'Welcome to the ultimate\nLabTrack UI Kit!',
+        title: 'Welcome to the ultimate helth app\nLabTrack!',
         description: 'We bring all of your health information together on one app, with the power of AI',
     },
     {
@@ -150,14 +153,14 @@ export default function OnboardingScreen() {
     const renderWelcome = (item: OnboardingSlide) => (
         <SafeAreaView style={styles.welcome} edges={['top', 'bottom']}>
             <View style={styles.welcomeArt}>
-                <WelcomeIllustration width={Math.min(width - 48, 340)} />
+                <WelcomeIllustration width={Math.min(width - 32, 320)} />
             </View>
 
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.description}>{item.description}</Text>
 
             <TouchableOpacity style={styles.primaryButton} onPress={handleNext} activeOpacity={0.85}>
-                <Text style={styles.primaryButtonText}>Get Started</Text>
+                <Text style={styles.primaryButtonText}>Let&apos;s Get Started</Text>
                 <Ionicons name="arrow-forward" size={18} color={Palette.white} />
             </TouchableOpacity>
 
@@ -286,21 +289,23 @@ const styles = StyleSheet.create({
     },
 
     // shared copy
+    // Both sizes are the export's, and they are the same on every one of the twelve
+    // frames — the cover's headline is not set larger than a feature slide's.
     title: {
-        fontSize: 26,
+        fontSize: 28,
         fontFamily: Fonts.bold,
         color: Palette.text,
         textAlign: 'center',
-        lineHeight: 34,
+        lineHeight: 38,
         paddingHorizontal: 24,
     },
     description: {
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: Fonts.regular,
         color: Palette.textSecondary,
         textAlign: 'center',
-        lineHeight: 22,
-        marginTop: 12,
+        lineHeight: 26,
+        marginTop: 10,
         paddingHorizontal: 32,
     },
 
@@ -312,7 +317,7 @@ const styles = StyleSheet.create({
     },
     welcomeArt: {
         alignItems: 'center',
-        marginBottom: 44,
+        marginBottom: 60,
     },
     primaryButton: {
         flexDirection: 'row',
@@ -320,10 +325,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 10,
         backgroundColor: Palette.primary,
-        marginHorizontal: 24,
-        marginTop: 36,
-        paddingVertical: 17,
-        borderRadius: 14,
+        marginHorizontal: 16,
+        marginTop: 26,
+        height: 50,
+        borderRadius: 6,
         shadowColor: Palette.primary,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.28,
@@ -336,7 +341,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semibold,
     },
     signInLink: {
-        marginTop: 22,
+        marginTop: 24,
         alignItems: 'center',
     },
     signInText: {
