@@ -74,23 +74,46 @@ export const getPermissionStatus = async () => {
 export type ReminderState = 'ready' | 'unregistered' | 'unasked' | 'denied' | 'unsupported' | 'failed';
 
 /**
+ * Where registration failed, which decides what there is to say about it.
+ *
+ *   `device` the OS would not issue a push token. On Android that means the build has no
+ *            FCM credentials, which no amount of retrying — and no OTA update — can fix.
+ *   `server` we had a token and could not hand it over. Transient; the next launch retries.
+ *
+ * Collapsing the two into "could not register" produced an alert that promised a retry
+ * which could never succeed, which is worse than the silence it replaced.
+ */
+export type RegistrationStage = 'device' | 'server';
+
+/**
  * Hand this device's token to the server. Assumes permission is already granted.
  *
  * `POST /notifications/register` is idempotent — re-registering the same token refreshes
  * the row rather than duplicating it — so this is safe to call whenever we are unsure the
  * server knows about this device.
  */
-const syncTokenWithServer = async (): Promise<{ ok: boolean; token?: string; reason?: string }> => {
+const syncTokenWithServer = async (): Promise<{
+    ok: boolean;
+    token?: string;
+    reason?: string;
+    stage?: RegistrationStage;
+}> => {
+    let token: string;
+
     try {
         // projectId is required in a bare/prebuild workflow — Expo cannot infer it
         const projectId =
             Constants.expoConfig?.extra?.eas?.projectId ??
             (Constants as any).easConfig?.projectId;
 
-        const { data: token } = await Notifications.getExpoPushTokenAsync(
+        ({ data: token } = await Notifications.getExpoPushTokenAsync(
             projectId ? { projectId } : undefined
-        );
+        ));
+    } catch (error) {
+        return { ok: false, stage: 'device', reason: (error as Error).message };
+    }
 
+    try {
         await AsyncStorage.setItem(TOKEN_KEY, token);
 
         await apiFetch('/notifications/register', {
@@ -104,7 +127,7 @@ const syncTokenWithServer = async (): Promise<{ ok: boolean; token?: string; rea
 
         return { ok: true, token };
     } catch (error) {
-        return { ok: false, reason: (error as Error).message };
+        return { ok: false, stage: 'server', reason: (error as Error).message };
     }
 };
 
@@ -130,6 +153,7 @@ export const ensureRemindersReady = async (): Promise<{
     ready: boolean;
     state: ReminderState;
     reason?: string;
+    stage?: RegistrationStage;
 }> => {
     if (!Device.isDevice) {
         return { ready: false, state: 'unsupported', reason: 'Push notifications need a physical device' };
@@ -151,7 +175,7 @@ export const ensureRemindersReady = async (): Promise<{
     const result = await syncTokenWithServer();
     return result.ok
         ? { ready: true, state: 'ready' }
-        : { ready: false, state: 'failed', reason: result.reason };
+        : { ready: false, state: 'failed', reason: result.reason, stage: result.stage };
 };
 
 /**
