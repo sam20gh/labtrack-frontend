@@ -82,7 +82,13 @@ export interface HealthScore {
     computedAt: string;
     change: ScoreChange | null;
     disclaimer: string;
-    bands: { key: ScoreBand; label: string; min: number; max: number }[];
+    /**
+     * The scale, and the words on it. `description` is the body the breakdown screen's
+     * accordion opens onto — server-owned so a sentence that reads badly to a worried
+     * person is a backend deploy, not an app-store release. Optional because
+     * `HealthScore` snapshots written before it existed are never rewritten.
+     */
+    bands: { key: ScoreBand; label: string; min: number; max: number; description?: string }[];
 }
 
 export interface TrendPoint {

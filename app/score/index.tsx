@@ -16,8 +16,9 @@
  */
 import React, { useCallback, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, useWindowDimensions,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable,
+    ActivityIndicator, RefreshControl, useWindowDimensions, LayoutAnimation,
+    Platform, UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -30,9 +31,23 @@ import {
     getScore, getTrend, recompute, bandMeta, SOURCE_META, PILLAR_ICON, PILLAR_ROUTE,
     type HealthScore, type ScoreTrend, type TrendRange, type Pillar,
 } from '@/lib/score';
+import {
+    getLatestInterpretation, type LatestInterpretation,
+} from '@/lib/interpretation';
 import ScoreGauge from '@/components/score/ScoreGauge';
+import ScoreRadar from '@/components/home/ScoreRadar';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+
+/**
+ * The six the radar plots, in axis order from twelve o'clock.
+ *
+ * Six rather than the nine that are scored, for the reason the home hero recorded before
+ * the radar moved here: a nine-sided polygon at this size is a blob. These are the six the
+ * trackers feed, so every dent is one the person can act on today; the list below the
+ * radar carries all nine.
+ */
+const RADAR_PILLARS = ['biomarkers', 'activity', 'sleep', 'nutrition', 'medication', 'vitals'] as const;
 
 const RANGES: { key: TrendRange; label: string }[] = [
     { key: '1w', label: '1w' },
@@ -40,6 +55,12 @@ const RANGES: { key: TrendRange; label: string }[] = [
     { key: '1y', label: '1y' },
     { key: 'all', label: 'All' },
 ];
+
+// The band accordion animates its disclosure. On Android this opt-in is still required
+// even under the New Architecture, and without it the row snaps open with no transition.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 /** "3s ago", "12m ago" — the kit's "Last updated" line, which says the number is live. */
 const ago = (iso: string) => {
@@ -56,20 +77,34 @@ export default function ScoreBreakdownScreen() {
 
     const [score, setScore] = useState<HealthScore | null>(null);
     const [trend, setTrend] = useState<ScoreTrend | null>(null);
+    const [analysis, setAnalysis] = useState<LatestInterpretation | null>(null);
     const [range, setRange] = useState<TrendRange>('1m');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [explainerOpen, setExplainerOpen] = useState(false);
+    /** Which band row is disclosed. The one the person is in, until they touch another. */
+    const [openBand, setOpenBand] = useState<string | null>(null);
 
     const load = useCallback(async (r: TrendRange) => {
-        const [scoreRes, trendRes] = await Promise.allSettled([getScore(), getTrend(r)]);
+        const [scoreRes, trendRes, analysisRes] = await Promise.allSettled([
+            getScore(),
+            getTrend(r),
+            // A read, not a generate — the recommendations rail below draws the advice the
+            // interpretation already wrote. Nothing model-backed is awaited before paint.
+            getLatestInterpretation(),
+        ]);
 
         if (scoreRes.status === 'fulfilled') {
             setScore(scoreRes.value);
+            // The kit opens the band you are in. Only on first load, so a reader who has
+            // opened another row does not have it closed under them on a refocus.
+            setOpenBand((prev) => prev ?? scoreRes.value.band);
         } else if (scoreRes.reason instanceof ApiError && scoreRes.reason.isAuthError) {
             router.replace('/(auth)/loginscreen');
             return;
         }
         if (trendRes.status === 'fulfilled') setTrend(trendRes.value);
+        if (analysisRes.status === 'fulfilled') setAnalysis(analysisRes.value);
         setLoading(false);
     }, [router]);
 
@@ -104,9 +139,17 @@ export default function ScoreBreakdownScreen() {
         );
     }
 
-    const band = bandMeta(score?.band ?? null);
     const scored = (score?.pillars ?? []).filter((p) => p.value !== null);
     const missing = (score?.pillars ?? []).filter((p) => p.value === null);
+
+    // Only axes that actually hold a number: a polygon with a spike collapsed to the centre
+    // reads as a score of zero rather than as an unmeasured pillar.
+    const radarPillars = RADAR_PILLARS
+        .map((key) => scored.find((p) => p.key === key))
+        .filter((p): p is Pillar => Boolean(p));
+
+    /** The advice the interpretation wrote. Four is a rail; twenty is a list nobody swipes. */
+    const lifestyle = (analysis?.interpretation?.lifestyle_recommendations ?? []).slice(0, 4);
 
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
@@ -114,8 +157,10 @@ export default function ScoreBreakdownScreen() {
                 <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
                     <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Score Breakdown</Text>
-                <View style={{ width: 24 }} />
+                <Text style={styles.headerTitle}>LabTrack Score</Text>
+                <TouchableOpacity onPress={() => setExplainerOpen(true)} hitSlop={12} accessibilityLabel="What is the LabTrack score?">
+                    <Ionicons name="help-circle-outline" size={24} color={Palette.text} />
+                </TouchableOpacity>
             </View>
 
             <ScrollView
@@ -127,7 +172,9 @@ export default function ScoreBreakdownScreen() {
                         value={score?.value ?? null}
                         band={score?.band ?? null}
                         bands={score?.bands ?? []}
-                        size={Math.min(240, width - 120)}
+                        size={Math.min(260, width - 100)}
+                        caption="LabTrack Score"
+                        onInfo={() => setExplainerOpen(true)}
                     />
                     {score && (
                         <View style={styles.updatedRow}>
@@ -174,28 +221,68 @@ export default function ScoreBreakdownScreen() {
                     </View>
                 )}
 
-                {/* The kit's band accordion, flattened — three rows is not worth a disclosure. */}
+                {/*
+                  * The shape of the score — frame 1 of `Design/score.svg`.
+                  *
+                  * The kit's version overlays three named series (Wellness / Sleep /
+                  * Endurance) on one polygon. The engine produces a single set of pillar
+                  * values, so this draws one; three would mean inventing two groupings and
+                  * the numbers to fill them. Six axes for the reason `RADAR_PILLARS` gives.
+                  */}
+                {radarPillars.length >= 3 && (
+                    <View style={[styles.card, styles.radarCard]}>
+                        {/*
+                          * The radar's own defaults are white-on-translucent — it was built
+                          * for the home hero's purple gradient. On a white card those are
+                          * invisible, so the light palette is passed explicitly.
+                          *
+                          * The width is `size + 88`: the component reserves a 44pt gutter
+                          * each side for the axis labels. Sizing off the card's inner width
+                          * rather than the screen's keeps "Medication" from being clipped.
+                          */}
+                        <ScoreRadar
+                            pillars={radarPillars}
+                            size={Math.max(150, Math.min(220, width - 150))}
+                            stroke={Palette.borderSlate}
+                            labelColor={Palette.textSecondary}
+                            fill={Palette.primary}
+                        />
+                        <Text style={styles.cardBody}>
+                            Each axis is a pillar the trackers feed. A dent is an area to work on — the
+                            list below names all of them, with where each number came from.
+                        </Text>
+                    </View>
+                )}
+
+                {/*
+                  * The kit's band accordion.
+                  *
+                  * A disclosure rather than three flat rows, because each band now carries a
+                  * paragraph and three paragraphs stacked is a wall nobody reads. The row the
+                  * person is in opens by default — that is the one sentence they came for —
+                  * and `description` is absent on snapshots written before the server
+                  * carried it, in which case the row simply does not open.
+                  */}
                 {score && score.bands.length > 0 && (
                     <View style={styles.card}>
                         <Text style={styles.cardTitle}>What the number means</Text>
-                        {score.bands.map((b) => {
-                            const current = b.key === score.band;
-                            return (
-                                <View key={b.key} style={[styles.bandRow, current && styles.bandRowActive]}>
-                                    <View style={[styles.bandDot, { backgroundColor: bandMeta(b.key).color }]} />
-                                    <Text style={[styles.bandRange, current && styles.bandRangeActive]}>
-                                        {b.min} – {b.max}
-                                    </Text>
-                                    <Text style={[styles.bandLabel, current && styles.bandLabelActive]}>{b.label}</Text>
-                                    {current && <Ionicons name="checkmark-circle" size={16} color={band.color} />}
-                                </View>
-                            );
-                        })}
+                        {score.bands.map((b) => (
+                            <BandRow
+                                key={b.key}
+                                band={b}
+                                current={b.key === score.band}
+                                open={openBand === b.key}
+                                onToggle={() => {
+                                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                    setOpenBand((prev) => (prev === b.key ? null : b.key));
+                                }}
+                            />
+                        ))}
                     </View>
                 )}
 
                 {/* Score Analysis & Profile — the kit's per-pillar bars. */}
-                <Text style={styles.sectionTitle}>Score analysis</Text>
+                <Text style={styles.sectionTitle}>Score analysis &amp; profile</Text>
                 <Text style={styles.sectionBody}>
                     Your score reflects your overall health across labs, activity, sleep, nutrition,
                     medication and mood.
@@ -310,11 +397,175 @@ export default function ScoreBreakdownScreen() {
                     </View>
                 )}
 
+                {/*
+                  * The kit's "AI Recommendations" rail.
+                  *
+                  * Its cards are photographic, with a "+3 score / 2 tasks / 30m" meta line.
+                  * Nothing here models a task, a duration, or the points an action is worth,
+                  * and a card promising "+3 score" the engine never awards would be the
+                  * first number on this screen that means nothing. So these are the
+                  * lifestyle recommendations the interpretation actually wrote, with the
+                  * area as the chip — real advice, already on the plan, no invented metrics.
+                  */}
+                {lifestyle.length > 0 && (
+                    <>
+                        <View style={styles.sectionRow}>
+                            <View style={styles.sectionHeading}>
+                                <Ionicons name="sparkles" size={17} color={Palette.primary} />
+                                <Text style={styles.sectionTitle}>AI recommendations</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => router.push('/myplans')} hitSlop={8}>
+                                <Text style={styles.seeAll}>See All</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.rail}
+                            style={styles.railBleed}
+                        >
+                            {lifestyle.map((rec) => (
+                                <TouchableOpacity
+                                    key={`${rec.area}-${rec.recommendation}`}
+                                    style={[styles.recCard, { width: Math.min(268, width * 0.72) }]}
+                                    onPress={() => router.push('/myplans')}
+                                    activeOpacity={0.85}
+                                >
+                                    <View style={styles.recChip}>
+                                        <Text style={styles.recChipText}>{rec.area}</Text>
+                                    </View>
+                                    <Text style={styles.recTitle}>{rec.recommendation}</Text>
+                                    {!!rec.rationale && (
+                                        <Text style={styles.recBody} numberOfLines={3}>{rec.rationale}</Text>
+                                    )}
+                                    <View style={styles.recFoot}>
+                                        <Ionicons name="calendar-outline" size={14} color={Palette.primary} />
+                                        <Text style={styles.recFootText}>On your plan</Text>
+                                        <Ionicons name="arrow-forward" size={14} color={Palette.primary} />
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </>
+                )}
+
                 <Text style={styles.disclaimer}>{score?.disclaimer}</Text>
             </ScrollView>
+
+            <ScoreExplainer visible={explainerOpen} onClose={() => setExplainerOpen(false)} />
         </SafeAreaView>
     );
 }
+
+/**
+ * One band in the accordion.
+ *
+ * The chevron is drawn only when there is something to disclose. A row whose `description`
+ * the server did not send is inert and says so by having no affordance, rather than
+ * opening onto nothing.
+ */
+const BandRow = ({ band, current, open, onToggle }: {
+    band: { key: string; label: string; min: number; max: number; description?: string };
+    current: boolean;
+    open: boolean;
+    onToggle: () => void;
+}) => {
+    const meta = bandMeta(band.key as never);
+    const expandable = Boolean(band.description);
+    const disclosed = expandable && open;
+
+    return (
+        <View style={[styles.bandBlock, current && styles.bandBlockActive]}>
+            <TouchableOpacity
+                style={styles.bandRow}
+                onPress={onToggle}
+                disabled={!expandable}
+                activeOpacity={0.7}
+                accessibilityRole={expandable ? 'button' : undefined}
+            >
+                <View style={[styles.bandDot, { backgroundColor: meta.color }]} />
+                <Text style={[styles.bandRange, current && styles.bandRangeActive]}>
+                    {band.min} - {band.max}
+                </Text>
+                <Text style={[styles.bandLabel, current && styles.bandLabelActive]}>{band.label}</Text>
+                {current && <Ionicons name="checkmark-circle" size={16} color={meta.color} />}
+                {expandable && (
+                    <Ionicons
+                        name={disclosed ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color={Palette.textMuted}
+                    />
+                )}
+            </TouchableOpacity>
+
+            {disclosed && <Text style={styles.bandBody}>{band.description}</Text>}
+        </View>
+    );
+};
+
+/**
+ * "What is the LabTrack score?" — frame 2 of `Design/score.svg`.
+ *
+ * The kit fronts this with an illustrated AI brain. There is no such asset in the repo and
+ * a stock one would be the only decorative image in the app, so the sheet leads with the
+ * mark and spends its space on the three things a person actually needs to know: what the
+ * number is over, what moves it, and what it is not.
+ */
+const ScoreExplainer = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+        <Pressable style={styles.backdrop} onPress={onClose}>
+            <Pressable style={styles.sheet} onPress={() => {}}>
+                <View style={styles.sheetMark}>
+                    <Ionicons name="sparkles" size={26} color={Palette.primary} />
+                </View>
+
+                <Text style={styles.sheetTitle}>What is the LabTrack score?</Text>
+                <Text style={styles.sheetBody}>
+                    One number over everything LabTrack holds for you — your labs, activity, sleep,
+                    nutrition, medication and vitals — weighted by how much each one says about your
+                    health.
+                </Text>
+
+                <View style={styles.sheetPoints}>
+                    <SheetPoint
+                        icon="pulse-outline"
+                        title="Measured beats reported"
+                        body="Anything your devices and logs record replaces what you told us at onboarding — it does not average with it."
+                    />
+                    <SheetPoint
+                        icon="remove-circle-outline"
+                        title="Blank is not zero"
+                        body="A pillar with no data scores nothing and drops out, rather than counting against you."
+                    />
+                    <SheetPoint
+                        icon="medkit-outline"
+                        title="Not a diagnosis"
+                        body="It summarises your records. Anything that worries you is a conversation with a clinician."
+                    />
+                </View>
+
+                <TouchableOpacity style={styles.sheetButton} onPress={onClose}>
+                    <Text style={styles.sheetButtonText}>Great, thanks!</Text>
+                </TouchableOpacity>
+            </Pressable>
+        </Pressable>
+    </Modal>
+);
+
+const SheetPoint = ({ icon, title, body }: {
+    icon: React.ComponentProps<typeof Ionicons>['name']; title: string; body: string;
+}) => (
+    <View style={styles.sheetPoint}>
+        <View style={styles.sheetPointIcon}>
+            <Ionicons name={icon} size={16} color={Palette.primary} />
+        </View>
+        <View style={styles.flex}>
+            <Text style={styles.sheetPointTitle}>{title}</Text>
+            <Text style={styles.sheetPointBody}>{body}</Text>
+        </View>
+    </View>
+);
 
 /**
  * One pillar.
@@ -341,11 +592,14 @@ const PillarRow = ({ pillar, last, onPress }: { pillar: Pillar; last: boolean; o
             <View style={styles.flex}>
                 <View style={styles.rowBetween}>
                     <Text style={styles.pillarLabel}>{pillar.label}</Text>
+                    {/* The kit's dot-plus-word status. It replaces nothing — the numeral and
+                        the provenance chip both stay, on the line below, because a word on
+                        its own cannot say whether it was measured or merely reported. */}
                     <View style={styles.pillarRight}>
-                        <View style={[styles.sourceChip, { backgroundColor: `${source.color}18` }]}>
-                            <Text style={[styles.sourceText, { color: source.color }]}>{source.label}</Text>
-                        </View>
-                        <Text style={styles.pillarValue}>{pillar.value ?? '--'}</Text>
+                        <View style={[styles.statusDot, { backgroundColor: meta?.color ?? Palette.border }]} />
+                        <Text style={[styles.statusText, { color: meta?.color ?? Palette.textMuted }]}>
+                            {meta?.label ?? 'No data'}
+                        </Text>
                     </View>
                 </View>
 
@@ -356,7 +610,13 @@ const PillarRow = ({ pillar, last, onPress }: { pillar: Pillar; last: boolean; o
                     }]} />
                 </View>
 
-                <Text style={styles.pillarDetail}>{pillar.detail}</Text>
+                <View style={styles.pillarFoot}>
+                    <View style={[styles.sourceChip, { backgroundColor: `${source.color}18` }]}>
+                        <Text style={[styles.sourceText, { color: source.color }]}>{source.label}</Text>
+                    </View>
+                    <Text style={styles.pillarDetail}>{pillar.detail}</Text>
+                    <Text style={styles.pillarValue}>{pillar.value ?? '--'}</Text>
+                </View>
             </View>
 
             <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
@@ -409,15 +669,23 @@ const styles = StyleSheet.create({
     inlineAction: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
     inlineActionText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
 
+    bandBlock: { borderRadius: Radius.md, overflow: 'hidden' },
+    bandBlockActive: { backgroundColor: Palette.borderLight },
     bandRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.sm,
-        paddingVertical: 8,
+        paddingVertical: 10,
         paddingHorizontal: 8,
-        borderRadius: Radius.md,
     },
-    bandRowActive: { backgroundColor: Palette.borderLight },
+    bandBody: {
+        fontFamily: Fonts.regular,
+        fontSize: 12.5,
+        lineHeight: 19,
+        color: Palette.textSecondary,
+        paddingHorizontal: 8,
+        paddingBottom: 10,
+    },
     bandDot: { width: 8, height: 8, borderRadius: 4 },
     bandRange: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary, width: 64 },
     bandRangeActive: { color: Palette.text },
@@ -436,14 +704,17 @@ const styles = StyleSheet.create({
     },
     pillarLabel: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
     pillarRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    pillarValue: { fontFamily: Fonts.bold, fontSize: 14, color: Palette.text, minWidth: 26, textAlign: 'right' },
+    pillarValue: { fontFamily: Fonts.bold, fontSize: 13, color: Palette.text, minWidth: 24, textAlign: 'right' },
     pillarTrack: {
         height: 5, borderRadius: 3,
         backgroundColor: Palette.borderLight,
         overflow: 'hidden', marginTop: 6,
     },
     pillarFill: { height: '100%', borderRadius: 3 },
-    pillarDetail: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary, marginTop: 5, lineHeight: 16 },
+    pillarFoot: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+    pillarDetail: { flex: 1, fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary, lineHeight: 16 },
+    statusDot: { width: 7, height: 7, borderRadius: 4 },
+    statusText: { fontFamily: Fonts.semibold, fontSize: 12.5 },
     sourceChip: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: Radius.pill },
     sourceText: { fontFamily: Fonts.medium, fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.4 },
 
@@ -471,4 +742,78 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted,
         lineHeight: 16, textAlign: 'center', marginTop: Spacing.sm,
     },
+
+    radarCard: { alignItems: 'center', paddingVertical: Spacing.lg },
+
+    sectionRow: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        marginTop: Spacing.sm,
+    },
+    sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    seeAll: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
+
+    // The rail cancels the ScrollView's own padding so cards bleed to the screen edge and
+    // the last one does not look clipped short of it.
+    railBleed: { marginHorizontal: -Spacing.lg },
+    rail: { paddingHorizontal: Spacing.lg, gap: Spacing.md },
+    recCard: {
+        backgroundColor: Palette.background,
+        borderRadius: Radius.lg,
+        padding: Spacing.md,
+        gap: 8,
+        ...Shadow.card,
+    },
+    recChip: {
+        alignSelf: 'flex-start', backgroundColor: Palette.primarySurface,
+        borderRadius: Radius.pill, paddingHorizontal: 10, paddingVertical: 3,
+    },
+    recChipText: {
+        fontFamily: Fonts.semibold, fontSize: 11, color: Palette.primaryDark,
+        textTransform: 'capitalize',
+    },
+    recTitle: { fontFamily: Fonts.semibold, fontSize: 15, lineHeight: 21, color: Palette.text },
+    recBody: { fontFamily: Fonts.regular, fontSize: 12, lineHeight: 18, color: Palette.textSecondary },
+    recFoot: {
+        flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2,
+        borderTopWidth: 1, borderTopColor: Palette.borderLight, paddingTop: 8,
+    },
+    recFootText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12, color: Palette.primary },
+
+    // Explainer sheet
+    backdrop: {
+        flex: 1, backgroundColor: 'rgba(15,23,42,0.6)',
+        alignItems: 'center', justifyContent: 'center', padding: Spacing.xl,
+    },
+    sheet: {
+        width: '100%', backgroundColor: Palette.background,
+        borderRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md,
+    },
+    sheetMark: {
+        width: 54, height: 54, borderRadius: Radius.lg, alignSelf: 'center',
+        backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    sheetTitle: {
+        fontFamily: Fonts.bold, fontSize: 20, color: Palette.text, textAlign: 'center',
+    },
+    sheetBody: {
+        fontFamily: Fonts.regular, fontSize: 14, lineHeight: 21,
+        color: Palette.textSecondary, textAlign: 'center',
+    },
+    sheetPoints: { gap: Spacing.md, marginTop: Spacing.xs },
+    sheetPoint: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
+    sheetPointIcon: {
+        width: 30, height: 30, borderRadius: 15, backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    sheetPointTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
+    sheetPointBody: {
+        fontFamily: Fonts.regular, fontSize: 12.5, lineHeight: 18,
+        color: Palette.textSecondary, marginTop: 2,
+    },
+    sheetButton: {
+        backgroundColor: Palette.primary, borderRadius: Radius.md,
+        paddingVertical: 14, alignItems: 'center', marginTop: Spacing.sm,
+    },
+    sheetButtonText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
 });

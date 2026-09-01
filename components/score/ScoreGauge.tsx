@@ -18,8 +18,9 @@
  * needle pinned to the floor states the first while meaning the second.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Path, Circle, G } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { Fonts, Palette } from '@/constants/theme';
 import type { ScoreBand } from '@/lib/score';
 
@@ -29,6 +30,10 @@ interface Props {
     size?: number;
     /** Band thresholds from the server, so the dial cannot drift from the engine. */
     bands: { key: ScoreBand; label: string; min: number; max: number }[];
+    /** The kit's third line under the numeral — "LabTrack Score", with its info dot. */
+    caption?: string;
+    /** Given, the caption carries a tappable ⓘ that opens the explainer. */
+    onInfo?: () => void;
 }
 
 /** Total sweep, and where it starts. 270° opening downwards, as the kit draws it. */
@@ -56,7 +61,7 @@ const arc = (cx: number, cy: number, r: number, from: number, to: number) => {
 
 const angleFor = (score: number) => START + (Math.min(100, Math.max(0, score)) / 100) * SWEEP;
 
-export default function ScoreGauge({ value, band, size = 220, bands }: Props) {
+export default function ScoreGauge({ value, band, size = 220, bands, caption, onInfo }: Props) {
     const cx = size / 2;
     const cy = size / 2;
     const stroke = Math.round(size * 0.075);
@@ -68,6 +73,21 @@ export default function ScoreGauge({ value, band, size = 220, bands }: Props) {
     return (
         <View style={{ width: size, height: size }}>
             <Svg width={size} height={size}>
+                {/*
+                  * The kit's dashed guide ring, outside the track.
+                  *
+                  * It is the only thing that makes the dial read as a *scale* rather than as
+                  * a ring that happens to be part-filled: it shows the full sweep, including
+                  * the part the arc has not reached, and it is where LOW / MEDIUM / HIGH sit.
+                  */}
+                <Path
+                    d={arc(cx, cy, r + stroke * 0.85, START, START + SWEEP)}
+                    stroke={Palette.borderStrong}
+                    strokeWidth={1}
+                    strokeDasharray="3 5"
+                    fill="none"
+                />
+
                 {/* The empty track, drawn under everything so a gap in the bands still reads. */}
                 <Path
                     d={arc(cx, cy, r, START, START + SWEEP)}
@@ -110,12 +130,29 @@ export default function ScoreGauge({ value, band, size = 220, bands }: Props) {
             </Svg>
 
             <View style={[styles.centre, { width: size, height: size }]}>
-                <Text style={styles.value}>{value ?? '--'}</Text>
-                <Text style={styles.outOf}>{value === null ? 'Not enough data' : 'out of 100'}</Text>
+                <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                    {value ?? '--'}
+                </Text>
+                <Text style={styles.outOf}>{value === null ? 'Not enough data' : 'Out of 100'}</Text>
+
+                {/* The caption is a button only when there is an explainer to open — an ⓘ
+                    that does nothing is the dummy control this app keeps removing. */}
+                {!!caption && (
+                    onInfo ? (
+                        <TouchableOpacity style={styles.captionRow} onPress={onInfo} hitSlop={10}>
+                            <Text style={styles.caption}>{caption}</Text>
+                            <Ionicons name="information-circle-outline" size={14} color={Palette.textMuted} />
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.captionRow}><Text style={styles.caption}>{caption}</Text></View>
+                    )
+                )}
             </View>
 
-            {/* The kit's LOW / HIGH end labels, which tell you which way the dial runs. */}
+            {/* The kit's end labels, which tell you which way the dial runs. MEDIUM sits at
+                the top of the sweep, where the 50-point mark actually is. */}
             <Text style={[styles.end, { left: 0, top: size * 0.74 }]}>LOW</Text>
+            <Text style={[styles.end, styles.endTop, { top: 0, width: size }]}>MEDIUM</Text>
             <Text style={[styles.end, { right: 0, top: size * 0.74 }]}>HIGH</Text>
         </View>
     );
@@ -133,11 +170,13 @@ const styles = StyleSheet.create({
         color: Palette.text,
     },
     outOf: {
-        fontFamily: Fonts.regular,
-        fontSize: 12,
-        color: Palette.textMuted,
+        fontFamily: Fonts.semibold,
+        fontSize: 14,
+        color: Palette.text,
         marginTop: 2,
     },
+    captionRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+    caption: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
     end: {
         position: 'absolute',
         fontFamily: Fonts.medium,
@@ -145,4 +184,5 @@ const styles = StyleSheet.create({
         letterSpacing: 0.8,
         color: Palette.textMuted,
     },
+    endTop: { textAlign: 'center' },
 });
