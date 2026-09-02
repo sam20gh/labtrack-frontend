@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "177797291909",
+    "project_id": "labtrack-3d389",
+    "storage_bucket": "labtrack-3d389.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:177797291909:android:34d65c78da1e7e23f22eec",
+        "android_client_info": {
+          "package_name": "com.labtrack.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCM_PUOXdpxZ7TwFJvhnZYvIHCGvrBwcUI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
