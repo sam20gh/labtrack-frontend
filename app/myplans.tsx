@@ -6,21 +6,24 @@
  * urgency against a hardcoded date of birth.
  *
  * Now: overdue items first, then grouped by year, each individually orderable or bookable.
+ *
+ * Ordering adds to the shared basket rather than placing an order — see `addToBasket`.
  */
 import React, { useCallback, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, ActivityIndicator,
     TouchableOpacity, Image, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-import { ApiError } from '@/lib/api';
-import { getPlan, orderPlanItem, dismissPlanItem, STATUS_META, TYPE_ICON } from '@/lib/plan';
+import { api, ApiError } from '@/lib/api';
+import { useBasket } from '@/lib/basket';
+import { getPlan, dismissPlanItem, STATUS_META, TYPE_ICON } from '@/lib/plan';
 import { hasBeenAsked, registerForPushNotifications } from '@/lib/notifications';
-import type { PlanItem, GroupedPlanItems } from '@/types/api';
+import type { PlanItem, GroupedPlanItems, Product } from '@/types/api';
 
 const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -29,7 +32,10 @@ const formatDate = (iso: string) =>
 
 export default function MyPlansScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const { add, has, count, estimatedTotal } = useBasket();
     const [grouped, setGrouped] = useState<GroupedPlanItems>({});
+    const [products, setProducts] = useState<Record<string, Product>>({});
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -38,7 +44,15 @@ export default function MyPlansScreen() {
 
     const load = useCallback(async () => {
         try {
-            const data = await getPlan();
+            // The plan item carries a product id and a name but no price, and a card asking
+            // someone to order a screening without saying what it costs asks them to commit
+            // before they know the number. A catalogue that fails to load costs the price
+            // line, never the plan.
+            const [data, catalogue] = await Promise.all([
+                getPlan(),
+                api.get<Product[]>('/products').catch(() => [] as Product[]),
+            ]);
+            setProducts(Object.fromEntries((catalogue || []).map((p) => [p._id, p])));
             setGrouped(data.grouped || {});
             setTotal(data.items?.length ?? 0);
             // Open the soonest year alongside overdue, so the screen is never all-collapsed
@@ -80,16 +94,46 @@ export default function MyPlansScreen() {
             },
         });
 
-    const act = async (item: PlanItem, action: 'order' | 'dismiss') => {
+    /**
+     * Ordering from the plan fills the basket; it does not place an order.
+     *
+     * This button used to POST /orders for that one item and report it as on its way.
+     * Someone with three overdue screenings placed three separate orders, paid postage and
+     * attention three times, and never saw a total before committing. The plan now feeds
+     * the same basket the shop does, and the Order tab checks the whole lot out at once —
+     * `createOrder` carries every `planItemId` across, so the timeline still closes off.
+     */
+    const addToBasket = async (item: PlanItem) => {
+        if (!item.productId) return;
         setBusyId(item._id);
         try {
-            if (action === 'order') {
-                await orderPlanItem(item);
-                Toast.show({ type: 'success', text1: 'Ordered', text2: `${item.productName} is on its way` });
-            } else {
-                await dismissPlanItem(item._id);
-                Toast.show({ type: 'success', text1: 'Dismissed' });
-            }
+            // The catalogue may have failed to load, or the plan may name a product added
+            // since it was fetched. Fetching the one product is cheaper than losing the tap.
+            const product = products[item.productId]
+                ?? await api.get<Product>(`/products/${item.productId}`);
+            setProducts((prev) => ({ ...prev, [product._id]: product }));
+            await add(product, item._id);
+            Toast.show({
+                type: 'success',
+                text1: 'Added to basket',
+                text2: `${product.name} — check out from the Order tab`,
+            });
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Could not add that',
+                text2: error instanceof ApiError ? error.message : 'Please try again',
+            });
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    const dismiss = async (item: PlanItem) => {
+        setBusyId(item._id);
+        try {
+            await dismissPlanItem(item._id);
+            Toast.show({ type: 'success', text1: 'Dismissed' });
             await load();
         } catch (error) {
             Toast.show({
@@ -107,6 +151,8 @@ export default function MyPlansScreen() {
         const busy = busyId === item._id;
         const actionable = ['urgent', 'due', 'upcoming'].includes(item.status);
         const canOrder = actionable && Boolean(item.productId);
+        const inBasket = Boolean(item.productId && has(item.productId));
+        const price = item.productId ? products[item.productId]?.price : undefined;
         const canBook = actionable && Boolean(item.professionalId);
         // Dietary advice is the one lifestyle item the app can actually help with day to
         // day: the nutrition tracker derives its targets from this item and scores every
@@ -147,6 +193,7 @@ export default function MyPlansScreen() {
                 {item.productName ? (
                     <Text style={styles.linked}>
                         <Ionicons name="cube-outline" size={13} color="#6B7280" /> {item.productName}
+                        {typeof price === 'number' ? <Text style={styles.linkedPrice}>{`  £${price.toFixed(2)}`}</Text> : null}
                     </Text>
                 ) : null}
 
@@ -168,19 +215,24 @@ export default function MyPlansScreen() {
 
                 {(canOrder || canBook || actionable) && (
                     <View style={styles.actions}>
-                        {canOrder && (
-                            <TouchableOpacity style={styles.primaryAction} onPress={() => act(item, 'order')} disabled={busy}>
-                                {busy ? <ActivityIndicator size="small" color="#fff" />
-                                    : <Text style={styles.primaryActionText}>Order test</Text>}
+                        {canOrder && (inBasket ? (
+                            <TouchableOpacity style={styles.inBasketAction} onPress={() => router.push('/basket')}>
+                                <Ionicons name="checkmark" size={16} color="#059669" />
+                                <Text style={styles.inBasketActionText}>In basket</Text>
                             </TouchableOpacity>
-                        )}
+                        ) : (
+                            <TouchableOpacity style={styles.primaryAction} onPress={() => addToBasket(item)} disabled={busy}>
+                                {busy ? <ActivityIndicator size="small" color="#fff" />
+                                    : <Text style={styles.primaryActionText}>Add to basket</Text>}
+                            </TouchableOpacity>
+                        ))}
                         {canBook && (
                             <TouchableOpacity style={styles.primaryAction} onPress={() => book(item)} disabled={busy}>
                                 <Text style={styles.primaryActionText}>Book</Text>
                             </TouchableOpacity>
                         )}
                         {actionable && (
-                            <TouchableOpacity style={styles.secondaryAction} onPress={() => act(item, 'dismiss')} disabled={busy}>
+                            <TouchableOpacity style={styles.secondaryAction} onPress={() => dismiss(item)} disabled={busy}>
                                 <Text style={styles.secondaryActionText}>Dismiss</Text>
                             </TouchableOpacity>
                         )}
@@ -252,6 +304,22 @@ export default function MyPlansScreen() {
                     );
                 })}
             </ScrollView>
+
+            {/* The basket is shared with the Order tab, so items added here are waiting there
+                too. Saying so on this screen is what makes adding several before paying once
+                a flow rather than a guess. */}
+            {count > 0 && (
+                <TouchableOpacity
+                    style={[styles.viewBasket, { bottom: Math.max(insets.bottom, 16) }]}
+                    onPress={() => router.push('/basket')}
+                >
+                    <Ionicons name="bag-outline" size={18} color="#fff" />
+                    <Text style={styles.viewBasketText}>
+                        View basket ({count} {count === 1 ? 'item' : 'items'})
+                    </Text>
+                    <Text style={styles.viewBasketTotal}>£{estimatedTotal.toFixed(2)}</Text>
+                </TouchableOpacity>
+            )}
             <Toast />
         </SafeAreaView>
     );
@@ -260,7 +328,7 @@ export default function MyPlansScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+    scroll: { paddingHorizontal: 20, paddingBottom: 110 },
     pageTitle: { fontSize: 26, fontWeight: '700', color: '#1F2937', marginTop: 8 },
     pageSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 4, marginBottom: 20 },
     empty: { alignItems: 'center', paddingVertical: 48, gap: 10 },
@@ -294,6 +362,7 @@ const styles = StyleSheet.create({
     dueText: { fontSize: 12, color: '#9CA3AF' },
     description: { fontSize: 13, color: '#6B7280', lineHeight: 19, marginTop: 10 },
     linked: { fontSize: 12, color: '#6B7280', marginTop: 8 },
+    linkedPrice: { color: '#7C3AED', fontWeight: '700' },
     unavailable: { fontSize: 12, color: '#9CA3AF', marginTop: 10, fontStyle: 'italic' },
     trackLink: {
         flexDirection: 'row',
@@ -314,4 +383,17 @@ const styles = StyleSheet.create({
     primaryActionText: { color: '#fff', fontSize: 14, fontWeight: '600' },
     secondaryAction: { paddingVertical: 11, paddingHorizontal: 16, borderRadius: 10 },
     secondaryActionText: { color: '#9CA3AF', fontSize: 14, fontWeight: '500' },
+    inBasketAction: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+        backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#A7F3D0',
+        paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10, minWidth: 110,
+    },
+    inBasketActionText: { color: '#059669', fontSize: 14, fontWeight: '600' },
+    viewBasket: {
+        position: 'absolute', left: 20, right: 20,
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: '#7C3AED', paddingVertical: 16, paddingHorizontal: 18, borderRadius: 14,
+    },
+    viewBasketText: { flex: 1, color: '#fff', fontSize: 15, fontWeight: '600' },
+    viewBasketTotal: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

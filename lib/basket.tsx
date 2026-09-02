@@ -61,10 +61,29 @@ export const BasketProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, []);
 
+    /**
+     * Add one of `product`, or increment the line that is already there.
+     *
+     * Adding from a plan item is deliberately idempotent: tapping "Add to basket" twice on
+     * the same screening must not order two of them, and the second tap on the plan screen
+     * is far more likely to be someone checking it registered than someone wanting a pair.
+     * The shop's `+` has no plan item and keeps incrementing, which is what it is for.
+     *
+     * A line added from the shop and then again from the plan picks up the `planItemId`,
+     * so checkout can still close that item off the timeline.
+     */
     const add = useCallback(async (product: Product, planItemId?: string) => {
         const existing = lines.find((l) => l.productId === product._id);
+        if (existing?.planItemId && existing.planItemId === planItemId) return;
+
         const next = existing
-            ? lines.map((l) => l.productId === product._id ? { ...l, quantity: l.quantity + 1 } : l)
+            ? lines.map((l) => l.productId === product._id
+                ? {
+                    ...l,
+                    quantity: planItemId ? l.quantity : l.quantity + 1,
+                    planItemId: l.planItemId ?? planItemId,
+                }
+                : l)
             : [...lines, {
                 productId: product._id,
                 quantity: 1,

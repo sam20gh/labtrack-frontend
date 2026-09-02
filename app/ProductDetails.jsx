@@ -2,10 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Button } from 'react-native-paper';
 import { useRoute } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { api } from '@/lib/api';
+import { useBasket } from '@/lib/basket';
 
 export default function ProductDetails() {
     const route = useRoute();
+    const router = useRouter();
+    const { add, has } = useBasket();
     const { productId } = route.params;
 
     const [product, setProduct] = useState(null);
@@ -41,9 +45,17 @@ export default function ProductDetails() {
                     <Title style={styles.title}>{product.name}</Title>
                     <Paragraph style={styles.description}>{product.description}</Paragraph>
                     <Paragraph style={styles.price}>£{product.price}</Paragraph>
-                    <Button mode="contained" style={styles.button} onPress={() => console.log('Add to Cart pressed')}>
-                        Add to Cart
-                    </Button>
+                    {/* This used to log to the console. It is the same basket the shop and the
+                        health plan fill, so checkout is one payment for everything in it. */}
+                    {has(product._id) ? (
+                        <Button mode="contained" style={styles.button} onPress={() => router.push('/basket')}>
+                            In basket — view
+                        </Button>
+                    ) : (
+                        <Button mode="contained" style={styles.button} onPress={() => add(product)}>
+                            Add to basket
+                        </Button>
+                    )}
                 </Card.Content>
             </Card>
         </ScrollView>

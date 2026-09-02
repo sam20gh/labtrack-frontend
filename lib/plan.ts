@@ -6,7 +6,7 @@
  * express "this specific screening is now overdue and here is who to book".
  */
 import { api, apiFetch } from './api';
-import type { PlanItem, GroupedPlanItems, Order, Professional } from '@/types/api';
+import type { PlanItem, GroupedPlanItems, Professional } from '@/types/api';
 
 export interface PlanResponse {
     items: PlanItem[];
@@ -16,12 +16,15 @@ export interface PlanResponse {
 
 export const getPlan = () => api.get<PlanResponse>('/plan-items');
 
-/** Order the test or scan behind a plan item. */
-export const orderPlanItem = (item: PlanItem) =>
-    apiFetch<{ order: Order }>('/orders', {
-        method: 'POST',
-        body: { items: [{ productId: item.productId, quantity: 1, planItemId: item._id }] },
-    });
+/**
+ * Ordering lives in `lib/basket.tsx` and `lib/orders.ts`.
+ *
+ * This module used to export `orderPlanItem(item)`, which posted a one-line order the
+ * moment the plan's button was tapped. It committed someone to a purchase in a single tap,
+ * with no total shown and no way to order a second screening on the same delivery. The
+ * plan screen now calls `useBasket().add(product, item._id)`; `createOrder` carries the
+ * `planItemId` through checkout, so the plan item is still linked and closed off.
+ */
 
 /**
  * Booking lives in `lib/appointments.ts`.
