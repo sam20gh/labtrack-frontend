@@ -10,54 +10,37 @@
  */
 import { api, apiFetch, ApiError } from './api';
 
-export type RiskLevel = 'low' | 'moderate' | 'high' | 'unknown';
-export type Urgency = 'routine' | 'soon' | 'urgent';
-
 /**
- * The analysis written for the person rather than for a clinician.
+ * The interpretation contract is **generated**, not written here.
  *
- * Optional because it is: `Interpretation` documents generated before this field existed
- * are append-only records and are never rewritten, so a returning user's newest analysis
- * may well predate it. Every consumer falls back to `summary`.
+ * These types used to be hand-transcribed from `utils/interpretationSchema.js`, in this file
+ * and again in the staff portal. Two hand-written copies of one contract drift, and drift
+ * here is silent: a field the model never writes renders as nothing, and a field it does
+ * write that nobody reads is invisible. The portal had three such mistakes at once.
+ *
+ * `labtrack-shared/generate.mjs` now emits both copies from the schema itself. Re-exported
+ * under the names this file already used, so no screen had to change.
  */
-export interface PlainSummary {
-    /** One short sentence, safe to read on its own. */
-    headline: string;
-    overall: 'mostly_good' | 'some_things_to_watch' | 'needs_attention';
-    /** Two to four short sentences in everyday words. */
-    what_it_means: string;
-    key_points: { label: string; detail: string; tone: 'good' | 'watch' | 'act' }[];
-    /** One thing they can act on today. */
-    next_step: string;
-}
+export type {
+    RiskLevel,
+    RiskBasis,
+    Urgency,
+    ScreeningFrequency,
+    LifestyleArea,
+    Speciality,
+    Risk,
+    Screening,
+    Consultation,
+    LifestyleRecommendation,
+    BiomarkerOfConcern,
+    PlainSummary,
+    /** The clinical read, as stored. Named `Interpretation` here since before it was generated. */
+    InterpretationContent as Interpretation,
+} from '@/types/generated/interpretation';
 
-export interface Interpretation {
-    /**
-     * The clinical read. Accurate, and written for a reviewing clinician — which is why it
-     * sits behind "Read full analysis" rather than on the home card. Use `plain_summary`
-     * for anything a member of the public sees first.
-     */
-    summary: string;
-    risks: { condition: string; level: RiskLevel; basis: string; rationale: string }[];
-    recommended_screenings: {
-        condition: string; test: string; rationale: string;
-        starting_age: number; frequency: string; urgency: Urgency;
-    }[];
-    specialist_consultations: {
-        reason: string; speciality: string; urgency: Urgency; due_within_months: number;
-    }[];
-    lifestyle_recommendations: { area: string; recommendation: string; rationale: string }[];
-    biomarkers_of_concern: { name: string; observation: string; action: string }[];
-    /**
-     * What moved since the previous interpretation. Absent on anything generated before
-     * this field existed, and set to a fixed sentence on a first-ever read.
-     */
-    changes_since_last?: string;
-    follow_up: string;
-    limitations: string[];
-    /** Absent on anything generated before the plain-language layer existed. */
-    plain_summary?: PlainSummary;
-}
+import type { InterpretationContent, RiskLevel } from '@/types/generated/interpretation';
+
+type Interpretation = InterpretationContent;
 
 export interface GenerateResult {
     interpretation: Interpretation;
