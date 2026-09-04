@@ -16,8 +16,7 @@
     "lint": "expo lint",
     "test:ci": "jest --ci --passWithNoTests",
     "update:staging": "npm run check-node && eas update --channel staging",
-    "update:production": "npm run check-node && eas update --channel production",
-    "types:check": "node ../labtrack-shared/generate.mjs --check"
+    "update:production": "npm run check-node && eas update --channel production"
   },
   "jest": {
     "preset": "jest-expo"
