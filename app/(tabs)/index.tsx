@@ -1,12 +1,37 @@
 /**
  * Home.
  *
- * Rebuilt against `Design/index.svg` — the kit's full "Home" frame. That mockup is a
- * scroll of one tracker section per feature, each headed by a title and a "See All", under
- * a purple header and a score card that overlaps it. This screen follows that shape with
- * LabTrack's own data, plus one section the mockup does not have: **Latest Analysis**,
- * which sits directly under the score because the interpretation is what this product is
- * for.
+ * Built from `Design/index.svg` — the kit's "Home" frame, which is a scroll of one tracker
+ * section per feature under a purple header and an overlapping score card. This screen
+ * keeps that vocabulary and **does not keep its fixed running order**, because a mockup is
+ * drawn once and a home screen is opened twice a day.
+ *
+ * The order of the page, and why:
+ *
+ *   1. **Header, with the day in one line.** Doses left, an appointment today, calories
+ *      remaining — composed from state this screen has already loaded, fetching nothing.
+ *      A greeting over a date is a screen that knows who you are and has nothing to say.
+ *   2. **Score, with its movement.** The delta and the pillar that moved, not the band
+ *      printed twice. `HealthScore.change` was fetched and thrown away for months.
+ *   3. **Markers to watch.** The score card counts out-of-range markers; this names them,
+ *      each with the direction it is heading. A count is not an answer.
+ *   4. **Needs you.** Ranked across features by what happens if it is ignored — a crisis
+ *      reading, then an overdue screening off the plan, then a result nothing has analysed,
+ *      then one that is merely due, then an appointment inside 48 hours. Three at most.
+ *      This is the only part of the page that differs between two visits on one day, and
+ *      it is why the plan is fetched here at all.
+ *   5. **Latest Analysis**, collapsed to a headline, three lines and one next step.
+ *   6. **The trackers that have data**, most time-sensitive first.
+ *   7. **Ask LabTrack AI** — the symptom search and the assistant, which were two sections
+ *      describing one act.
+ *   8. **Get more from LabTrack** — every tracker with nothing in it, as one list of rows
+ *      rather than as six full cards each saying "connect a watch".
+ *   9. **News & Resources.**
+ *
+ * The tracker/setup split is the load-bearing idea. A card is earned by having something to
+ * report; a feature nobody has started is a row. `HomeScreen` decides which, so the cards
+ * themselves no longer carry empty states — they guard and return null, and the guard can
+ * never fire from here.
  *
  * Two places the mockup is deliberately not reproduced, both for the reason this codebase
  * keeps giving — a control or a number the backend cannot honestly back is worse than none:
@@ -17,6 +42,10 @@
  *   - The kit's symptom card lists "Recent Checks" with risk levels. There is no diagnosis
  *     engine and no stored check — see **Symptom checker** in CLAUDE.md — so the card is
  *     the search and the common symptoms, which is what `app/symptoms` really does.
+ *
+ * The support banner that used to close the page is gone: it was a permanent row about the
+ * Help Center on a screen whose problem was length, and the profile links to help three
+ * times.
  *
  * The header is drawn under the status bar, so the root is *not* wrapped in a top-inset
  * SafeAreaView the way the other tab screens are; the gradient takes `insets.top` as
@@ -39,7 +68,11 @@ import Toast from 'react-native-toast-message';
 
 import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
-import { getLatestBiomarkers, byClinicalPriority } from '@/lib/biomarkers';
+import {
+    getLatestBiomarkers, byClinicalPriority, describeMovement, medicalName, plainName,
+    formatValue, FLAG_META,
+} from '@/lib/biomarkers';
+import { getPlan, STATUS_META as PLAN_STATUS_META, TYPE_ICON as PLAN_TYPE_ICON } from '@/lib/plan';
 import { getDay as getNutritionDay } from '@/lib/nutrition';
 import {
     getLatestInterpretation, generateInterpretation, hasMeaningfulChanges, isVerified,
@@ -71,7 +104,7 @@ import { DoseRow } from '@/components/medications/DoseRow';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 import type {
     BiomarkerSummary, MedicationScheduleDay, NutritionDay, NutritionTargets, Product, User,
-    Appointment,
+    Appointment, PlanItem,
 } from '@/types/api';
 
 /**
@@ -106,6 +139,65 @@ const DAY = 24 * 60 * 60 * 1000;
 const formatToday = () =>
     new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
+/**
+ * One row of the "Needs you" list.
+ *
+ * Deliberately not typed per feature. The list is ranked across features — a crisis reading
+ * and an overdue screening compete for the same slot — so they have to be the same shape by
+ * the time anything sorts them.
+ */
+interface HomeAction {
+    id: string;
+    icon: React.ComponentProps<typeof Ionicons>['name'];
+    color: string;
+    surface: string;
+    title: string;
+    body: string;
+    cta: string;
+    onPress: () => void;
+}
+
+/**
+ * One row of the "Get more from LabTrack" list.
+ *
+ * A tracker nobody has started. It is a row rather than the card that feature would draw,
+ * because six cards each saying "connect a watch" is a screen about what the person has
+ * *not* done, stacked on top of what they have.
+ */
+interface SetupItem {
+    id: string;
+    icon: React.ComponentProps<typeof Ionicons>['name'];
+    title: string;
+    body: string;
+    route: string;
+}
+
+/** How a plan item's date reads once it is asking for something. */
+const dueLabel = (item: PlanItem) => {
+    const due = new Date(item.dueDate);
+    const when = formatRelativeDay(due);
+    const what = item.condition || item.frequency || item.productName || item.speciality;
+    const lead = item.status === 'urgent'
+        ? `Overdue since ${when.toLowerCase() === 'today' ? 'today' : when}`
+        : `Due ${when.toLowerCase()}`;
+    return what ? `${lead} · ${what}` : lead;
+};
+
+/**
+ * How far back the score's comparison point is.
+ *
+ * The server hands back the previous snapshot's date, not a window, so the wording has to
+ * be derived. Past a fortnight it stops naming a number of days — "in 46 days" reads as a
+ * countdown rather than as a comparison.
+ */
+const formatSince = (iso: string) => {
+    const days = Math.round((Date.now() - new Date(iso).getTime()) / DAY);
+    if (!Number.isFinite(days) || days < 0) return 'since your last check';
+    if (days <= 1) return 'since yesterday';
+    if (days < 14) return `in ${days} days`;
+    return 'since your last check';
+};
+
 export default function HomeScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
@@ -128,6 +220,7 @@ export default function HomeScreen() {
     const [dayMetrics, setDayMetrics] = useState<DayMetrics | null>(null);
     const [medications, setMedications] = useState<MedicationScheduleDay | null>(null);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [plan, setPlan] = useState<PlanItem[]>([]);
     const [conversation, setConversation] = useState<Conversation | null>(null);
     const [generating, setGenerating] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -168,6 +261,10 @@ export default function HomeScreen() {
             getActivityDay(),
             getMedicationSchedule(),
             getAppointments(),
+            // The plan is what the interpretation produced — dated screenings and
+            // consultations. It is the only thing on this screen that says what to *do*,
+            // which is why the "Needs you" list is built from it first.
+            getPlan(),
             getConversation(),
             // The newest of the library, for the rail at the foot of the screen. Six cards,
             // because this is a rail and nobody scrolls twenty of them sideways.
@@ -176,8 +273,8 @@ export default function HomeScreen() {
 
         const [
             userRes, biomarkerRes, analysisRes, nutritionRes, scoreRes, metricsRes,
-            activityRes, activityDayRes, medicationRes, appointmentRes, conversationRes,
-            resourceRes,
+            activityRes, activityDayRes, medicationRes, appointmentRes, planRes,
+            conversationRes, resourceRes,
         ] = results;
 
         if (userRes.status === 'fulfilled') setUser(userRes.value as User);
@@ -193,6 +290,7 @@ export default function HomeScreen() {
         }
         if (medicationRes.status === 'fulfilled') setMedications(medicationRes.value);
         if (appointmentRes.status === 'fulfilled') setAppointments(appointmentRes.value ?? []);
+        if (planRes.status === 'fulfilled') setPlan(planRes.value.items ?? []);
         if (conversationRes.status === 'fulfilled') setConversation(conversationRes.value);
         if (resourceRes.status === 'fulfilled') setResources(resourceRes.value.items ?? []);
 
@@ -320,6 +418,162 @@ export default function HomeScreen() {
         [appointments],
     );
 
+    /** Doses still to come today. Neither taken nor missed — see **Medication checker**. */
+    const pendingDoses = useMemo(
+        () => (medications?.doses ?? []).filter((d) => d.status === 'scheduled').length,
+        [medications],
+    );
+
+    /**
+     * The plan items that are asking for something now.
+     *
+     * `urgent` first, then `due`, each oldest-first. Everything else on the plan is a date
+     * in the future and belongs on the plan screen, not on a home page whose job is to say
+     * what today needs.
+     */
+    const planDue = useMemo(
+        () => plan
+            .filter((item) => item.status === 'urgent' || item.status === 'due')
+            .sort((a, b) =>
+                (a.status === 'urgent' ? 0 : 1) - (b.status === 'urgent' ? 0 : 1)
+                || new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
+        [plan],
+    );
+
+    /** The next appointment, but only while it is close enough to be worth preparing for. */
+    const imminent = useMemo(
+        () => liveAppointments.find(
+            (a) => new Date(a.scheduledFor).getTime() - Date.now() < 2 * DAY,
+        ) ?? null,
+        [liveAppointments],
+    );
+
+    /** A blood-pressure reading in the crisis band anywhere in the window. */
+    const crisis = useMemo(() => metricCards.find((c) => c.urgent) ?? null, [metricCards]);
+
+    /**
+     * The line under the greeting.
+     *
+     * Everything in it is already loaded — this composes, it does not fetch. Three parts at
+     * most: past three the line wraps to a paragraph and stops being glanceable. A day with
+     * nothing in it says so rather than being left blank, because a missing line reads as a
+     * screen that failed to load.
+     */
+    const todayLine = useMemo(() => {
+        const parts: string[] = [];
+
+        if (pendingDoses > 0) {
+            parts.push(`${pendingDoses} dose${pendingDoses === 1 ? '' : 's'} left`);
+        }
+
+        const todayAppt = liveAppointments.find(
+            (a) => new Date(a.scheduledFor).toDateString() === new Date().toDateString(),
+        );
+        if (todayAppt) {
+            parts.push(`${nameOf(professionalOf(todayAppt))} at ${formatApptTime(new Date(todayAppt.scheduledFor))}`);
+        }
+
+        const target = nutrition?.targets && 'calories' in nutrition.targets ? nutrition.targets.calories : 0;
+        if (target > 0) {
+            const left = Math.round(target - (nutrition?.totals.calories ?? 0));
+            parts.push(left > 0 ? `${left.toLocaleString()} kcal left` : 'calorie target met');
+        }
+
+        const goal = activity?.goal;
+        if (parts.length < 3 && goal && goal.sessions.target > goal.sessions.done) {
+            const short = goal.sessions.target - goal.sessions.done;
+            parts.push(`${short} workout${short === 1 ? '' : 's'} to go`);
+        }
+
+        return parts.length ? parts.slice(0, 3).join('  ·  ') : 'Nothing scheduled today.';
+    }, [pendingDoses, liveAppointments, nutrition, activity]);
+
+    /**
+     * "Needs you" — the only part of this screen that differs between two visits on the
+     * same day, and therefore the reason to open it twice.
+     *
+     * Ranked by what happens if it is ignored, not by which feature it belongs to: a
+     * crisis reading outranks an overdue screening, which outranks an unread analysis.
+     * Capped at three. A fourth row turns a list of things to do into a backlog, and a
+     * backlog is a thing people learn to scroll past.
+     */
+    const actions = useMemo<HomeAction[]>(() => {
+        const out: HomeAction[] = [];
+
+        if (crisis) {
+            out.push({
+                id: 'crisis',
+                icon: 'alert-circle',
+                color: Palette.danger,
+                surface: Palette.dangerSurface,
+                title: 'A reading needs attention',
+                body: `Your ${crisis.label.toLowerCase()} recorded a crisis-range value. This is not a diagnosis — speak to a clinician.`,
+                cta: 'See the reading',
+                onPress: () => router.push(METRIC_ROUTE[crisis.key] as never),
+            });
+        }
+
+        for (const item of planDue.filter((i) => i.status === 'urgent').slice(0, 2)) {
+            out.push({
+                id: item._id,
+                icon: (PLAN_TYPE_ICON[item.type] ?? 'calendar-outline') as HomeAction['icon'],
+                color: PLAN_STATUS_META.urgent.color,
+                surface: PLAN_STATUS_META.urgent.bg,
+                title: item.title,
+                body: dueLabel(item),
+                cta: item.type === 'consultation' ? 'Book it' : 'Order it',
+                onPress: () => router.push('/myplans'),
+            });
+        }
+
+        // A result the analysis has not caught up with. `needsFresh` on the analysis card
+        // says the same thing further down the screen; this is what puts it above the fold.
+        if (analysis?.latestResult && analysis.available !== false
+            && (!analysis.interpretation || !analysis.isForLatestResult)) {
+            out.push({
+                id: 'analyse',
+                icon: 'sparkles',
+                color: Palette.primary,
+                surface: Palette.primarySurface,
+                title: analysis.interpretation ? 'A newer result is waiting' : 'Your result has not been read yet',
+                body: `${analysis.latestResult.testType || 'Your result'} is saved but has no analysis. Generating one also refreshes your plan.`,
+                cta: generating ? 'Working…' : 'Analyse it',
+                onPress: () => { if (!generating) handleGenerate(false); },
+            });
+        }
+
+        for (const item of planDue.filter((i) => i.status === 'due').slice(0, 2)) {
+            out.push({
+                id: item._id,
+                icon: (PLAN_TYPE_ICON[item.type] ?? 'calendar-outline') as HomeAction['icon'],
+                color: PLAN_STATUS_META.due.color,
+                surface: PLAN_STATUS_META.due.bg,
+                title: item.title,
+                body: dueLabel(item),
+                cta: item.type === 'consultation' ? 'Book it' : 'Order it',
+                onPress: () => router.push('/myplans'),
+            });
+        }
+
+        if (imminent) {
+            const at = new Date(imminent.scheduledFor);
+            out.push({
+                id: imminent._id,
+                icon: 'calendar',
+                color: imminent.status === 'confirmed' ? Palette.success : Palette.warning,
+                surface: imminent.status === 'confirmed' ? Palette.successSurface : Palette.warningSurface,
+                title: `${nameOf(professionalOf(imminent))} · ${formatRelativeDay(at)}`,
+                body: imminent.status === 'confirmed'
+                    ? `Confirmed for ${formatApptTime(at)}.`
+                    : `Requested for ${formatApptTime(at)}. Still waiting on the clinician to confirm.`,
+                cta: 'View',
+                onPress: () => router.push('/appointments'),
+            });
+        }
+
+        return out.slice(0, 3);
+    }, [crisis, planDue, analysis, imminent, generating, handleGenerate, router]);
+
     const firstName = user?.firstName?.trim() || 'there';
     const initials = ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase();
 
@@ -330,6 +584,175 @@ export default function HomeScreen() {
             </SafeAreaView>
         );
     }
+
+    /**
+     * Which trackers get a section, in what order, and which become a setup row.
+     *
+     * Two decisions, both of which the old screen made by hardcoding a list:
+     *
+     * 1. **A tracker with no data does not earn a card.** Sleep saying "connect a watch"
+     *    used to occupy exactly as much of the screen as nutrition showing a real day. Six
+     *    such cards is most of a scroll spent on things the person has not started, above
+     *    the things they have.
+     * 2. **Time-sensitivity outranks the kit's order.** Doses still due today and an
+     *    appointment inside 48 hours move to the top; everything else keeps the order the
+     *    mockup draws. A fixed order is a screen that reads the same at 8am and at 11pm.
+     *
+     * Built here rather than in a `useMemo` because every entry closes over `router` and the
+     * handlers, so the dependency list would name almost everything in scope and re-run on
+     * almost every render anyway.
+     */
+    const sleepCard = metrics.find((m) => m.key === 'sleep') ?? null;
+    const nutritionTarget = nutrition?.targets && 'calories' in nutrition.targets
+        ? nutrition.targets.calories : 0;
+
+    const trackers: { id: string; order: number; node: React.ReactNode }[] = [];
+    const setup: SetupItem[] = [];
+
+    if (metricCards.some((c) => c.value !== null)) {
+        trackers.push({
+            id: 'metrics',
+            order: 2,
+            node: (
+                <Section title="Health Metrics" action="See All" onAction={() => router.push('/metrics')}>
+                    <MetricsRail cards={metricCards} router={router} />
+                </Section>
+            ),
+        });
+    } else {
+        setup.push({
+            id: 'metrics',
+            icon: 'analytics-outline',
+            title: 'Log a metric',
+            body: 'Weight, hydration and blood pressure. Three pillars, and nothing on this phone measures them for you.',
+            route: '/metrics',
+        });
+    }
+
+    if ((medications?.doses.length ?? 0) > 0) {
+        trackers.push({
+            id: 'medications',
+            order: pendingDoses > 0 ? 0 : 4,
+            node: (
+                <Section title="Medications" action="See All" onAction={() => router.push('/medications')}>
+                    <MedicationsCard
+                        schedule={medications}
+                        busyDose={busyDose}
+                        onDose={handleDose}
+                        onAdd={() => router.push('/medications/add')}
+                        onOpen={(id) => router.push({ pathname: '/medications/[id]', params: { id } })}
+                    />
+                </Section>
+            ),
+        });
+    } else {
+        setup.push({
+            id: 'medications',
+            icon: 'medkit-outline',
+            title: 'Add a medication',
+            body: 'Track doses, and have anything you already take checked against it.',
+            route: '/medications/add',
+        });
+    }
+
+    if (liveAppointments.length > 0) {
+        trackers.push({
+            id: 'appointments',
+            order: imminent ? 1 : 5,
+            node: (
+                <Section title="Appointments" action="See All" onAction={() => router.push('/appointments')}>
+                    <AppointmentsCard
+                        appointments={liveAppointments}
+                        onOpen={() => router.push('/appointments')}
+                        onBook={() => router.push('/(tabs)/professionals')}
+                    />
+                </Section>
+            ),
+        });
+    } else {
+        setup.push({
+            id: 'appointments',
+            icon: 'calendar-outline',
+            title: 'Book a consultation',
+            body: 'Browse specialists and ask one of them to review your results.',
+            route: '/(tabs)/professionals',
+        });
+    }
+
+    if (sessions.length > 0 || (activity?.totals.sessions ?? 0) > 0 || activity?.goal) {
+        trackers.push({
+            id: 'activity',
+            order: 3,
+            node: (
+                <Section title="Activity" action="See All" onAction={() => router.push('/activity')}>
+                    <ActivityCard
+                        summary={activity}
+                        sessions={sessions}
+                        onLog={() => router.push('/activity/log')}
+                        onSession={(id) => router.push({ pathname: '/activity/session/[id]', params: { id } })}
+                    />
+                </Section>
+            ),
+        });
+    } else {
+        setup.push({
+            id: 'activity',
+            icon: 'fitness-outline',
+            title: 'Log a workout',
+            body: 'Or set a weekly target, and the activity pillar starts measuring against it.',
+            route: '/activity/log',
+        });
+    }
+
+    if (nutrition?.plan && nutritionTarget > 0) {
+        trackers.push({
+            id: 'nutrition',
+            order: 3.5,
+            node: (
+                <Section title="Nutrition" action="See All" onAction={() => router.push('/nutrition')}>
+                    <NutritionCard
+                        day={nutrition}
+                        onOpen={() => router.push('/nutrition')}
+                        onLog={() => router.push('/nutrition/log')}
+                    />
+                </Section>
+            ),
+        });
+    } else {
+        setup.push({
+            id: 'nutrition',
+            icon: 'restaurant-outline',
+            title: 'Set up nutrition',
+            body: 'Targets built from your profile and from the dietary advice on your plan.',
+            route: '/nutrition',
+        });
+    }
+
+    if (typeof sleepCard?.value === 'number' || (sleepCard?.series ?? []).some((n) => (n.value ?? 0) > 0)) {
+        trackers.push({
+            id: 'sleep',
+            order: 6,
+            node: (
+                <Section title="Sleep" action="See All" onAction={() => router.push('/activity')}>
+                    <SleepCard
+                        card={sleepCard}
+                        today={dayMetrics}
+                        onOpen={() => router.push('/activity')}
+                    />
+                </Section>
+            ),
+        });
+    } else {
+        setup.push({
+            id: 'sleep',
+            icon: 'moon-outline',
+            title: 'Connect a health store',
+            body: 'Sleep, steps and heart rate come from a watch or your phone. Nothing here measures them alone.',
+            route: '/activity/sources',
+        });
+    }
+
+    trackers.sort((a, b) => a.order - b.order);
 
     return (
         <SafeAreaView style={styles.container} edges={[]}>
@@ -346,10 +769,12 @@ export default function HomeScreen() {
                             name={firstName}
                             initials={initials}
                             photo={user?.profileImage ?? null}
-                            streak={activity?.streak ?? 0}
+                            streak={activity?.streak ?? null}
+                            today={todayLine}
                             topInset={insets.top}
                             onSearch={() => router.push('/resources/search')}
                             onPressAvatar={() => router.push('/profile')}
+                            onPressStreak={() => router.push('/activity/history')}
                         />
 
                         <ScoreCard
@@ -359,10 +784,64 @@ export default function HomeScreen() {
                         />
 
                         {/*
+                          The markers behind the number, worst first. The score card used to
+                          say "2 need attention" and stop there, which names a count and no
+                          nouns — the one thing a person wants from a health app is *which*
+                          two. Each tile carries its own movement, so a value that is still
+                          out of range but heading back reads as progress rather than as a
+                          second identical warning.
+                        */}
+                        {attention.length > 0 && (
+                            <Section
+                                title="Markers to watch"
+                                action="See All"
+                                onAction={() => router.push('/(tabs)/results')}
+                            >
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={styles.hScroll}
+                                >
+                                    {attention.slice(0, 5).map((marker) => (
+                                        <MarkerTile
+                                            key={marker._id}
+                                            marker={marker}
+                                            onPress={() => router.push({
+                                                pathname: '/biomarker/[name]',
+                                                params: { name: marker.name },
+                                            })}
+                                        />
+                                    ))}
+                                </ScrollView>
+                            </Section>
+                        )}
+
+                        {/*
+                          Needs you.
+
+                          Above the analysis on purpose. The analysis explains, this asks —
+                          and a screen whose first actionable element is four scrolls down is
+                          a screen people learn to stop scrolling.
+                        */}
+                        {actions.length > 0 && (
+                            <Section
+                                title="Needs you"
+                                action={plan.length > 0 ? 'Your plan' : undefined}
+                                onAction={plan.length > 0 ? () => router.push('/myplans') : undefined}
+                            >
+                                <View style={styles.actionList}>
+                                    {actions.map((action) => (
+                                        <ActionRow key={action.id} action={action} />
+                                    ))}
+                                </View>
+                            </Section>
+                        )}
+
+                        {/*
                           Latest analysis — the one section `Design/index.svg` does not
-                          carry. It sits first because the interpretation is the product:
-                          every other card here reports a measurement, and this one is the
-                          only thing that says what the measurements mean.
+                          carry. It sits here because the interpretation is the product:
+                          every tracker below reports a measurement, and this is the only
+                          thing that says what the measurements mean.
                         */}
                         {analysis?.latestResult && (
                             <Section
@@ -381,78 +860,64 @@ export default function HomeScreen() {
                             </Section>
                         )}
 
-                        {metricCards.length > 0 && (
-                            <Section title="Health Metrics" action="See All" onAction={() => router.push('/metrics')}>
-                                <MetricsRail cards={metricCards} router={router} />
-                            </Section>
-                        )}
+                        {/* The trackers that have something to say, most urgent first. */}
+                        {trackers.map((tracker) => (
+                            <React.Fragment key={tracker.id}>{tracker.node}</React.Fragment>
+                        ))}
 
-                        <Section title="Activity" action="See All" onAction={() => router.push('/activity')}>
-                            <ActivityCard
-                                summary={activity}
-                                sessions={sessions}
-                                onLog={() => router.push('/activity/log')}
-                                onSession={(id) => router.push({ pathname: '/activity/session/[id]', params: { id } })}
-                            />
-                        </Section>
-
-                        <Section title="Sleep" action="See All" onAction={() => router.push('/activity')}>
-                            <SleepCard
-                                card={metrics.find((m) => m.key === 'sleep') ?? null}
-                                today={dayMetrics}
-                                onOpen={() => router.push('/activity')}
-                            />
-                        </Section>
-
-                        <Section title="Nutrition" action="See All" onAction={() => router.push('/nutrition')}>
-                            <NutritionCard
-                                day={nutrition}
-                                onOpen={() => router.push('/nutrition')}
-                                onLog={() => router.push('/nutrition/log')}
-                            />
-                        </Section>
-
-                        <Section
-                            title="Doctor Appointment"
-                            action="See All"
-                            onAction={() => router.push('/appointments')}
-                        >
-                            <AppointmentsCard
-                                appointments={liveAppointments}
-                                onOpen={() => router.push('/appointments')}
-                                onBook={() => router.push('/(tabs)/professionals')}
-                            />
-                        </Section>
-
-                        <Section
-                            title="Medications"
-                            action="See All"
-                            onAction={() => router.push('/medications')}
-                        >
-                            <MedicationsCard
-                                schedule={medications}
-                                busyDose={busyDose}
-                                onDose={handleDose}
-                                onAdd={() => router.push('/medications/add')}
-                                onOpen={(id) => router.push({ pathname: '/medications/[id]', params: { id } })}
-                            />
-                        </Section>
-
-                        <Section title="Symptom Checker">
-                            <SymptomCheckerCard
+                        {/*
+                          Symptoms and the assistant were two sections and are one card. They
+                          are the same act — the symptom screen composes a message and posts
+                          it to the assistant — so drawing them as separate features was the
+                          screen describing its own file layout rather than what a person
+                          does with it.
+                        */}
+                        <Section title="Ask LabTrack AI">
+                            <AskCard
+                                conversation={conversation}
                                 onSearch={() => router.push('/symptoms')}
                                 onSymptom={(id) => router.push({ pathname: '/symptoms', params: { symptom: id } })}
-                            />
-                        </Section>
-
-                        <Section title="AI Health Assistant">
-                            <AssistantCard
-                                conversation={conversation}
                                 onOpen={() => router.push('/(tabs)/assistant')}
                             />
                         </Section>
 
-                        <SupportBanner onPress={() => router.push('/help')} />
+                        {/*
+                          The trackers with nothing in them, as one list rather than as six
+                          full-height cards saying "connect a watch".
+
+                          Each row names the pillar it fills, because that is the true answer
+                          to "why should I bother" — the score above genuinely cannot move
+                          until one of these has data. See **The LabTrack score**.
+                        */}
+                        {setup.length > 0 && (
+                            <Section title="Get more from LabTrack">
+                                <View style={styles.card}>
+                                    <Text style={styles.cardBody}>
+                                        Each of these fills a pillar of your score. Until one has data,
+                                        that pillar is counted as unknown rather than as a failure.
+                                    </Text>
+                                    <View style={styles.rowList}>
+                                        {setup.map((item) => (
+                                            <TouchableOpacity
+                                                key={item.id}
+                                                style={styles.setupRow}
+                                                onPress={() => router.push(item.route as never)}
+                                                activeOpacity={0.8}
+                                            >
+                                                <View style={styles.setupIcon}>
+                                                    <Ionicons name={item.icon} size={18} color={Palette.primary} />
+                                                </View>
+                                                <View style={styles.flex}>
+                                                    <Text style={styles.rowTitle}>{item.title}</Text>
+                                                    <Text style={styles.rowMeta} numberOfLines={2}>{item.body}</Text>
+                                                </View>
+                                                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
+                            </Section>
+                        )}
 
                         {/*
                             News & Resources.
@@ -509,14 +974,19 @@ export default function HomeScreen() {
  * is none here; the streak chip beside the date is real (`ActivitySummary.streak`) and is
  * hidden rather than shown as a zero.
  */
-const HomeHeader = ({ name, initials, photo, streak, topInset, onSearch, onPressAvatar }: {
+const HomeHeader = ({
+    name, initials, photo, streak, today, topInset, onSearch, onPressAvatar, onPressStreak,
+}: {
     name: string;
     initials: string;
     photo: string | null;
-    streak: number;
+    /** Null until the activity summary lands — distinct from a real streak of zero. */
+    streak: number | null;
+    today: string;
     topInset: number;
     onSearch: () => void;
     onPressAvatar: () => void;
+    onPressStreak: () => void;
 }) => (
     <LinearGradient
         colors={Palette.heroGradient}
@@ -528,11 +998,22 @@ const HomeHeader = ({ name, initials, photo, streak, topInset, onSearch, onPress
             <View style={styles.flex}>
                 <View style={styles.dateRow}>
                     <Text style={styles.headerDate}>{formatToday()}</Text>
-                    {streak > 0 && (
-                        <View style={styles.streakChip}>
-                            <Ionicons name="flame" size={12} color={Palette.white} />
-                            <Text style={styles.streakText}>{streak}</Text>
-                        </View>
+                    {streak !== null && (
+                        <TouchableOpacity
+                            style={[styles.streakChip, streak === 0 && styles.streakChipIdle]}
+                            onPress={onPressStreak}
+                            hitSlop={8}
+                            accessibilityLabel={streak > 0 ? `${streak} day streak` : 'Start a streak'}
+                        >
+                            <Ionicons
+                                name={streak > 0 ? 'flame' : 'flame-outline'}
+                                size={12}
+                                color={Palette.white}
+                            />
+                            <Text style={styles.streakText}>
+                                {streak > 0 ? streak : 'Start a streak'}
+                            </Text>
+                        </TouchableOpacity>
                     )}
                 </View>
                 <Text style={styles.headerGreeting} numberOfLines={1}>Hello, {name}!</Text>
@@ -548,69 +1029,205 @@ const HomeHeader = ({ name, initials, photo, streak, topInset, onSearch, onPress
                 <Avatar uri={photo} initials={initials} size={44} style={styles.headerAvatar} textStyle={{ fontSize: 15 }} />
             </TouchableOpacity>
         </View>
+
+        {/*
+            The day in one line, composed from data the screen has already loaded — doses
+            left, an appointment today, calories remaining. It fetches nothing.
+
+            It is the answer to the question the greeting raises and never used to answer.
+            "Hello, Hessam!" over a date is a screen that knows who you are and has nothing
+            to tell you; a person who opens the app twice before lunch needs the second
+            visit to differ from the first.
+        */}
+        <Text style={styles.headerToday} numberOfLines={2}>{today}</Text>
     </LinearGradient>
 );
 
 /**
  * The score card, overlapping the header.
  *
- * The kit's second meta chip reads "plus User" — a subscription badge. This shows the thing
- * a person actually needs to see beside a health score: how many of their markers are out
- * of range, or, when none are, how much of the score was measured rather than reported.
- * That provenance line used to live on the old hero and is the whole point of the score
- * being computed from the trackers — see **The LabTrack score** in CLAUDE.md.
+ * The kit's second meta chip reads "plus User" — a subscription badge. This shows the two
+ * things a person actually needs beside a health score: **which way it moved**, and how
+ * much of it was measured rather than reported.
+ *
+ * Three things it deliberately does not do:
+ *
+ * 1. **It does not print the band twice.** It used to read "Suboptimal health" and then
+ *    "Suboptimal" again on the line below, which spends the most valuable line on the
+ *    screen restating the line above it. The band is the title; the meta row is movement.
+ * 2. **It does not invent a movement.** `score.change` is null until there are two
+ *    snapshots to compare, and a delta of zero is drawn as "no change", not as "+0".
+ * 3. **It does not describe a null score as a bad one.** No score is a statement about
+ *    coverage — see **The LabTrack score** in CLAUDE.md.
  */
 const ScoreCard = ({ score, attention, onPress }: {
     score: HealthScore; attention: number; onPress: () => void;
 }) => {
     const band = bandMeta(score.band);
     const mostlyReported = isMostlyReported(score);
+    const change = score.change;
+    const delta = change?.delta ?? 0;
+
+    // The pillar that moved most, in either direction. One name, not a list: the breakdown
+    // screen is where the full ledger lives, and this is a line under a number.
+    const moved = change
+        ? [...change.improved.map((p) => ({ ...p, up: true })),
+           ...change.declined.map((p) => ({ ...p, up: false }))]
+            .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0] ?? null
+        : null;
 
     return (
         <TouchableOpacity style={styles.scoreCard} onPress={onPress} activeOpacity={0.85}>
-            <View style={styles.scoreBox}>
-                <Text style={styles.scoreValue}>{score.value ?? '--'}</Text>
-            </View>
-
-            <View style={styles.flex}>
-                <Text style={styles.scoreBand} numberOfLines={1}>
-                    {score.value === null ? 'No score yet' : `${band.label} health`}
-                </Text>
-
-                <View style={styles.scoreMetaRow}>
-                    <View style={styles.scoreMeta}>
-                        <Ionicons name="heart" size={14} color={band.color} />
-                        <Text style={styles.scoreMetaText}>{band.label}</Text>
-                    </View>
-
-                    {score.value !== null && <Text style={styles.scoreDot}>·</Text>}
-
-                    {score.value !== null && (attention > 0 ? (
-                        <View style={styles.scoreMeta}>
-                            <Ionicons name="alert-circle" size={14} color={Palette.danger} />
-                            <Text style={[styles.scoreMetaText, { color: Palette.danger }]}>
-                                {attention} need{attention === 1 ? 's' : ''} attention
-                            </Text>
-                        </View>
-                    ) : (
-                        <View style={styles.scoreMeta}>
-                            <Ionicons
-                                name={mostlyReported ? 'clipboard-outline' : 'pulse'}
-                                size={14}
-                                color={mostlyReported ? Palette.warning : Palette.success}
-                            />
-                            <Text style={styles.scoreMetaText}>
-                                {score.coverage.observedWeight}% measured
-                            </Text>
-                        </View>
-                    ))}
+            <View style={styles.scoreTop}>
+                <View style={styles.scoreBox}>
+                    <Text style={styles.scoreValue}>{score.value ?? '--'}</Text>
                 </View>
+
+                <View style={styles.flex}>
+                    <Text style={styles.scoreBand} numberOfLines={1}>
+                        {score.value === null ? 'No score yet' : `${band.label} health`}
+                    </Text>
+
+                    <View style={styles.scoreMetaRow}>
+                        {score.value !== null && change && (
+                            <View style={styles.scoreMeta}>
+                                <Ionicons
+                                    name={delta > 0 ? 'trending-up' : delta < 0 ? 'trending-down' : 'remove'}
+                                    size={14}
+                                    color={delta > 0 ? Palette.success : delta < 0 ? Palette.warning : Palette.textMuted}
+                                />
+                                <Text style={[
+                                    styles.scoreMetaText,
+                                    delta > 0 && { color: Palette.success },
+                                    delta < 0 && { color: Palette.warning },
+                                ]}>
+                                    {delta === 0
+                                        ? `No change ${formatSince(change.since)}`
+                                        : `${delta > 0 ? '+' : ''}${delta} ${formatSince(change.since)}`}
+                                </Text>
+                            </View>
+                        )}
+
+                        {score.value !== null && change && <Text style={styles.scoreDot}>·</Text>}
+
+                        {score.value !== null && (attention > 0 ? (
+                            <View style={styles.scoreMeta}>
+                                <Ionicons name="alert-circle" size={14} color={Palette.danger} />
+                                <Text style={[styles.scoreMetaText, { color: Palette.danger }]}>
+                                    {attention} need{attention === 1 ? 's' : ''} attention
+                                </Text>
+                            </View>
+                        ) : (
+                            <View style={styles.scoreMeta}>
+                                <Ionicons
+                                    name={mostlyReported ? 'clipboard-outline' : 'pulse'}
+                                    size={14}
+                                    color={mostlyReported ? Palette.warning : Palette.success}
+                                />
+                                <Text style={styles.scoreMetaText}>
+                                    {score.coverage.observedWeight}% measured
+                                </Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
+                <Ionicons name="chevron-forward" size={22} color={Palette.textMuted} />
             </View>
 
-            <Ionicons name="chevron-forward" size={22} color={Palette.textMuted} />
+            {/* What actually moved. The number alone is a verdict; this is the reason for
+                it, and it is the difference between a score somebody watches and a score
+                somebody stops believing. */}
+            {moved && (
+                <View style={styles.scoreFoot}>
+                    <Ionicons
+                        name={moved.up ? 'arrow-up-circle' : 'arrow-down-circle'}
+                        size={14}
+                        color={moved.up ? Palette.success : Palette.warning}
+                    />
+                    <Text style={styles.scoreFootText} numberOfLines={1}>
+                        {moved.label} {moved.up ? 'improved' : 'slipped'}
+                        {change && change.improved.length + change.declined.length > 1
+                            ? ` · ${change.improved.length + change.declined.length - 1} other pillar${
+                                change.improved.length + change.declined.length === 2 ? '' : 's'} moved`
+                            : ''}
+                    </Text>
+                </View>
+            )}
         </TouchableOpacity>
     );
 };
+
+/**
+ * One out-of-range marker, with the direction it is heading.
+ *
+ * The score card counts them; this names them. `describeMovement` decides whether a
+ * movement is good — up is not improvement, it depends on the analyte and on which way it
+ * was wrong, which is exactly why that judgement lives in `lib/biomarkers.ts` and not here.
+ */
+const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: () => void }) => {
+    const meta = FLAG_META[marker.flag];
+    const movement = describeMovement(marker);
+    const plain = plainName(marker);
+
+    return (
+        <TouchableOpacity style={styles.markerTile} onPress={onPress} activeOpacity={0.85}>
+            {/* The flag gets its own line. Beside the movement it had about 80pt for
+                "Critically high", which either wraps to two lines or truncates — and a
+                truncated clinical label is the one string on this tile that must not be
+                guessed at. */}
+            <View style={[styles.markerFlag, { backgroundColor: meta.bg }]}>
+                <Text style={[styles.markerFlagText, { color: meta.color }]} numberOfLines={1}>
+                    {meta.label}
+                </Text>
+            </View>
+
+            <View style={styles.markerHead}>
+                <View style={styles.valueRow}>
+                    <Text style={styles.markerValue} numberOfLines={1}>{formatValue(marker.value)}</Text>
+                    <Text style={styles.unit} numberOfLines={1}>{marker.unit}</Text>
+                </View>
+                {movement && (
+                    <Text style={[
+                        styles.markerMove,
+                        {
+                            color: movement.tone === 'good' ? Palette.success
+                                : movement.tone === 'bad' ? Palette.danger : Palette.textMuted,
+                        },
+                    ]} numberOfLines={1}>
+                        {movement.text}
+                    </Text>
+                )}
+            </View>
+
+            <View>
+                <Text style={styles.markerName} numberOfLines={1}>{medicalName(marker)}</Text>
+                {!!plain && <Text style={styles.markerPlain} numberOfLines={1}>{plain}</Text>}
+            </View>
+        </TouchableOpacity>
+    );
+};
+
+/**
+ * One "Needs you" row.
+ *
+ * The whole row is the target, and the call to action is a label rather than a button: a
+ * button inside a row that is itself tappable gives two hit areas for one destination, and
+ * the smaller of them is the one people miss.
+ */
+const ActionRow = ({ action }: { action: HomeAction }) => (
+    <TouchableOpacity style={styles.actionRow} onPress={action.onPress} activeOpacity={0.85}>
+        <View style={[styles.actionIcon, { backgroundColor: action.surface }]}>
+            <Ionicons name={action.icon} size={20} color={action.color} />
+        </View>
+        <View style={styles.flex}>
+            <Text style={styles.actionTitle} numberOfLines={2}>{action.title}</Text>
+            <Text style={styles.cardBody} numberOfLines={2}>{action.body}</Text>
+            <Text style={[styles.actionCta, { color: action.color }]}>{action.cta}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+    </TouchableOpacity>
+);
 
 // ---------------------------------------------------------------------------
 // Health metrics
@@ -875,22 +1492,9 @@ const SleepCard = ({ card, today, onOpen }: {
     // with another night's number.
     const efficiency = card?.at && card.at === today?.day ? today.sleep.efficiency : null;
 
-    if (hours === null && !hasNights) {
-        return (
-            <TouchableOpacity style={styles.card} onPress={onOpen} activeOpacity={0.85}>
-                <View style={styles.cardHead}>
-                    <View style={styles.flex}>
-                        <Text style={styles.cardTitle}>No sleep recorded</Text>
-                        <Text style={styles.cardBody}>
-                            Connect a watch or a phone health store and your nights appear here. Nothing
-                            on this device measures sleep on its own.
-                        </Text>
-                    </View>
-                    <Ionicons name="moon-outline" size={26} color={Palette.primaryLight} />
-                </View>
-            </TouchableOpacity>
-        );
-    }
+    // Gated by the caller: nights nobody has recorded are a setup row pointing at
+    // `/activity/sources`, which is where connecting a health store actually happens.
+    if (hours === null && !hasNights) return null;
 
     const whole = hours === null ? null : Math.floor(hours);
     const mins = hours === null ? null : Math.round((hours - Math.floor(hours)) * 60);
@@ -976,22 +1580,9 @@ const NutritionCard = ({ day, onOpen, onLog }: {
     const pattern = day?.plan?.guidance?.find((g) => g.kind === 'pattern')?.label
         ?? day?.plan?.guidance?.[0]?.label;
 
-    if (!day?.plan || !target) {
-        return (
-            <TouchableOpacity style={styles.cardRow} onPress={onOpen} activeOpacity={0.85}>
-                <View style={styles.roundIcon}>
-                    <Ionicons name="restaurant-outline" size={20} color={Palette.primary} />
-                </View>
-                <View style={styles.flex}>
-                    <Text style={styles.cardTitle}>Set up nutrition tracking</Text>
-                    <Text style={styles.cardBody}>
-                        Targets built from your profile and the dietary advice on your plan.
-                    </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-            </TouchableOpacity>
-        );
-    }
+    // Gated by the caller: an unconfigured tracker is a setup row rather than a card that
+    // is mostly an invitation. The guard keeps the non-null assertions below honest.
+    if (!day?.plan || !target) return null;
 
     const remaining = Math.max(0, Math.round(target - consumed));
     const over = consumed > target;
@@ -1131,22 +1722,10 @@ const Macro = ({ label, grams, target, tint }: {
 const AppointmentsCard = ({ appointments, onOpen, onBook }: {
     appointments: Appointment[]; onOpen: () => void; onBook: () => void;
 }) => {
-    if (appointments.length === 0) {
-        return (
-            <TouchableOpacity style={styles.cardRow} onPress={onBook} activeOpacity={0.85}>
-                <View style={styles.roundIcon}>
-                    <Ionicons name="calendar-outline" size={20} color={Palette.primary} />
-                </View>
-                <View style={styles.flex}>
-                    <Text style={styles.cardTitle}>No appointments booked</Text>
-                    <Text style={styles.cardBody}>
-                        Browse specialists and request a consultation about your results.
-                    </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-            </TouchableOpacity>
-        );
-    }
+    // The caller only renders this section when there is a live appointment — an empty
+    // diary is a row in "Get more from LabTrack" instead. This guard is here so the
+    // destructure below cannot read a professional off `undefined` if it is ever reused.
+    if (appointments.length === 0) return null;
 
     const [next, ...rest] = appointments;
     const professional = professionalOf(next);
@@ -1222,6 +1801,8 @@ const AppointmentsCard = ({ appointments, onOpen, onBook }: {
                     </View>
                 </>
             )}
+
+            <CardFooterAction label="Book another" onPress={onBook} />
         </View>
     );
 };
@@ -1247,24 +1828,10 @@ const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
     onAdd: () => void;
     onOpen: (id: string) => void;
 }) => {
+    // Gated by the caller: a day with no doses is a setup row, not a card. See the
+    // tracker/setup split in `HomeScreen`.
     const doses = schedule?.doses ?? [];
-
-    if (doses.length === 0) {
-        return (
-            <TouchableOpacity style={styles.cardRow} onPress={onAdd} activeOpacity={0.85}>
-                <View style={styles.roundIcon}>
-                    <Ionicons name="medkit-outline" size={20} color={Palette.primary} />
-                </View>
-                <View style={styles.flex}>
-                    <Text style={styles.cardTitle}>Nothing scheduled today</Text>
-                    <Text style={styles.cardBody}>
-                        Add a medication to track doses and check it against the ones you already take.
-                    </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-            </TouchableOpacity>
-        );
-    }
+    if (doses.length === 0) return null;
 
     const pending = doses.filter((d) => d.status === 'scheduled').length;
 
@@ -1289,26 +1856,45 @@ const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
                     />
                 ))}
             </View>
+
+            <CardFooterAction label="Add medication" onPress={onAdd} />
         </View>
     );
 };
 
 // ---------------------------------------------------------------------------
-// Symptom checker, assistant, support
+// Ask LabTrack AI — symptoms and the assistant, in one card
 // ---------------------------------------------------------------------------
 
 /**
- * Symptom checker.
+ * Ask LabTrack AI.
  *
- * The kit ends this flow on a "Your Possible Conditions" list with match percentages, and
- * its home card previews "Recent Checks" with risk levels. There is no diagnosis engine
- * and no stored check — `app/symptoms` composes a message and sends it to the assistant,
- * which answers against the person's own records. So the card is the entry point: the
- * search, and the symptoms people actually start from.
+ * These were two sections. They are one card because they are one act: `app/symptoms`
+ * composes what you pick into a first-person message and posts it to the assistant, so
+ * drawing them as separate features described the file layout rather than what a person
+ * does. See **Symptom checker** in CLAUDE.md.
+ *
+ * Three things that are load-bearing:
+ *
+ * 1. **The last reply is clamped to three lines.** It used to render whole — fifteen lines
+ *    of a paragraph the person has already read, in the middle of a home screen. The point
+ *    of showing it at all is that reopening feels like a resumption rather than a fresh
+ *    start, and three lines does that.
+ * 2. **The safety sentence stays.** There is no diagnosis engine behind the chips, and the
+ *    line saying so is not decoration — a percentage or a condition name on this card would
+ *    be the most dangerous element in the app.
+ * 3. **An unavailable assistant is said, not hidden.** With no model key on the server the
+ *    card says so and offers no chat, rather than a control that answers 503.
  */
-const SymptomCheckerCard = ({ onSearch, onSymptom }: {
-    onSearch: () => void; onSymptom: (id: string) => void;
+const AskCard = ({ conversation, onSearch, onSymptom, onOpen }: {
+    conversation: Conversation | null;
+    onSearch: () => void;
+    onSymptom: (id: string) => void;
+    onOpen: () => void;
 }) => {
+    const last = [...(conversation?.messages ?? [])].reverse().find((m) => m.role === 'assistant');
+    const unavailable = conversation?.available === false;
+
     const common = COMMON_SYMPTOM_IDS
         .map((id) => SYMPTOMS.find((s) => s.id === id))
         .filter((s): s is NonNullable<typeof s> => Boolean(s));
@@ -1317,11 +1903,10 @@ const SymptomCheckerCard = ({ onSearch, onSymptom }: {
         <View style={styles.card}>
             <TouchableOpacity style={styles.searchField} onPress={onSearch} activeOpacity={0.85}>
                 <Ionicons name="search" size={18} color={Palette.textMuted} />
-                <Text style={styles.searchPlaceholder}>Search for a symptom…</Text>
+                <Text style={styles.searchPlaceholder}>Describe a symptom…</Text>
             </TouchableOpacity>
 
             <View style={styles.chipRow}>
-                <Text style={styles.chipLead}>Most common</Text>
                 {common.map((symptom) => (
                     <TouchableOpacity
                         key={symptom.id}
@@ -1334,39 +1919,23 @@ const SymptomCheckerCard = ({ onSearch, onSymptom }: {
                 ))}
             </View>
 
-            <Text style={styles.cardNote}>
-                What you pick is composed into a question for the assistant, which answers with your
-                results and plan in front of it. It does not diagnose.
-            </Text>
-        </View>
-    );
-};
+            <View style={styles.divider} />
 
-/**
- * AI Health Assistant.
- *
- * Shows the last thing the assistant actually said, so the bubble is a resumption rather
- * than a stock line. With no conversation yet it says what the assistant is for; with no
- * model key on the server it says that instead of offering a chat that answers 503.
- */
-const AssistantCard = ({ conversation, onOpen }: {
-    conversation: Conversation | null; onOpen: () => void;
-}) => {
-    const last = [...(conversation?.messages ?? [])].reverse().find((m) => m.role === 'assistant');
-    const unavailable = conversation?.available === false;
-
-    return (
-        <View style={styles.card}>
-            <View style={styles.bubbleRow}>
+            <TouchableOpacity
+                style={styles.bubbleRow}
+                onPress={unavailable ? undefined : onOpen}
+                activeOpacity={unavailable ? 1 : 0.85}
+                disabled={unavailable}
+            >
                 <View style={styles.botIcon}>
                     <Ionicons name="sparkles" size={18} color={Palette.primary} />
                 </View>
                 <View style={styles.bubble}>
-                    <Text style={styles.bubbleText}>
+                    <Text style={styles.bubbleText} numberOfLines={last ? 3 : undefined}>
                         {unavailable
                             ? 'The assistant is unavailable on this server right now. Your results and trackers are unaffected.'
                             : last?.text
-                                ?? 'Ask me anything about your results, your plan, or a symptom — I read your own records before answering.'}
+                                ?? 'Ask about your results, your plan, or a symptom — I read your own records before answering.'}
                     </Text>
                     {!!last && (
                         <View style={styles.bubbleFoot}>
@@ -1375,7 +1944,12 @@ const AssistantCard = ({ conversation, onOpen }: {
                         </View>
                     )}
                 </View>
-            </View>
+            </TouchableOpacity>
+
+            <Text style={styles.cardNote}>
+                Whatever you pick is composed into a question for the assistant, which answers with
+                your results and plan in front of it. It does not diagnose.
+            </Text>
 
             {!unavailable && (
                 <>
@@ -1391,18 +1965,6 @@ const AssistantCard = ({ conversation, onOpen }: {
         </View>
     );
 };
-
-const SupportBanner = ({ onPress }: { onPress: () => void }) => (
-    <TouchableOpacity style={styles.support} onPress={onPress} activeOpacity={0.85}>
-        <View style={styles.flex}>
-            <Text style={styles.supportBody}>
-                Need help? Our Help Center has the FAQ, and you can email support from there.
-            </Text>
-            <Text style={styles.supportLink}>Get support</Text>
-        </View>
-        <Ionicons name="headset-outline" size={40} color={Palette.primaryLight} />
-    </TouchableOpacity>
-);
 
 /** The kit's underlined footer action — "Log Activity +" — above a hairline rule. */
 const CardFooterAction = ({ label, onPress }: { label: string; onPress: () => void }) => (
@@ -1549,9 +2111,20 @@ const AnalysisCard = ({
                     {plain ? (
                         <>
                             <Text style={styles.plainHeadline}>{plain.headline}</Text>
-                            <Text style={styles.analysisSummary}>{plain.what_it_means}</Text>
 
-                            {plain.key_points?.length > 0 && (
+                            {/*
+                              Clamped closed. Collapsed, this card is a headline, three
+                              lines and one thing to do — the version somebody reads on the
+                              way to work. It used to open at full length: headline, four
+                              paragraphs, five key points and a caution box, which is most
+                              of a screen of prose before anything below it is reachable,
+                              and the next step was the part underneath all of it.
+                            */}
+                            <Text style={styles.analysisSummary} numberOfLines={expanded ? undefined : 3}>
+                                {plain.what_it_means}
+                            </Text>
+
+                            {expanded && plain.key_points?.length > 0 && (
                                 <View style={styles.pointList}>
                                     {plain.key_points.map((point) => {
                                         const meta = TONE_META[point.tone] ?? TONE_META.watch;
@@ -1680,7 +2253,11 @@ const AnalysisCard = ({
                     <View style={styles.analysisFooter}>
                         <TouchableOpacity onPress={onToggle} hitSlop={8} style={styles.footerLink}>
                             <Text style={styles.footerLinkText}>
-                                {expanded ? 'Show less' : plain ? 'Read the full analysis' : 'Read full analysis'}
+                                {expanded
+                                    ? 'Show less'
+                                    : plain?.key_points?.length
+                                        ? `Read the full analysis · ${plain.key_points.length} points`
+                                        : 'Read the full analysis'}
                             </Text>
                             <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={Palette.primary} />
                         </TouchableOpacity>
@@ -1856,8 +2433,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#F59E0B', borderRadius: Radius.sm,
         paddingHorizontal: 7, paddingVertical: 2,
     },
+    // A streak of zero is an invitation, not a failure — so it keeps the shape and loses
+    // the amber. The same call `app/profile.tsx` makes about its own streak card.
+    streakChipIdle: { backgroundColor: 'rgba(255,255,255,0.22)' },
     streakText: { fontSize: 12, color: Palette.white, fontFamily: Fonts.bold },
     headerGreeting: { fontSize: 26, color: Palette.white, fontFamily: Fonts.bold, marginTop: 6 },
+    headerToday: {
+        fontSize: 14, lineHeight: 20, marginTop: Spacing.sm,
+        color: 'rgba(255,255,255,0.92)', fontFamily: Fonts.medium,
+    },
     headerSearch: {
         width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.white,
         alignItems: 'center', justifyContent: 'center',
@@ -1865,13 +2449,21 @@ const styles = StyleSheet.create({
     headerAvatar: { borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' },
 
     // Score card -----------------------------------------------------------
+    // A column now, because the movement line sits under the whole thing rather than
+    // beside the number. `scoreTop` carries what used to be on the card itself.
     scoreCard: {
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.lg,
+        gap: Spacing.md,
         marginHorizontal: GUTTER, marginTop: -Spacing.xxxl - Spacing.md,
         padding: Spacing.lg, borderRadius: Radius.xl,
         backgroundColor: Palette.white, ...Shadow.card,
         shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
     },
+    scoreTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
+    scoreFoot: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        borderTopWidth: 1, borderTopColor: Palette.borderLight, paddingTop: Spacing.md,
+    },
+    scoreFootText: { flex: 1, fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.medium },
     scoreBox: {
         width: 66, height: 66, borderRadius: Radius.lg,
         backgroundColor: Palette.primarySurface,
@@ -1899,11 +2491,6 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.borderLight,
         gap: Spacing.md,
     },
-    cardRow: {
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        marginHorizontal: GUTTER, padding: Spacing.lg, borderRadius: Radius.xl,
-        backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.borderLight,
-    },
     cardHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
     cardTitle: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
     cardBody: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 3 },
@@ -1912,10 +2499,6 @@ const styles = StyleSheet.create({
     bigUnit: { fontSize: 15, color: Palette.textSecondary, fontFamily: Fonts.regular },
     divider: { height: 1, backgroundColor: Palette.border },
     subHeading: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
-    roundIcon: {
-        width: 42, height: 42, borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
-        alignItems: 'center', justifyContent: 'center',
-    },
     roundButton: {
         width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.primary,
         alignItems: 'center', justifyContent: 'center',
@@ -1932,6 +2515,48 @@ const styles = StyleSheet.create({
     statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
     statusDot: { width: 7, height: 7, borderRadius: Radius.pill },
     statusText: { fontSize: 13, fontFamily: Fonts.semibold },
+
+    // Markers to watch -----------------------------------------------------
+    // Same width as `metricTile`, so the two horizontal rails on this page line their
+    // cards up rather than sitting 4pt out of step with each other.
+    markerTile: {
+        width: METRIC_CARD_WIDTH, padding: Spacing.lg, borderRadius: Radius.xl,
+        backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.borderLight,
+        gap: Spacing.sm,
+    },
+    markerHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.sm },
+    markerFlag: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm,
+        maxWidth: '100%',
+    },
+    markerFlagText: { fontSize: 11, fontFamily: Fonts.bold },
+    markerMove: { fontSize: 12, fontFamily: Fonts.bold },
+    markerValue: { fontSize: 22, color: Palette.text, fontFamily: Fonts.bold },
+    markerName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
+    markerPlain: { fontSize: 11.5, color: Palette.textMuted, fontFamily: Fonts.regular },
+
+    // Needs you ------------------------------------------------------------
+    actionList: { gap: Spacing.md, marginHorizontal: GUTTER },
+    actionRow: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md,
+        padding: Spacing.lg, borderRadius: Radius.xl,
+        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
+        ...Shadow.card,
+    },
+    actionIcon: {
+        width: 40, height: 40, borderRadius: Radius.lg,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    actionTitle: { fontSize: 16, lineHeight: 22, color: Palette.text, fontFamily: Fonts.semibold },
+    actionCta: { fontSize: 14, fontFamily: Fonts.bold, marginTop: 7 },
+
+    // Get more from LabTrack -----------------------------------------------
+    setupRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    setupIcon: {
+        width: 38, height: 38, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
+    },
 
     // Health metrics -------------------------------------------------------
     metricTile: {
@@ -2031,7 +2656,6 @@ const styles = StyleSheet.create({
     },
     searchPlaceholder: { fontSize: 14, color: Palette.textMuted, fontFamily: Fonts.regular },
     chipRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.sm },
-    chipLead: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
     chip: {
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.border,
         backgroundColor: Palette.white, paddingHorizontal: Spacing.md, paddingVertical: 6,
@@ -2052,17 +2676,6 @@ const styles = StyleSheet.create({
     bubbleText: { fontSize: 14.5, lineHeight: 21, color: Palette.text, fontFamily: Fonts.regular },
     bubbleFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
     bubbleTime: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular },
-
-    // Support --------------------------------------------------------------
-    support: {
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        marginHorizontal: GUTTER, marginTop: Spacing.xxl,
-        padding: Spacing.lg, borderRadius: Radius.xl,
-        backgroundColor: Palette.primarySurface,
-        borderWidth: 1, borderColor: '#E9D5FF',
-    },
-    supportBody: { fontSize: 14, lineHeight: 20, color: Palette.text, fontFamily: Fonts.regular },
-    supportLink: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold, marginTop: 6 },
 
     // Latest analysis ------------------------------------------------------
     analysisCard: {
