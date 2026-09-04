@@ -354,7 +354,10 @@ export interface Product {
     name: string;
     sku: string;
     description?: string;
+    /** The cover. Always `images[0]`; the API keeps the two in step. */
     image?: string;
+    /** The gallery, cover first. Absent on records written before it existed. */
+    images?: string[];
     type?: string;
     price: number;
 }
