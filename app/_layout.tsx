@@ -158,7 +158,9 @@ export default function RootLayout() {
         {/* The doctor-appointment flow: agenda, booking, confirmation. Each screen draws
             its own header, so the Stack must not add one. */}
         <Stack.Screen name="appointments" options={{ headerShown: false }} />
-        <Stack.Screen name="ProductDetails" options={{ title: "Product Details", headerShown: true }} />
+        {/* The product page draws its gallery full-bleed to the top of the screen and floats
+            its own back button over it, so a navigation bar would sit on the photograph. */}
+        <Stack.Screen name="ProductDetails" options={{ headerShown: false }} />
         <Stack.Screen name="myplans" options={{ title: "My Plans", headerShown: true }} />
       </Stack>
 
