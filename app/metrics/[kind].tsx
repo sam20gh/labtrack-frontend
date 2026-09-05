@@ -1,9 +1,16 @@
 /**
  * One metric's history.
  *
- * Weight, hydration and blood pressure share this screen: a chart, a summary, and the
- * individual entries with a delete. They differ enough in the middle to branch, and not enough
- * to justify three screens that would drift apart on the chrome.
+ * Weight and blood pressure share this screen: a chart, a summary, and the individual entries
+ * with a delete. They differ enough in the middle to branch, and not enough to justify two
+ * screens that would drift apart on the chrome.
+ *
+ * **Hydration used to be the third, and is not any more.** `Design/hydration.svg` is five
+ * screens — a glass at today's level, a month of ticks, a vessel breakdown, a level ladder,
+ * and a per-entry detail — none of which has a counterpart on the other two, and all of which
+ * would have been a `kind === 'water'` branch longer than the file it lived in. It lives at
+ * `app/metrics/water/` now; `/metrics/water` is a static route and wins over this one without
+ * either having to know about the other.
  *
  * The blood-pressure branch carries the one thing the kit's version does not: **the worst
  * reading in the window is shown next to the average**, because an average is precisely the
@@ -24,17 +31,14 @@ import Toast from 'react-native-toast-message';
 import { ApiError } from '@/lib/api';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import {
-    getHistory, deleteLog, getHydrationToday,
-    type MetricHistory, type MetricLog, type HydrationToday, type LoggableKind,
+    getHistory, deleteLog,
+    type MetricHistory, type MetricLog, type LoggableKind,
 } from '@/lib/metrics';
-import {
-    useUnits, unitLabel, displayWeight, displayVolume, formatVolume, type UnitPrefs,
-} from '@/lib/units';
+import { useUnits, unitLabel, displayWeight, type UnitPrefs } from '@/lib/units';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
 
 const META: Record<string, { title: string; unit: string; tint: string; logRoute: string }> = {
     weight: { title: 'Weight', unit: 'kg', tint: '#F59E0B', logRoute: '/metrics/log/weight' },
-    water: { title: 'Hydration', unit: 'ml', tint: '#38BDF8', logRoute: '/metrics/log/water' },
     'blood-pressure': { title: 'Blood Pressure', unit: 'mmHg', tint: '#7C3AED', logRoute: '/metrics/log/blood-pressure' },
 };
 
@@ -59,17 +63,10 @@ export default function MetricDetailScreen() {
      * the identity — which is also what any metric added later does until someone teaches
      * `lib/units.ts` about it.
      */
-    const shownUnit = kind === 'weight' ? unitLabel('weight', units)
-        : kind === 'water' ? unitLabel('volume', units)
-            : meta?.unit ?? '';
-    const toShown = (value: number) => (
-        kind === 'weight' ? displayWeight(value, units)
-            : kind === 'water' ? displayVolume(value, units)
-                : value
-    );
+    const shownUnit = kind === 'weight' ? unitLabel('weight', units) : meta?.unit ?? '';
+    const toShown = (value: number) => (kind === 'weight' ? displayWeight(value, units) : value);
 
     const [history, setHistory] = useState<MetricHistory | null>(null);
-    const [hydration, setHydration] = useState<HydrationToday | null>(null);
     const [days, setDays] = useState(30);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -77,15 +74,9 @@ export default function MetricDetailScreen() {
     const load = useCallback(async (d: number) => {
         if (!meta) { setLoading(false); return; }
         try {
-            const [h, hy] = await Promise.allSettled([
-                getHistory(kind as LoggableKind, d),
-                kind === 'water' ? getHydrationToday() : Promise.resolve(null),
-            ]);
-            if (h.status === 'fulfilled') setHistory(h.value);
-            if (hy.status === 'fulfilled' && hy.value) setHydration(hy.value);
-            if (h.status === 'rejected' && h.reason instanceof ApiError && h.reason.isAuthError) {
-                router.replace('/(auth)/loginscreen');
-            }
+            setHistory(await getHistory(kind as LoggableKind, d));
+        } catch (err) {
+            if (err instanceof ApiError && err.isAuthError) router.replace('/(auth)/loginscreen');
         } finally {
             setLoading(false);
         }
@@ -153,34 +144,6 @@ export default function MetricDetailScreen() {
                     />
                 }
             >
-                {/* Hydration leads with today, because that is the number the tracker is for. */}
-                {kind === 'water' && hydration && (
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Today</Text>
-                        <Text style={styles.big}>
-                            {formatVolume(hydration.consumedMl, units)}
-                            <Text style={styles.bigUnit}> of {formatVolume(hydration.targetMl, units)}</Text>
-                        </Text>
-
-                        <View style={styles.track}>
-                            <View style={[styles.fill, {
-                                width: `${Math.min(100, ((hydration.consumedMl ?? 0) / (hydration.targetMl || 1)) * 100)}%`,
-                                backgroundColor: meta.tint,
-                            }]} />
-                        </View>
-
-                        <Text style={styles.status}>
-                            {hydration.level
-                                ? `${hydration.level.label} — ${hydration.level.blurb}`
-                                : 'Nothing logged today yet.'}
-                        </Text>
-
-                        {/* Where the target came from, so it is not an unexplained number. */}
-                        <Text style={styles.hint}>Your target: {hydration.basis.join(', plus ')}.</Text>
-                        <Text style={styles.hint}>{hydration.note}</Text>
-                    </View>
-                )}
-
                 {/* Blood pressure leads with the mean AND the worst. */}
                 {kind === 'blood-pressure' && summary && (
                     <View style={styles.card}>
@@ -287,9 +250,7 @@ const LogRow = ({ log, kind, last, units, onDelete }: {
     // Converted for display only — `log.weightKg` and `log.ml` are what the record holds.
     const value = kind === 'weight'
         ? `${displayWeight(log.weightKg as number, units)} ${unitLabel('weight', units)}`
-        : kind === 'water'
-            ? `${displayVolume(log.ml as number, units)} ${unitLabel('volume', units)}`
-            : `${log.systolic}/${log.diastolic} mmHg`;
+        : `${log.systolic}/${log.diastolic} mmHg`;
 
     return (
         <View style={[styles.logRow, !last && styles.logDivider]}>
@@ -299,7 +260,6 @@ const LogRow = ({ log, kind, last, units, onDelete }: {
                     {when.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
                     {' · '}
                     {when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                    {log.drinkType && log.drinkType !== 'water' ? ` · ${log.drinkType}` : ''}
                     {log.pulse ? ` · ${log.pulse} bpm` : ''}
                 </Text>
             </View>
@@ -340,11 +300,7 @@ const styles = StyleSheet.create({
 
     big: { fontFamily: Fonts.bold, fontSize: 30, color: Palette.text },
     bigUnit: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.textMuted },
-    status: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary },
     hint: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, lineHeight: 16 },
-
-    track: { height: 8, borderRadius: 4, backgroundColor: Palette.borderLight, overflow: 'hidden' },
-    fill: { height: '100%', borderRadius: 4 },
 
     pill: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 4, borderRadius: Radius.pill },
     pillText: { fontFamily: Fonts.semibold, fontSize: 11 },

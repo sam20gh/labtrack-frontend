@@ -6,13 +6,13 @@
  * what dismisses it or where it came from. A sheet sliding over the bar would cover the
  * button and read as a separate destination.
  *
- * It draws the same nine shortcuts the home grid does, from `lib/quickActions.ts`. Two lists
- * would drift the first time a tracker was added.
+ * It draws the shortcuts from `lib/quickActions.ts` — the single definition of that list, so
+ * a second surface cannot drift from it the first time a tracker is added.
  *
  * Dismissal: the backdrop, the hardware back button, and picking an action. There is no
  * close control in the card — the caret and the dimmed page behind already say this is a
- * layer over the app rather than a screen, and a nine-item grid with a tenth cell for "close"
- * is a cell that does nothing but undo opening it.
+ * layer over the app rather than a screen, and a grid with one more cell for "close" is a
+ * cell that does nothing but undo opening it.
  */
 import React, { useEffect, useRef } from 'react';
 import {

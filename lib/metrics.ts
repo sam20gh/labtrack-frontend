@@ -137,7 +137,17 @@ export interface HydrationLevel {
     key: string;
     label: string;
     blurb: string;
+    /** Present on a *classified* level: the day's attainment against its own target. */
     percent?: number;
+    /**
+     * The floor of the band, as a percentage of target.
+     *
+     * Sent on every row of the `levels` table (it is `hydration.LEVELS` verbatim) and absent
+     * from a classified `level`. It is what lets a screen band a **past** day — the server
+     * only ever classifies today, and re-deriving the thresholds on the client would be a
+     * second copy of a clinical table. See `levelForPercent` in `lib/hydration.ts`.
+     */
+    min?: number;
 }
 
 export interface HydrationDay {

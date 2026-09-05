@@ -11,8 +11,12 @@
  * `Consult` earns its place for the opposite reason: professionals used to be a tab and is
  * not one any more, so this list is now the way people reach it.
  *
- * Nine of them, which is a 3×3 grid on any phone. If a tenth is added, add it as part of a
- * pair — a row of one reads as a mistake.
+ * **The count is a layout constraint, not a preference.** The sheet lays them out in three
+ * fixed columns, so nine was a clean 3×3 and a tenth alone would leave a final row of one,
+ * which reads as a mistake rather than as a list. Hydration arrived with the water tracker's
+ * own screens; Appointments is what makes the last row two rather than one, and it earns the
+ * slot on the same grounds Consult does — the diary at `/appointments` is a whole feature
+ * reachable today only from the home screen. Eleven, so add the next one alone.
  */
 import type { Ionicons } from '@expo/vector-icons';
 import type { Router } from 'expo-router';
@@ -40,8 +44,10 @@ export const QUICK_ACTIONS: QuickAction[] = [
     { id: 'nutrition', icon: 'restaurant-outline', label: 'Nutrition', route: '/nutrition' },
     { id: 'activity', icon: 'fitness-outline', label: 'Activity', route: '/activity' },
     { id: 'medications', icon: 'medkit-outline', label: 'Medications', route: '/medications' },
+    { id: 'hydration', icon: 'water-outline', label: 'Hydration', route: '/metrics/water' },
     { id: 'plan', icon: 'calendar-outline', label: 'My plan', route: '/myplans' },
     { id: 'consult', icon: 'people-outline', label: 'Consult', route: '/(tabs)/professionals' },
+    { id: 'appointments', icon: 'today-outline', label: 'Diary', route: '/appointments' },
     { id: 'resources', icon: 'library-outline', label: 'Resources', route: '/resources', gated: true },
 ];
 

@@ -17,6 +17,11 @@ export default function MetricsLayout() {
         <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="insight" />
+            {/*
+              Static, so it takes `/metrics/water` ahead of `[kind]`. Hydration outgrew the
+              shared screen — see `water/_layout.tsx`.
+            */}
+            <Stack.Screen name="water" />
             <Stack.Screen name="[kind]" />
             <Stack.Screen name="log/[kind]" />
         </Stack>
