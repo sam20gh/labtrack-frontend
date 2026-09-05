@@ -9,14 +9,51 @@ export const getLatestBiomarkers = () => api.get<{ biomarkers: BiomarkerSummary[
 export const getBiomarkerTrend = (name: string, limit = 100) =>
     api.get<BiomarkerTrend>(`/biomarkers/${encodeURIComponent(name)}/trend?limit=${limit}`);
 
-export const FLAG_META: Record<BiomarkerFlag, { label: string; color: string; bg: string }> = {
-    critical_low: { label: 'Critically low', color: '#DC2626', bg: '#FEF2F2' },
-    low: { label: 'Low', color: '#B45309', bg: '#FFFBEB' },
-    normal: { label: 'Normal', color: '#059669', bg: '#ECFDF5' },
-    high: { label: 'High', color: '#B45309', bg: '#FFFBEB' },
-    critical_high: { label: 'Critically high', color: '#DC2626', bg: '#FEF2F2' },
-    unknown: { label: 'Not evaluated', color: '#6B7280', bg: '#F9FAFB' },
+/**
+ * Clinical status colours.
+ *
+ * `color` and `bg` are the original pair — a tone and the pale surface it sits on. The
+ * three fields after them exist because that pair cannot, on its own, say how bad a
+ * result is:
+ *
+ * - **`bg` tones are 1.05:1 apart.** Amber `#FFFBEB` and red `#FEF2F2` are both a hair off
+ *   white, so a pale chip is barely visible against a card and a flag-tinted *card* cannot
+ *   separate "High" from "Critically high" at all. Severity is therefore carried by a
+ *   filled pill (`chipBg` + `chipText`), never by a wash.
+ * - **Amber and red are 1.04:1 apart in luminance.** They differ in hue and almost nothing
+ *   else, which is the one pair red-green colour blindness collapses. Crisis consequently
+ *   has two non-colour carriers and the colour is the third: the label says "Critically
+ *   high" where the others say "High", and the tile draws an alert icon inside the pill.
+ *   This is the same rule `utils/bloodPressure.js` states as "crisis is not a colour".
+ * - **`color` is not always legible as text.** `#DC2626` reaches 4.4:1 on a warm card and
+ *   `#059669` only 3.7:1, both under AA. `value` is the same hue darkened until it clears
+ *   4.5:1, so the number a person actually reads is never the failing one.
+ *
+ * Every pair below is verified against `Palette.surfaceWarm`; see the header of the
+ * markers rail in `app/(tabs)/index.tsx`.
+ */
+export const FLAG_META: Record<BiomarkerFlag, {
+    label: string;
+    color: string;
+    bg: string;
+    /** The tone for the value itself — `color` darkened where `color` fails AA as text. */
+    value: string;
+    /** Filled pill behind the label. Solid on purpose: a pale chip is invisible here. */
+    chipBg: string;
+    chipText: string;
+    /** The card's hairline, tinted to the flag so the edge agrees with the pill. */
+    border: string;
+}> = {
+    critical_low: { label: 'Critically low', color: '#DC2626', bg: '#FEF2F2', value: '#DC2626', chipBg: '#DC2626', chipText: '#FFFFFF', border: '#F6D6D6' },
+    low: { label: 'Low', color: '#B45309', bg: '#FFFBEB', value: '#B45309', chipBg: '#B45309', chipText: '#FFFFFF', border: '#F0E0C4' },
+    normal: { label: 'Normal', color: '#059669', bg: '#ECFDF5', value: '#047857', chipBg: '#047857', chipText: '#FFFFFF', border: '#CDE9DC' },
+    high: { label: 'High', color: '#B45309', bg: '#FFFBEB', value: '#B45309', chipBg: '#B45309', chipText: '#FFFFFF', border: '#F0E0C4' },
+    critical_high: { label: 'Critically high', color: '#DC2626', bg: '#FEF2F2', value: '#DC2626', chipBg: '#DC2626', chipText: '#FFFFFF', border: '#F6D6D6' },
+    unknown: { label: 'Not evaluated', color: '#6B7280', bg: '#F9FAFB', value: '#6B7280', chipBg: '#6B7280', chipText: '#FFFFFF', border: '#E5E7EB' },
 };
+
+/** Whether a flag is the crisis tier, which gets an icon as well as a colour. */
+export const isCriticalFlag = (f: BiomarkerFlag) => f === 'critical_low' || f === 'critical_high';
 
 /** Out-of-range values sort first: they are what the person needs to see. */
 export const byClinicalPriority = (a: BiomarkerSummary, b: BiomarkerSummary) => {
@@ -85,11 +122,40 @@ export const medicalName = (b: { explainer?: BiomarkerExplainer | null; displayN
     return b.displayName || b.name;
 };
 
-/** The lay label, when the server has one and it is not just the medical name again. */
+/**
+ * Words that cannot carry the lay label on their own.
+ *
+ * Grammar, plus the measurement nouns a lab title already implies — a reader looking at a
+ * row of results knows it is a count of something without the word "count". "Red Blood
+ * Cells" subtitled "Red blood cell count" reduces to nothing new under this list, which is
+ * the point: it spent the card's only explanatory line restating the title.
+ */
+const LABEL_FILLER = new Set([
+    'a', 'an', 'and', 'for', 'in', 'is', 'of', 'that', 'the', 'your',
+    'count', 'level', 'measure', 'reading', 'test', 'total', 'value',
+]);
+
+/** Significant words, singular-folded so "cells" and "cell" are one word. */
+const significantWords = (s: string) =>
+    (s.toLowerCase().match(/[a-z0-9]+/g) ?? [])
+        .map((w) => w.replace(/s$/, ''))
+        .filter((w) => !LABEL_FILLER.has(w));
+
+/**
+ * The lay label, when the server has one and it actually says something new.
+ *
+ * The guard used to be exact equality, which only caught "Total Cholesterol" / "Total
+ * cholesterol" and let "Red Blood Cells" / "Red blood cell count" through — a subtitle
+ * that reads as an explanation and explains nothing. The test is now whether the label
+ * introduces a word the title does not already carry; if it does not, there is nothing to
+ * print and the row is better off one line shorter.
+ */
 export const plainName = (b: { explainer?: BiomarkerExplainer | null; displayName?: string; name: string }) => {
     const plain = b.explainer?.plainName;
     if (!plain) return null;
-    return plain.toLowerCase() === medicalName(b).toLowerCase() ? null : plain;
+
+    const inTitle = new Set(significantWords(medicalName(b)));
+    return significantWords(plain).some((w) => !inTitle.has(w)) ? plain : null;
 };
 
 /**

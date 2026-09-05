@@ -52,9 +52,27 @@ export const Palette = {
     text: '#1F2937',
     textSecondary: '#6B7280',
     textMuted: '#9CA3AF',
+    /**
+     * Muted text that survives a tinted surface. `textMuted` is `#9CA3AF`, which reaches
+     * only 2.5:1 on `surfaceWarm` — below AA and visibly washed out, which is what the
+     * marker rail's lay labels were. This is the same role one stop darker and warmed to
+     * the surface's hue, so the muted line reads as quiet rather than as broken.
+     * Verified 5.5:1 on `surfaceWarm`.
+     */
+    textOnWarm: '#6F6558',
     border: '#E5E7EB',
     borderLight: '#F3F4F6',
     surface: '#FAFAFA',
+    /**
+     * A card surface with warmth in it. `surface` is a neutral grey, and a rail of grey
+     * cards carrying amber and red clinical flags reads as though the colour landed on the
+     * wrong layer. This is the same value pulled a step towards the flags' hue — enough to
+     * stop the card fighting them, not enough to imply a status of its own. Severity is
+     * never carried by this surface: `FLAG_META.bg` tones are 1.05:1 apart, so a
+     * flag-tinted card cannot separate "High" from "Critically high" and must not pretend
+     * to. See `FLAG_META` in `lib/biomarkers.ts`.
+     */
+    surfaceWarm: '#FDFBF7',
     background: '#FFFFFF',
     /**
      * The turing kit's slate ramp, used for full-page canvases where white cards need to

@@ -70,7 +70,7 @@ import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
 import {
     getLatestBiomarkers, byClinicalPriority, describeMovement, medicalName, plainName,
-    formatValue, FLAG_META,
+    formatValue, FLAG_META, isCriticalFlag,
 } from '@/lib/biomarkers';
 import { getPlan, STATUS_META as PLAN_STATUS_META, TYPE_ICON as PLAN_TYPE_ICON } from '@/lib/plan';
 import { getDay as getNutritionDay } from '@/lib/nutrition';
@@ -1169,23 +1169,42 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
     const meta = FLAG_META[marker.flag];
     const movement = describeMovement(marker);
     const plain = plainName(marker);
+    const critical = isCriticalFlag(marker.flag);
 
     return (
-        <TouchableOpacity style={styles.markerTile} onPress={onPress} activeOpacity={0.85}>
+        <TouchableOpacity
+            style={[styles.markerTile, { borderColor: meta.border }]}
+            onPress={onPress}
+            activeOpacity={0.85}
+        >
             {/* The flag gets its own line. Beside the movement it had about 80pt for
                 "Critically high", which either wraps to two lines or truncates — and a
                 truncated clinical label is the one string on this tile that must not be
-                guessed at. */}
-            <View style={[styles.markerFlag, { backgroundColor: meta.bg }]}>
-                <Text style={[styles.markerFlagText, { color: meta.color }]} numberOfLines={1}>
+                guessed at.
+
+                The pill is filled rather than tinted. `meta.bg` is 1.02:1 against this
+                card, so the old pale chip was a background nobody could see behind text
+                doing all the work alone. Filled, the pill separates from the card by
+                4.9:1 — and because critical differs from high by hue alone (1.04:1 in
+                luminance), the icon carries the crisis tier for anyone who cannot see
+                that hue. */}
+            <View style={[styles.markerFlag, { backgroundColor: meta.chipBg }]}>
+                {critical && <Ionicons name="alert-circle" size={11} color={meta.chipText} />}
+                <Text style={[styles.markerFlagText, { color: meta.chipText }]} numberOfLines={1}>
                     {meta.label}
                 </Text>
             </View>
 
             <View style={styles.markerHead}>
                 <View style={styles.valueRow}>
-                    <Text style={styles.markerValue} numberOfLines={1}>{formatValue(marker.value)}</Text>
-                    <Text style={styles.unit} numberOfLines={1}>{marker.unit}</Text>
+                    {/* The number is the thing being judged, so it wears the judgement —
+                        `meta.value`, not `meta.color`, because the raw red fails AA as
+                        text on this card. It is the largest element here, which makes it
+                        the cheapest place to put the status. */}
+                    <Text style={[styles.markerValue, { color: meta.value }]} numberOfLines={1}>
+                        {formatValue(marker.value)}
+                    </Text>
+                    <Text style={[styles.unit, styles.markerUnit]} numberOfLines={1}>{marker.unit}</Text>
                 </View>
                 {movement && (
                     <Text style={[
@@ -1200,9 +1219,13 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
                 )}
             </View>
 
+            {/* The lay label gets two lines. It is the only string on this tile written for
+                the person rather than for their doctor, and at 152pt it was being cut at
+                about 22 characters — "Average red blood c…", which translates nothing and
+                reads as a bug. One clipped line is worse than two whole ones. */}
             <View>
                 <Text style={styles.markerName} numberOfLines={1}>{medicalName(marker)}</Text>
-                {!!plain && <Text style={styles.markerPlain} numberOfLines={1}>{plain}</Text>}
+                {!!plain && <Text style={styles.markerPlain} numberOfLines={2}>{plain}</Text>}
             </View>
         </TouchableOpacity>
     );
@@ -2390,7 +2413,7 @@ const SignedOut = ({ products, router, topInset }: {
         </Section>
 
         {products.length > 0 && (
-            <Section title="Popular tests" action="See all" onAction={() => router.push('/(tabs)/orders')}>
+            <Section title="Popular tests" action="See All" onAction={() => router.push('/(tabs)/orders')}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
                     {products.map((p) => (
                         <ProductCard
@@ -2521,20 +2544,24 @@ const styles = StyleSheet.create({
     // cards up rather than sitting 4pt out of step with each other.
     markerTile: {
         width: METRIC_CARD_WIDTH, padding: Spacing.lg, borderRadius: Radius.xl,
-        backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.borderLight,
+        // Warm, not grey: these cards carry amber and red flags, and a neutral-grey card
+        // behind them reads as the colour having landed on the wrong layer. `borderColor`
+        // is set per flag at the call site.
+        backgroundColor: Palette.surfaceWarm, borderWidth: 1,
         gap: Spacing.sm,
     },
     markerHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.sm },
     markerFlag: {
-        alignSelf: 'flex-start',
+        alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 3,
         paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm,
         maxWidth: '100%',
     },
     markerFlagText: { fontSize: 11, fontFamily: Fonts.bold },
     markerMove: { fontSize: 12, fontFamily: Fonts.bold },
-    markerValue: { fontSize: 22, color: Palette.text, fontFamily: Fonts.bold },
+    markerValue: { fontSize: 22, fontFamily: Fonts.bold },   // colour is per flag
+    markerUnit: { color: Palette.textOnWarm },              // `unit` is shared with metricTile
     markerName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
-    markerPlain: { fontSize: 11.5, color: Palette.textMuted, fontFamily: Fonts.regular },
+    markerPlain: { fontSize: 11.5, lineHeight: 15, color: Palette.textOnWarm, fontFamily: Fonts.regular },
 
     // Needs you ------------------------------------------------------------
     actionList: { gap: Spacing.md, marginHorizontal: GUTTER },
