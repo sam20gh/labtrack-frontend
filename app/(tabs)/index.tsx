@@ -70,7 +70,7 @@ import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
 import {
     getLatestBiomarkers, byClinicalPriority, describeMovement, medicalName, plainName,
-    formatValue, FLAG_META, isCriticalFlag,
+    formatValue, FLAG_META, isCriticalFlag, hasReturnedToRange,
 } from '@/lib/biomarkers';
 import { getPlan, STATUS_META as PLAN_STATUS_META, TYPE_ICON as PLAN_TYPE_ICON } from '@/lib/plan';
 import { getDay as getNutritionDay } from '@/lib/nutrition';
@@ -398,6 +398,19 @@ export default function HomeScreen() {
     /** Out-of-range markers, worst first. Counted on the score card rather than railed. */
     const attention = useMemo(
         () => biomarkers.filter((b) => b.flag !== 'normal' && b.flag !== 'unknown').sort(byClinicalPriority),
+        [biomarkers],
+    );
+
+    /**
+     * Markers that came back into range since the last test.
+     *
+     * The only unambiguously good news on this page, and until now the only news it threw
+     * away: `attention` drops anything in range, so a marker someone spent three months
+     * fixing left the screen the moment it was fixed. Capped at two — this is a reward at
+     * the end of the rail, not a second list.
+     */
+    const recovered = useMemo(
+        () => biomarkers.filter(hasReturnedToRange).slice(0, 2),
         [biomarkers],
     );
 
@@ -791,9 +804,14 @@ export default function HomeScreen() {
                           out of range but heading back reads as progress rather than as a
                           second identical warning.
                         */}
-                        {attention.length > 0 && (
+                        {(attention.length > 0 || recovered.length > 0) && (
                             <Section
-                                title="Markers to watch"
+                                /* The section names what it actually contains. Somebody
+                                   whose every flagged marker has come back is not being
+                                   shown things to watch, and titling their good news
+                                   "Markers to watch" would be the screen refusing to
+                                   notice. */
+                                title={attention.length > 0 ? 'Markers to watch' : 'Back in range'}
                                 action="See All"
                                 onAction={() => router.push('/(tabs)/results')}
                             >
@@ -802,7 +820,11 @@ export default function HomeScreen() {
                                     showsHorizontalScrollIndicator={false}
                                     contentContainerStyle={styles.hScroll}
                                 >
-                                    {attention.slice(0, 5).map((marker) => (
+                                    {/* Recovered markers go last, so the rail reads worst
+                                        first and ends on the one that got better. Finding
+                                        it at the end of the scroll is the point: it is a
+                                        reward for looking, not a banner. */}
+                                    {[...attention.slice(0, 5), ...recovered].map((marker) => (
                                         <MarkerTile
                                             key={marker._id}
                                             marker={marker}
@@ -1170,12 +1192,24 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
     const movement = describeMovement(marker);
     const plain = plainName(marker);
     const critical = isCriticalFlag(marker.flag);
+    /* The good ending. `FLAG_META.normal` already carries the green, so the only thing
+       that changes is what the pill says: "Normal" is a category, "Back in range" is the
+       news. The tick is the same non-colour carrier the crisis tier gets — green and amber
+       are no more separable by hue than amber and red are. */
+    const returned = hasReturnedToRange(marker);
+    const label = returned ? 'Back in range' : meta.label;
+    const icon = critical ? 'alert-circle' : returned ? 'checkmark-circle' : null;
 
     return (
         <TouchableOpacity
             style={[styles.markerTile, { borderColor: meta.border }]}
             onPress={onPress}
             activeOpacity={0.85}
+            accessibilityRole="button"
+            /* Read as one sentence. Left to itself a screen reader announces five loose
+               fragments — "Low, 68.8, fL, MCV, average red blood cell size" — which is the
+               tile's layout rather than its meaning. */
+            accessibilityLabel={`${medicalName(marker)} ${formatValue(marker.value)} ${marker.unit}, ${label.toLowerCase()}`}
         >
             {/* The flag gets its own line. Beside the movement it had about 80pt for
                 "Critically high", which either wraps to two lines or truncates — and a
@@ -1189,9 +1223,9 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
                 luminance), the icon carries the crisis tier for anyone who cannot see
                 that hue. */}
             <View style={[styles.markerFlag, { backgroundColor: meta.chipBg }]}>
-                {critical && <Ionicons name="alert-circle" size={11} color={meta.chipText} />}
+                {icon && <Ionicons name={icon} size={11} color={meta.chipText} />}
                 <Text style={[styles.markerFlagText, { color: meta.chipText }]} numberOfLines={1}>
-                    {meta.label}
+                    {label}
                 </Text>
             </View>
 

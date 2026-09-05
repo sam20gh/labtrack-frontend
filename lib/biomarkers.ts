@@ -93,6 +93,27 @@ export const describeMovement = (b: BiomarkerSummary): { text: string; tone: 'go
     return { text: magnitude, tone };
 };
 
+/**
+ * A marker that was outside its range last time and is inside it now.
+ *
+ * This is the best news this layer can produce, and the home screen has never been able to
+ * show it. `attention` there keeps only out-of-range values, so a marker that recovers is
+ * not moved to the back of the rail — it is removed from the page, on the one visit the
+ * person most deserves to be told. The good news survives only as a line on a movement
+ * chart one tab away, which is not where anybody looks to find out that something got
+ * better.
+ *
+ * `describeMovement` already scores this case as `good`; it simply had nothing on the home
+ * screen left to score. This is the predicate that lets a tile ask.
+ */
+export const hasReturnedToRange = (b: BiomarkerSummary) => {
+    if (b.flag !== 'normal' || !b.previous) return false;
+    const min = b.appliedRange?.min;
+    const max = b.appliedRange?.max;
+    return (typeof min === 'number' && b.previous.value < min)
+        || (typeof max === 'number' && b.previous.value > max);
+};
+
 export const formatValue = (v: number) =>
     Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2).replace(/0$/, '');
 
