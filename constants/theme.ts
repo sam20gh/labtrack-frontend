@@ -29,6 +29,12 @@ export const Palette = {
     // Clinical status. These are semantic, not decorative: a person reads them to
     // understand a result, so they must stay distinguishable and consistent everywhere.
     success: '#059669',
+    /**
+     * The same green with enough weight to be *text*. `success` is a fill colour: it
+     * reaches 3.7:1 on `surfaceWarm`, under AA, so a movement arrow drawn in it is a
+     * status nobody can read. Verified 5.3:1 on `surfaceWarm`.
+     */
+    successDeep: '#047857',
     successSurface: '#ECFDF5',
     /**
      * The in-range band on a reference gauge. `successSurface` is too pale to separate

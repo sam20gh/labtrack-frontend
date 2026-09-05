@@ -69,11 +69,18 @@ export const byClinicalPriority = (a: BiomarkerSummary, b: BiomarkerSummary) => 
  * "Up" is not inherently improvement — rising ferritin is good when it was low and bad
  * when it was already high.
  */
-export const describeMovement = (b: BiomarkerSummary): { text: string; tone: 'good' | 'bad' | 'neutral' } | null => {
+export const describeMovement = (
+    b: BiomarkerSummary,
+): { text: string; label: string; tone: 'good' | 'bad' | 'neutral' } | null => {
     if (b.delta == null || !b.direction || b.direction === 'flat') return null;
 
     const arrow = b.direction === 'up' ? '↑' : '↓';
-    const magnitude = `${arrow} ${Math.abs(b.delta).toFixed(Math.abs(b.delta) >= 10 ? 0 : 1)}`;
+    const amount = Math.abs(b.delta).toFixed(Math.abs(b.delta) >= 10 ? 0 : 1);
+    const magnitude = `${arrow} ${amount}`;
+    // `text` is drawn; `label` is spoken. A screen reader given "↑ 0.3" reads the arrow as
+    // its character name or skips it, which turns the one piece of trend information on
+    // the tile into a bare number with no direction attached.
+    const label = `${b.direction} ${amount} since the last test`;
 
     const min = b.appliedRange?.min;
     const max = b.appliedRange?.max;
@@ -90,7 +97,7 @@ export const describeMovement = (b: BiomarkerSummary): { text: string; tone: 'go
         tone = b.direction === 'down' ? 'good' : 'bad';
     }
 
-    return { text: magnitude, tone };
+    return { text: magnitude, label, tone };
 };
 
 /**

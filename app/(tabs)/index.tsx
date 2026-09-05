@@ -1209,7 +1209,11 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
             /* Read as one sentence. Left to itself a screen reader announces five loose
                fragments — "Low, 68.8, fL, MCV, average red blood cell size" — which is the
                tile's layout rather than its meaning. */
-            accessibilityLabel={`${medicalName(marker)} ${formatValue(marker.value)} ${marker.unit}, ${label.toLowerCase()}`}
+            accessibilityLabel={[
+                `${medicalName(marker)} ${formatValue(marker.value)} ${marker.unit}`,
+                label.toLowerCase(),
+                movement?.label,
+            ].filter(Boolean).join(', ')}
         >
             {/* The flag gets its own line. Beside the movement it had about 80pt for
                 "Critically high", which either wraps to two lines or truncates — and a
@@ -1244,8 +1248,11 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
                     <Text style={[
                         styles.markerMove,
                         {
-                            color: movement.tone === 'good' ? Palette.success
-                                : movement.tone === 'bad' ? Palette.danger : Palette.textMuted,
+                            /* Verified against `surfaceWarm`. `Palette.success` is
+                               3.7:1 there and `textMuted` 2.5:1 — both under AA — so this
+                               row reads the deeper green and the warm muted instead. */
+                            color: movement.tone === 'good' ? Palette.successDeep
+                                : movement.tone === 'bad' ? Palette.danger : Palette.textOnWarm,
                         },
                     ]} numberOfLines={1}>
                         {movement.text}
@@ -1258,7 +1265,13 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
                 about 22 characters — "Average red blood c…", which translates nothing and
                 reads as a bug. One clipped line is worse than two whole ones. */}
             <View>
-                <Text style={styles.markerName} numberOfLines={1}>{medicalName(marker)}</Text>
+                {/* Two lines here too. An analyte the normaliser does not catalogue falls
+                    back to the glossary's spelled-out label — "Red Cell Distribution
+                    Width" — and clipping the name a person is matching against their own
+                    printout is the same defect as clipping the lay line beneath it. The
+                    rail's tiles stretch to a common height, so this costs nothing until a
+                    long name actually appears. */}
+                <Text style={styles.markerName} numberOfLines={2}>{medicalName(marker)}</Text>
                 {!!plain && <Text style={styles.markerPlain} numberOfLines={2}>{plain}</Text>}
             </View>
         </TouchableOpacity>
@@ -2586,7 +2599,7 @@ const styles = StyleSheet.create({
     },
     markerHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.sm },
     markerFlag: {
-        alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 3,
+        alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
         paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm,
         maxWidth: '100%',
     },
@@ -2594,7 +2607,7 @@ const styles = StyleSheet.create({
     markerMove: { fontSize: 12, fontFamily: Fonts.bold },
     markerValue: { fontSize: 22, fontFamily: Fonts.bold },   // colour is per flag
     markerUnit: { color: Palette.textOnWarm },              // `unit` is shared with metricTile
-    markerName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
+    markerName: { fontSize: 13, lineHeight: 17, color: Palette.text, fontFamily: Fonts.semibold },
     markerPlain: { fontSize: 11.5, lineHeight: 15, color: Palette.textOnWarm, fontFamily: Fonts.regular },
 
     // Needs you ------------------------------------------------------------
