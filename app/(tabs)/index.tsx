@@ -307,11 +307,26 @@ export default function HomeScreen() {
         }
     }, [router]);
 
+    /** Whether a first load has ever resolved. See the focus effect below. */
+    const painted = useRef(false);
+
     useFocusEffect(
         useCallback(() => {
             let active = true;
-            setLoading(true);
-            load().finally(() => { if (active) setLoading(false); });
+            // `loading` is read in exactly one place, and only while `signedIn` is still
+            // null — the full-screen spinner before anything has ever loaded. Once the
+            // first load resolves, `signedIn` is a boolean forever and the flag is never
+            // read again, so flipping it on each later focus re-rendered this whole tree
+            // to change nothing. This screen refocuses constantly — every tab switch, and
+            // every return from the detail screens it pushes to — so that was one wasted
+            // full-tree render per visit. Setting it back to `false` is already free:
+            // React bails out when the value is unchanged.
+            if (!painted.current) setLoading(true);
+            load().finally(() => {
+                if (!active) return;
+                painted.current = true;
+                setLoading(false);
+            });
             return () => { active = false; };
         }, [load]),
     );
