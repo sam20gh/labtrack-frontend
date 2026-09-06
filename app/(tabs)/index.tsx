@@ -838,11 +838,11 @@ export default function HomeScreen() {
             id: 'sleep',
             order: 6,
             node: (
-                <Section title="Sleep" action="See All" onAction={() => router.push('/activity')}>
+                <Section title="Sleep" action="See All" onAction={() => router.push('/sleep')}>
                     <SleepCard
                         card={sleepCard}
                         today={dayMetrics}
-                        onOpen={() => router.push('/activity')}
+                        onOpen={() => router.push('/sleep')}
                     />
                 </Section>
             ),
@@ -853,7 +853,11 @@ export default function HomeScreen() {
             icon: 'moon-outline',
             title: 'Connect a health store',
             body: 'Sleep, steps and heart rate come from a watch or your phone. Nothing here measures them alone.',
-            route: '/activity/sources',
+            // The sleep tracker rather than the sources list: it explains what is missing,
+            // carries the connect banner, and offers adding a night by hand for a phone
+            // with no health store. A bare sources screen is a dead end for anyone that
+            // describes.
+            route: '/sleep',
         });
     }
 

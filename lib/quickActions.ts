@@ -19,8 +19,10 @@
  * reachable today only from the home screen. Predict makes twelve, which closes the grid at a
  * clean 3×4. Badges would have been a thirteenth alone on its own row, so it arrives paired
  * with Score — which had no shortcut of its own, and is the number every badge sits beside.
- * Fourteen leaves a final row of two, which reads as a list; fifteen would close the grid
- * again, so the next single addition has to wait for a partner.
+ * Fourteen leaves a final row of two, which reads as a list; fifteen closes the grid again,
+ * which is what Sleep does — the sleep tracker is a whole feature whose only other way in is
+ * the home screen's own card. The next single addition leaves an orphan and has to wait for a
+ * partner.
  */
 import type { Ionicons } from '@expo/vector-icons';
 import type { Router } from 'expo-router';
@@ -48,6 +50,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
     { id: 'symptoms', icon: 'pulse-outline', label: 'Symptoms', route: '/symptoms' },
     { id: 'nutrition', icon: 'restaurant-outline', label: 'Nutrition', route: '/nutrition' },
     { id: 'activity', icon: 'fitness-outline', label: 'Activity', route: '/activity' },
+    { id: 'sleep', icon: 'moon-outline', label: 'Sleep', route: '/sleep' },
     { id: 'medications', icon: 'medkit-outline', label: 'Medications', route: '/medications' },
     { id: 'hydration', icon: 'water-outline', label: 'Hydration', route: '/metrics/water' },
     { id: 'plan', icon: 'calendar-outline', label: 'My plan', route: '/myplans' },

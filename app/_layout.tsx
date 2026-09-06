@@ -121,6 +121,7 @@ export default function RootLayout() {
             routes register individually and each one falls through to a second header
             titled "activity/index". */}
         <Stack.Screen name="activity" options={{ headerShown: false }} />
+        <Stack.Screen name="sleep" options={{ headerShown: false }} />
         <Stack.Screen name="score" options={{ headerShown: false }} />
         {/* Predictive health analysis. One entry: expo-router nests the whole directory,
             and every screen under it draws its own top inset. */}
