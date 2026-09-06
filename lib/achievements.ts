@@ -191,6 +191,39 @@ export const updateLeaderboardProfile = (body: { optedIn?: boolean; displayName?
  * Presentation
  * ------------------------------------------------------------------ */
 
+/**
+ * The three badges to put on a shelf: the newest first, then the closest to unlocking.
+ *
+ * Shared by the hub's featured row and the profile's trophy case, because they are the same
+ * editorial decision and two copies of it would eventually disagree about which three matter.
+ *
+ * A row of three *locked* badges is what somebody sees on day one and it is the right thing to
+ * show them — those are the ones within reach. The moment anything is earned it takes the
+ * front of the shelf, because a collection screen that keeps leading with what you have not
+ * got is a screen that never feels like yours.
+ */
+export const pickShelf = (all: Achievement[], count = 3): Achievement[] => {
+    const earned = all
+        .filter((a) => a.unlocked && a.unlockedAt)
+        .sort((a, b) => Date.parse(b.unlockedAt!) - Date.parse(a.unlockedAt!));
+    const closest = all
+        .filter((a) => !a.unlocked)
+        .sort((a, b) => b.progress - a.progress);
+    return [...earned, ...closest, ...all].slice(0, count);
+};
+
+/**
+ * The one still to come that is nearest — what the profile's "Next up" line names.
+ *
+ * Null when every ladder is topped out, which the caller has to render as a state rather than
+ * as an empty row. Ties broken by the smaller remaining gap so two badges both at 90% are
+ * ordered by which is actually closer in the person's own units.
+ */
+export const nextUp = (all: Achievement[]): Achievement | null =>
+    all
+        .filter((a) => a.next !== null)
+        .sort((a, b) => b.progress - a.progress || (a.next! - a.value) - (b.next! - b.value))[0] ?? null;
+
 /** The badge's colour. Never a clinical colour — see the note in `BadgeMedal.tsx`. */
 export const toneColour = (tone: BadgeTone, locked = false) =>
     (locked ? BADGE_TONES.locked : BADGE_TONES[tone]);

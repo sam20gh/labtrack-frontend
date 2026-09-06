@@ -23,17 +23,28 @@
  *   than broken. A streak of zero is drawn as an invitation, not a failure — the same call
  *   `alignment: 'unassessed'` and a null pillar make elsewhere.
  *
- * Four things the kit draws that are deliberately not here, each because nothing backs them:
- * the "asklepios plus" membership pill and Billing & Subscription (no subscription model),
- * Achievements (no achievement model), the referral card (no referral model), and Live Chat
- * (no support thread model). The invite card's slot is used by the promo that does have a
- * destination. `app/help/index.tsx` carries the same reasoning for its own omissions.
+ * - **Achievements are here, and they are the one dark card on the screen.** The kit drew an
+ *   Achievements row and it used to be omitted, because nothing backed it. Now
+ *   `/api/achievements` does, and a list row would have been the wrong shape for it: everything
+ *   else on this page is a control you adjust, and a collection is the one thing on it you
+ *   keep. `components/achievements/TrophyCase.tsx` explains the whole treatment — the fanned
+ *   shelf, the mosaic, and why the avatar's ring now means something. There is deliberately
+ *   **no** Achievements row in the groups below: the card is already the way in, and a
+ *   settings row to a screen this page opens with a picture of it is the tap that saves
+ *   nothing — the argument `lib/quickActions.ts` makes about shortcuts to things already on
+ *   the tab bar.
+ *
+ * Three things the kit draws that are still deliberately not here, each because nothing backs
+ * them: the "asklepios plus" membership pill and Billing & Subscription (no subscription
+ * model), the referral card (no referral model), and Live Chat (no support thread model). The
+ * invite card's slot is used by the promo that does have a destination. `app/help/index.tsx`
+ * carries the same reasoning for its own omissions.
  *
  * **Delete Account is real and is the one destructive control on the screen.**
  * `DELETE /users/:id` exists behind `requireSelf`, so the Danger Zone is not decorative —
  * it double-confirms, and it is the only row on the screen drawn in the danger colour.
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
     View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet, Alert, RefreshControl,
 } from 'react-native';
@@ -48,7 +59,13 @@ import Constants from 'expo-constants';
 import { api, ApiError } from '@/lib/api';
 import { getUserId, signOut } from '@/lib/auth';
 import { getScore, type HealthScore } from '@/lib/score';
-import { openAchievements } from '@/lib/achievements';
+import {
+    openAchievements, getAchievements, pickShelf,
+    type AchievementHub,
+} from '@/lib/achievements';
+import {
+    TrophyCase, TrophyCaseSkeleton, CollectionRing, AvatarMedal,
+} from '@/components/achievements/TrophyCase';
 import { getSummary as getActivitySummary, getWearableStatus } from '@/lib/activity';
 import { getPermissionStatus } from '@/lib/notifications';
 import { Avatar } from '@/components/Avatar';
@@ -111,8 +128,18 @@ export default function ProfileScreen() {
     const [streak, setStreak] = useState<number | null>(null);
     const [devices, setDevices] = useState<string | null>(null);
     const [pushStatus, setPushStatus] = useState<string | null>(null);
+    const [badges, setBadges] = useState<AchievementHub | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
+    /**
+     * Guards the collection's state write against a screen that has already gone.
+     *
+     * The badges are fetched *after* the first paint, so the request can still be in flight
+     * when somebody backs out — and `GET /achievements` is the slowest call on this screen by
+     * some distance. The rule and the ref are both from `app/nutrition/index.tsx`.
+     */
+    const mounted = useRef(true);
 
     const load = useCallback(async () => {
         const userId = await getUserId();
@@ -145,19 +172,53 @@ export default function ProfileScreen() {
         setLoading(false);
     }, [router]);
 
+    /**
+     * The collection, on its own timeline.
+     *
+     * Deliberately **not** in the `allSettled` above. `GET /achievements` reads every
+     * tracker's whole history across fourteen collections and persists anything newly earned;
+     * putting it in the first-paint batch would hold a settings screen behind the heaviest
+     * query in the app, and `useFocusEffect` would refire it every time somebody came back
+     * from changing a unit. That is precisely the failure `app/nutrition/index.tsx`
+     * documents — a screen that reads as slow because of something it did not need yet.
+     *
+     * So the settings paint immediately, the case holds its slot with a skeleton, and this
+     * lands a beat later. A failure leaves `badges` null and the case sits out entirely,
+     * which is the call `StreakCard` makes about a summary it could not fetch.
+     */
+    const loadBadges = useCallback(async () => {
+        try {
+            const hub = await getAchievements();
+            if (mounted.current) setBadges(hub);
+        } catch {
+            // A settings screen must not fail because a badge count did.
+        }
+    }, []);
+
     // Refetches on focus so a name changed in Profile Settings is not stale here. `loading`
     // is only ever set true on mount, so returning does not flash a spinner.
-    useFocusEffect(useCallback(() => { load(); }, [load]));
+    useFocusEffect(useCallback(() => {
+        mounted.current = true;
+        load();
+        loadBadges();
+        return () => { mounted.current = false; };
+    }, [load, loadBadges]));
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await load();
+        await Promise.all([load(), loadBadges()]);
         setRefreshing(false);
-    }, [load]);
+    }, [load, loadBadges]);
 
     const fullName = useMemo(
         () => `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
         [user],
+    );
+
+    /** The newest badge — the lapel pin, and the front of the fan. Shared selector. */
+    const newest = useMemo(
+        () => (badges ? pickShelf(badges.achievements, 1)[0] ?? null : null),
+        [badges],
     );
 
     const handleSignOut = () => {
@@ -280,24 +341,57 @@ export default function ProfileScreen() {
 
                 {/* Identity. The avatar straddles the cover's bottom edge, as the kit draws it. */}
                 <View style={styles.identity}>
-                    <Pressable
-                        style={styles.avatarWrap}
-                        onPress={() => router.push('/settings/profile')}
-                        accessibilityRole="button"
-                        accessibilityLabel="Edit your profile"
-                    >
-                        {/* Initials are the fallback for both "no photo yet" and "that photo
-                            would not load" — see `components/Avatar.tsx`. */}
-                        <Avatar
-                            uri={user.profileImage}
-                            initials={initialsOf(user)}
-                            size={AVATAR}
-                            style={styles.avatarRing}
-                        />
-                        <View style={styles.avatarBadge}>
-                            <Ionicons name="pencil" size={12} color={Palette.white} />
-                        </View>
-                    </Pressable>
+                    {/*
+                      * The avatar carries the collection.
+                      *
+                      * An outer arc for how much of the catalogue is held, and the newest badge
+                      * pinned bottom-left like a lapel pin. Neither costs a pixel of vertical
+                      * space on a screen that has none spare, and both turn the one element
+                      * every profile has into something worth looking at. The arc is drawn
+                      * outside the avatar's own canvas-coloured ring, so the two read as a
+                      * mount and a rim rather than as two rings.
+                      */}
+                    <View style={styles.avatarStage}>
+                        {badges ? (
+                            <CollectionRing
+                                size={AVATAR + RING_GAP * 2}
+                                unlocked={badges.summary.unlocked}
+                                total={badges.summary.total}
+                            />
+                        ) : null}
+
+                        <Pressable
+                            style={styles.avatarWrap}
+                            onPress={() => router.push('/settings/profile')}
+                            accessibilityRole="button"
+                            accessibilityLabel={
+                                badges
+                                    ? `Edit your profile. ${badges.summary.unlocked} of `
+                                    + `${badges.summary.total} badges collected.`
+                                    : 'Edit your profile'
+                            }
+                        >
+                            {/* Initials are the fallback for both "no photo yet" and "that photo
+                                would not load" — see `components/Avatar.tsx`. */}
+                            <Avatar
+                                uri={user.profileImage}
+                                initials={initialsOf(user)}
+                                size={AVATAR}
+                                style={styles.avatarRing}
+                            />
+                            <View style={styles.avatarBadge}>
+                                <Ionicons name="pencil" size={12} color={Palette.white} />
+                            </View>
+
+                            {/* Bottom-left, because bottom-right is the pencil. */}
+                            {newest ? (
+                                <AvatarMedal
+                                    achievement={newest}
+                                    onPress={() => router.push(`/achievements/${newest.key}`)}
+                                />
+                            ) : null}
+                        </Pressable>
+                    </View>
 
                     {/* Where the kit puts a membership pill. This says something true instead:
                         the score's own band, which is the status this product actually has. */}
@@ -317,6 +411,18 @@ export default function ProfileScreen() {
 
                 <View style={styles.body}>
                     <StreakCard streak={streak} onPress={() => router.push('/activity/history')} />
+
+                    {/* Above the promo because the collection is theirs and the promo is ours. */}
+                    {badges ? (
+                        <TrophyCase
+                            achievements={badges.achievements}
+                            summary={badges.summary}
+                            onOpen={() => { openAchievements(router); }}
+                            onOpenBadge={(key) => router.push(`/achievements/${key}`)}
+                        />
+                    ) : (
+                        <TrophyCaseSkeleton />
+                    )}
 
                     <PromoCard onPress={() => router.push('/(tabs)/orders')} />
 
@@ -366,15 +472,6 @@ export default function ProfileScreen() {
                             label="Score breakdown"
                             value={score?.value != null ? String(score.value) : undefined}
                             onPress={() => router.push('/score')}
-                        />
-                        {/* Filed under "Your health" rather than "General" because a badge is
-                            earned in a tracker. The gate is `openAchievements` rather than a
-                            push, so the value-prop screen is shown once and never again — the
-                            rule `openPredictions` states. */}
-                        <Row
-                            icon="trophy-outline"
-                            label="Achievements"
-                            onPress={() => { openAchievements(router); }}
                             last
                         />
                     </Group>
@@ -603,6 +700,13 @@ const Row = ({
 );
 
 const AVATAR = 92;
+/**
+ * How far the collection arc sits outside the avatar.
+ *
+ * Enough to clear the 4pt canvas ring and leave daylight between the two, so they read as a
+ * mount and a rim. Any closer and it looks like the ring gained a stripe.
+ */
+const RING_GAP = 9;
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Palette.canvas },
@@ -629,7 +733,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.xl,
         gap: 6,
     },
-    avatarWrap: { marginBottom: Spacing.md },
+    // Stages the avatar and its arc on one centre, so the ring is concentric with the
+    // avatar rather than with whatever the identity block's padding happens to be.
+    avatarStage: {
+        width: AVATAR + RING_GAP * 2,
+        height: AVATAR + RING_GAP * 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: Spacing.md,
+    },
+    avatarWrap: {},
     // The ring is the canvas colour, so the avatar reads as sitting on the page rather
     // than on the cover it straddles.
     avatarRing: { borderWidth: 4, borderColor: Palette.canvas },

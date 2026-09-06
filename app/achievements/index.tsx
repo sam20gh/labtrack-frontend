@@ -39,7 +39,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import {
     getAchievements, getLeaderboard, getAchievementStats,
-    markCelebrationsSeen, updateLeaderboardProfile,
+    markCelebrationsSeen, updateLeaderboardProfile, pickShelf,
     type AchievementHub, type Leaderboard, type Stats, type Unlock,
 } from '@/lib/achievements';
 import { AchievementRow, FeaturedBadge } from '@/components/achievements/AchievementCards';
@@ -102,7 +102,9 @@ export default function AchievementsHubScreen() {
         await markCelebrationsSeen([shown.key]).catch(() => { });
     };
 
-    const featured = useMemo(() => pickFeatured(hub?.achievements ?? []), [hub]);
+    // `pickShelf` is shared with the profile's trophy case: the same editorial decision,
+    // made once. See `lib/achievements.ts`.
+    const featured = useMemo(() => pickShelf(hub?.achievements ?? []), [hub]);
     const inProgress = useMemo(
         () => (hub?.achievements ?? [])
             .filter((a) => a.next !== null)
@@ -259,23 +261,6 @@ export default function AchievementsHubScreen() {
         </View>
     );
 }
-
-/**
- * The three across the top.
- *
- * The most recently unlocked first, then the closest to unlocking. A row of three locked
- * badges is what someone sees on day one and it is the right thing to show them — those are
- * the ones within reach — but as soon as anything is earned it belongs in that row.
- */
-const pickFeatured = (all: AchievementHub['achievements']) => {
-    const earned = all
-        .filter((a) => a.unlocked && a.unlockedAt)
-        .sort((a, b) => Date.parse(b.unlockedAt!) - Date.parse(a.unlockedAt!));
-    const closest = all
-        .filter((a) => !a.unlocked)
-        .sort((a, b) => b.progress - a.progress);
-    return [...earned, ...closest, ...all].slice(0, 3);
-};
 
 /* ------------------------------------------------------------------ *
  * Leaderboard
