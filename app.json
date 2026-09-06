@@ -24,6 +24,10 @@
     },
     "android": {
       "package": "com.labtrack.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#7C3AED"
+      },
       "googleServicesFile": "./google-services.json",
       "versionCode": 3,
       "permissions": [
