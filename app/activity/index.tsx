@@ -133,6 +133,8 @@ export default function ActivityDashboard() {
     const [selectedDay, setSelectedDay] = useState<string>(today);
     const [sessions, setSessions] = useState<ActivitySession[]>([]);
     const [dayMetrics, setDayMetrics] = useState<DayMetrics | null>(null);
+    /** The day's own fetch failed. Distinct from the day being genuinely empty. */
+    const [dayError, setDayError] = useState(false);
     const [month, setMonth] = useState<string>(() => today().slice(0, 7));
     const [calendar, setCalendar] = useState<CalendarDay[]>([]);
     const [calendarLoading, setCalendarLoading] = useState(true);
@@ -215,16 +217,24 @@ export default function ActivityDashboard() {
             const result = await getDay(day);
             setSessions(result.sessions);
             setDayMetrics(result.metrics);
+            setDayError(false);
         } catch (err) {
             if (err instanceof ApiError && err.isAuthError) {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            // The day failing is not the screen failing. The chart and the goal above it are
-            // still true, so this clears the day rather than replacing the whole dashboard
-            // with an error.
-            setSessions([]);
-            setDayMetrics(null);
+            /**
+             * The day failing is not the screen failing — the chart and the goal above it
+             * are still true, so this does not replace the whole dashboard with an error.
+             *
+             * It also does not **clear** the day, which is what it used to do. An empty
+             * `sessions` array renders "Nothing logged today", and that is a statement
+             * about the person's record rather than about the request: a dropped connection
+             * would quietly tell somebody their workout was not there. What is on screen
+             * stays, and the flag is what lets the empty state say "couldn't load" instead
+             * of "nothing here".
+             */
+            setDayError(true);
         }
     }, [router]);
 
@@ -294,8 +304,36 @@ export default function ActivityDashboard() {
     useEffect(() => { loadMonthRef.current = loadMonth; }, [loadMonth]);
 
 
-    // Refetch on focus: someone logs an activity, comes back, and expects to see it.
-    useFocusEffect(useCallback(() => { load(); }, [load]));
+    /**
+     * The day and the month are refetched on focus, and that is not optional.
+     *
+     * `load()` refreshes the summary and then leans on the sync to tell it which days
+     * moved — which is exactly wrong for the two cases that matter most. A **manually
+     * logged** activity never goes near `runSync`, and a sync that ran a minute ago is
+     * throttled, so `daysUpdated` comes back empty in both and nothing refetched the day.
+     * Meanwhile expo-router keeps this screen mounted while `/activity/log` sits on top of
+     * it, so returning is a focus and not a remount and the `[selectedDay]` effect below
+     * does not fire either.
+     *
+     * The result was a screen that had synced the workout, counted it in the totals and the
+     * calendar, and still told the person "Nothing logged today" under a Log activity
+     * button — the one part of the page that reads as a statement about their record rather
+     * than about the app.
+     *
+     * These are two indexed database reads, not a sync, so paying for them on every focus
+     * is cheap. The first focus is skipped because the mount effect below has already
+     * issued them.
+     */
+    const focused = useRef(false);
+    useFocusEffect(useCallback(() => {
+        load();
+        if (focused.current) {
+            loadDayRef.current(selectedDayRef.current);
+            loadMonthRef.current(monthRef.current);
+        }
+        focused.current = true;
+    }, [load]));
+
     useEffect(() => { loadDay(selectedDay); }, [selectedDay, loadDay]);
 
     // Memoised because the fallback `[]` would otherwise be a new array every render, and
@@ -745,21 +783,47 @@ export default function ActivityDashboard() {
 
                             {sessions.length === 0 ? (
                                 <View style={styles.empty}>
-                                    <Ionicons name="fitness-outline" size={26} color={Palette.textMuted} />
+                                    <Ionicons
+                                        name={dayError ? 'cloud-offline-outline' : 'fitness-outline'}
+                                        size={26}
+                                        color={Palette.textMuted}
+                                    />
+                                    {/*
+                                      "Nothing logged" is a claim about the person's record and
+                                      is only made when the day was actually read. A failed
+                                      fetch says so and offers a retry — telling somebody their
+                                      workout is not there because a request timed out is the
+                                      worst thing this block can do.
+                                    */}
                                     <Text style={styles.emptyTitle}>
-                                        {isToday ? 'Nothing logged today' : 'No activities that day'}
+                                        {dayError
+                                            ? 'Couldn’t load this day'
+                                            : isToday ? 'Nothing logged today' : 'No activities that day'}
                                     </Text>
                                     <Text style={styles.emptyBody}>
-                                        {isToday
-                                            ? 'Log an activity and it will show up here, on your calendar and in your plan.'
-                                            : 'No workout was synced or logged for this day.'}
+                                        {dayError
+                                            ? 'Your activities for this day couldn’t be fetched. Nothing has been lost — pull down to refresh, or try again.'
+                                            : isToday
+                                                ? 'Log an activity and it will show up here, on your calendar and in your plan.'
+                                                : 'No workout was synced or logged for this day.'}
                                     </Text>
+
+                                    {dayError && (
+                                        <Pressable
+                                            onPress={() => loadDay(selectedDay)}
+                                            accessibilityRole="button"
+                                            style={styles.emptyCta}
+                                        >
+                                            <Text style={styles.emptyCtaText}>Try again</Text>
+                                            <Ionicons name="refresh" size={16} color={Palette.white} />
+                                        </Pressable>
+                                    )}
                                     {/*
                                       The log screen opens on the current time, so offering it
                                       from a day three weeks back would hand somebody a form
                                       pointing at the wrong date.
                                     */}
-                                    {isToday && (
+                                    {isToday && !dayError && (
                                         <Pressable
                                             onPress={() => router.push('/activity/log')}
                                             style={styles.emptyCta}
