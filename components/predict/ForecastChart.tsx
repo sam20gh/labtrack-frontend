@@ -14,15 +14,19 @@
  * 2. **The projection is a band, not a line.** `low`/`high` are shaded and the point estimate
  *    is drawn inside them. The design's mockup shows a single line, but the arithmetic
  *    produces an interval and drawing only its centre would throw away the honest half.
- * 3. **The divider is not draggable, and it does not pretend to be.** The kit puts a round
- *    handle with a ⟷ glyph on it, which reads as a control; there is nothing to scrub to, so
- *    it is drawn as a marker with the today label attached rather than as a grabbable thumb.
+ * 3. **The handle scrubs a readout; it does not move the split.** The kit puts a round handle
+ *    with a ⟷ glyph on the divider, which reads as a control, so it is one — drag it and it
+ *    rides the curve, reporting the value and the interval for whichever day it is over.
+ *    What it must NOT do is move the boundary between measured and projected: that boundary
+ *    is today, dragging it would redraw real readings as forecast (or the reverse), and the
+ *    "CURRENT / NEXT" labels either side would start lying. So the today line stays put and
+ *    the handle detaches from it, with a dashed guide showing where it has got to.
  * 4. **Gaps in the history are gaps.** Same rule `MetricAreaChart` holds: a day nobody
  *    measured is not joined across, because a straight line through a week someone spent ill
  *    reads as steady data.
  */
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, PanResponder, type GestureResponderEvent } from 'react-native';
 import Svg, {
     Path, Line, Circle, Rect, G, Text as SvgText, Defs, LinearGradient, Stop,
 } from 'react-native-svg';
@@ -45,6 +49,24 @@ interface Props {
     /** Y-axis ticks and a light grid. Off for the compact result card. */
     axis?: boolean;
     unit?: string;
+    /**
+     * Let the handle be dragged along the series. Off by default: on a card the person only
+     * glances at, a control that responds to touch and reports nothing is worse than a marker.
+     */
+    scrubbable?: boolean;
+    /** Fires as the handle moves, and once on release. `null` when it is back on today. */
+    onScrub?: (point: ScrubPoint | null) => void;
+}
+
+/** What the handle is currently over. The screen renders this; the chart only positions it. */
+export interface ScrubPoint {
+    day: string;
+    value: number;
+    low: number | null;
+    high: number | null;
+    secondary: number | null;
+    /** True once the handle is past today — i.e. reading a projection rather than a reading. */
+    projected: boolean;
 }
 
 const PADDING = { top: 30, right: 8, bottom: 22, left: 34 };
@@ -98,7 +120,10 @@ export function ForecastChart({
     history, projected, width, height = 200,
     tone = Palette.primary, showSecondary = false,
     bandLabels, annotations, axis = true, unit,
+    scrubbable = false, onScrub,
 }: Props) {
+    /** Index into `chart.nodes`, or null when the handle is resting on today. */
+    const [scrubIndex, setScrubIndex] = useState<number | null>(null);
     const chart = useMemo(() => {
         // Only as much history as the projection is long, plus a little, so the split lands
         // near the middle rather than pinning today against the right-hand edge on someone
@@ -219,14 +244,98 @@ export function ForecastChart({
                 };
             });
 
+        /**
+         * Every plottable point in screen space, so the handle can be positioned without the
+         * gesture code re-deriving the scales. A second copy of `x`/`y` outside this memo is
+         * how a scrubber ends up half a pixel — and eventually a whole day — off the line.
+         *
+         * Points with no value are excluded rather than carried as nulls: the handle must not
+         * be draggable onto a day nobody measured, which would report a number that does not
+         * exist.
+         */
+        const nodes = all
+            .map((p, i) => ({ i, p }))
+            .filter(({ p }) => Number.isFinite(p.value))
+            .map(({ i, p }) => ({
+                i,
+                x: x(i),
+                y: y(p.value),
+                day: p.day,
+                value: p.value,
+                low: Number.isFinite(p.low as number) ? (p.low as number) : null,
+                high: Number.isFinite(p.high as number) ? (p.high as number) : null,
+                secondary: Number.isFinite(p.secondary as number) ? (p.secondary as number) : null,
+                projected: i > joinIndex,
+            }));
+
         return {
             historyPaths, historyAreas, projectionPath, intervalPath,
             secondaryHistory, secondaryFuture,
-            splitX, ticks, xLabels, plotH, plotW,
+            splitX, ticks, xLabels, plotH, plotW, nodes,
             endX: x(all.length - 1), endY: y(projected[projected.length - 1]?.value ?? 0),
             joinX: splitX, joinY: joinValue === null ? null : y(joinValue),
+            joinNode: nodes.find((n) => n.i === joinIndex) ?? null,
         };
     }, [history, projected, width, height, showSecondary]);
+
+    /**
+     * Map a touch's x to the nearest plotted point.
+     *
+     * Nearest rather than a bucket division, because the points are not evenly spaced once a
+     * gap is dropped, and bucketing would let the handle sit between two days and report
+     * whichever the arithmetic rounded to.
+     */
+    const nearest = useCallback((pageX: number, originX: number) => {
+        const nodes = chart?.nodes ?? [];
+        if (!nodes.length) return null;
+        const local = pageX - originX;
+        let best = 0;
+        for (let k = 1; k < nodes.length; k += 1) {
+            if (Math.abs(nodes[k].x - local) < Math.abs(nodes[best].x - local)) best = k;
+        }
+        return best;
+    }, [chart]);
+
+    /**
+     * The View's left edge in page coordinates.
+     *
+     * A pan gesture reports `pageX`, and the nodes are in chart-local coordinates, so one of
+     * the two has to be translated. Measured on layout and re-measured on every grant, because
+     * this chart sits inside a ScrollView: scrolling changes the view's page position without
+     * ever firing a layout event, and a stale origin puts the handle a finger's width off.
+     */
+    const originX = useRef(0);
+    const container = useRef<View>(null);
+    const measure = useCallback(() => {
+        container.current?.measureInWindow((px) => { originX.current = px; });
+    }, []);
+
+    const handleAt = useCallback((event: GestureResponderEvent) => {
+        const k = nearest(event.nativeEvent.pageX, originX.current);
+        if (k === null) return;
+        setScrubIndex(k);
+        const node = chart?.nodes[k];
+        // `joinNode` is today. Resting there is reported as "not scrubbing" rather than as a
+        // reading, so a screen can show its default copy instead of a redundant "today" row.
+        onScrub?.(node && node.i !== chart?.joinNode?.i
+            ? {
+                day: node.day, value: node.value, low: node.low, high: node.high,
+                secondary: node.secondary, projected: node.projected,
+            }
+            : null);
+    }, [chart, nearest, onScrub]);
+
+    const pan = useMemo(() => PanResponder.create({
+        onStartShouldSetPanResponder: () => scrubbable,
+        // Horizontal only. This chart lives inside a vertical ScrollView on every screen that
+        // draws it, and claiming a vertical drag would make the page impossible to scroll.
+        onMoveShouldSetPanResponder: (_e, g) => scrubbable && Math.abs(g.dx) > Math.abs(g.dy),
+        onPanResponderGrant: (e) => { measure(); handleAt(e); },
+        onPanResponderMove: handleAt,
+        // Deliberately no snap-back on release: the reading is the point of the gesture, and
+        // one that vanishes the moment you lift your finger cannot be read.
+        onPanResponderTerminationRequest: () => false,
+    }), [scrubbable, handleAt, measure]);
 
     if (!chart) {
         return (
@@ -236,11 +345,17 @@ export function ForecastChart({
         );
     }
 
+    // Clamped: the series can shrink under a scrub when the horizon changes.
+    const active = scrubbable && scrubIndex !== null
+        ? chart.nodes[Math.min(scrubIndex, chart.nodes.length - 1)]
+        : chart.joinNode;
+    const scrubbed = Boolean(active && chart.joinNode && active.i !== chart.joinNode.i);
+
     const top = PADDING.top;
     const bottom = PADDING.top + chart.plotH;
 
     return (
-        <View>
+        <View ref={container} onLayout={measure} {...(scrubbable ? pan.panHandlers : {})}>
             <Svg width={width} height={height}>
                 <Defs>
                     <LinearGradient id="fcTone" x1="0" y1="0" x2="0" y2="1">
@@ -309,11 +424,24 @@ export function ForecastChart({
                     />
                 ) : null}
 
-                {/* Today */}
+                {/*
+                  Today. It stays exactly where it is while the handle is dragged: the
+                  boundary between measured and projected is a fact about the calendar, and
+                  the CURRENT / NEXT labels either side of it would start lying if it moved.
+                */}
                 <Line
                     x1={chart.splitX} x2={chart.splitX} y1={top - 6} y2={bottom}
                     stroke={Palette.text} strokeWidth={1.5}
+                    opacity={scrubbed ? 0.35 : 1}
                 />
+
+                {/* The scrub guide, drawn only once the handle has left today. */}
+                {scrubbed && active ? (
+                    <Line
+                        x1={active.x} x2={active.x} y1={top - 6} y2={bottom}
+                        stroke={Palette.text} strokeWidth={1} strokeDasharray="3 3"
+                    />
+                ) : null}
 
                 {bandLabels && (
                     <G>
@@ -357,14 +485,21 @@ export function ForecastChart({
                     </G>
                 )}
 
-                {/* The kit's round handle. A marker, not a control — there is nothing to scrub. */}
-                {chart.joinY !== null && (
+                {/*
+                  The kit's round handle, riding the curve. It sits on today until dragged,
+                  and takes the projection's tone once it is over a projected day so the
+                  reading it reports cannot be mistaken for a measurement.
+                */}
+                {active && (
                     <G>
-                        <Circle cx={chart.splitX} cy={chart.joinY} r={13} fill={Palette.text} />
+                        <Circle
+                            cx={active.x} cy={active.y} r={13}
+                            fill={scrubbed && active.projected ? tone : Palette.text}
+                        />
                         <Path
-                            d={`M${chart.splitX - 5},${chart.joinY} l3.5,-3.5 M${chart.splitX - 5},${chart.joinY} l3.5,3.5`
-                                + ` M${chart.splitX + 5},${chart.joinY} l-3.5,-3.5 M${chart.splitX + 5},${chart.joinY} l-3.5,3.5`
-                                + ` M${chart.splitX - 5},${chart.joinY} L${chart.splitX + 5},${chart.joinY}`}
+                            d={`M${active.x - 5},${active.y} l3.5,-3.5 M${active.x - 5},${active.y} l3.5,3.5`
+                                + ` M${active.x + 5},${active.y} l-3.5,-3.5 M${active.x + 5},${active.y} l-3.5,3.5`
+                                + ` M${active.x - 5},${active.y} L${active.x + 5},${active.y}`}
                             stroke={Palette.white} strokeWidth={1.4} strokeLinecap="round" fill="none"
                         />
                     </G>
@@ -383,6 +518,20 @@ export function ForecastChart({
             </Svg>
 
             {unit ? <Text style={styles.unit}>Values in {unit}. The shaded band is the predicted range.</Text> : null}
+
+            {/*
+              The affordance. A round handle that happens to be draggable is one most people
+              never discover, and the hint disappears the moment it has been used.
+            */}
+            {scrubbable ? (
+                <Text
+                    style={styles.hint}
+                    onPress={scrubbed ? () => { setScrubIndex(null); onScrub?.(null); } : undefined}
+                    suppressHighlighting
+                >
+                    {scrubbed ? 'Tap to return to today' : 'Drag the handle to read any day'}
+                </Text>
+            ) : null}
         </View>
     );
 }
@@ -394,4 +543,8 @@ const styles = StyleSheet.create({
     },
     emptyText: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
     unit: { marginTop: 6, fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    hint: {
+        marginTop: 6, fontSize: 11, fontFamily: Fonts.medium,
+        color: Palette.textMuted, textAlign: 'center',
+    },
 });

@@ -6,7 +6,7 @@
  * Health Metric      the risks the pattern is associated with, with chance / risk / prevent
  * Summary            the prose, then the contribution strip and one row per component
  * Key Factors        chips
- * Turing AI          suggestions
+ * Suggestions        what you can do
  * Recommended        clinicians
  * Outcome            what actually happened, once the target date has passed
  * ```
@@ -40,7 +40,7 @@ import { ApiError } from '@/lib/api';
 import {
     getPrediction, getPredictableMetrics, getOverview,
     toneColour, confidencePct, formatDate, relativeDay,
-    iconFor, METRIC_ROUTE,
+    iconFor, tintFor, METRIC_ROUTE,
     type Prediction, type BetterWhen, type Overview,
 } from '@/lib/prediction';
 import { ForecastChart } from '@/components/predict/ForecastChart';
@@ -353,7 +353,7 @@ export default function PredictionDetailsScreen() {
                         onPress={() => router.push((METRIC_ROUTE[prediction.metric] ?? '/metrics') as never)}
                         accessibilityRole="button"
                     >
-                        <Ionicons name={iconFor(prediction.metric)} size={18} color={Palette.primary} />
+                        <Ionicons name={iconFor(prediction.metric)} size={18} color={tintFor(prediction.metric)} />
                         <Text style={styles.trackerCtaText}>Open the {prediction.metricLabel.toLowerCase()} tracker</Text>
                         <Ionicons name="chevron-forward" size={16} color={Palette.primary} />
                     </TouchableOpacity>

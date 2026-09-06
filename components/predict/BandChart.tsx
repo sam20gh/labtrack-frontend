@@ -1,5 +1,5 @@
 /**
- * The Turing Score prediction's min / average / max chart.
+ * The LabTrack score prediction's min / average / max chart.
  *
  * The design draws three stacked series with the space between them filled — the app's only
  * chart of a *range* rather than of a value, and it exists because a score prediction is an

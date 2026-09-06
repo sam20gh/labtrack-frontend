@@ -22,10 +22,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ApiError } from '@/lib/api';
 import {
-    getInsight, getPredictableMetrics, iconFor, toneColour, relativeDay,
+    getInsight, getPredictableMetrics, iconFor, tintFor, tintSurface, toneColour, relativeDay,
     type Insight, type PredictableMetric, type MetricKey, type Refusal,
 } from '@/lib/prediction';
-import { ForecastChart } from '@/components/predict/ForecastChart';
+import { ForecastChart, type ScrubPoint } from '@/components/predict/ForecastChart';
 import { DirectionCalendar } from '@/components/predict/DirectionCalendar';
 import { HorizonTabs, ConfidenceChip, BandChip, PredictionDisclaimer } from '@/components/predict/Chips';
 import { NotEnoughDataIllustration } from '@/components/predict/NotEnoughDataIllustration';
@@ -48,6 +48,7 @@ export default function PredictionInsightScreen() {
     const [loading, setLoading] = useState(true);
     const [picking, setPicking] = useState(false);
     const [minObservations, setMinObservations] = useState(3);
+    const [scrub, setScrub] = useState<ScrubPoint | null>(null);
 
     useEffect(() => {
         getPredictableMetrics()
@@ -151,12 +152,35 @@ export default function PredictionInsightScreen() {
                                             value: insight.display.value,
                                         },
                                     }}
+                                    scrubbable
+                                    onScrub={setScrub}
                                 />
-                                <Text style={styles.caption}>
-                                    The shaded band is the predicted range, {insight.display.range}
-                                    {insight.metric.unit ? ` ${insight.metric.unit}` : ''}. Grey is what you
-                                    have actually measured.
-                                </Text>
+
+                                {/* The caption is replaced by the reading while the handle is
+                                    off today: two lines of explanation under a number somebody
+                                    is actively reading is the explanation winning. */}
+                                {scrub ? (
+                                    <Text style={styles.caption}>
+                                        {new Date(`${scrub.day}T00:00:00`).toLocaleDateString(undefined, {
+                                            weekday: 'long', day: 'numeric', month: 'short',
+                                        })}:{' '}
+                                        <Text style={styles.captionStrong}>
+                                            {scrub.secondary !== null
+                                                ? `${Math.round(scrub.value)}/${Math.round(scrub.secondary)}`
+                                                : scrub.value}
+                                            {insight.metric.unit ? ` ${insight.metric.unit}` : ''}
+                                        </Text>
+                                        {scrub.projected && scrub.low !== null && scrub.high !== null
+                                            ? `, predicted range ${scrub.low}–${scrub.high}.`
+                                            : ', measured.'}
+                                    </Text>
+                                ) : (
+                                    <Text style={styles.caption}>
+                                        The shaded band is the predicted range, {insight.display.range}
+                                        {insight.metric.unit ? ` ${insight.metric.unit}` : ''}. Grey is what you
+                                        have actually measured.
+                                    </Text>
+                                )}
                             </>
                         ) : (
                             <View style={styles.calendarCard}>
@@ -206,7 +230,7 @@ export default function PredictionInsightScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Change metric"
                 >
-                    <Ionicons name={iconFor(metric)} size={16} color={Palette.text} />
+                    <Ionicons name={iconFor(metric)} size={16} color={tintFor(metric)} />
                     <Text style={styles.pickerText}>{current?.label ?? 'Metric'}</Text>
                     <Ionicons name="chevron-down" size={16} color={Palette.textMuted} />
                 </Pressable>
@@ -242,11 +266,9 @@ export default function PredictionInsightScreen() {
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: m.key === metric, disabled: !m.ready }}
                             >
-                                <Ionicons
-                                    name={iconFor(m.key)}
-                                    size={18}
-                                    color={m.ready ? Palette.text : Palette.textMuted}
-                                />
+                                <View style={[styles.sheetIcon, { backgroundColor: tintSurface(m.key) }, !m.ready && styles.sheetIconDim]}>
+                                    <Ionicons name={iconFor(m.key)} size={16} color={tintFor(m.key)} />
+                                </View>
                                 <Text style={[styles.sheetLabel, !m.ready && styles.sheetLabelDim]}>{m.label}</Text>
                                 <Text style={styles.sheetMeta}>
                                     {m.ready ? m.reach : `${m.observations}/${minObservations} readings`}
@@ -283,6 +305,7 @@ const styles = StyleSheet.create({
         fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular,
         color: Palette.textMuted, marginTop: Spacing.sm,
     },
+    captionStrong: { fontFamily: Fonts.bold, color: Palette.text },
     calendarCard: {
         backgroundColor: Palette.white, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg,
@@ -346,6 +369,11 @@ const styles = StyleSheet.create({
         paddingVertical: 13, paddingHorizontal: Spacing.md, borderRadius: Radius.md,
     },
     sheetRowActive: { backgroundColor: Palette.primarySurface },
+    sheetIcon: {
+        width: 30, height: 30, borderRadius: Radius.sm,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    sheetIconDim: { opacity: 0.45 },
     sheetLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     sheetLabelDim: { color: Palette.textMuted },
     sheetMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },

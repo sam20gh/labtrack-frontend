@@ -20,7 +20,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ApiError } from '@/lib/api';
-import { getAccuracy, iconFor, type Accuracy } from '@/lib/prediction';
+import { getAccuracy, iconFor, tintFor, type Accuracy } from '@/lib/prediction';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
 
 type Row = { label: string; total: number } & Partial<Accuracy>;
@@ -100,7 +100,7 @@ export default function PredictionAccuracyScreen() {
                         <Text style={styles.section}>By metric</Text>
                         {Object.entries(byMetric).map(([key, row]) => (
                             <View key={key} style={styles.row}>
-                                <Ionicons name={iconFor(key)} size={18} color={Palette.textSecondary} />
+                                <Ionicons name={iconFor(key)} size={18} color={tintFor(key)} />
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.rowLabel}>{row.label}</Text>
                                     <Text style={styles.rowMeta}>

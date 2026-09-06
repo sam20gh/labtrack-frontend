@@ -3,7 +3,7 @@
  *
  * ```
  * purple header      avatar, greeting, metrics predicted, improvement, Predict My Health
- * Turing Score       the score forecast as a min/average/max band
+ * LabTrack Score     the score forecast as a min/average/max band
  * Health Metric      one expandable row per metric that has a prediction
  * Past Predictions   what was claimed, and whether it landed
  * Recommended        clinicians, drawn from the directory
@@ -180,10 +180,10 @@ export default function PredictHubScreen() {
                         </Pressable>
                     ) : null}
 
-                    {/* ── Turing Score ─────────────────────────────────────────── */}
+                    {/* ── LabTrack Score ───────────────────────────────────────── */}
                     {data?.scorePrediction ? (
                         <>
-                            <Text style={styles.section}>Turing Score Prediction</Text>
+                            <Text style={styles.section}>LabTrack Score Prediction</Text>
                             {/* The card opens the score's own prediction screen — the design's
                                 frame 3, with the horizon chips. The run that produced these
                                 figures is still reachable from "See full prediction" there. */}

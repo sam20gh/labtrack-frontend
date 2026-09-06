@@ -25,7 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ApiError } from '@/lib/api';
 import {
-    getPredictableMetrics, iconFor, METRIC_ROUTE,
+    getPredictableMetrics, iconFor, tintFor, tintSurface, METRIC_ROUTE,
     type PredictableMetric, type Refusal,
 } from '@/lib/prediction';
 import { NotEnoughDataIllustration } from '@/components/predict/NotEnoughDataIllustration';
@@ -111,11 +111,22 @@ export default function SelectMetricScreen() {
                                 accessibilityRole="button"
                                 accessibilityLabel={`${m.label}. ${m.reach}`}
                             >
-                                <View style={[styles.icon, !m.ready && styles.iconDim]}>
+                                {/* The metric's own colour, matching its card on the metrics
+                                    dashboard. A list of eight identical grey glyphs is a list
+                                    nobody can scan; the tint is what makes a row findable
+                                    before its label has been read. Dimmed, not greyed, when
+                                    the metric is not ready — it is the same metric. */}
+                                <View
+                                    style={[
+                                        styles.icon,
+                                        { backgroundColor: tintSurface(m.key) },
+                                        !m.ready && styles.iconDim,
+                                    ]}
+                                >
                                     <Ionicons
                                         name={iconFor(m.key)}
                                         size={20}
-                                        color={m.ready ? Palette.text : Palette.textMuted}
+                                        color={tintFor(m.key)}
                                     />
                                 </View>
 
@@ -231,7 +242,8 @@ const styles = StyleSheet.create({
         width: 40, height: 40, borderRadius: Radius.md,
         alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.white,
     },
-    iconDim: { backgroundColor: Palette.borderLight },
+    /** Half opacity rather than a grey fill: an unavailable metric is still that metric. */
+    iconDim: { opacity: 0.45 },
     rowMain: { flex: 1, gap: 2 },
     rowLabel: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
     dimText: { color: Palette.textSecondary },

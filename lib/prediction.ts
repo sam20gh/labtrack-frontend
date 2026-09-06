@@ -21,6 +21,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Router } from 'expo-router';
 import { api, ApiError } from './api';
+import { METRIC_ROUTE as TRACKER_ROUTE, METRIC_TINT as TRACKER_TINT } from './metrics';
 import { Palette } from '@/constants/theme';
 import type { Ionicons } from '@expo/vector-icons';
 
@@ -329,17 +330,67 @@ export const iconFor = (metric: string) => METRIC_ICON[metric] ?? 'analytics';
  *
  * The rule `PILLAR_ROUTE` states on the score screen: a figure someone is told about and
  * cannot act on is worse than one they are not told about.
+ *
+ * **Delegated to `lib/metrics.ts` wherever the keys overlap.** Hand-writing these produced
+ * three dead links on the first pass — `/metrics/blood_pressure` (the route is hyphenated),
+ * and `/metrics/sleep` and `/metrics/steps`, which do not exist at all: `app/metrics/[kind]`
+ * only serves the loggable kinds, and the device-fed ones live under `/activity`. Nothing
+ * errors on a bad push, so a wrong route here is a button that silently does nothing.
  */
 export const METRIC_ROUTE: Record<string, string> = {
     turing_score: '/score',
-    blood_pressure: '/metrics/blood_pressure',
-    weight: '/metrics/weight',
-    sleep: '/metrics/sleep',
     calories: '/nutrition',
-    resting_heart_rate: '/metrics/heart_rate',
-    steps: '/metrics/steps',
-    hydration: '/metrics/water',
+    resting_heart_rate: TRACKER_ROUTE.heart_rate,
+    blood_pressure: TRACKER_ROUTE.blood_pressure,
+    weight: TRACKER_ROUTE.weight,
+    sleep: TRACKER_ROUTE.sleep,
+    steps: TRACKER_ROUTE.steps,
+    hydration: TRACKER_ROUTE.hydration,
 };
+
+/**
+ * The colour a metric is drawn in — its icon, its chart line where nothing else decides one.
+ *
+ * **Reused from `lib/metrics.ts` wherever the keys overlap**, so hydration is the same blue on
+ * the metrics dashboard and on a prediction of it. Two tints for one metric reads as two
+ * different metrics.
+ *
+ * This is identity, not status: `toneColour` below is what says whether a movement is good,
+ * and these must never be used for that. The three that are new here are the three the metrics
+ * dashboard has no card for.
+ */
+export const METRIC_TINT: Record<string, string> = {
+    ...TRACKER_TINT,
+    /**
+     * The deep brand violet, **not** `Palette.primary`.
+     *
+     * `primary` is already blood pressure's tint in `lib/metrics.ts`, and the picker lists the
+     * two of them adjacently — two identical violet glyphs on the app's two most important
+     * metrics is the exact failure the tints were added to fix. The score is the aggregate of
+     * every other row, so the darkest point of the brand ramp is the right one for it.
+     */
+    turing_score: Palette.primaryDeep,
+    /**
+     * Orange rather than `Palette.amber`. Weight is `#F59E0B` and sits two rows away; at glyph
+     * size the two ambers are one colour. This is warm enough to separate from it and reads
+     * with the flame.
+     */
+    calories: '#F97316',
+    /** Resting heart rate shares the heart-rate rose; it is the same measurement, at rest. */
+    resting_heart_rate: TRACKER_TINT.heart_rate,
+};
+
+export const tintFor = (metric: string) => METRIC_TINT[metric] ?? Palette.primary;
+
+/**
+ * The soft wash behind a metric's icon.
+ *
+ * The tint at 12% rather than a per-metric surface token: eight metrics would mean eight new
+ * palette entries whose only job is to be the same hue one step paler, and the first one
+ * somebody forgot to add would fall back to grey — which is exactly the state this replaced.
+ * React Native accepts `#rrggbbaa`.
+ */
+export const tintSurface = (metric: string) => `${tintFor(metric)}1F`;
 
 /**
  * The colour a movement is drawn in.

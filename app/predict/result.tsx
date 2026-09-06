@@ -38,7 +38,7 @@ import {
     getPrediction, getPredictableMetrics, toneColour, bandColour, relativeDay,
     type Prediction, type BetterWhen,
 } from '@/lib/prediction';
-import { ForecastChart } from '@/components/predict/ForecastChart';
+import { ForecastChart, type ScrubPoint } from '@/components/predict/ForecastChart';
 import { ConfidenceChip, PredictionDisclaimer } from '@/components/predict/Chips';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
 
@@ -50,6 +50,8 @@ export default function PredictionResultScreen() {
     const [prediction, setPrediction] = useState<Prediction | null>(null);
     const [betterWhen, setBetterWhen] = useState<BetterWhen>(null);
     const [loading, setLoading] = useState(true);
+    /** Whichever day the chart handle is over, or null when it is resting on today. */
+    const [scrub, setScrub] = useState<ScrubPoint | null>(null);
 
     const load = useCallback(async () => {
         try {
@@ -101,7 +103,40 @@ export default function PredictionResultScreen() {
                         axis={false}
                         showSecondary={prediction.components.length > 1}
                         bandLabels={{ left: 'Current', right: prediction.horizonLabel.replace('Next ', '') }}
+                        scrubbable
+                        onScrub={setScrub}
                     />
+
+                    {/*
+                      The scrub readout.
+                      It reports the interval for that day, not just the point — the same rule
+                      the headline follows, and the reason the projected series carries a
+                      `low`/`high` per day rather than only at the horizon. A measured day
+                      shows no interval, because a reading is not a range.
+                    */}
+                    {scrub ? (
+                        <View style={styles.scrub}>
+                            <Text style={styles.scrubDay}>
+                                {new Date(`${scrub.day}T00:00:00`).toLocaleDateString(undefined, {
+                                    weekday: 'short', day: 'numeric', month: 'short',
+                                })}
+                                <Text style={styles.scrubKind}>
+                                    {scrub.projected ? '  ·  projected' : '  ·  measured'}
+                                </Text>
+                            </Text>
+                            <Text style={[styles.scrubValue, { color: scrub.projected ? tone : Palette.text }]}>
+                                {scrub.secondary !== null
+                                    ? `${Math.round(scrub.value)}/${Math.round(scrub.secondary)}`
+                                    : scrub.value}
+                                {prediction.unit ? <Text style={styles.scrubUnit}> {prediction.unit}</Text> : null}
+                            </Text>
+                            {scrub.projected && scrub.low !== null && scrub.high !== null ? (
+                                <Text style={styles.scrubRange}>
+                                    range {scrub.low}–{scrub.high}
+                                </Text>
+                            ) : null}
+                        </View>
+                    ) : null}
                 </View>
 
                 <View style={styles.chipRow}>
@@ -188,6 +223,17 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch', padding: Spacing.md,
         backgroundColor: Palette.white, borderRadius: Radius.lg,
     },
+    scrub: {
+        alignItems: 'center', gap: 1,
+        marginTop: Spacing.sm, paddingTop: Spacing.sm,
+        borderTopWidth: 1, borderTopColor: Palette.borderLight,
+    },
+    scrubDay: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    scrubKind: { fontFamily: Fonts.regular, color: Palette.textMuted },
+    scrubValue: { fontSize: 20, fontFamily: Fonts.bold },
+    scrubUnit: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    scrubRange: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+
     chipRow: { marginTop: Spacing.xl },
     band: {
         fontSize: 26, fontFamily: Fonts.bold, textAlign: 'center',

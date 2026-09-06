@@ -1,5 +1,8 @@
 /**
- * Turing Score Prediction — the design's frame 3.
+ * LabTrack Score Prediction — the design's frame 3.
+ *
+ * The kit titles this "Turing Score" throughout; that is the design system's name, not the
+ * product's, and nothing user-facing in this app uses it.
  *
  * The score gets its own screen rather than being one more row on the insight screen for the
  * reason it gets its own screen everywhere else in the app: it is the number people check,
@@ -89,7 +92,7 @@ export default function ScorePredictionScreen() {
                 <TouchableOpacity onPress={() => router.back()} hitSlop={12} accessibilityLabel="Back">
                     <Ionicons name="chevron-back" size={22} color={Palette.text} />
                 </TouchableOpacity>
-                <Text style={styles.topTitle}>Turing Score Prediction</Text>
+                <Text style={styles.topTitle}>LabTrack Score</Text>
                 <TouchableOpacity
                     onPress={() => router.push('/score')}
                     hitSlop={12}

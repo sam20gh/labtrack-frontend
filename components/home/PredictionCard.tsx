@@ -15,7 +15,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
 import {
-    iconFor, relativeDay, confidencePct, outcomeOf,
+    iconFor, tintFor, tintSurface, relativeDay, confidencePct, outcomeOf,
     type Prediction, type Accuracy,
 } from '@/lib/prediction';
 
@@ -48,8 +48,8 @@ export function PredictionCard({ predictions, accuracy, onOpen, onSeeAll }: Prop
                             + `${relativeDay(p.targetDate)}`
                         }
                     >
-                        <View style={styles.icon}>
-                            <Ionicons name={iconFor(p.metric)} size={18} color={Palette.primary} />
+                        <View style={[styles.icon, { backgroundColor: tintSurface(p.metric) }]}>
+                            <Ionicons name={iconFor(p.metric)} size={18} color={tintFor(p.metric)} />
                         </View>
 
                         <View style={styles.main}>
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     },
     icon: {
         width: 38, height: 38, borderRadius: Radius.md,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center',
     },
     main: { flex: 1, gap: 1 },
     label: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
