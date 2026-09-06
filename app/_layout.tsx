@@ -126,6 +126,10 @@ export default function RootLayout() {
             and every screen under it draws its own top inset. */}
         <Stack.Screen name="predict" options={{ headerShown: false }} />
         <Stack.Screen name="metrics" options={{ headerShown: false }} />
+        {/* Achievements: the hub, the grid, one badge, and the first-run screen. One entry,
+            because `achievements/_layout.tsx` nests the whole directory — without it every
+            screen here fell through to a second header titled "achievements/index". */}
+        <Stack.Screen name="achievements" options={{ headerShown: false }} />
         <Stack.Screen name="resources" options={{ headerShown: false }} />
         {/* Draws its own "Your DNA" header inside a top-inset SafeAreaView, like every
             other screen here. Without this line the route falls through to the Stack's
