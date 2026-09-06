@@ -41,6 +41,7 @@ import {
     searchSymptoms, symptomById, findingScore, nextStepFor, buildAssistantMessage,
     EMPTY_DRAFT, type Symptom, type SymptomDraft,
 } from '@/lib/symptoms';
+import { recordCheck } from '@/lib/symptomChecks';
 import BodyAreaSheet from '@/components/symptoms/BodyAreaSheet';
 import DetailSheet from '@/components/symptoms/DetailSheet';
 import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
@@ -48,14 +49,16 @@ import type { User } from '@/types/api';
 
 export default function SymptomsScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ symptom?: string }>();
+    const params = useLocalSearchParams<{ symptom?: string; browse?: string }>();
     const inputRef = useRef<TextInput>(null);
 
     const [firstName, setFirstName] = useState<string | null>(null);
     const [draft, setDraft] = useState<SymptomDraft>(EMPTY_DRAFT);
     const [query, setQuery] = useState('');
     const [focused, setFocused] = useState(false);
-    const [browsing, setBrowsing] = useState(false);
+    // The home card's filter button arrives with `browse=1`, so the body-area sheet is
+    // already open on the first frame rather than opening a beat after the screen paints.
+    const [browsing, setBrowsing] = useState(params.browse === '1');
     const [detailing, setDetailing] = useState(false);
     const [sending, setSending] = useState(false);
 
@@ -77,18 +80,23 @@ export default function SymptomsScreen() {
     }, []);
 
     /**
-     * A symptom handed in by whoever pushed this screen — the home card's "most common"
-     * chips do it, so tapping "Headache" there arrives here with it already chosen rather
-     * than on an empty search the person has to retype it into.
+     * Symptoms handed in by whoever pushed this screen — the home card's "most common"
+     * chips do it with one, and a row of its "Recent Checks" list does it with the whole
+     * check, so tapping either arrives here with the selection already made rather than on
+     * an empty search the person has to retype it into.
      *
-     * Seeded once and only when the draft is still empty, so returning to this screen
-     * cannot re-add a symptom the person has just removed. An id the catalogue does not
-     * know is ignored rather than added as a stray chip.
+     * Comma-joined, which is how every other multi-value param in this app travels; see
+     * `parseArrayParam` in the health assessment. Seeded once and only when the draft is
+     * still empty, so returning to this screen cannot re-add a symptom the person has just
+     * removed. Ids the catalogue does not know are dropped rather than added as stray chips.
      */
     useEffect(() => {
-        const id = params.symptom;
-        if (!id || !symptomById(id)) return;
-        setDraft((prev) => (prev.symptomIds.length ? prev : { ...prev, symptomIds: [id] }));
+        const ids = (params.symptom ?? '')
+            .split(',')
+            .map((id) => id.trim())
+            .filter((id) => symptomById(id));
+        if (!ids.length) return;
+        setDraft((prev) => (prev.symptomIds.length ? prev : { ...prev, symptomIds: ids }));
         // Once, on arrival. `params.symptom` is stable for the life of this route entry.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -140,6 +148,11 @@ export default function SymptomsScreen() {
             }
 
             await sendMessage(buildAssistantMessage(draft));
+            // Only once the assistant has taken it. A check composed and abandoned leaves
+            // no trace, the same checkpoint `POST /nutrition/meals` puts between an
+            // estimate and the record. It swallows its own failures, so a full disk costs
+            // a row in the home card's list and never the answer just asked for.
+            await recordCheck(draft);
             router.push('/(tabs)/assistant');
         } catch (error) {
             if (error instanceof ApiError && error.isAuthError) {

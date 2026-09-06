@@ -15,6 +15,14 @@ export const Palette = {
     primary: '#7C3AED',
     primaryDark: '#6D28D9',
     primaryLight: '#A78BFA',
+    /**
+     * One stop paler than `primaryLight`, and the kit's own value for a violet that has to
+     * read as an *outline* rather than as a fill — the Symptom Checker card's calm badge
+     * ring, and the soft halo behind the pillow in its illustration. `primaryLight` at
+     * `#A78BFA` is a fill weight: drawn as a 1pt ring at 24pt it reads as a second accent
+     * competing with the purple button above it.
+     */
+    primaryPale: '#C4B5FD',
     /** Tinted surface behind icons and badges. */
     primarySurface: '#F3E8FF',
     /**

@@ -22,11 +22,12 @@
  *      it is why the plan is fetched here at all.
  *   5. **Latest Analysis**, collapsed to a headline, three lines and one next step.
  *   6. **The trackers that have data**, most time-sensitive first.
- *   7. **Ask LabTrack AI** — the symptom search and the assistant, which were two sections
- *      describing one act.
- *   8. **Get more from LabTrack** — every tracker with nothing in it, as one list of rows
+ *   7. **Symptom Checker** — the illustration, the search, the common symptoms and the
+ *      checks already run, as `Design/sympt.svg` draws them.
+ *   8. **Ask LabTrack AI** — the assistant, and the last thing it said.
+ *   9. **Get more from LabTrack** — every tracker with nothing in it, as one list of rows
  *      rather than as six full cards each saying "connect a watch".
- *   9. **News & Resources.**
+ *  10. **News & Resources.**
  *
  * The tracker/setup split is the load-bearing idea. A card is earned by having something to
  * report; a feature nobody has started is a row. `HomeScreen` decides which, so the cards
@@ -39,9 +40,12 @@
  *   - The kit's sleep card draws a four-stage hypnogram (Awake / REM / Deep / Light).
  *     `DailyMetrics.sleep` records duration, time in bed, efficiency and a score, and
  *     nothing reports stages, so this draws the nights it actually has.
- *   - The kit's symptom card lists "Recent Checks" with risk levels. There is no diagnosis
- *     engine and no stored check — see **Symptom checker** in CLAUDE.md — so the card is
- *     the search and the common symptoms, which is what `app/symptoms` really does.
+ *   - The kit's symptom card lists "Recent Checks" with a risk level against each. The
+ *     checks are real now — `lib/symptomChecks.ts` records one when a check is actually
+ *     sent — but the risk level is not and cannot be: there is no diagnosis engine behind
+ *     the chips, see **Symptom checker** in CLAUDE.md. The row carries the severity the
+ *     person picked themselves instead, which is the only thing in that slot this product
+ *     is entitled to write.
  *
  * The support banner that used to close the page is gone: it was a permanent row about the
  * Help Center on a screen whose problem was length, and the profile links to help three
@@ -96,9 +100,10 @@ import {
     formatTime as formatApptTime, formatRelativeDay,
 } from '@/lib/appointments';
 import { getConversation, messageTime, type Conversation } from '@/lib/assistant';
-import { SYMPTOMS } from '@/lib/symptoms';
+import { listChecks, type SymptomCheck } from '@/lib/symptomChecks';
 import { listResources, routeFor, openResourcesHub, type ResourceCard as ResourceCardType } from '@/lib/resources';
 import { ArticleCard } from '@/components/resources/ResourceCards';
+import SymptomCheckerCard from '@/components/home/SymptomCheckerCard';
 import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
@@ -130,8 +135,18 @@ const EMPTY_SCORE: HealthScore = {
 /** The six the kit's carousel shows, in its order. Anything the server omits drops out. */
 const METRIC_ORDER = ['heart_rate', 'blood_pressure', 'weight', 'sleep', 'hydration', 'steps'] as const;
 
-/** The chips under the symptom search — the everyday ones, from the real catalogue. */
-const COMMON_SYMPTOM_IDS = ['headache', 'fever', 'nausea', 'fatigue', 'dry-cough'];
+/**
+ * The Symptom Checker card's "Most Common" rail. The kit's chips read "headache / fever /
+ * numb / pain / other"; these are the nearest five the catalogue actually holds, because a
+ * chip has to seed a real symptom on `app/symptoms` and "numb" is not one of them.
+ *
+ * They are chosen for their *labels* as much as for their frequency. `fatigue` is one of
+ * the commonest things anyone reports and is deliberately not here: the catalogue words it
+ * "Tiredness that rest does not fix", which is right on a results list and, on a 24pt chip,
+ * is a third of the rail spent on one entry that still ellipses. A chip is a shortcut, so
+ * anything that does not fit as a shortcut belongs behind the search instead.
+ */
+const COMMON_SYMPTOM_IDS = ['headache', 'fever', 'nausea', 'rash', 'dry-cough'];
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -222,6 +237,7 @@ export default function HomeScreen() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [plan, setPlan] = useState<PlanItem[]>([]);
     const [conversation, setConversation] = useState<Conversation | null>(null);
+    const [symptomChecks, setSymptomChecks] = useState<SymptomCheck[]>([]);
     const [generating, setGenerating] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -269,12 +285,16 @@ export default function HomeScreen() {
             // The newest of the library, for the rail at the foot of the screen. Six cards,
             // because this is a rail and nobody scrolls twenty of them sideways.
             listResources({ limit: 6, sort: 'newest' }),
+            // A device-local read, not a request. It rides here so the Symptom Checker card
+            // refreshes on the same focus every other section does — a check run two screens
+            // away must be in the list by the time you are back on the home screen.
+            listChecks(),
         ]);
 
         const [
             userRes, biomarkerRes, analysisRes, nutritionRes, scoreRes, metricsRes,
             activityRes, activityDayRes, medicationRes, appointmentRes, planRes,
-            conversationRes, resourceRes,
+            conversationRes, resourceRes, checksRes,
         ] = results;
 
         if (userRes.status === 'fulfilled') setUser(userRes.value as User);
@@ -293,6 +313,7 @@ export default function HomeScreen() {
         if (planRes.status === 'fulfilled') setPlan(planRes.value.items ?? []);
         if (conversationRes.status === 'fulfilled') setConversation(conversationRes.value);
         if (resourceRes.status === 'fulfilled') setResources(resourceRes.value.items ?? []);
+        if (checksRes.status === 'fulfilled') setSymptomChecks(checksRes.value);
 
         const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
@@ -903,17 +924,32 @@ export default function HomeScreen() {
                         ))}
 
                         {/*
-                          Symptoms and the assistant were two sections and are one card. They
-                          are the same act — the symptom screen composes a message and posts
-                          it to the assistant — so drawing them as separate features was the
-                          screen describing its own file layout rather than what a person
-                          does with it.
+                          Symptom Checker, from `Design/sympt.svg`. It sits directly above
+                          Ask LabTrack AI because the two are one act — the symptom screen
+                          composes what you pick into a message and posts it to the
+                          assistant — and the card below is where the answer comes back.
+
+                          The search and the chips live here and only here. They were drawn
+                          on the assistant card too until this card existed, which put two
+                          identical fields eight points apart.
                         */}
+                        <Section title="Symptom Checker">
+                            <SymptomCheckerCard
+                                checks={symptomChecks}
+                                commonIds={COMMON_SYMPTOM_IDS}
+                                onSearch={() => router.push('/symptoms')}
+                                onBrowse={() => router.push({ pathname: '/symptoms', params: { browse: '1' } })}
+                                onSymptom={(id) => router.push({ pathname: '/symptoms', params: { symptom: id } })}
+                                onOpenCheck={(check) => router.push({
+                                    pathname: '/symptoms',
+                                    params: { symptom: check.symptomIds.join(',') },
+                                })}
+                            />
+                        </Section>
+
                         <Section title="Ask LabTrack AI">
                             <AskCard
                                 conversation={conversation}
-                                onSearch={() => router.push('/symptoms')}
-                                onSymptom={(id) => router.push({ pathname: '/symptoms', params: { symptom: id } })}
                                 onOpen={() => router.push('/(tabs)/assistant')}
                             />
                         </Section>
@@ -1954,10 +1990,11 @@ const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
 /**
  * Ask LabTrack AI.
  *
- * These were two sections. They are one card because they are one act: `app/symptoms`
- * composes what you pick into a first-person message and posts it to the assistant, so
- * drawing them as separate features described the file layout rather than what a person
- * does. See **Symptom checker** in CLAUDE.md.
+ * The symptom half of this card moved out to `SymptomCheckerCard`, which is the section
+ * directly above it. They are still one act — `app/symptoms` composes what you pick into a
+ * first-person message and posts it to the assistant — but drawing the *same* search field
+ * and the *same* chips in both cards was two identical controls eight points apart. This
+ * one is now the conversation: what the assistant last said, and the way back into it.
  *
  * Three things that are load-bearing:
  *
@@ -1965,47 +2002,21 @@ const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
  *    of a paragraph the person has already read, in the middle of a home screen. The point
  *    of showing it at all is that reopening feels like a resumption rather than a fresh
  *    start, and three lines does that.
- * 2. **The safety sentence stays.** There is no diagnosis engine behind the chips, and the
- *    line saying so is not decoration — a percentage or a condition name on this card would
- *    be the most dangerous element in the app.
+ * 2. **The safety sentence stays.** There is no diagnosis engine behind the symptom card
+ *    above, and the line saying so is not decoration — a percentage or a condition name on
+ *    either card would be the most dangerous element in the app.
  * 3. **An unavailable assistant is said, not hidden.** With no model key on the server the
  *    card says so and offers no chat, rather than a control that answers 503.
  */
-const AskCard = ({ conversation, onSearch, onSymptom, onOpen }: {
+const AskCard = ({ conversation, onOpen }: {
     conversation: Conversation | null;
-    onSearch: () => void;
-    onSymptom: (id: string) => void;
     onOpen: () => void;
 }) => {
     const last = [...(conversation?.messages ?? [])].reverse().find((m) => m.role === 'assistant');
     const unavailable = conversation?.available === false;
 
-    const common = COMMON_SYMPTOM_IDS
-        .map((id) => SYMPTOMS.find((s) => s.id === id))
-        .filter((s): s is NonNullable<typeof s> => Boolean(s));
-
     return (
         <View style={styles.card}>
-            <TouchableOpacity style={styles.searchField} onPress={onSearch} activeOpacity={0.85}>
-                <Ionicons name="search" size={18} color={Palette.textMuted} />
-                <Text style={styles.searchPlaceholder}>Describe a symptom…</Text>
-            </TouchableOpacity>
-
-            <View style={styles.chipRow}>
-                {common.map((symptom) => (
-                    <TouchableOpacity
-                        key={symptom.id}
-                        style={styles.chip}
-                        onPress={() => onSymptom(symptom.id)}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.chipText}>{symptom.label}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            <View style={styles.divider} />
-
             <TouchableOpacity
                 style={styles.bubbleRow}
                 onPress={unavailable ? undefined : onOpen}
@@ -2032,8 +2043,8 @@ const AskCard = ({ conversation, onSearch, onSymptom, onOpen }: {
             </TouchableOpacity>
 
             <Text style={styles.cardNote}>
-                Whatever you pick is composed into a question for the assistant, which answers with
-                your results and plan in front of it. It does not diagnose.
+                Anything you check on the card above is composed into a question for the assistant,
+                which answers with your results and plan in front of it. It does not diagnose.
             </Text>
 
             {!unavailable && (
@@ -2736,20 +2747,6 @@ const styles = StyleSheet.create({
     },
     dateChipDay: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     dateChipWeekday: { fontSize: 10, color: Palette.textSecondary, fontFamily: Fonts.medium },
-
-    // Symptoms -------------------------------------------------------------
-    searchField: {
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-        borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.border,
-        backgroundColor: Palette.white, paddingHorizontal: Spacing.lg, paddingVertical: 13,
-    },
-    searchPlaceholder: { fontSize: 14, color: Palette.textMuted, fontFamily: Fonts.regular },
-    chipRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.sm },
-    chip: {
-        borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.border,
-        backgroundColor: Palette.white, paddingHorizontal: Spacing.md, paddingVertical: 6,
-    },
-    chipText: { fontSize: 13, color: Palette.text, fontFamily: Fonts.medium },
 
     // Assistant ------------------------------------------------------------
     bubbleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
