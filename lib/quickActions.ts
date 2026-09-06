@@ -17,12 +17,16 @@
  * own screens; Appointments is what makes the last row two rather than one, and it earns the
  * slot on the same grounds Consult does — the diary at `/appointments` is a whole feature
  * reachable today only from the home screen. Predict makes twelve, which closes the grid at a
- * clean 3×4 — so the next one after that arrives as part of a pair.
+ * clean 3×4. Badges would have been a thirteenth alone on its own row, so it arrives paired
+ * with Score — which had no shortcut of its own, and is the number every badge sits beside.
+ * Fourteen leaves a final row of two, which reads as a list; fifteen would close the grid
+ * again, so the next single addition has to wait for a partner.
  */
 import type { Ionicons } from '@expo/vector-icons';
 import type { Router } from 'expo-router';
 import { openResourcesHub } from './resources';
 import { openPredictions } from './prediction';
+import { openAchievements } from './achievements';
 
 export interface QuickAction {
     id: string;
@@ -51,6 +55,8 @@ export const QUICK_ACTIONS: QuickAction[] = [
     { id: 'appointments', icon: 'today-outline', label: 'Diary', route: '/appointments' },
     { id: 'resources', icon: 'library-outline', label: 'Resources', route: '/resources', gated: true },
     { id: 'predict', icon: 'sparkles-outline', label: 'Predict', route: '/predict', gated: true },
+    { id: 'achievements', icon: 'trophy-outline', label: 'Badges', route: '/achievements', gated: true },
+    { id: 'score', icon: 'speedometer-outline', label: 'Score', route: '/score' },
 ];
 
 /**
@@ -63,7 +69,12 @@ export const QUICK_ACTIONS: QuickAction[] = [
 export const openQuickAction = async (router: Router, action: QuickAction): Promise<void> => {
     if (action.gated) {
         // Each gate lives beside the key it reads, so this only has to know which one to call.
-        await (action.id === 'predict' ? openPredictions(router) : openResourcesHub(router));
+        const gates: Record<string, (r: Router) => Promise<void>> = {
+            predict: openPredictions,
+            achievements: openAchievements,
+            resources: openResourcesHub,
+        };
+        await (gates[action.id] ?? openResourcesHub)(router);
         return;
     }
     router.push(action.route as never);

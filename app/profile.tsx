@@ -48,6 +48,7 @@ import Constants from 'expo-constants';
 import { api, ApiError } from '@/lib/api';
 import { getUserId, signOut } from '@/lib/auth';
 import { getScore, type HealthScore } from '@/lib/score';
+import { openAchievements } from '@/lib/achievements';
 import { getSummary as getActivitySummary, getWearableStatus } from '@/lib/activity';
 import { getPermissionStatus } from '@/lib/notifications';
 import { Avatar } from '@/components/Avatar';
@@ -365,6 +366,15 @@ export default function ProfileScreen() {
                             label="Score breakdown"
                             value={score?.value != null ? String(score.value) : undefined}
                             onPress={() => router.push('/score')}
+                        />
+                        {/* Filed under "Your health" rather than "General" because a badge is
+                            earned in a tracker. The gate is `openAchievements` rather than a
+                            push, so the value-prop screen is shown once and never again — the
+                            rule `openPredictions` states. */}
+                        <Row
+                            icon="trophy-outline"
+                            label="Achievements"
+                            onPress={() => { openAchievements(router); }}
                             last
                         />
                     </Group>
