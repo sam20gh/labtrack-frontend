@@ -1,5 +1,5 @@
 /**
- * Activity dashboard — frames 6 (empty) and 7 (populated) of `Design/activity.svg`.
+ * Activity dashboard — `Design/activity.svg` frames 6 (empty), 7 (populated) and 18 (insight).
  *
  * Reached from the home screen, not a tab: the tab bar is full at five and the fifth is
  * deliberately the assistant.
@@ -8,15 +8,27 @@
  * native health modules ship, *every* device is in it — so "no data yet" has to explain
  * why and offer the thing that does work, which is logging an activity by hand.
  *
- * **Everything the rollup holds is on this screen.** It used to draw two numbers — active
- * minutes and the range's average burn — out of the eleven `DailyMetrics` stores, so a
- * connected phone that was syncing steps, distance, floors and a full day of heart rate
- * showed a single kcal figure and looked broken. The chart switches metric, the strip
- * reaches any day in the range, and the tile grid renders whatever that day reported.
+ * **Everything the sync brought back is on this screen.** It used to draw two numbers —
+ * active minutes and the range's average burn — out of the eleven stores `DailyMetrics`
+ * holds; then it drew the eleven and still dropped the sleep stages, the cardio-zone
+ * minutes and the body measurements that were already in the same response, and every
+ * derived reading that needed the sessions rather than the rollup. A person who had granted
+ * every Health Connect scope was looking at a fraction of what their phone handed over,
+ * which reads as a broken connection rather than as a narrow screen.
  *
- * Two rules hold across all of it, both inherited from the nutrition tracker: a figure
- * nobody reported is **absent, not zero**, and a day nothing was recorded says so in words
- * rather than drawing a grid of zeros.
+ * The page is frame 7's order with frame 18 folded into it rather than hidden behind an
+ * "Insight" screen, because the two are the same subject and the second was one tap and a
+ * second load away from figures that belong beside the first. The design's Insight button
+ * is kept and scrolls there.
+ *
+ * Three rules hold across all of it, all inherited from the trackers this sits beside:
+ *
+ * 1. A figure nobody reported is **absent, not zero** — a day a watch was on charge and a
+ *    day of no steps are different facts.
+ * 2. A day nothing was recorded **says so in words** rather than drawing a grid of zeros.
+ * 3. Every derived reading — the breakdown, the peak window, the period comparison — comes
+ *    from `utils/activityInsight.js`, which is deterministic and tested. Nothing on this
+ *    screen is a model's opinion about somebody's training.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -28,6 +40,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Avatar } from '@/components/Avatar';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import { MetricPicker, availableMetrics, CHART_METRICS } from '@/components/metric/MetricPicker';
@@ -38,14 +51,22 @@ import { SessionCard } from '@/components/metric/SessionCard';
 import { SourceBanner } from '@/components/metric/SourceBanner';
 import { GoalRings } from '@/components/metric/GoalRings';
 import { PlanGuidanceCard } from '@/components/metric/PlanGuidanceCard';
+import { StreakCard } from '@/components/metric/StreakCard';
+import { QuickActions, type QuickAction } from '@/components/metric/QuickActions';
+import { TotalsCard, type TotalsFigure } from '@/components/metric/TotalsCard';
+import { TypeBreakdown } from '@/components/metric/TypeBreakdown';
+import { ActiveHours } from '@/components/metric/ActiveHours';
+import { PeriodCompare } from '@/components/metric/PeriodCompare';
 import {
-    getSummary, getDay, getCalendar, getWearableStatus, today, formatDistance, dayHasData,
+    getSummary, getDay, getCalendar, getWearableStatus, today, formatDistance, formatType,
+    formatDuration, dayHasData,
     type ActivitySummary, type ActivitySession, type WearableStatus,
     type ActivityMetricKey, type DayMetrics, type CalendarDay,
 } from '@/lib/activity';
 import { probe, type HealthCapability } from '@/lib/health';
 import { runSync } from '@/lib/health/sync';
-import { ApiError } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
+import { getUserId } from '@/lib/auth';
 
 /** `Today`, `Yesterday`, or the date — the two words people actually navigate by. */
 const dayLabel = (day: string): string => {
@@ -86,10 +107,25 @@ const averageLine = (
     return { value, label: metric?.label || key, days: avg.days };
 };
 
+/** The window a range covers, in the word the comparison copy needs. */
+const PERIOD_LABEL: Record<MetricRange, string> = {
+    '1d': 'day',
+    '1w': 'week',
+    '1m': 'month',
+    '1y': 'year',
+    all: 'period',
+};
+
+/** Just enough of the user record for the header. Loaded lazily; never blocks the page. */
+interface HeaderUser { firstName?: string; lastName?: string; profileImage?: string | null }
+
 export default function ActivityDashboard() {
     const router = useRouter();
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
+    const scrollRef = useRef<ScrollView>(null);
+    /** Where the insight block starts, so the design's Insight button can reach it. */
+    const insightY = useRef(0);
 
     const [range, setRange] = useState<MetricRange>('1w');
     const [metric, setMetric] = useState<ActivityMetricKey>('exerciseMin');
@@ -101,6 +137,7 @@ export default function ActivityDashboard() {
     const [calendar, setCalendar] = useState<CalendarDay[]>([]);
     const [calendarLoading, setCalendarLoading] = useState(true);
     const [status, setStatus] = useState<WearableStatus | null>(null);
+    const [user, setUser] = useState<HeaderUser | null>(null);
     const [capability, setCapability] = useState<HealthCapability | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -218,6 +255,29 @@ export default function ActivityDashboard() {
     useEffect(() => { loadMonth(month); }, [month, loadMonth]);
 
     /**
+     * The header avatar, fetched once and never awaited by anything.
+     *
+     * The design puts the person's photograph in the top-left of this screen, which is a
+     * nice touch and not worth a millisecond of the first paint: it resolves into a header
+     * that has already drawn. A failure leaves the initials, which is what `Avatar` falls
+     * back to anyway.
+     */
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const id = await getUserId();
+                if (!id) return;
+                const record = await api.get<HeaderUser>(`/users/${id}`);
+                if (mounted) setUser(record);
+            } catch {
+                // No avatar. The header draws the person glyph and nothing is missing.
+            }
+        })();
+        return () => { mounted = false; };
+    }, []);
+
+    /**
      * Read through a ref rather than a dependency.
      *
      * `load` runs on focus and after a range change. Depending on `selectedDay` or `month`
@@ -287,12 +347,97 @@ export default function ActivityDashboard() {
 
     const isToday = selectedDay === today();
 
+    const insight = summary?.insight;
+    const breakdown = insight?.breakdown || [];
+    const periodLabel = PERIOD_LABEL[range];
+
+    /**
+     * Frame 18's totals card, built only from figures that were actually reported.
+     *
+     * The kit fills all four slots — "80 mph" for a jog among them — and a grid of
+     * placeholders is the one thing this feature was told not to carry through. Each is
+     * pushed only when the range holds it, and `TotalsCard` drops the grid below two.
+     */
+    const totalFigures: TotalsFigure[] = [];
+    if (summary) {
+        if (summary.totals.exerciseMin > 0) {
+            totalFigures.push({
+                key: 'time',
+                value: formatDuration(summary.totals.exerciseMin * 60),
+                label: 'Active time',
+            });
+        }
+        if (summary.totals.activeKcal > 0) {
+            totalFigures.push({
+                key: 'kcal',
+                value: Math.round(summary.totals.activeKcal).toLocaleString(),
+                label: 'kcal burned',
+            });
+        }
+        const totalDistance = formatDistance(summary.totals.distanceM);
+        if (totalDistance && summary.totals.distanceM > 0) {
+            totalFigures.push({ key: 'distance', value: totalDistance, label: 'Distance' });
+        }
+        if (Number.isFinite(summary.totals.steps as number) && (summary.totals.steps as number) > 0) {
+            totalFigures.push({
+                key: 'steps',
+                value: Math.round(summary.totals.steps as number).toLocaleString(),
+                label: 'Steps',
+            });
+        }
+        if (Number.isFinite(summary.totals.floors as number) && (summary.totals.floors as number) > 0) {
+            totalFigures.push({
+                key: 'floors',
+                value: Math.round(summary.totals.floors as number).toLocaleString(),
+                label: 'Floors',
+            });
+        }
+    }
+
+    /**
+     * The three shortcuts under the chart — frame 7.
+     *
+     * The middle one is the design's "Quick Jog", and it is only offered when this person
+     * has a most-logged type to pre-fill it with. Hard-coding jogging would put a shortcut
+     * to a run in front of somebody whose plan says to swim, which is the kind of dead
+     * control this app keeps removing.
+     */
+    const quickType = breakdown[0]?.type && breakdown[0].type !== 'other' ? breakdown[0].type : null;
+    const quickActions: QuickAction[] = [
+        {
+            key: 'new',
+            label: 'New Activity',
+            icon: 'add',
+            primary: true,
+            onPress: () => router.push('/activity/log'),
+        },
+        ...(quickType
+            ? [{
+                key: 'quick',
+                label: `Quick ${formatType(quickType)}`,
+                icon: 'flash-outline' as const,
+                onPress: () => router.push({ pathname: '/activity/log', params: { type: quickType } }),
+            }]
+            : []),
+        {
+            key: 'insight',
+            label: 'Insight',
+            icon: 'pie-chart-outline',
+            // Frame 18 is on this page rather than behind a second load, so the button
+            // scrolls rather than navigates. See the note at the top of this file.
+            onPress: () => scrollRef.current?.scrollTo({ y: insightY.current, animated: true }),
+        },
+    ];
+
+    const initials = ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase();
+
 
     return (
         // No `top` edge: the wash has to run under the status bar the way the design draws
         // it, so the inset is applied as padding inside the gradient instead.
         <SafeAreaView style={styles.screen} edges={[]}>
             <ScrollView
+                ref={scrollRef}
                 contentContainerStyle={styles.content}
                 refreshControl={
                     <RefreshControl
@@ -347,6 +492,34 @@ export default function ActivityDashboard() {
                             <Ionicons name="notifications-outline" size={19} color={Palette.text} />
                         </Pressable>
                     </View>
+
+                    {/*
+                      Frame 18's greeting, kept rather than frame 7's bare avatar: this
+                      screen is pushed, so the back chevron above has to stay, and an avatar
+                      in the corner beside it would be two round controls competing for the
+                      same 38pt. Here it names the person and opens their profile, which is
+                      what tapping a face is for.
+                    */}
+                    <Pressable
+                        style={styles.greeting}
+                        onPress={() => router.push('/profile')}
+                        accessibilityRole="button"
+                        accessibilityLabel="Your profile"
+                    >
+                        <Avatar
+                            uri={user?.profileImage ?? null}
+                            initials={initials}
+                            size={40}
+                            style={styles.heroAvatar}
+                            textStyle={{ fontSize: 14 }}
+                        />
+                        <View style={styles.greetingText}>
+                            <Text style={styles.greetingTitle}>
+                                {user?.firstName ? `Hey, ${user.firstName.trim()}!` : 'Your activity'}
+                            </Text>
+                            <Text style={styles.greetingBody}>Here is your activity insight</Text>
+                        </View>
+                    </Pressable>
 
                     {/*
                       The score only exists once there is a plan to measure against. Until
@@ -409,6 +582,11 @@ export default function ActivityDashboard() {
                             />
                         </View>
 
+                        {/* Frame 7's three round shortcuts, between the chart and the cards. */}
+                        <View style={styles.section}>
+                            <QuickActions actions={quickActions} />
+                        </View>
+
                         <View style={styles.section}>
                             <SourceBanner
                                 capability={capability}
@@ -421,21 +599,24 @@ export default function ActivityDashboard() {
 
                         {summary && summary.streak > 0 && (
                             <View style={styles.section}>
-                                {/* Frame 7's amber streak card, with the day count set in the badge. */}
-                                <View style={styles.streak}>
-                                    <View style={styles.streakBadge}>
-                                        <Ionicons name="flame" size={26} color={Palette.white} />
-                                        <Text style={styles.streakBadgeText}>{summary.streak}</Text>
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.streakTitle}>
-                                            {summary.streak}-day streak
-                                        </Text>
-                                        <Text style={styles.streakBody}>
-                                            You’ve been active {summary.streak} days running. Keep it up!
-                                        </Text>
-                                    </View>
-                                </View>
+                                {/* Frame 7's amber streak card, artwork ported from the export. */}
+                                <StreakCard days={summary.streak} />
+                            </View>
+                        )}
+
+                        {/*
+                          Frame 18's totals card. Above the highlight because it answers
+                          "what did I do" and the highlight answers "how hard" — and one of
+                          those is a fact and the other is a reading of it.
+                        */}
+                        {summary && (summary.totals.sessions > 0 || totalFigures.length >= 2) && (
+                            <View style={styles.section}>
+                                <TotalsCard
+                                    count={summary.totals.sessions}
+                                    countLabel={summary.totals.sessions === 1 ? 'Total activity' : 'Total activities'}
+                                    figures={totalFigures}
+                                    types={breakdown}
+                                />
                             </View>
                         )}
 
@@ -474,6 +655,50 @@ export default function ActivityDashboard() {
                                 </Text>
                             </View>
                         )}
+
+                        {/*
+                          Frame 18, folded in rather than hidden behind an "Insight" screen.
+                          `onLayout` records where it starts so the design's Insight button
+                          reaches it — a button that scrolls is honest about there being no
+                          second page, where one that navigated would cost a second load of
+                          figures this response already carries.
+                        */}
+                        <View onLayout={(e) => { insightY.current = e.nativeEvent.layout.y; }}>
+                            {breakdown.length > 0 && (
+                                <View style={styles.section}>
+                                    <View style={styles.sectionHeader}>
+                                        <Text style={[styles.sectionTitle, styles.titleFlush]}>Activity breakdown</Text>
+                                        <Pressable
+                                            onPress={() => router.push('/activity/history')}
+                                            accessibilityRole="button"
+                                        >
+                                            <Text style={styles.link}>See all</Text>
+                                        </Pressable>
+                                    </View>
+                                    <TypeBreakdown rows={breakdown} />
+                                </View>
+                            )}
+
+                            {insight?.activeHours && insight.activeHours.sessions > 0 && (
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Most active time</Text>
+                                    <ActiveHours data={insight.activeHours} />
+                                </View>
+                            )}
+
+                            {insight?.comparison?.current && (
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>
+                                        {range === '1y' ? 'Yearly' : range === '1m' ? 'Monthly' : 'Daily'} average
+                                    </Text>
+                                    <PeriodCompare
+                                        comparison={insight.comparison}
+                                        values={series.map((p) => p.activeKcal)}
+                                        periodLabel={periodLabel}
+                                    />
+                                </View>
+                            )}
+                        </View>
 
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Activity calendar</Text>
@@ -609,7 +834,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         alignSelf: 'stretch',
-        marginBottom: Spacing.xxl,
+        marginBottom: Spacing.lg,
     },
     heroButton: {
         width: 38,
@@ -620,6 +845,17 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     heroDate: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.text },
+    heroAvatar: { borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' },
+    greeting: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        alignSelf: 'stretch',
+        marginBottom: Spacing.xl,
+    },
+    greetingText: { flex: 1, gap: 1 },
+    greetingTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.text },
+    greetingBody: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
     score: { fontSize: 54, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 62 },
     scoreLabel: { fontSize: 20, fontFamily: Fonts.semibold, color: Palette.text },
     scoreCaption: {
@@ -649,35 +885,6 @@ const styles = StyleSheet.create({
     subTitle: { fontSize: 13.5, fontFamily: Fonts.semibold, color: Palette.textSecondary },
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
     error: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.danger, marginBottom: Spacing.sm },
-
-    streak: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.lg,
-        backgroundColor: Palette.warningSurface,
-        borderWidth: 1,
-        borderColor: '#FDE68A',
-        borderRadius: Radius.lg,
-        padding: Spacing.lg,
-    },
-    streakBadge: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: Palette.amber,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    // Set over the flame, the way the design stamps the day count into the badge.
-    streakBadgeText: {
-        position: 'absolute',
-        fontSize: 13,
-        fontFamily: Fonts.bold,
-        color: Palette.white,
-        marginTop: 3,
-    },
-    streakTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    streakBody: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
 
     averages: {
         flexDirection: 'row',

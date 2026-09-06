@@ -130,6 +130,52 @@ export interface ActivityGuidance {
     avoid?: string[];
 }
 
+/** One row of the "Activity Breakdown" card. Counted in sessions, as the design sets it. */
+export interface ActivityBreakdownRow {
+    type: string;
+    count: number;
+    minutes: number;
+    /** Null when nothing in this group carried a calorie estimate — never a zero total. */
+    kcal: number | null;
+    distanceM: number | null;
+    /** Only on the folded "other" row: how many types it stands for. */
+    folded?: number;
+}
+
+/** "Most active time": a 24-slot histogram of training minutes, by local hour. */
+export interface ActiveHoursInsight {
+    hours: number[];
+    sessions: number;
+    /**
+     * The busiest two-hour window, or null below three sessions — an hour named from one
+     * run is advice that changes every week. `to` may be smaller than `from`: the window
+     * wraps past midnight.
+     */
+    peak: null | { from: number; to: number; minutes: number; share: number };
+}
+
+/**
+ * This window against the one immediately before it.
+ *
+ * `deltaPct` is null when the previous window reported nothing, rather than a large
+ * positive: a change measured from no data is unknown, not an improvement.
+ */
+export interface PeriodComparison {
+    metric: string;
+    current: MetricAverage | null;
+    previous: MetricAverage | null;
+    delta: number | null;
+    deltaPct: number | null;
+}
+
+export interface ActivityInsight {
+    breakdown: ActivityBreakdownRow[];
+    activeHours: ActiveHoursInsight;
+    comparison: PeriodComparison;
+    /** How many days the comparison window covered. Zero on a brand-new account. */
+    previousDays: number;
+}
+
 export interface ActivitySummary {
     range: ActivityRange;
     days: string[];
@@ -162,6 +208,11 @@ export interface ActivitySummary {
         calories: GoalProgress | null;
     };
     targets: ActivityTargets | null;
+    /**
+     * The three derived cards of `Design/activity.svg` frame 18. Computed server-side by
+     * `utils/activityInsight.js`; optional here because a client can outlive a deploy.
+     */
+    insight?: ActivityInsight;
     guidance: ActivityGuidance[];
 }
 
@@ -234,14 +285,35 @@ export interface DayMetrics {
         maxBpm: number | null;
         avgBpm: number | null;
         hrvMs: number | null;
+        /** Cardiorespiratory fitness, ml/kg/min. Sparse: a watch estimates it every few runs. */
+        vo2Max?: number | null;
         samples: number;
     };
     sleep: {
         asleepMin: number | null;
         inBedMin: number | null;
+        /**
+         * The stage breakdown. Present whenever the source segments the night — Health
+         * Connect does, and so does every watch that writes into it. It was already in this
+         * response and simply undeclared, which is why the dashboard drew none of it.
+         */
+        deepMin?: number | null;
+        remMin?: number | null;
+        lightMin?: number | null;
+        awakeMin?: number | null;
         efficiency: number | null;
         score: number | null;
         sessions: number;
+    };
+    /**
+     * Body measurements, from a connected scale or the weight screen. Same collection, same
+     * rollup — see `models/DailyMetrics.js`.
+     */
+    body?: {
+        weightKg: number | null;
+        bodyFatPct: number | null;
+        leanMassKg: number | null;
+        weightSource?: string | null;
     };
     reportedAt?: string;
 }

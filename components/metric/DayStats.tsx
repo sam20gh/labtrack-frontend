@@ -1,6 +1,12 @@
 /**
  * Everything one day's rollup actually holds, as a tile grid.
  *
+ * *Everything* is the point, and it now includes the sleep stages, the cardio-zone minutes
+ * and the body measurements the response was already carrying and nothing rendered — see
+ * `DayMetrics` in `lib/activity.ts`, where those fields were simply undeclared. A person who
+ * had granted every Health Connect scope was looking at a third of what their phone had
+ * handed over, which reads as a broken connection rather than as a narrow screen.
+ *
  * The dashboard used to draw two figures — active minutes and the range's average burn —
  * out of the eleven `DailyMetrics` stores, so a phone that had synced steps, distance,
  * floors and a full day of heart rate showed none of it. This renders what is there.
@@ -86,6 +92,54 @@ export const tilesFor = (metrics: DayMetrics | null): Tile[] => {
 
     if (num(h.hrvMs)) {
         tiles.push({ key: 'hrv', icon: 'git-compare-outline', tint: Palette.info, label: 'Heart rate variability', value: String(Math.round(h.hrvMs)), unit: 'ms' });
+    }
+
+    /**
+     * Cardiorespiratory fitness.
+     *
+     * Both health readers had asked for this permission since they were written and neither
+     * read it, so it arrived here as an empty field on a grant somebody had already given.
+     * It appears on the days a watch estimated one — which is every few runs, not every day.
+     */
+    if (num(h.vo2Max)) {
+        tiles.push({ key: 'vo2', icon: 'fitness-outline', tint: Palette.success, label: 'VO₂ max', value: (h.vo2Max as number).toFixed(1), unit: 'ml/kg/min' });
+    }
+
+    /**
+     * Sleep, on the activity dashboard on purpose.
+     *
+     * It comes from the same sync, in the same rollup, and recovery is the half of training
+     * this screen was silently dropping — somebody who granted the sleep scope and saw
+     * nothing of it here had every reason to think the connection was broken. The sleep
+     * tracker owns the hypnogram and the trend; these are the two figures that belong beside
+     * a day's exercise.
+     */
+    const sl = metrics.sleep || ({} as DayMetrics['sleep']);
+    if (num(sl.asleepMin) && sl.asleepMin > 0) {
+        const hours = Math.floor(sl.asleepMin / 60);
+        const mins = Math.round(sl.asleepMin % 60);
+        tiles.push({
+            key: 'sleep',
+            icon: 'moon-outline',
+            tint: Palette.indigo,
+            label: 'Time asleep',
+            value: hours > 0 ? `${hours}h ${mins}m` : `${mins}m`,
+        });
+    }
+
+    if (num(sl.deepMin) && (sl.deepMin as number) > 0) {
+        tiles.push({ key: 'deep', icon: 'cloudy-night-outline', tint: Palette.indigo, label: 'Deep sleep', value: String(Math.round(sl.deepMin as number)), unit: 'min' });
+    }
+
+    if (num(sl.efficiency)) {
+        tiles.push({ key: 'sleep-eff', icon: 'bed-outline', tint: Palette.indigo, label: 'Sleep efficiency', value: String(Math.round(sl.efficiency)), unit: '%' });
+    }
+
+    // The scale, when there is one. `weightKg` is the day's latest reading, not a mean —
+    // see `models/DailyMetrics.js`.
+    const body = metrics.body;
+    if (body && num(body.weightKg)) {
+        tiles.push({ key: 'weight', icon: 'body-outline', tint: Palette.textSecondary, label: 'Weight', value: (body.weightKg as number).toFixed(1), unit: 'kg' });
     }
 
     return tiles;

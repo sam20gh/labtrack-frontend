@@ -270,6 +270,10 @@ const DAILY: { identifier: string; unit: string; field: keyof DayRow; stat: stri
     { identifier: 'HKQuantityTypeIdentifierFlightsClimbed', unit: 'count', field: 'floors', stat: 'cumulativeSum' },
     { identifier: 'HKQuantityTypeIdentifierRestingHeartRate', unit: 'count/min', field: 'restingBpm', stat: 'discreteAverage' },
     { identifier: 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN', unit: 'ms', field: 'hrvMs', stat: 'discreteAverage' },
+    // Permitted since this reader was written and never read. A watch estimates VO2 max
+    // every few runs rather than daily, so most days carry none — which is a null here, not
+    // a zero, exactly like every other discrete figure in this table.
+    { identifier: 'HKQuantityTypeIdentifierVO2Max', unit: 'ml/(kg*min)', field: 'vo2Max', stat: 'discreteAverage' },
     // The day's heart-rate spread. Asked of HealthKit as three statistics over the same
     // type rather than by reading the samples: a worn watch writes one every few seconds,
     // and the dashboards only ever draw the low, the average and the peak.

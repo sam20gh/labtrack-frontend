@@ -427,6 +427,10 @@ const readDays = async (from: Date): Promise<DayRow[]> => {
     for (const [recordType, field, pick] of [
         ['RestingHeartRate', 'restingBpm', (r: any) => r.beatsPerMinute],
         ['HeartRateVariabilityRmssd', 'hrvMs', (r: any) => r.heartRateVariabilityMillis],
+        // Permitted since this reader was written and never read, so the grant bought the
+        // person nothing. Averaged like the two above: a watch can write more than one
+        // estimate a day and the day's figure is one number.
+        ['Vo2Max', 'vo2Max', (r: any) => r.vo2MillilitersPerMinuteKilogram],
     ] as const) {
         try {
             const buckets = new Map<string, number[]>();

@@ -14,7 +14,7 @@ import {
     View, Text, ScrollView, Pressable, TextInput, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import { logActivity } from '@/lib/activity';
@@ -48,7 +48,20 @@ const EFFORTS = [
 export default function LogActivityScreen() {
     const router = useRouter();
 
-    const [type, setType] = useState<string | null>(null);
+    /**
+     * The dashboard's "Quick <type>" shortcut arrives with the type already chosen.
+     *
+     * Only ever a pre-selection: it lands on the same form, with the same fields still to
+     * fill and the same Save at the bottom. A shortcut that wrote a session outright would
+     * be the app recording a workout nobody confirmed — the checkpoint `POST /nutrition/meals`
+     * puts between an estimate and the record.
+     */
+    const params = useLocalSearchParams<{ type?: string }>();
+    const prefill = typeof params.type === 'string' && TYPES.some((t) => t.key === params.type)
+        ? params.type
+        : null;
+
+    const [type, setType] = useState<string | null>(prefill);
     const [minutes, setMinutes] = useState(30);
     const [effort, setEffort] = useState<number | null>(null);
     const [distanceKm, setDistanceKm] = useState('');

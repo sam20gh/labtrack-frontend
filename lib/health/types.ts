@@ -97,6 +97,16 @@ export interface DayRow {
     maxBpm?: number;
     avgBpm?: number;
     hrvMs?: number;
+    /**
+     * Cardiorespiratory fitness, ml/kg/min.
+     *
+     * Both readers have asked for this permission since they were written and neither read
+     * it, so every person who granted it was handing over a figure nothing collected. It is
+     * a *fitness* measure rather than a day's activity — a watch estimates it every few
+     * runs, not every day — so it arrives on the days it was estimated and the rest stay
+     * null, like every other figure here.
+     */
+    vo2Max?: number;
     zoneMinutes?: number[];
 }
 
