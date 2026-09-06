@@ -24,19 +24,21 @@
  * 4. **A shared badge can be un-shared, from here.** Somebody who thought better of a card
  *    has to be able to take the page down without deleting the achievement.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ApiError } from '@/lib/api';
 import {
-    getAchievement, shareAchievement, revokeShareLink, earnedLabel, progressLabel, toneColour,
+    getAchievement, shareAchievementImage, revokeShareLink,
+    earnedLabel, progressLabel, toneColour,
     type AchievementDetail,
 } from '@/lib/achievements';
 import { BadgeMedal } from '@/components/achievements/BadgeMedal';
@@ -52,6 +54,27 @@ export default function AchievementDetailScreen() {
     const [preview, setPreview] = useState(false);
     const [sharing, setSharing] = useState(false);
 
+    /**
+     * What gets captured.
+     *
+     * Points at the plate *around* the card, not the card itself, so the shared PNG has the
+     * app's own tinted ground behind its rounded corners. Capturing the card alone gives
+     * transparent corners, and a transparent PNG is composited on black by several chat
+     * clients — the badge would arrive with four dark notches in it.
+     */
+    const cardRef = useRef<View>(null);
+
+    /**
+     * So the card is fully on screen when it is captured.
+     *
+     * `captureRef` draws a view's own canvas, so a card scrolled half out of the viewport is a
+     * risk rather than a certainty — and it is a risk that shows up only on a small screen,
+     * which is the one place it would not get caught in testing. Scrolling the preview into
+     * view removes it, and is what somebody expects anyway: they tapped Share, so the thing
+     * they are about to share should be in front of them.
+     */
+    const scrollRef = useRef<ScrollView>(null);
+
     const load = useCallback(async () => {
         try {
             setData(await getAchievement(String(key)));
@@ -65,21 +88,32 @@ export default function AchievementDetailScreen() {
 
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
+    /**
+     * Capture the card and hand the file to the share sheet.
+     *
+     * `shareAchievementImage` falls back to the link path on a platform with no share sheet
+     * or a capture that failed, and returns which one happened — the person is told when a
+     * picture did *not* go out, because "Shared" over a plain text message is a lie about
+     * what their friend received.
+     */
     const onShare = async () => {
         if (!data) return;
         setSharing(true);
         try {
-            const outcome = await shareAchievement(data.key);
-            if (outcome === 'unavailable') {
-                // The deployment has no share URL, so the message went out without a link.
-                // Saying so is better than letting somebody believe a card was published.
+            const outcome = await shareAchievementImage(cardRef, data.key);
+
+            if (outcome === 'text') {
                 Alert.alert(
                     'Shared as text',
-                    'Your badge went out as a message. The picture card is not available on this '
-                    + 'build yet, so there was no link to attach.',
+                    'Your badge went out as a message. This build could not make a picture and '
+                    + 'has no share address set up, so there was nothing to attach.',
                 );
+            } else if (outcome === 'link') {
+                // A link was published, which the image path never does — so the badge now has
+                // a live public page, and the screen has to start offering the way to take it
+                // down. That is what the reload is for.
+                await load();
             }
-            await load();
         } catch (err) {
             Alert.alert('Could not share', err instanceof ApiError ? err.message : 'Please try again.');
         } finally {
@@ -128,7 +162,15 @@ export default function AchievementDetailScreen() {
                 ) : <View style={{ width: 20 }} />}
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView
+                ref={scrollRef}
+                contentContainerStyle={styles.content}
+                // Fires when the preview mounts and grows the content, which is the moment the
+                // card exists and can be scrolled to.
+                onContentSizeChange={() => {
+                    if (preview) scrollRef.current?.scrollToEnd({ animated: true });
+                }}
+            >
                 {/* Concentric rings rather than a radial gradient: `react-native-svg`'s
                     RadialGradient renders inconsistently across the two platforms, and three
                     stacked circles at low opacity produce the same halo everywhere. */}
@@ -221,18 +263,55 @@ export default function AchievementDetailScreen() {
                     preview ? (
                         <View style={styles.previewWrap}>
                             <Text style={styles.previewNote}>
-                                This is what people will see. Your results are not part of it.
+                                This picture is what gets shared. Your results are not part of it.
                             </Text>
-                            <ShareCard
-                                name={data.name}
-                                shape={data.shape}
-                                glyph={data.glyph}
-                                tone={data.tone}
-                                how={data.how}
-                                person={data.person}
-                                onShare={onShare}
-                                sharing={sharing}
-                            />
+
+                            {/*
+                              * The captured region.
+                              *
+                              * `collapsable={false}` is not optional: Android flattens a View
+                              * that only wraps another into its parent, and a view that no
+                              * longer exists in the native tree cannot be captured — the
+                              * capture returns an error or a blank bitmap, on Android only,
+                              * with nothing wrong in the JS.
+                              *
+                              * The button is deliberately **outside** this wrapper. Anything
+                              * inside it lands in the image, and a Share button nobody can
+                              * press is a strange thing to send somebody.
+                              */}
+                            <View ref={cardRef} collapsable={false} style={styles.plateWrap}>
+                                <LinearGradient
+                                    colors={[Palette.white, Palette.primarySurface]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.plate}
+                                >
+                                    <ShareCard
+                                        name={data.name}
+                                        shape={data.shape}
+                                        glyph={data.glyph}
+                                        tone={data.tone}
+                                        how={data.how}
+                                        level={data.level}
+                                        person={data.person}
+                                        host={data.shareHost}
+                                    />
+                                </LinearGradient>
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.cta, sharing && styles.ctaBusy]}
+                                onPress={onShare}
+                                disabled={sharing}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Share ${data.name} as a picture`}
+                            >
+                                <Text style={styles.ctaText}>
+                                    {sharing ? 'Preparing…' : 'Share this picture'}
+                                </Text>
+                                <Ionicons name="share-social-outline" size={18} color={Palette.white} />
+                            </TouchableOpacity>
+
                             <TouchableOpacity onPress={() => setPreview(false)} accessibilityRole="button">
                                 <Text style={styles.cancel}>Not now</Text>
                             </TouchableOpacity>
@@ -329,6 +408,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.lg, paddingVertical: 16, marginTop: Spacing.xxl,
     },
     ctaText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
+    ctaBusy: { opacity: 0.6 },
     secondary: {
         alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         gap: Spacing.sm, borderWidth: 1, borderColor: Palette.primaryPale,
@@ -337,6 +417,10 @@ const styles = StyleSheet.create({
     secondaryText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
 
     previewWrap: { alignSelf: 'stretch', marginTop: Spacing.xxl, gap: Spacing.md },
+    // The plate is what the capture frames. Padding so the card's rounded corners sit on the
+    // app's own ground rather than on whatever the receiving chat client paints behind alpha.
+    plateWrap: { borderRadius: Radius.xl, overflow: 'hidden' },
+    plate: { padding: Spacing.lg },
     previewNote: {
         fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center',
     },

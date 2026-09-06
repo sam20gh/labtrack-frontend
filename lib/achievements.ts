@@ -18,6 +18,8 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Share } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import type { Router } from 'expo-router';
 import { api } from './api';
 import { Palette } from '@/constants/theme';
@@ -109,6 +111,8 @@ export interface AchievementDetail extends Achievement {
      * member", which is complete: the badge is the subject.
      */
     person: { name: string | null; avatar: string | null };
+    /** The address printed in the card's corner. Null when no share URL is configured. */
+    shareHost: string | null;
     ladder: {
         level: number;
         threshold: number;
@@ -164,6 +168,7 @@ export interface ShareLink {
     url: string | null;
     message: string;
     level: number;
+    shareHost: string | null;
 }
 
 /* ------------------------------------------------------------------ *
@@ -248,23 +253,78 @@ export const earnedLabel = (iso: string | null) =>
  * ------------------------------------------------------------------ */
 
 /**
- * Put a badge into the system share sheet.
+ * What a share attempt actually did.
  *
- * **The link is the card.** `Share.share` hands a message and a URL to whatever the person
- * picks — WhatsApp, Messages, a Facebook post — and it is the *receiving* app that draws the
- * preview, from the Open Graph tags on the page that URL resolves to. So the card somebody's
- * friend sees is rendered by `labtrack-web`, not here; the card on this screen is the app's
- * copy of it, shown so nobody shares something they have not seen.
- *
- * That is also why this posts to the API first rather than sharing a locally-built string: a
- * share needs a token, the token is minted server-side, and it can be revoked later. A share
- * sheet that produced a link nothing could take down would be a one-way door.
- *
- * With no `url` — a deployment that has not set `ACHIEVEMENT_SHARE_URL` — the message goes
- * out alone. The badge is still shared; it simply does not unfurl into a picture. Sharing a
- * link that resolves to nothing would be worse.
+ * `image` is the intended path; the rest are the ways it degrades, and the caller tells the
+ * person which one happened rather than letting them assume a picture went out.
  */
-export const shareAchievement = async (key: string): Promise<'shared' | 'dismissed' | 'unavailable'> => {
+export type ShareOutcome = 'image' | 'link' | 'text' | 'dismissed';
+
+/**
+ * Share a badge as a picture.
+ *
+ * **The image is the artefact.** It used to be a link: the app sent a URL and whatever app
+ * received it fetched an Open Graph card to draw a preview. That works, but it is a *preview
+ * of a page*, not a thing somebody owns — it needs a live server to render, it can be revoked
+ * out from under the person who shared it, and it publishes a public page on the internet as
+ * the price of sending a picture to one friend.
+ *
+ * Capturing the card instead removes all three. The file is handed to the share sheet and
+ * from there it is a photo like any other: it works offline, it survives the product, and
+ * **nothing is published** — no token is minted, so there is no public URL to leak or revoke.
+ * That is a real privacy improvement and it is why this path does not call `/share` at all.
+ *
+ * What it costs is the link. An image has no href, so the card prints the host in its own
+ * corner — see `ShareCard`. That is the only route back, and it is why the watermark is not
+ * decoration.
+ *
+ * Falls back rather than fails, in two steps:
+ *   - No `expo-sharing` on this platform (web) → the old link path, which still works.
+ *   - Capture failed → the link path too, rather than a silent nothing.
+ */
+export const shareAchievementImage = async (
+    view: React.RefObject<unknown>,
+    key: string,
+): Promise<ShareOutcome> => {
+    const available = await Sharing.isAvailableAsync().catch(() => false);
+
+    if (available && view.current) {
+        try {
+            const uri = await captureRef(view as never, {
+                format: 'png',
+                quality: 1,
+                // A file rather than base64: the share sheet wants a path, and a megabyte of
+                // base64 through the bridge is the slow way to arrive at the same file.
+                result: 'tmpfile',
+            });
+
+            await Sharing.shareAsync(uri, {
+                mimeType: 'image/png',
+                // iOS needs the uniform type or some targets refuse the attachment.
+                UTI: 'public.png',
+                dialogTitle: 'Share your achievement',
+            });
+            return 'image';
+        } catch {
+            // Fall through to the link. A capture that failed is not a reason to send nothing.
+        }
+    }
+
+    return shareAchievementLink(key);
+};
+
+/**
+ * The fallback: share a link to a public card.
+ *
+ * Kept because it is the only thing that works where `expo-sharing` does not, and because a
+ * link already sent stays live. Unlike the image path this **does** publish: it mints a token,
+ * and the page at that URL is readable by anyone who has it until the person revokes it from
+ * the badge's own screen.
+ *
+ * With no `url` — a deployment that has not set `ACHIEVEMENT_SHARE_URL` — the message goes out
+ * alone and the outcome says so. Sending a link that resolves to nothing would be worse.
+ */
+export const shareAchievementLink = async (key: string): Promise<ShareOutcome> => {
     const link = await createShareLink(key);
 
     const result = await Share.share(
@@ -274,7 +334,7 @@ export const shareAchievement = async (key: string): Promise<'shared' | 'dismiss
     );
 
     if (result.action === Share.dismissedAction) return 'dismissed';
-    return link.url ? 'shared' : 'unavailable';
+    return link.url ? 'link' : 'text';
 };
 
 /* ------------------------------------------------------------------ *

@@ -1,25 +1,36 @@
 /**
- * The share card — the design's frame 8.
+ * The share card — the design's frame 8, and the thing that actually gets shared.
  *
- * **This is a preview, not the artefact.** What actually reaches a WhatsApp thread or a
- * Facebook post is the Open Graph image on the public page the share link resolves to, drawn
- * by `labtrack-web`. This component is the app's copy of it, and it exists for one reason:
- * nobody should publish something they have not seen. `shareAchievement()` in
- * `lib/achievements.ts` explains the split.
+ * **This view is the artefact, not a preview of one.** It used to be a preview: sharing sent
+ * a link, and what appeared in a chat was the Open Graph image the portal rendered for that
+ * link. Now `shareAchievement()` captures this view to a PNG and hands the *file* to the
+ * share sheet, so what somebody's friend sees is these pixels.
  *
- * The two must therefore stay in step — the same badge, the same words, the same order. They
- * are two implementations of one design, which is a real cost, and the alternative was worse:
- * capturing this view to a bitmap needs `react-native-view-shot`, a native module, and a
- * captured screenshot would arrive in a chat as an attachment with no link back to LabTrack
- * and no way for the person to take it down afterwards.
+ * Three consequences, and every one of them shapes this file:
  *
- * **The card carries no health data.** A badge, a name the person chose, and what the badge
- * took to earn. That is the whole of what `cardForToken` will publish, and it is drawn here
- * exactly so that is obvious before anybody taps Share.
+ * 1. **Nothing interactive may live inside it.** A Share button rendered here would be
+ *    captured and appear in the image as a button nobody can press. The button is the
+ *    caller's, drawn outside the captured wrapper — see `app/achievements/[key].tsx`.
+ * 2. **The card has to say where it came from.** An image carries no link; somebody seeing a
+ *    badge in a group chat has nothing to tap. `shareHost` is printed in the corner and is
+ *    the only route back to the product. It comes from the server, derived from the real
+ *    share base, so it is never a domain nobody owns — and it is omitted rather than invented
+ *    when a deployment has none.
+ * 3. **It must be legible as a small image.** A chat thumbnail is a few hundred pixels wide,
+ *    so the type is set larger and heavier than it would be for a screen, and there is
+ *    nothing on it that has to be read at length.
+ *
+ * The portal's `opengraph-image.tsx` draws the same content for the link path, which still
+ * exists as the fallback. Two implementations of one design is a real cost; it is paid
+ * because a captured native view and a server-rendered PNG cannot be the same code, and both
+ * routes have to work.
+ *
+ * **The card carries no health data.** A badge, a name the person chose, what the badge took
+ * to earn, and the address. That is the whole of it, and it is drawn here exactly so that is
+ * obvious before anybody taps Share.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
 import { BadgeMedal } from './BadgeMedal';
 import { Avatar } from '@/components/Avatar';
 import BrandMark from '@/components/BrandMark';
@@ -38,15 +49,15 @@ interface Props {
     tone: BadgeTone;
     /** What it took. Shown verbatim under the headline. */
     how: string;
+    /** Which rung, for the corner chip. Omitted at level 1 — "Level 1" says nothing. */
+    level?: number;
     /** The person's display name and picture, or nothing if they would rather not. */
     person?: { name: string | null; avatar: string | null };
-    onShare?: () => void;
-    sharing?: boolean;
+    /** The address printed bottom-left. Null on a deployment with no share URL configured. */
+    host?: string | null;
 }
 
-export function ShareCard({
-    name, shape, glyph, tone, how, person, onShare, sharing = false,
-}: Props) {
+export function ShareCard({ name, shape, glyph, tone, how, level, person, host }: Props) {
     return (
         <View style={styles.card}>
             <View style={styles.head}>
@@ -57,10 +68,15 @@ export function ShareCard({
                     </View>
                 ) : (
                     // No name is a real state — somebody can share without publishing one —
-                    // and an empty row would leave the mark floating with nothing to balance.
+                    // and an empty row would leave the chip floating with nothing to balance.
                     <Text style={styles.anonymous}>A LabTrack member</Text>
                 )}
-                <BrandMark size={28} color={Palette.primary} />
+
+                {level && level > 1 ? (
+                    <View style={styles.levelChip}>
+                        <Text style={styles.levelChipText}>LEVEL {level}</Text>
+                    </View>
+                ) : null}
             </View>
 
             <View style={styles.badge}>
@@ -71,18 +87,19 @@ export function ShareCard({
             <Text style={styles.headline}>I just unlocked {name}!</Text>
             <Text style={styles.how}>{how}.</Text>
 
-            {onShare ? (
-                <Pressable
-                    style={[styles.cta, sharing && styles.ctaBusy]}
-                    onPress={onShare}
-                    disabled={sharing}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Share ${name}`}
-                >
-                    <Text style={styles.ctaText}>{sharing ? 'Preparing…' : 'Share'}</Text>
-                    <Ionicons name="share-social-outline" size={18} color={Palette.white} />
-                </Pressable>
-            ) : null}
+            {/*
+              * The footer, bottom-left, and the only thing on this card that is for whoever
+              * receives it rather than for whoever sends it. Omitted entirely rather than
+              * printed empty when the server has no host to give — a wordmark floating above
+              * a blank line reads as a rendering fault.
+              */}
+            <View style={styles.footer}>
+                <BrandMark size={18} color={Palette.primary} />
+                <View style={styles.footerText}>
+                    <Text style={styles.wordmark}>LabTrack</Text>
+                    {host ? <Text style={styles.host}>{host}</Text> : null}
+                </View>
+            </View>
         </View>
     );
 }
@@ -95,10 +112,19 @@ const styles = StyleSheet.create({
         gap: Spacing.sm,
         ...Shadow.card,
     },
-    head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    person: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1 },
+    head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
+    person: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexShrink: 1 },
     personName: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text, flexShrink: 1 },
-    anonymous: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.textSecondary, flex: 1 },
+    anonymous: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.textSecondary, flexShrink: 1 },
+    levelChip: {
+        paddingHorizontal: 10, paddingVertical: 4,
+        borderRadius: Radius.pill,
+        backgroundColor: Palette.primarySurface,
+    },
+    levelChipText: {
+        fontSize: 10, fontFamily: Fonts.bold, letterSpacing: 0.8, color: Palette.primaryDark,
+    },
+
     badge: { alignItems: 'center', paddingVertical: Spacing.xxl },
     kicker: {
         fontSize: 12,
@@ -119,17 +145,18 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.regular,
         color: Palette.textSecondary,
         textAlign: 'center',
-        marginBottom: Spacing.md,
     },
-    cta: {
+
+    footer: {
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
         gap: Spacing.sm,
-        backgroundColor: Palette.primary,
-        borderRadius: Radius.md,
-        paddingVertical: 14,
+        marginTop: Spacing.xl,
+        paddingTop: Spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: Palette.borderLight,
     },
-    ctaBusy: { opacity: 0.6 },
-    ctaText: { color: Palette.white, fontSize: 15, fontFamily: Fonts.semibold },
+    footerText: { gap: 1 },
+    wordmark: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 15 },
+    host: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 13 },
 });
