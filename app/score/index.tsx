@@ -322,6 +322,29 @@ export default function ScoreBreakdownScreen() {
                     ))}
                 </View>
 
+                {/*
+                  Forward from the trend, not instead of it.
+
+                  The trend says where the score has been; `/predict/score` projects it and
+                  says how far that projection can honestly reach. It is a link rather than a
+                  chart here because running a forecast costs a model call, and this screen is
+                  one people open several times a day.
+                */}
+                <TouchableOpacity
+                    style={styles.predictRow}
+                    onPress={() => router.push('/predict/score')}
+                    accessibilityRole="button"
+                >
+                    <Ionicons name="sparkles-outline" size={18} color={Palette.primary} />
+                    <View style={styles.flexOne}>
+                        <Text style={styles.predictTitle}>Predict my score</Text>
+                        <Text style={styles.predictBody}>
+                            Project this number forward, with the range it is actually heading for.
+                        </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={Palette.primary} />
+                </TouchableOpacity>
+
                 {/* Health Score Trend. */}
                 <Text style={styles.sectionTitle}>Health score trend</Text>
                 <View style={styles.card}>
@@ -738,6 +761,26 @@ const styles = StyleSheet.create({
     moverLabel: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.text, flex: 1 },
     moverDelta: { fontFamily: Fonts.semibold, fontSize: 13 },
 
+    predictRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 20,
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Palette.primaryPale,
+        backgroundColor: Palette.primarySurface,
+    },
+    flexOne: { flex: 1 },
+    predictTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text },
+    predictBody: {
+        fontSize: 12,
+        lineHeight: 18,
+        fontFamily: Fonts.regular,
+        color: Palette.textSecondary,
+        marginTop: 2,
+    },
     disclaimer: {
         fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted,
         lineHeight: 16, textAlign: 'center', marginTop: Spacing.sm,

@@ -122,6 +122,9 @@ export default function RootLayout() {
             titled "activity/index". */}
         <Stack.Screen name="activity" options={{ headerShown: false }} />
         <Stack.Screen name="score" options={{ headerShown: false }} />
+        {/* Predictive health analysis. One entry: expo-router nests the whole directory,
+            and every screen under it draws its own top inset. */}
+        <Stack.Screen name="predict" options={{ headerShown: false }} />
         <Stack.Screen name="metrics" options={{ headerShown: false }} />
         <Stack.Screen name="resources" options={{ headerShown: false }} />
         {/* Draws its own "Your DNA" header inside a top-inset SafeAreaView, like every

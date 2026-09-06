@@ -101,9 +101,14 @@ import {
 } from '@/lib/appointments';
 import { getConversation, messageTime, type Conversation } from '@/lib/assistant';
 import { listChecks, type SymptomCheck } from '@/lib/symptomChecks';
+import {
+    getOverview as getPredictionOverview, openPredictions,
+    type Overview as PredictionOverview,
+} from '@/lib/prediction';
 import { listResources, routeFor, openResourcesHub, type ResourceCard as ResourceCardType } from '@/lib/resources';
 import { ArticleCard } from '@/components/resources/ResourceCards';
 import SymptomCheckerCard from '@/components/home/SymptomCheckerCard';
+import { PredictionCard } from '@/components/home/PredictionCard';
 import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
@@ -185,6 +190,12 @@ interface SetupItem {
     title: string;
     body: string;
     route: string;
+    /**
+     * For a destination behind a first-run gate, which has to read AsyncStorage and therefore
+     * cannot be expressed as a route string. Only Predict needs it; the gate itself lives in
+     * `lib/prediction.ts` beside the key it reads, the way Resources' does.
+     */
+    open?: () => void;
 }
 
 /** How a plan item's date reads once it is asking for something. */
@@ -238,6 +249,7 @@ export default function HomeScreen() {
     const [plan, setPlan] = useState<PlanItem[]>([]);
     const [conversation, setConversation] = useState<Conversation | null>(null);
     const [symptomChecks, setSymptomChecks] = useState<SymptomCheck[]>([]);
+    const [predictions, setPredictions] = useState<PredictionOverview | null>(null);
     const [generating, setGenerating] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -289,12 +301,16 @@ export default function HomeScreen() {
             // refreshes on the same focus every other section does — a check run two screens
             // away must be in the list by the time you are back on the home screen.
             listChecks(),
+            // Reads predictions already written; it never runs one. A forecast costs an Opus
+            // call, and putting that inside a `useFocusEffect` is exactly the mistake the
+            // header of this file warns about.
+            getPredictionOverview(),
         ]);
 
         const [
             userRes, biomarkerRes, analysisRes, nutritionRes, scoreRes, metricsRes,
             activityRes, activityDayRes, medicationRes, appointmentRes, planRes,
-            conversationRes, resourceRes, checksRes,
+            conversationRes, resourceRes, checksRes, predictionRes,
         ] = results;
 
         if (userRes.status === 'fulfilled') setUser(userRes.value as User);
@@ -314,6 +330,7 @@ export default function HomeScreen() {
         if (conversationRes.status === 'fulfilled') setConversation(conversationRes.value);
         if (resourceRes.status === 'fulfilled') setResources(resourceRes.value.items ?? []);
         if (checksRes.status === 'fulfilled') setSymptomChecks(checksRes.value);
+        if (predictionRes.status === 'fulfilled') setPredictions(predictionRes.value);
 
         const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
@@ -658,6 +675,45 @@ export default function HomeScreen() {
     const trackers: { id: string; order: number; node: React.ReactNode }[] = [];
     const setup: SetupItem[] = [];
 
+    /**
+     * Looking ahead.
+     *
+     * Earned like every other section here: drawn only when a prediction actually exists,
+     * and pushed into `setup` otherwise. `order` puts it after the trackers that report
+     * measurements — a projection is worth less than a reading taken today, and it must not
+     * sit above doses that are due.
+     */
+    const livePredictions = [
+        ...(predictions?.scorePrediction ? [predictions.scorePrediction] : []),
+        ...(predictions?.metricPredictions ?? []),
+    ];
+
+    if (livePredictions.length > 0) {
+        trackers.push({
+            id: 'predictions',
+            order: 7,
+            node: (
+                <Section title="Looking ahead" action="See All" onAction={() => router.push('/predict')}>
+                    <PredictionCard
+                        predictions={livePredictions}
+                        accuracy={predictions?.accuracy ?? null}
+                        onOpen={(id) => router.push(`/predict/${id}`)}
+                        onSeeAll={() => router.push('/predict/accuracy')}
+                    />
+                </Section>
+            ),
+        });
+    } else {
+        setup.push({
+            id: 'predictions',
+            icon: 'sparkles-outline',
+            title: 'Predict a metric',
+            body: 'Project your own readings forward and see the range they are heading for. Three entries is enough to start.',
+            route: '/predict',
+            open: () => { openPredictions(router); },
+        });
+    }
+
     if (metricCards.some((c) => c.value !== null)) {
         trackers.push({
             id: 'metrics',
@@ -974,7 +1030,9 @@ export default function HomeScreen() {
                                             <TouchableOpacity
                                                 key={item.id}
                                                 style={styles.setupRow}
-                                                onPress={() => router.push(item.route as never)}
+                                                onPress={() => (item.open
+                                                    ? item.open()
+                                                    : router.push(item.route as never))}
                                                 activeOpacity={0.8}
                                             >
                                                 <View style={styles.setupIcon}>

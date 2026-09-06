@@ -16,11 +16,13 @@
  * which reads as a mistake rather than as a list. Hydration arrived with the water tracker's
  * own screens; Appointments is what makes the last row two rather than one, and it earns the
  * slot on the same grounds Consult does — the diary at `/appointments` is a whole feature
- * reachable today only from the home screen. Eleven, so add the next one alone.
+ * reachable today only from the home screen. Predict makes twelve, which closes the grid at a
+ * clean 3×4 — so the next one after that arrives as part of a pair.
  */
 import type { Ionicons } from '@expo/vector-icons';
 import type { Router } from 'expo-router';
 import { openResourcesHub } from './resources';
+import { openPredictions } from './prediction';
 
 export interface QuickAction {
     id: string;
@@ -30,9 +32,8 @@ export interface QuickAction {
     route: string;
     /**
      * True when the destination is gated by a first-run screen, so `openQuickAction` has to
-     * resolve where to send someone rather than the caller hard-coding it. Only Resources
-     * does this today; the flag exists so the next one does not put its AsyncStorage read
-     * into a component.
+     * resolve where to send someone rather than the caller hard-coding it. Resources and
+     * Predict both do; the flag exists so neither puts its AsyncStorage read into a component.
      */
     gated?: boolean;
 }
@@ -49,18 +50,20 @@ export const QUICK_ACTIONS: QuickAction[] = [
     { id: 'consult', icon: 'people-outline', label: 'Consult', route: '/(tabs)/professionals' },
     { id: 'appointments', icon: 'today-outline', label: 'Diary', route: '/appointments' },
     { id: 'resources', icon: 'library-outline', label: 'Resources', route: '/resources', gated: true },
+    { id: 'predict', icon: 'sparkles-outline', label: 'Predict', route: '/predict', gated: true },
 ];
 
 /**
  * Navigate to one of them.
  *
- * The Resources gate reads AsyncStorage and therefore has to be awaited, which is why every
- * caller goes through here rather than pushing `action.route` itself. The gate itself lives
- * in `lib/resources.ts` beside the key it reads.
+ * The first-run gates read AsyncStorage and therefore have to be awaited, which is why every
+ * caller goes through here rather than pushing `action.route` itself. Each gate lives beside
+ * the key it reads — `lib/resources.ts` and `lib/prediction.ts`.
  */
 export const openQuickAction = async (router: Router, action: QuickAction): Promise<void> => {
     if (action.gated) {
-        await openResourcesHub(router);
+        // Each gate lives beside the key it reads, so this only has to know which one to call.
+        await (action.id === 'predict' ? openPredictions(router) : openResourcesHub(router));
         return;
     }
     router.push(action.route as never);
