@@ -17,9 +17,18 @@ interface Props {
     onPress?: () => void;
     /** Shows the source when it is worth saying — a hand-typed night among synced ones. */
     showSource?: boolean;
+    /**
+     * Off where the list already carries a date heading above the row.
+     *
+     * The kit prints the date on every row *and* a heading above the group, which is the
+     * same fact twice and costs the width the times need. The dashboard's recent-nights
+     * rail has no headings, so it keeps the date; the history screen groups by day and
+     * turns it off.
+     */
+    showDay?: boolean;
 }
 
-export function NightRow({ night, onPress, showSource = false }: Props) {
+export function NightRow({ night, onPress, showSource = false, showDay = true }: Props) {
     return (
         <Pressable
             style={styles.row}
@@ -45,7 +54,7 @@ export function NightRow({ night, onPress, showSource = false }: Props) {
                 </Text>
             </View>
 
-            <Text style={styles.day}>{dayLabel(night.day)}</Text>
+            {showDay ? <Text style={styles.day}>{dayLabel(night.day)}</Text> : null}
             {onPress ? <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} /> : null}
         </Pressable>
     );

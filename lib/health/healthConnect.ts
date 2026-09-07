@@ -67,8 +67,17 @@ const BACKFILL_DAYS = 90;
  * knowledge to the next seven days and the person would see the same near-empty dashboard
  * they were complaining about. Stamping the version into the cursor turns the first sync
  * after an upgrade back into a full backfill, once, without a migration or a support step.
+ *
+ * `v3` (2026-09-07): sleep de-duplication by overlapping time window. Two apps writing the
+ * same night into Health Connect — Health Sync mirroring a wearable in, Google Fit
+ * republishing it — produce two records with different UUIDs, which the `externalId` key
+ * cannot tell apart, so every night was stored and shown twice. `utils/healthSync.js` now
+ * collapses them, but it can only collapse records it is handed *together*: an incremental
+ * sync carries only what changed, so nights already duplicated would never be re-read. The
+ * bump forces one backfill, which hands both copies of every night over at once and lets
+ * the ingest drop the loser.
  */
-const READER_VERSION = 'v2';
+const READER_VERSION = 'v3';
 
 const encodeCursor = (token: string | null) => (token ? `${READER_VERSION}:${token}` : null);
 

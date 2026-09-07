@@ -201,6 +201,8 @@ export default function SleepHistoryScreen() {
                                     <NightRow
                                         night={night}
                                         showSource
+                                        // The group heading above already says which day.
+                                        showDay={false}
                                         onPress={() => router.push(`/sleep/${night._id}`)}
                                     />
                                 </Pressable>
