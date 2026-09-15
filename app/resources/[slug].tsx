@@ -418,10 +418,10 @@ export default function ResourceDetailScreen() {
                             {workshop.compareAtCents != null
                                 && workshop.priceCents != null
                                 && workshop.compareAtCents > workshop.priceCents && (
-                                <Text style={styles.priceWas}>
-                                    {formatPrice(workshop.compareAtCents, workshop.currency)}
-                                </Text>
-                            )}
+                                    <Text style={styles.priceWas}>
+                                        {formatPrice(workshop.compareAtCents, workshop.currency)}
+                                    </Text>
+                                )}
                         </View>
                     </View>
                     <TouchableOpacity style={styles.checkoutButton} onPress={onJoin} activeOpacity={0.85}>

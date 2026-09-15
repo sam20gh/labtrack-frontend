@@ -296,9 +296,11 @@ export default function AudioPlayerScreen() {
                                 style={[
                                     styles.waveBar,
                                     { height },
-                                    { backgroundColor: dark
-                                        ? (played ? Palette.white : 'rgba(255,255,255,0.35)')
-                                        : (played ? Palette.primary : Palette.border) },
+                                    {
+                                        backgroundColor: dark
+                                            ? (played ? Palette.white : 'rgba(255,255,255,0.35)')
+                                            : (played ? Palette.primary : Palette.border)
+                                    },
                                 ]}
                             />
                         );

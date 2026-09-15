@@ -243,7 +243,7 @@ export default function BasketScreen() {
                             ? <ActivityIndicator color="#fff" />
                             : <Text style={styles.primaryButtonText}>
                                 {payment?.available ? `Pay ${formatMoney(estimatedTotal)}` : 'Place order'}
-                              </Text>}
+                            </Text>}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>

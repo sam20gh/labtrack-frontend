@@ -314,7 +314,7 @@ export default function ImmersiveAssistant() {
                                 voiceDisabledReason={capabilities.voice
                                     ? null
                                     : 'This LabTrack server has no speech-to-text configured, '
-                                      + 'so questions have to be typed for now.'}
+                                    + 'so questions have to be typed for now.'}
                             />
                         </View>
                     </KeyboardAvoidingView>
