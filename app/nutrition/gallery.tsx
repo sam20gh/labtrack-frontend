@@ -13,9 +13,10 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
     ActivityIndicator, Modal, useWindowDimensions, Alert, RefreshControl,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -233,7 +234,7 @@ export default function NutritionGalleryScreen() {
                 <View style={styles.viewer}>
                     {viewing && (
                         <>
-                            <Image source={{ uri: viewing.imageUrl }} style={styles.viewerImage} resizeMode="cover" />
+                            <Image source={{ uri: viewing.imageUrl }} style={styles.viewerImage} contentFit="cover" />
 
                             <SafeAreaView style={styles.viewerTop} edges={['top']}>
                                 <TouchableOpacity style={styles.viewerClose} onPress={() => setViewing(null)} hitSlop={8}>

@@ -31,10 +31,11 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
     Modal, StatusBar, useWindowDimensions, Platform, type NativeSyntheticEvent,
     type NativeScrollEvent,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -99,7 +100,7 @@ const Viewer = ({
                             <Image
                                 source={{ uri }}
                                 style={styles.viewerImage}
-                                resizeMode="contain"
+                                contentFit="contain"
                                 accessibilityLabel={`${name} — picture ${position + 1} of ${images.length}`}
                             />
                         </View>

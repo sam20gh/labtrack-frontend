@@ -18,9 +18,10 @@
  */
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, Image, StyleSheet,
+    View, Text, StyleSheet,
     type ViewStyle, type ImageStyle, type StyleProp,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts } from '@/constants/theme';
 

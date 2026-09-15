@@ -7,7 +7,8 @@
  * scolds them teaches them to stop recording.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import { ALIGNMENT_META, MEAL_TYPE_LABEL } from '@/lib/nutrition';

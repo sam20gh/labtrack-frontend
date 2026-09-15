@@ -11,7 +11,8 @@
  * a body rendered by a Markdown engine and half by hand is worse than either.
  */
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';

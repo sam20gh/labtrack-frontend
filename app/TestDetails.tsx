@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, Text } from 'react-native';
-import { Card, Title, Paragraph } from 'react-native-paper';
 import { useRoute } from '@react-navigation/native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 
@@ -39,25 +38,23 @@ const TestDetails: React.FC = () => {
 
     return (
         <ScrollView style={styles.container}>
-            <Card style={styles.card}>
-                <Card.Content>
-                    <View style={styles.headerRow}>
-                        <Icon name="flask-outline" size={26} color="#6200ea" />
-                        <Title style={styles.testType}>{test.patient.test_type}</Title>
-                    </View>
-                    <Paragraph style={styles.labInfo}><Icon name="hospital" size={18} color="#666" /> Lab: {test.patient.lab_name}</Paragraph>
-                    <Paragraph style={styles.testDate}><Icon name="calendar" size={18} color="#666" /> Date: {test.patient.date_of_test}</Paragraph>
-                    <Paragraph style={styles.interpretation}>{test.interpretation}</Paragraph>
-                </Card.Content>
-            </Card>
+            <View style={styles.card}>
+                <View style={styles.headerRow}>
+                    <Icon name="flask-outline" size={26} color="#6200ea" />
+                    <Text style={styles.testType}>{test.patient.test_type}</Text>
+                </View>
+                <Text style={styles.labInfo}><Icon name="hospital" size={18} color="#666" /> Lab: {test.patient.lab_name}</Text>
+                <Text style={styles.testDate}><Icon name="calendar" size={18} color="#666" /> Date: {test.patient.date_of_test}</Text>
+                <Text style={styles.interpretation}>{test.interpretation}</Text>
+            </View>
 
-            <Title style={styles.sectionTitle}><Text>Test Results</Text></Title>
+            <Text style={styles.sectionTitle}>Test Results</Text>
             <View style={styles.resultsContainer}>
                 {Object.entries(test.results).map(([key, value], index) => (
                     <View key={index} style={styles.resultItem}>
                         <Icon name="test-tube" size={22} color="#6200ea" style={styles.resultIcon} />
                         <View style={styles.resultTextContainer}>
-                            <Title style={styles.resultText}>{key}</Title>
+                            <Text style={styles.resultText}>{key}</Text>
                             <Text style={styles.resultValue}>{value.value} {value.unit}</Text>
                             <Text style={styles.referenceRange}>Reference: {value.reference_range}</Text>
                             <Text style={[styles.status, statusStyle(value.status)]}>{value.status}</Text>

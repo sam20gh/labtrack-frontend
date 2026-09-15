@@ -18,8 +18,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
-    useWindowDimensions, Image, Pressable,
+    useWindowDimensions, Pressable,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

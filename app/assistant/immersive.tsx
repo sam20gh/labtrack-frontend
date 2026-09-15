@@ -25,8 +25,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, Easing,
-    ScrollView, KeyboardAvoidingView, Platform, Image,
+    ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

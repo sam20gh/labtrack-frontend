@@ -17,8 +17,9 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

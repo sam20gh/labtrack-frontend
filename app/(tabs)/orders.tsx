@@ -29,8 +29,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput,
-    TouchableOpacity, Image, RefreshControl, useWindowDimensions, Platform,
+    TouchableOpacity, RefreshControl, useWindowDimensions, Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';

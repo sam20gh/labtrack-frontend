@@ -16,9 +16,10 @@
  */
 import React, { useCallback, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, Image, TouchableOpacity,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
     ActivityIndicator, useWindowDimensions, Linking, Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';

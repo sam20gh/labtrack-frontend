@@ -16,8 +16,9 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Platform,
-    Image, Alert,
+    Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';

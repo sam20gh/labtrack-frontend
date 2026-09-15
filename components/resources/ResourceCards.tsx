@@ -13,7 +13,8 @@
  * card beside it reads as a bug in the number rather than in the component.
  */
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';

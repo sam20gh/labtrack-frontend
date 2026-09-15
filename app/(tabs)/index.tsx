@@ -58,9 +58,10 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
-    RefreshControl, Image, useWindowDimensions,
+    RefreshControl, useWindowDimensions,
     type NativeSyntheticEvent, type NativeScrollEvent,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, type Router } from 'expo-router';
@@ -427,17 +428,29 @@ export default function HomeScreen() {
     /**
      * Take, skip or undo one of today's doses from the home card.
      *
-     * The row is optimistic about nothing: the schedule is refetched, because the server
-     * recomputes adherence and this card draws it. `scoreController.touch()` runs on that
-     * write too, so the score above is stale by one pull-to-refresh — which is the trade
-     * the score's own design accepts rather than blocking a write on a scorer.
+     * Optimistic: the tapped row flips to its settled state immediately from the local
+     * `action`, so "Taken" reads as taken the instant it's tapped rather than after a round
+     * trip. The full schedule is still refetched afterwards, in the background, because the
+     * server recomputes adherence and punctuality this card draws — but that refresh no
+     * longer gates the colour change. A failure rolls the optimistic row back and toasts.
      */
     const handleDose = useCallback(async (id: string, action: 'take' | 'skip' | 'undo') => {
         setBusyDose(id);
+        const previous = medications;
+        setMedications((current) => {
+            if (!current) return current;
+            return {
+                ...current,
+                doses: current.doses.map((d) => (d._id === id
+                    ? { ...d, status: action === 'undo' ? 'scheduled' : action === 'take' ? 'taken' : 'skipped' }
+                    : d)),
+            };
+        });
         try {
             await updateDose(id, action);
             setMedications(await getMedicationSchedule());
         } catch (error) {
+            setMedications(previous);
             Toast.show({
                 type: 'error',
                 text1: 'Could not update that dose',
@@ -446,7 +459,36 @@ export default function HomeScreen() {
         } finally {
             setBusyDose(null);
         }
-    }, []);
+    }, [medications]);
+
+    /**
+     * Stable navigation callbacks for the memoized tracker cards below.
+     *
+     * Each card is wrapped in `React.memo`, which only pays off if its props are
+     * referentially stable — an inline `() => router.push(...)` recreated on every render
+     * of this screen defeats that regardless of the memo. `router` itself is the stable
+     * object expo-router hands back on every render, so these only need to be created once.
+     */
+    const openScore = useCallback(() => router.push('/score'), [router]);
+    const openMedicationAdd = useCallback(() => router.push('/medications/add'), [router]);
+    const openMedication = useCallback(
+        (id: string) => router.push({ pathname: '/medications/[id]', params: { id } }),
+        [router],
+    );
+    const openAppointments = useCallback(() => router.push('/appointments'), [router]);
+    const openProfessionals = useCallback(() => router.push('/(tabs)/professionals'), [router]);
+    const openActivityLog = useCallback(() => router.push('/activity/log'), [router]);
+    const openActivitySession = useCallback(
+        (id: string) => router.push({ pathname: '/activity/session/[id]', params: { id } }),
+        [router],
+    );
+    const openNutrition = useCallback(() => router.push('/nutrition'), [router]);
+    const openNutritionLog = useCallback(() => router.push('/nutrition/log'), [router]);
+    const openSleep = useCallback(() => router.push('/sleep'), [router]);
+    const openAssistant = useCallback(() => router.push('/(tabs)/assistant'), [router]);
+    const toggleAnalysis = useCallback(() => setAnalysisExpanded((v) => !v), []);
+    const runGenerate = useCallback(() => handleGenerate(false), [handleGenerate]);
+    const runRegenerate = useCallback(() => handleGenerate(true), [handleGenerate]);
 
     /** Out-of-range markers, worst first. Counted on the score card rather than railed. */
     const attention = useMemo(
@@ -744,8 +786,8 @@ export default function HomeScreen() {
                         schedule={medications}
                         busyDose={busyDose}
                         onDose={handleDose}
-                        onAdd={() => router.push('/medications/add')}
-                        onOpen={(id) => router.push({ pathname: '/medications/[id]', params: { id } })}
+                        onAdd={openMedicationAdd}
+                        onOpen={openMedication}
                     />
                 </Section>
             ),
@@ -768,8 +810,8 @@ export default function HomeScreen() {
                 <Section title="Appointments" action="See All" onAction={() => router.push('/appointments')}>
                     <AppointmentsCard
                         appointments={liveAppointments}
-                        onOpen={() => router.push('/appointments')}
-                        onBook={() => router.push('/(tabs)/professionals')}
+                        onOpen={openAppointments}
+                        onBook={openProfessionals}
                     />
                 </Section>
             ),
@@ -793,8 +835,8 @@ export default function HomeScreen() {
                     <ActivityCard
                         summary={activity}
                         sessions={sessions}
-                        onLog={() => router.push('/activity/log')}
-                        onSession={(id) => router.push({ pathname: '/activity/session/[id]', params: { id } })}
+                        onLog={openActivityLog}
+                        onSession={openActivitySession}
                     />
                 </Section>
             ),
@@ -817,8 +859,8 @@ export default function HomeScreen() {
                 <Section title="Nutrition" action="See All" onAction={() => router.push('/nutrition')}>
                     <NutritionCard
                         day={nutrition}
-                        onOpen={() => router.push('/nutrition')}
-                        onLog={() => router.push('/nutrition/log')}
+                        onOpen={openNutrition}
+                        onLog={openNutritionLog}
                     />
                 </Section>
             ),
@@ -842,7 +884,7 @@ export default function HomeScreen() {
                     <SleepCard
                         card={sleepCard}
                         today={dayMetrics}
-                        onOpen={() => router.push('/sleep')}
+                        onOpen={openSleep}
                     />
                 </Section>
             ),
@@ -889,7 +931,7 @@ export default function HomeScreen() {
                         <ScoreCard
                             score={score}
                             attention={attention.length}
-                            onPress={() => router.push('/score')}
+                            onPress={openScore}
                         />
 
                         {/*
@@ -971,9 +1013,9 @@ export default function HomeScreen() {
                                     analysis={analysis}
                                     generating={generating}
                                     expanded={analysisExpanded}
-                                    onToggle={() => setAnalysisExpanded((v) => !v)}
-                                    onGenerate={() => handleGenerate(false)}
-                                    onRegenerate={() => handleGenerate(true)}
+                                    onToggle={toggleAnalysis}
+                                    onGenerate={runGenerate}
+                                    onRegenerate={runRegenerate}
                                 />
                             </Section>
                         )}
@@ -1010,7 +1052,7 @@ export default function HomeScreen() {
                         <Section title="Ask LabTrack AI">
                             <AskCard
                                 conversation={conversation}
-                                onOpen={() => router.push('/(tabs)/assistant')}
+                                onOpen={openAssistant}
                             />
                         </Section>
 
@@ -1195,7 +1237,7 @@ const HomeHeader = ({
  * 3. **It does not describe a null score as a bad one.** No score is a statement about
  *    coverage — see **The LabTrack score** in CLAUDE.md.
  */
-const ScoreCard = ({ score, attention, onPress }: {
+const ScoreCard = React.memo(({ score, attention, onPress }: {
     score: HealthScore; attention: number; onPress: () => void;
 }) => {
     const band = bandMeta(score.band);
@@ -1207,7 +1249,7 @@ const ScoreCard = ({ score, attention, onPress }: {
     // screen is where the full ledger lives, and this is a line under a number.
     const moved = change
         ? [...change.improved.map((p) => ({ ...p, up: true })),
-           ...change.declined.map((p) => ({ ...p, up: false }))]
+        ...change.declined.map((p) => ({ ...p, up: false }))]
             .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0] ?? null
         : null;
 
@@ -1283,15 +1325,15 @@ const ScoreCard = ({ score, attention, onPress }: {
                     <Text style={styles.scoreFootText} numberOfLines={1}>
                         {moved.label} {moved.up ? 'improved' : 'slipped'}
                         {change && change.improved.length + change.declined.length > 1
-                            ? ` · ${change.improved.length + change.declined.length - 1} other pillar${
-                                change.improved.length + change.declined.length === 2 ? '' : 's'} moved`
+                            ? ` · ${change.improved.length + change.declined.length - 1} other pillar${change.improved.length + change.declined.length === 2 ? '' : 's'} moved`
                             : ''}
                     </Text>
                 </View>
             )}
         </TouchableOpacity>
     );
-};
+});
+ScoreCard.displayName = 'ScoreCard';
 
 /**
  * One out-of-range marker, with the direction it is heading.
@@ -1426,7 +1468,7 @@ const ActionRow = ({ action }: { action: HomeAction }) => (
 const METRIC_CARD_WIDTH = 152;
 const METRIC_CARD_PITCH = METRIC_CARD_WIDTH + Spacing.md;
 
-const MetricsRail = ({ cards, router }: { cards: MetricCardData[]; router: Router }) => {
+const MetricsRail = React.memo(({ cards, router }: { cards: MetricCardData[]; router: Router }) => {
     const [page, setPage] = useState(0);
     const lastPage = useRef(0);
 
@@ -1466,7 +1508,8 @@ const MetricsRail = ({ cards, router }: { cards: MetricCardData[]; router: Route
             </View>
         </>
     );
-};
+});
+MetricsRail.displayName = 'MetricsRail';
 
 /**
  * One metric tile.
@@ -1546,7 +1589,7 @@ const ProgressRing = ({ done, total, size = 66, stroke = 6 }: {
  * — never zero — when nobody has set a plan to measure against, which is when the ring is
  * dropped rather than drawn empty. Same call `alignment: 'unassessed'` makes in nutrition.
  */
-const ActivityCard = ({ summary, sessions, onLog, onSession }: {
+const ActivityCard = React.memo(({ summary, sessions, onLog, onSession }: {
     summary: ActivitySummary | null;
     sessions: ActivitySession[];
     onLog: () => void;
@@ -1586,7 +1629,8 @@ const ActivityCard = ({ summary, sessions, onLog, onSession }: {
             <CardFooterAction label="Log Activity" onPress={onLog} />
         </View>
     );
-};
+});
+ActivityCard.displayName = 'ActivityCard';
 
 const SESSION_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
     walking: 'walk-outline',
@@ -1663,7 +1707,7 @@ const Stat = ({ icon, tint, text }: {
  * when today is the night being shown, or it would caption Tuesday's hours with Monday's
  * efficiency.
  */
-const SleepCard = ({ card, today, onOpen }: {
+const SleepCard = React.memo(({ card, today, onOpen }: {
     card: MetricCardData | null; today: DayMetrics | null; onOpen: () => void;
 }) => {
     const hours = typeof card?.value === 'number' ? card.value : null;
@@ -1723,7 +1767,8 @@ const SleepCard = ({ card, today, onOpen }: {
             )}
         </TouchableOpacity>
     );
-};
+});
+SleepCard.displayName = 'SleepCard';
 
 // ---------------------------------------------------------------------------
 // Nutrition
@@ -1755,7 +1800,7 @@ const SleepCard = ({ card, today, onOpen }: {
  *    colour with the day — green on track, amber over — and a status colour laid on a
  *    violet gradient stops being a status colour.
  */
-const NutritionCard = ({ day, onOpen, onLog }: {
+const NutritionCard = React.memo(({ day, onOpen, onLog }: {
     day: NutritionDay | null; onOpen: () => void; onLog: () => void;
 }) => {
     const target = day?.targets && 'calories' in day.targets ? day.targets.calories : 0;
@@ -1854,7 +1899,8 @@ const NutritionCard = ({ day, onOpen, onLog }: {
             </View>
         </View>
     );
-};
+});
+NutritionCard.displayName = 'NutritionCard';
 
 /**
  * One macro as a meter on the hero.
@@ -1902,7 +1948,7 @@ const Macro = ({ label, grams, target, tint }: {
  * no patient review model (see **Roadmap** in CLAUDE.md) — so the card shows the booking's
  * own status, which is the one per-appointment signal the API can actually back.
  */
-const AppointmentsCard = ({ appointments, onOpen, onBook }: {
+const AppointmentsCard = React.memo(({ appointments, onOpen, onBook }: {
     appointments: Appointment[]; onOpen: () => void; onBook: () => void;
 }) => {
     // The caller only renders this section when there is a live appointment — an empty
@@ -1988,7 +2034,8 @@ const AppointmentsCard = ({ appointments, onOpen, onBook }: {
             <CardFooterAction label="Book another" onPress={onBook} />
         </View>
     );
-};
+});
+AppointmentsCard.displayName = 'AppointmentsCard';
 
 // ---------------------------------------------------------------------------
 // Medications
@@ -2004,7 +2051,7 @@ const AppointmentsCard = ({ appointments, onOpen, onBook }: {
  * A dose scheduled for tonight is neither taken nor missed, which is why the header counts
  * what is *left* rather than showing an adherence percentage a day can never reach yet.
  */
-const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
+const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen }: {
     schedule: MedicationScheduleDay | null;
     busyDose: string | null;
     onDose: (id: string, action: 'take' | 'skip' | 'undo') => void;
@@ -2018,6 +2065,14 @@ const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
 
     const pending = doses.filter((d) => d.status === 'scheduled').length;
 
+    // Pending doses lead, so recording one surfaces the next one rather than leaving it
+    // buried behind three already-settled rows — the card only has room for three.
+    const ordered = [...doses].sort((a, b) => {
+        const aPending = a.status === 'scheduled' ? 0 : 1;
+        const bPending = b.status === 'scheduled' ? 0 : 1;
+        return aPending - bPending;
+    });
+
     return (
         <View style={styles.card}>
             <Text style={styles.cardBody}>
@@ -2027,7 +2082,7 @@ const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
             </Text>
 
             <View style={styles.rowList}>
-                {doses.slice(0, 3).map((dose) => (
+                {ordered.slice(0, 3).map((dose) => (
                     <DoseRow
                         key={dose._id}
                         dose={dose}
@@ -2043,7 +2098,8 @@ const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
             <CardFooterAction label="Add medication" onPress={onAdd} />
         </View>
     );
-};
+});
+MedicationsCard.displayName = 'MedicationsCard';
 
 // ---------------------------------------------------------------------------
 // Ask LabTrack AI — symptoms and the assistant, in one card
@@ -2070,7 +2126,7 @@ const MedicationsCard = ({ schedule, busyDose, onDose, onAdd, onOpen }: {
  * 3. **An unavailable assistant is said, not hidden.** With no model key on the server the
  *    card says so and offers no chat, rather than a control that answers 503.
  */
-const AskCard = ({ conversation, onOpen }: {
+const AskCard = React.memo(({ conversation, onOpen }: {
     conversation: Conversation | null;
     onOpen: () => void;
 }) => {
@@ -2093,7 +2149,7 @@ const AskCard = ({ conversation, onOpen }: {
                         {unavailable
                             ? 'The assistant is unavailable on this server right now. Your results and trackers are unaffected.'
                             : last?.text
-                                ?? 'Ask about your results, your plan, or a symptom — I read your own records before answering.'}
+                            ?? 'Ask about your results, your plan, or a symptom — I read your own records before answering.'}
                     </Text>
                     {!!last && (
                         <View style={styles.bubbleFoot}>
@@ -2122,7 +2178,8 @@ const AskCard = ({ conversation, onOpen }: {
             )}
         </View>
     );
-};
+});
+AskCard.displayName = 'AskCard';
 
 /** The kit's underlined footer action — "Log Activity +" — above a hairline rule. */
 const CardFooterAction = ({ label, onPress }: { label: string; onPress: () => void }) => (
@@ -2168,7 +2225,7 @@ const TONE_META: Record<string, { icon: React.ComponentProps<typeof Ionicons>['n
  * The stale analysis is never relabelled as belonging to the new result. It names the
  * values it read, and a reader who thinks it covers bloods it never saw is being misled.
  */
-const AnalysisCard = ({
+const AnalysisCard = React.memo(({
     analysis, generating, expanded, onToggle, onGenerate, onRegenerate,
 }: {
     analysis: LatestInterpretation;
@@ -2460,7 +2517,8 @@ const AnalysisCard = ({
             )}
         </View>
     );
-};
+});
+AnalysisCard.displayName = 'AnalysisCard';
 
 const AnalysisBlock = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <View style={styles.analysisBlock}>

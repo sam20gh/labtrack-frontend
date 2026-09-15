@@ -7,7 +7,8 @@
  * bubble so much as a block, while the person's messages are short and read better hugged.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
 import AssistantWidgetCard from './AssistantWidget';
