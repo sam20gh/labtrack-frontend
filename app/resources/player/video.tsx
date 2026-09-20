@@ -28,6 +28,7 @@ import {
     type CourseSession, type ResourceDetail,
 } from '@/lib/resources';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 
 const CONTROLS_TIMEOUT_MS = 3500;
 
@@ -42,7 +43,7 @@ export default function VideoPlayerScreen() {
     const [resource, setResource] = useState<ResourceDetail | null>(null);
     const [session, setSession] = useState<CourseSession | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [position, setPosition] = useState(0);
@@ -73,8 +74,8 @@ export default function VideoPlayerScreen() {
 
                 if (!first?.videoUrl && !data.resource.media.videoUrl) {
                     setError(data.resource.locked
-                        ? 'This is a Pro course. Go Pro to watch every lesson.'
-                        : 'This resource has no video.');
+                        ? new ApiError('This is a Pro course. Go Pro to watch every lesson.', 402)
+                        : new ApiError('This resource has no video.', 404));
                 }
                 setPosition(data.resource.stats.progressSeconds ?? 0);
             } catch (err) {
@@ -83,7 +84,7 @@ export default function VideoPlayerScreen() {
                     router.replace('/(auth)/loginscreen');
                     return;
                 }
-                setError(err instanceof Error ? err.message : 'Could not load this video');
+                setError(err);
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -142,13 +143,11 @@ export default function VideoPlayerScreen() {
     if (error || !resource || !uri) {
         return (
             <SafeAreaView style={styles.screen} edges={['top']}>
-                <View style={styles.centre}>
-                    <Ionicons name="videocam-off-outline" size={40} color={Palette.textMuted} />
-                    <Text style={styles.errorText}>{error ?? 'Not found'}</Text>
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <Text style={styles.errorAction}>Go back</Text>
-                    </TouchableOpacity>
-                </View>
+                <ErrorState
+                    error={error ?? new ApiError('Not found', 404)}
+                    subject="this video"
+                    secondary={{ label: 'Go back', icon: 'arrow-back-outline', onPress: () => router.back() }}
+                />
             </SafeAreaView>
         );
     }
@@ -271,11 +270,6 @@ export default function VideoPlayerScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#000' },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
-    errorText: {
-        fontSize: 15, fontFamily: Fonts.medium, color: Palette.white,
-        textAlign: 'center', paddingHorizontal: Spacing.xxxl,
-    },
-    errorAction: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primaryLight },
 
     videoWrap: { flex: 1 },
     video: { flex: 1 },

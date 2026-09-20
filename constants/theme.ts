@@ -103,6 +103,28 @@ export const Palette = {
      */
     borderStrong: '#CBD5E1',
     /**
+     * System alert — the kit's rose, and the badge tone every error screen in
+     * `Design/errors.svg` draws ("Error Code: 404", "Come back in 1h 20m", "Please
+     * Reconnect"). It is deliberately **not** `danger`/`dangerSurface`.
+     *
+     * `danger` is a verdict on a *result*: it is what "your potassium is critically high"
+     * is drawn in. A failed request is not a clinical finding, and putting the same red on
+     * both teaches people that the colour means nothing in particular. Same argument
+     * `meterWeak` records for password strength and `amber` for the finding score — this is
+     * the third member of that family, and it shares `meterWeak`'s hex because the kit uses
+     * one rose for everything non-clinical.
+     */
+    alert: '#F43F5E',
+    alertSurface: '#FFF1F2',
+    alertBorder: '#FECDD3',
+    /**
+     * The violet badge tone the same screens use where the state is *not* a fault — a
+     * feature behind the plus plan, an update that is ready, a tracker with nothing in it
+     * yet. `primarySurface` at `#F3E8FF` is a step towards magenta and reads as a second
+     * accent beside the purple button below it; this is the kit's own violet-50.
+     */
+    primaryTint: '#F5F3FF',
+    /**
      * The kit's password-strength meter, and the one place a red and a green in this app are
      * *not* clinical. `danger`/`success` are read as a verdict on a result; reusing them to
      * grade a password would put the same colour on "your potassium is high" and "add a

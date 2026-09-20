@@ -26,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { TimeDial } from '@/components/sleep/TimeDial';
 import {
     getSleepPlan, updateSleepPlan, formatMinutes, formatClock,
@@ -44,7 +45,7 @@ export default function SleepGoalScreen() {
     const [wakeMin, setWake] = useState(DEFAULT_WAKE);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         try {
@@ -62,7 +63,7 @@ export default function SleepGoalScreen() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load your sleep goal.');
+            setError(err);
         } finally {
             setLoading(false);
         }
@@ -130,7 +131,9 @@ export default function SleepGoalScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {error ? <Text style={styles.error}>{error}</Text> : null}
+                {error ? (
+                    <ErrorState error={error} subject="your sleep goal" onRetry={load} variant="inline" />
+                ) : null}
 
                 <View style={styles.hero}>
                     <Text style={styles.heroValue}>{formatMinutes(span)}</Text>
@@ -216,7 +219,6 @@ const styles = StyleSheet.create({
     },
     headerTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
     content: { padding: Spacing.xl, gap: Spacing.xl, paddingBottom: Spacing.xxxl },
-    error: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.danger, textAlign: 'center' },
 
     hero: { alignItems: 'center', gap: 4 },
     heroValue: { fontSize: 38, fontFamily: Fonts.bold, color: Palette.text },

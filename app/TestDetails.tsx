@@ -1,6 +1,12 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, Text } from 'react-native';
 import { useRoute } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import StateView from '@/components/errors/StateView';
+import { Palette } from '@/constants/theme';
+import { describeState } from '@/lib/appState';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 
 interface TestDetailsProps {
@@ -26,13 +32,25 @@ interface TestDetailsProps {
 
 const TestDetails: React.FC = () => {
     const route = useRoute();
+    const router = useRouter();
     const { test } = (route.params ?? {}) as { test?: TestDetailsProps };
 
+    // Reached by navigating here without the `test` param — a stale deep link, or a back
+    // navigation after the result was deleted. It is the same fact as a 404, so it is drawn
+    // as one rather than as a red line on an otherwise empty screen.
     if (!test) {
         return (
-            <View style={styles.container}>
-                <Text style={styles.errorText}>No test details available.</Text>
-            </View>
+            <SafeAreaView style={styles.missing} edges={['top', 'bottom']}>
+                <StateView
+                    state={describeState('not_found', {
+                        title: 'Result Not Found',
+                        body: 'We could not open this result. It may have been removed, or the link may be out of date.',
+                        badge: 'Error Code: 404',
+                    })}
+                    primary={{ label: 'Back to Results', icon: 'arrow-back-outline', onPress: () => router.back() }}
+                    secondary={{ label: 'Contact Support', icon: 'chatbubble-ellipses-outline', onPress: () => router.push('/help') }}
+                />
+            </SafeAreaView>
         );
     }
 
@@ -68,7 +86,7 @@ const TestDetails: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, padding: 10, backgroundColor: '#f9f9f9' },
-    errorText: { textAlign: 'center', fontSize: 18, color: 'red', marginTop: 20 },
+    missing: { flex: 1, backgroundColor: Palette.background },
     card: { padding: 15, marginBottom: 16, borderRadius: 10, backgroundColor: '#fff', elevation: 3 },
     headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
     testType: { fontSize: 20, fontWeight: 'bold', marginLeft: 8, color: '#333' },

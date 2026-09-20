@@ -38,6 +38,7 @@ import {
     PROGRESS_INTERVAL_MS, type ResourceDetail,
 } from '@/lib/resources';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 
 export default function AudioPlayerScreen() {
     const router = useRouter();
@@ -45,7 +46,7 @@ export default function AudioPlayerScreen() {
 
     const [resource, setResource] = useState<ResourceDetail | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [position, setPosition] = useState(0);
@@ -97,8 +98,8 @@ export default function AudioPlayerScreen() {
                 const url = data.resource.media.audioUrl;
                 if (!url) {
                     setError(data.resource.locked
-                        ? 'This is a Pro resource. Go Pro to listen.'
-                        : 'This resource has no audio.');
+                        ? new ApiError('This is a Pro resource. Go Pro to listen.', 402)
+                        : new ApiError('This resource has no audio.', 404));
                     return;
                 }
 
@@ -130,7 +131,7 @@ export default function AudioPlayerScreen() {
                     return;
                 }
                 await teardown();
-                setError(err instanceof Error ? err.message : 'Could not load this audio');
+                setError(err);
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -177,13 +178,11 @@ export default function AudioPlayerScreen() {
     if (error || !resource) {
         return (
             <SafeAreaView style={styles.light} edges={['top']}>
-                <View style={styles.centre}>
-                    <Ionicons name="volume-mute-outline" size={40} color={Palette.textMuted} />
-                    <Text style={styles.errorText}>{error ?? 'Not found'}</Text>
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <Text style={styles.errorAction}>Go back</Text>
-                    </TouchableOpacity>
-                </View>
+                <ErrorState
+                    error={error ?? new ApiError('Not found', 404)}
+                    subject="this audio"
+                    secondary={{ label: 'Go back', icon: 'arrow-back-outline', onPress: () => router.back() }}
+                />
             </SafeAreaView>
         );
     }
@@ -342,8 +341,6 @@ const styles = StyleSheet.create({
     light: { flex: 1, backgroundColor: Palette.background },
     dark: { flex: 1, backgroundColor: Palette.primary },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
-    errorText: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.textSecondary, textAlign: 'center', paddingHorizontal: Spacing.xxxl },
-    errorAction: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
     iconSpacer: { width: 24 },
 
     playerBar: {

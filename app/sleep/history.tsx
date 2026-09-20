@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { NightRow } from '@/components/sleep/NightRow';
 import { BedIllustration } from '@/components/sleep/BedIllustration';
 import {
@@ -60,7 +61,7 @@ export default function SleepHistoryScreen() {
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const [filterOpen, setFilterOpen] = useState(false);
     const [preset, setPreset] = useState('30');
@@ -88,7 +89,7 @@ export default function SleepHistoryScreen() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load your sleep history.');
+            setError(err);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -175,7 +176,9 @@ export default function SleepHistoryScreen() {
                         />
                     }
                 >
-                    {error ? <Text style={styles.error}>{error}</Text> : null}
+                    {error ? (
+                        <ErrorState error={error} subject="your sleep history" onRetry={load} variant="inline" />
+                    ) : null}
 
                     {!error && !nights.length ? (
                         <View style={styles.empty}>
@@ -314,7 +317,6 @@ const styles = StyleSheet.create({
     filterLabel: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.primary },
 
     content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl * 2, gap: Spacing.xl },
-    error: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.danger },
     group: { gap: Spacing.sm },
     groupTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text, marginBottom: 2 },
     hint: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, textAlign: 'center' },

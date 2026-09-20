@@ -30,6 +30,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import { SourceBanner } from '@/components/metric/SourceBanner';
@@ -103,7 +104,7 @@ export default function SleepDashboard() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [syncing, setSyncing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     /** Guards the state writes that follow the sync, which outlives a quick back-navigation. */
     const mounted = useRef(true);
@@ -132,7 +133,7 @@ export default function SleepDashboard() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load your sleep.');
+            setError(err);
             return;
         } finally {
             if (mounted.current) { setLoading(false); setRefreshing(false); }
@@ -204,13 +205,11 @@ export default function SleepDashboard() {
     if (error) {
         return (
             <SafeAreaView style={styles.screen} edges={['top']}>
-                <View style={styles.centre}>
-                    <Ionicons name="cloud-offline-outline" size={32} color={Palette.textMuted} />
-                    <Text style={styles.errorText}>{error}</Text>
-                    <Pressable style={styles.retry} onPress={() => { setLoading(true); load(); }}>
-                        <Text style={styles.retryLabel}>Try again</Text>
-                    </Pressable>
-                </View>
+                <ErrorState
+                    error={error}
+                    subject="your sleep"
+                    onRetry={() => { setLoading(true); load(); }}
+                />
             </SafeAreaView>
         );
     }
@@ -496,12 +495,6 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Palette.background },
     content: { padding: Spacing.xl, paddingBottom: Spacing.xxxl * 2, gap: Spacing.xl },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xl },
-    errorText: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center' },
-    retry: {
-        paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
-        borderRadius: Radius.pill, backgroundColor: Palette.primary,
-    },
-    retryLabel: { color: Palette.white, fontFamily: Fonts.semibold, fontSize: 14 },
 
     header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     headerTitle: { fontSize: 22, fontFamily: Fonts.bold, color: Palette.text },

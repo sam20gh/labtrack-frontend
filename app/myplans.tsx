@@ -21,6 +21,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { api, ApiError } from '@/lib/api';
+import { ErrorState } from '@/components/errors';
 import { useBasket } from '@/lib/basket';
 import { getPlan, dismissPlanItem, STATUS_META, TYPE_ICON } from '@/lib/plan';
 import { hasBeenAsked, registerForPushNotifications } from '@/lib/notifications';
@@ -41,10 +42,12 @@ export default function MyPlansScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [busyId, setBusyId] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
     const [expanded, setExpanded] = useState<Record<string, boolean>>({ urgent: true });
 
     const load = useCallback(async () => {
         try {
+            setError(null);
             // The plan item carries a product id and a name but no price, and a card asking
             // someone to order a screening without saying what it costs asks them to commit
             // before they know the number. A catalogue that fails to load costs the price
@@ -67,8 +70,10 @@ export default function MyPlansScreen() {
                 registerForPushNotifications().catch(() => { /* user can enable it in settings */ });
             }
         } catch (error) {
-            const message = error instanceof ApiError ? error.message : 'Could not load your plan';
-            Toast.show({ type: 'error', text1: 'Error', text2: message });
+            // Held rather than toasted: the fallback below this is "No plan yet", and
+            // telling somebody their health plan is empty because a request timed out is
+            // the one failure on this screen that could change what they do next.
+            setError(error);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -269,7 +274,16 @@ export default function MyPlansScreen() {
                         : 'Nothing scheduled yet'}
                 </Text>
 
-                {total === 0 && (
+                {total === 0 && error ? (
+                    <ErrorState
+                        error={error}
+                        subject="your plan"
+                        onRetry={() => { setRefreshing(true); load(); }}
+                        variant="inline"
+                    />
+                ) : null}
+
+                {total === 0 && !error && (
                     <View style={styles.empty}>
                         <Ionicons name="calendar-outline" size={44} color="#D1D5DB" />
                         <Text style={styles.emptyTitle}>No plan yet</Text>

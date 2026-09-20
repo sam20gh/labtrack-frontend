@@ -27,6 +27,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { StageDonut, StageRows } from '@/components/sleep/StageRows';
@@ -83,7 +84,7 @@ export default function SleepInsightScreen() {
     const [data, setData] = useState<SleepInsight | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         try {
@@ -94,7 +95,7 @@ export default function SleepInsightScreen() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load your sleep insight.');
+            setError(err);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -138,7 +139,9 @@ export default function SleepInsightScreen() {
                         />
                     }
                 >
-                    {error ? <Text style={styles.error}>{error}</Text> : null}
+                    {error ? (
+                        <ErrorState error={error} subject="your sleep insight" onRetry={load} variant="inline" />
+                    ) : null}
 
                     {empty ? (
                         <View style={styles.empty}>
@@ -254,7 +257,6 @@ const styles = StyleSheet.create({
     heroTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
 
     content: { padding: Spacing.xl, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
-    error: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.danger },
 
     card: {
         padding: Spacing.lg, borderRadius: Radius.lg,

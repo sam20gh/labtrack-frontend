@@ -23,6 +23,8 @@ import { hydrateHealthSources } from '@/lib/health';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
+import ConnectionBanner from '@/components/errors/ConnectionBanner';
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 ExpoSplashScreen.preventAutoHideAsync();
 
@@ -185,6 +187,11 @@ export default function RootLayout() {
       </Stack>
 
         <StatusBar style="auto" />
+        {/* Connectivity is a fact about the app, not about whichever screen noticed it
+            first, so it is reported once here rather than by each screen replacing its own
+            content. `ErrorState` keeps the full-screen "No Internet" for a surface that has
+            nothing else to show. See `components/errors/ConnectionBanner.tsx`. */}
+        <ConnectionBanner />
         {/* One instance at the root, so a screen that reports an outage or a rate limit is
             actually heard. Several screens still mount their own `<Toast />`; the library
             keeps a stack of refs and the last mounted wins, so those keep working and this

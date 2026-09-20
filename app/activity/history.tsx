@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { SessionCard } from '@/components/metric/SessionCard';
 import { listSessions, formatType, type ActivitySession } from '@/lib/activity';
 import { ApiError } from '@/lib/api';
@@ -55,7 +56,7 @@ export default function ActivityHistory() {
     const [sessions, setSessions] = useState<ActivitySession[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         try {
@@ -72,7 +73,7 @@ export default function ActivityHistory() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load your history.');
+            setError(err);
         } finally {
             setLoading(false);
         }
@@ -134,12 +135,7 @@ export default function ActivityHistory() {
             {loading ? (
                 <ActivityIndicator style={{ marginTop: Spacing.xxxl }} color={Palette.primary} />
             ) : error ? (
-                <View style={styles.centre}>
-                    <Text style={styles.error}>{error}</Text>
-                    <Pressable onPress={load} accessibilityRole="button">
-                        <Text style={styles.link}>Try again</Text>
-                    </Pressable>
-                </View>
+                <ErrorState error={error} subject="your history" onRetry={load} variant="inline" />
             ) : (
                 <SectionList
                     sections={sections}
@@ -252,7 +248,6 @@ const styles = StyleSheet.create({
         color: Palette.textSecondary,
         textAlign: 'center',
     },
-    error: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.danger, textAlign: 'center' },
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
     footer: {
         fontSize: 12,

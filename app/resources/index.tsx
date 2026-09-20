@@ -30,6 +30,7 @@ import {
     FeaturedCard, ArticleCard, ShortCard, CourseRow, WorkshopRow,
 } from '@/components/resources/ResourceCards';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { ErrorState, StaleNotice } from '@/components/errors';
 
 const SectionHeader = ({ icon, title, onSeeAll }: {
     icon: string; title: string; onSeeAll?: () => void;
@@ -53,7 +54,7 @@ export default function ResourcesScreen() {
     const [hub, setHub] = useState<ResourceHub | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         try {
@@ -64,7 +65,7 @@ export default function ResourcesScreen() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load resources');
+            setError(err);
         } finally {
             setLoading(false);
         }
@@ -162,12 +163,10 @@ export default function ResourcesScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Palette.primary} />
                 }
             >
-                {!!error && (
-                    <View style={styles.errorBox}>
-                        <Ionicons name="cloud-offline-outline" size={20} color={Palette.textSecondary} />
-                        <Text style={styles.errorText}>{error}</Text>
-                    </View>
+                {!!error && !hub && (
+                    <ErrorState error={error} subject="the library" onRetry={onRefresh} variant="inline" />
                 )}
+                {!!error && !!hub && <StaleNotice onRetry={onRefresh} />}
 
                 {!!hub?.featured.length && (
                     <>
@@ -284,12 +283,6 @@ const styles = StyleSheet.create({
     rail: { paddingHorizontal: Spacing.xl, gap: Spacing.md, paddingVertical: 4 },
     stack: { paddingHorizontal: Spacing.xl, gap: Spacing.md },
 
-    errorBox: {
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        margin: Spacing.xl, padding: Spacing.lg,
-        borderRadius: Radius.lg, backgroundColor: Palette.surface,
-    },
-    errorText: { flex: 1, fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
 
     empty: { alignItems: 'center', paddingHorizontal: Spacing.xxxl, paddingTop: Spacing.xxxl * 2, gap: Spacing.md },
     emptyTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },

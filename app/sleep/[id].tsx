@@ -26,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { Hypnogram, StageLegend } from '@/components/sleep/Hypnogram';
 import { StageRows } from '@/components/sleep/StageRows';
 import {
@@ -66,7 +67,7 @@ export default function SleepDetailScreen() {
 
     const [data, setData] = useState<Loaded | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         if (!id) return;
@@ -79,7 +80,7 @@ export default function SleepDetailScreen() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load that night.');
+            setError(err);
         } finally {
             setLoading(false);
         }
@@ -124,12 +125,12 @@ export default function SleepDetailScreen() {
     if (error || !data) {
         return (
             <SafeAreaView style={styles.screen} edges={['top']}>
-                <View style={styles.centre}>
-                    <Text style={styles.errorText}>{error || 'That night could not be found.'}</Text>
-                    <Pressable style={styles.retry} onPress={() => router.back()}>
-                        <Text style={styles.retryLabel}>Go back</Text>
-                    </Pressable>
-                </View>
+                <ErrorState
+                    error={error ?? new ApiError('That night could not be found.', 404)}
+                    subject="that night"
+                    onRetry={load}
+                    primary={{ label: 'Go back', icon: 'arrow-back-outline', onPress: () => router.back() }}
+                />
             </SafeAreaView>
         );
     }
@@ -263,12 +264,6 @@ export default function SleepDetailScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xl },
-    errorText: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center' },
-    retry: {
-        paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
-        borderRadius: Radius.pill, backgroundColor: Palette.primary,
-    },
-    retryLabel: { color: Palette.white, fontFamily: Fonts.semibold, fontSize: 14 },
 
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

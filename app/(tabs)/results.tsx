@@ -31,6 +31,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
 import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
 import {
@@ -240,6 +241,7 @@ export default function ResultsScreen() {
     const [reports, setReports] = useState<TestResult[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState<unknown>(null);
     const [showReports, setShowReports] = useState(false);
     const [filter, setFilter] = useState<Filter>('all');
     const [dna, setDna] = useState<{ _id: string; labName?: string; assayType: string }[]>([]);
@@ -247,6 +249,7 @@ export default function ResultsScreen() {
     const load = useCallback(async () => {
         try {
             // /test-results is scoped by user_id and rejects anything but the caller's own
+            setError(null);
             const userId = await getUserId();
             const [{ biomarkers: bs }, reportData, dnaData] = await Promise.all([
                 getLatestBiomarkers(),
@@ -259,9 +262,11 @@ export default function ResultsScreen() {
             setReports(Array.isArray(reportData) ? reportData : []);
             setDna(Array.isArray(dnaData) ? dnaData : []);
         } catch (error) {
-            if (error instanceof ApiError && !error.isAuthError) {
-                Toast.show({ type: 'error', text1: 'Error', text2: error.message });
-            }
+            // Held as state, not only as a toast. A toast is gone in four seconds and the
+            // screen behind it then reads "No results yet" — which tells somebody whose
+            // request simply failed that they have no results. Same distinction
+            // `alignment: 'unassessed'` makes against zero.
+            if (error instanceof ApiError && !error.isAuthError) setError(error);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -395,7 +400,16 @@ export default function ResultsScreen() {
                     </TouchableOpacity>
                 ))}
 
-                {!biomarkers.length && (
+                {!biomarkers.length && error ? (
+                    <ErrorState
+                        error={error}
+                        subject="your results"
+                        onRetry={() => { setRefreshing(true); load(); }}
+                        variant="inline"
+                    />
+                ) : null}
+
+                {!biomarkers.length && !error ? (
                     <View style={styles.empty}>
                         <View style={styles.emptyIcon}>
                             <Ionicons name="analytics-outline" size={34} color={Palette.primary} />
@@ -406,7 +420,7 @@ export default function ResultsScreen() {
                             against your personal range.
                         </Text>
                     </View>
-                )}
+                ) : null}
 
                 {movement.plotted.length > 0 && (
                     <MovementChart

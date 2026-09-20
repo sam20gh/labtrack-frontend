@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { PlanGuidanceCard } from '@/components/metric/PlanGuidanceCard';
 import { getPlan, savePlan, type ActivityPlan } from '@/lib/activity';
 import { ApiError } from '@/lib/api';
@@ -40,7 +41,7 @@ export default function ActivityGoalScreen() {
     const [draft, setDraft] = useState<Partial<Record<Field, string>>>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         try {
@@ -59,7 +60,7 @@ export default function ActivityGoalScreen() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load your goal.');
+            setError(err);
         } finally {
             setLoading(false);
         }
@@ -106,12 +107,11 @@ export default function ActivityGoalScreen() {
     if (error || !plan) {
         return (
             <SafeAreaView style={styles.screen} edges={['top']}>
-                <View style={styles.centre}>
-                    <Text style={styles.error}>{error || 'Goal not found.'}</Text>
-                    <Pressable onPress={load} accessibilityRole="button">
-                        <Text style={styles.link}>Try again</Text>
-                    </Pressable>
-                </View>
+                <ErrorState
+                    error={error ?? new ApiError('Goal not found.', 404)}
+                    subject="your goal"
+                    onRetry={load}
+                />
             </SafeAreaView>
         );
     }
@@ -262,7 +262,5 @@ const styles = StyleSheet.create({
     ctaDisabled: { opacity: 0.4 },
     ctaText: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
 
-    centre: { alignItems: 'center', gap: Spacing.md, padding: Spacing.xxxl },
-    error: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.danger, textAlign: 'center' },
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
 });

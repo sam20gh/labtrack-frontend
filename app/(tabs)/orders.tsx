@@ -39,10 +39,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
-import { api, ApiError } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useBasket } from '@/lib/basket';
 import { galleryOf, metaFor, byTypeOrder, formatPrice, matchesQuery } from '@/lib/catalogue';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { ErrorState, StaleNotice } from '@/components/errors';
 import type { Product } from '@/types/api';
 
 /** The gutter the grid and every pinned control share. */
@@ -182,7 +183,7 @@ export default function OrdersScreen() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
     const [activeType, setActiveType] = useState<string | null>(null);
     const [query, setQuery] = useState('');
 
@@ -194,7 +195,7 @@ export default function OrdersScreen() {
             setProducts(Array.isArray(data) ? data : []);
             setError(null);
         } catch (err) {
-            setError(err instanceof ApiError ? err.message : 'Could not load the catalogue');
+            setError(err);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -360,12 +361,15 @@ export default function OrdersScreen() {
                     />
                 }
             >
-                {error && (
-                    <View style={styles.errorBox}>
-                        <Ionicons name="alert-circle" size={17} color={Palette.danger} />
-                        <Text style={styles.errorText}>{error}</Text>
-                    </View>
-                )}
+                {error && !products.length ? (
+                    <ErrorState
+                        error={error}
+                        subject="the catalogue"
+                        onRetry={() => { setRefreshing(true); load(); }}
+                        variant="inline"
+                    />
+                ) : null}
+                {error && products.length ? <StaleNotice onRetry={() => { setRefreshing(true); load(); }} /> : null}
 
                 {featured.length > 0 && (
                     <View style={styles.featureBlock}>
@@ -531,12 +535,6 @@ const styles = StyleSheet.create({
     // Scroll body -----------------------------------------------------------
     scroll: { paddingBottom: Spacing.xxxl },
     scrollWithBar: { paddingBottom: 96 },
-    errorBox: {
-        flexDirection: 'row', gap: Spacing.sm, alignItems: 'center',
-        backgroundColor: Palette.dangerSurface, borderRadius: Radius.lg,
-        padding: Spacing.md, marginHorizontal: GUTTER, marginBottom: Spacing.md,
-    },
-    errorText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: Palette.danger },
 
     sectionHead: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,

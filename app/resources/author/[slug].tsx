@@ -32,6 +32,7 @@ import {
 } from '@/lib/resources';
 import { AutoCard } from '@/components/resources/ResourceCards';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 
 const TABS = ['About', 'Courses', 'Videos'] as const;
 type Tab = typeof TABS[number];
@@ -55,7 +56,7 @@ export default function AuthorScreen() {
     const [resources, setResources] = useState<ResourceCard[]>([]);
     const [tab, setTab] = useState<Tab>('About');
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         try {
@@ -68,7 +69,7 @@ export default function AuthorScreen() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load this speaker');
+            setError(err);
         } finally {
             setLoading(false);
         }
@@ -121,13 +122,12 @@ export default function AuthorScreen() {
     if (error || !author) {
         return (
             <SafeAreaView style={styles.screen} edges={['top']}>
-                <View style={styles.centre}>
-                    <Ionicons name="person-outline" size={36} color={Palette.textMuted} />
-                    <Text style={styles.errorText}>{error ?? 'Speaker not found'}</Text>
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <Text style={styles.errorAction}>Go back</Text>
-                    </TouchableOpacity>
-                </View>
+                <ErrorState
+                    error={error ?? new ApiError('Speaker not found', 404)}
+                    subject="this speaker"
+                    onRetry={load}
+                    primary={{ label: 'Go back', icon: 'arrow-back-outline', onPress: () => router.back() }}
+                />
             </SafeAreaView>
         );
     }
@@ -378,8 +378,6 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
     flex: { flex: 1 },
-    errorText: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.textSecondary },
-    errorAction: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
 
     scroll: { paddingBottom: Spacing.xxxl * 2 },
     hero: { width: '100%' },

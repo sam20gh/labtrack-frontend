@@ -29,6 +29,42 @@ export class ApiError extends Error {
     }
 }
 
+/**
+ * Whether the last request reached the server.
+ *
+ * This is the app's **only** connectivity signal, and it is deliberately a weaker claim
+ * than "the phone is online". `@react-native-community/netinfo` would report the radio,
+ * and it would cost a native module — which is a `package.json` change, which moves the
+ * Expo fingerprint, which silently strands every build already installed on somebody's
+ * phone (CLAUDE.md, the fourth trap). It would also answer the wrong question: a phone
+ * with four bars behind a captive portal is online and cannot reach us.
+ *
+ * `apiFetch` is the one place every call passes through, so it already knows. A `fetch`
+ * that rejects means the request never left; any response at all, including a 500, means
+ * it arrived. Nothing here polls and nothing here retries — a screen showing a banner is
+ * cleared by the next successful call the app makes for any reason.
+ */
+let reachable = true;
+type ReachabilityListener = (reachable: boolean) => void;
+const listeners = new Set<ReachabilityListener>();
+
+const setReachable = (next: boolean) => {
+    if (next === reachable) return;
+    reachable = next;
+    listeners.forEach((listener) => listener(next));
+};
+
+/** Read synchronously — callers are render functions. */
+export const isReachable = () => reachable;
+
+/** Subscribe to changes. Returns the unsubscribe. */
+export const onReachabilityChange = (listener: ReachabilityListener) => {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+};
+
 type ApiOptions = Omit<RequestInit, 'body'> & {
     body?: unknown;
     /** Skip the Authorization header (public endpoints only). */
@@ -68,8 +104,13 @@ export const apiFetch = async <T = any>(path: string, options: ApiOptions = {}):
     try {
         response = await fetch(`${API_URL}${path}`, { ...rest, headers: finalHeaders, body: payload });
     } catch {
+        setReachable(false);
         throw new ApiError('Network error. Please check your connection.', 0);
     }
+
+    // Any answer at all — including a 500 — means the request reached LabTrack, which is
+    // the only thing `reachable` claims.
+    setReachable(true);
 
     const text = await response.text();
     let data: any = null;

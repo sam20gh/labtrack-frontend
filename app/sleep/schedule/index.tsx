@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { ScheduleCard } from '@/components/sleep/ScheduleCard';
 import { BedIllustration } from '@/components/sleep/BedIllustration';
 import { listSchedules, updateSchedule, type SleepSchedule } from '@/lib/sleep';
@@ -25,7 +26,7 @@ export default function SleepScheduleListScreen() {
     const [schedules, setSchedules] = useState<SleepSchedule[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         try {
@@ -37,7 +38,7 @@ export default function SleepScheduleListScreen() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load your schedules.');
+            setError(err);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -84,7 +85,9 @@ export default function SleepScheduleListScreen() {
                         />
                     }
                 >
-                    {error ? <Text style={styles.error}>{error}</Text> : null}
+                    {error ? (
+                        <ErrorState error={error} subject="your schedules" onRetry={load} variant="inline" />
+                    ) : null}
 
                     {!schedules.length && !error ? (
                         <View style={styles.empty}>
@@ -131,7 +134,6 @@ const styles = StyleSheet.create({
     title: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
     subtitle: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
     content: { padding: Spacing.xl, gap: Spacing.md, paddingBottom: Spacing.xxxl },
-    error: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.danger },
     note: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 17, marginTop: Spacing.md },
 
     empty: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxl },

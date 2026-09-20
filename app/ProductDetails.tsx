@@ -47,6 +47,7 @@ import { useBasket } from '@/lib/basket';
 import { ORDER_STAGES, ORDER_STATUS_META } from '@/lib/orders';
 import { galleryOf, metaFor, formatPrice } from '@/lib/catalogue';
 import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import type { Product } from '@/types/api';
 
 const tap = () => {
@@ -237,49 +238,56 @@ export default function ProductDetails() {
     const [product, setProduct] = useState<Product | null>(null);
     const [related, setRelated] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
     const [index, setIndex] = useState(0);
     const [viewerAt, setViewerAt] = useState<number | null>(null);
 
     /** Tall enough to be the page's subject, short enough that the name is on screen with it. */
     const heroHeight = Math.round(Math.min(420, Math.max(300, screenHeight * 0.44)));
 
+    /**
+     * Named rather than inlined into the effect, because the error state offers a retry and
+     * a retry needs something to call. `mountedRef` replaces the per-effect `mounted` flag
+     * the closure used to own — a retry fired from the error screen outlives its effect.
+     */
+    const mountedRef = useRef(true);
     useEffect(() => {
-        let mounted = true;
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
+
+    const load = useCallback(async () => {
         setLoading(true);
         setIndex(0);
+        try {
+            const one = await api.get<Product>(`/products/${productId}`);
+            if (!mountedRef.current) return;
+            setProduct(one);
+            setError(null);
 
-        (async () => {
-            try {
-                const one = await api.get<Product>(`/products/${productId}`);
-                if (!mounted) return;
-                setProduct(one);
-                setError(null);
-
-                // The catalogue is small and already cached by the shop; a second read is
-                // what lets this page offer alternatives rather than dead-ending.
-                const all = await api.get<Product[]>('/products');
-                if (!mounted) return;
-                setRelated(
-                    (Array.isArray(all) ? all : [])
-                        .filter((p) => p._id !== one._id && p.type === one.type)
-                        .sort((a, b) => Math.abs(a.price - one.price) - Math.abs(b.price - one.price))
-                        .slice(0, 8),
-                );
-            } catch (err) {
-                if (!mounted) return;
-                if (err instanceof ApiError && err.isAuthError) {
-                    router.replace('/(auth)/loginscreen');
-                    return;
-                }
-                setError(err instanceof ApiError ? err.message : 'Could not load this product');
-            } finally {
-                if (mounted) setLoading(false);
+            // The catalogue is small and already cached by the shop; a second read is
+            // what lets this page offer alternatives rather than dead-ending.
+            const all = await api.get<Product[]>('/products');
+            if (!mountedRef.current) return;
+            setRelated(
+                (Array.isArray(all) ? all : [])
+                    .filter((p) => p._id !== one._id && p.type === one.type)
+                    .sort((a, b) => Math.abs(a.price - one.price) - Math.abs(b.price - one.price))
+                    .slice(0, 8),
+            );
+        } catch (err) {
+            if (!mountedRef.current) return;
+            if (err instanceof ApiError && err.isAuthError) {
+                router.replace('/(auth)/loginscreen');
+                return;
             }
-        })();
-
-        return () => { mounted = false; };
+            setError(err);
+        } finally {
+            if (mountedRef.current) setLoading(false);
+        }
     }, [productId, router]);
+
+    useEffect(() => { load(); }, [load]);
 
     const images = useMemo(() => galleryOf(product), [product]);
     const meta = metaFor(product?.type);
@@ -303,13 +311,12 @@ export default function ProductDetails() {
     if (error || !product) {
         return (
             <SafeAreaView style={styles.screen} edges={['top']}>
-                <View style={styles.center}>
-                    <Ionicons name="alert-circle-outline" size={34} color={Palette.danger} />
-                    <Text style={styles.errorTitle}>{error ?? 'Product not found'}</Text>
-                    <TouchableOpacity style={styles.errorAction} onPress={() => router.back()}>
-                        <Text style={styles.errorActionText}>Go back</Text>
-                    </TouchableOpacity>
-                </View>
+                <ErrorState
+                    error={error ?? new ApiError('Product not found', 404)}
+                    subject="this test"
+                    onRetry={load}
+                    primary={{ label: 'Go back', icon: 'arrow-back-outline', onPress: () => router.back() }}
+                />
             </SafeAreaView>
         );
     }
@@ -495,12 +502,6 @@ export default function ProductDetails() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xxl },
-    errorTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text, textAlign: 'center' },
-    errorAction: {
-        paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
-        borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
-    },
-    errorActionText: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.primary },
 
     // Hero ------------------------------------------------------------------
     heroScrim: { position: 'absolute', top: 0, left: 0, right: 0, height: 120 },

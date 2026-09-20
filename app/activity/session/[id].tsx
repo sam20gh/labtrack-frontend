@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import {
     getSession, updateSession, deleteSession,
     formatDuration, formatDistance, formatPace, formatType, type ActivitySession,
@@ -32,7 +33,7 @@ export default function ActivityDetail() {
 
     const [session, setSession] = useState<ActivitySession | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         if (!id) return;
@@ -45,7 +46,7 @@ export default function ActivityDetail() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load this activity.');
+            setError(err);
         } finally {
             setLoading(false);
         }
@@ -103,12 +104,12 @@ export default function ActivityDetail() {
     if (error || !session) {
         return (
             <SafeAreaView style={styles.screen} edges={['top']}>
-                <View style={styles.centre}>
-                    <Text style={styles.error}>{error || 'Activity not found.'}</Text>
-                    <Pressable onPress={() => router.back()} accessibilityRole="button">
-                        <Text style={styles.link}>Go back</Text>
-                    </Pressable>
-                </View>
+                <ErrorState
+                    error={error ?? new ApiError('Activity not found.', 404)}
+                    subject="this activity"
+                    onRetry={load}
+                    primary={{ label: 'Go back', icon: 'arrow-back-outline', onPress: () => router.back() }}
+                />
             </SafeAreaView>
         );
     }
@@ -338,7 +339,5 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
 
-    centre: { alignItems: 'center', gap: Spacing.md, padding: Spacing.xxxl },
-    error: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.danger, textAlign: 'center' },
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
 });

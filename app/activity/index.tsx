@@ -40,6 +40,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import { Avatar } from '@/components/Avatar';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
@@ -144,7 +145,7 @@ export default function ActivityDashboard() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [syncing, setSyncing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const fetchSummary = useCallback(async () => {
         const [s, st, cap] = await Promise.all([
@@ -177,7 +178,7 @@ export default function ActivityDashboard() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load your activity.');
+            setError(err);
             return;
         } finally {
             setLoading(false);
@@ -598,12 +599,7 @@ export default function ActivityDashboard() {
                 {loading ? (
                     <ActivityIndicator style={{ marginTop: Spacing.xxl }} color={Palette.primary} />
                 ) : error ? (
-                    <View style={styles.section}>
-                        <Text style={styles.error}>{error}</Text>
-                        <Pressable onPress={load} accessibilityRole="button">
-                            <Text style={styles.link}>Try again</Text>
-                        </Pressable>
-                    </View>
+                    <ErrorState error={error} subject="your activity" onRetry={load} variant="inline" />
                 ) : (
                     <>
                         <View style={styles.section}>
@@ -948,7 +944,6 @@ const styles = StyleSheet.create({
     subHeader: { marginTop: Spacing.lg },
     subTitle: { fontSize: 13.5, fontFamily: Fonts.semibold, color: Palette.textSecondary },
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
-    error: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.danger, marginBottom: Spacing.sm },
 
     averages: {
         flexDirection: 'row',

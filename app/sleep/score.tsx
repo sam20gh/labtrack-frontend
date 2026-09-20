@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { ErrorState } from '@/components/errors';
 import {
     getSleepScore, formatMinutes, bandTint, type SleepScoreScreen as ScoreData,
 } from '@/lib/sleep';
@@ -51,7 +52,7 @@ export default function SleepScoreScreen() {
     const [data, setData] = useState<ScoreData | null>(null);
     const [open, setOpen] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
 
     const load = useCallback(async () => {
         try {
@@ -62,7 +63,7 @@ export default function SleepScoreScreen() {
                 router.replace('/(auth)/loginscreen');
                 return;
             }
-            setError(err instanceof Error ? err.message : 'Could not load your sleep score.');
+            setError(err);
         } finally {
             setLoading(false);
         }
@@ -87,7 +88,9 @@ export default function SleepScoreScreen() {
                 <View style={styles.centre}><ActivityIndicator color={Palette.primary} /></View>
             ) : (
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                    {error ? <Text style={styles.error}>{error}</Text> : null}
+                    {error ? (
+                        <ErrorState error={error} subject="your sleep score" onRetry={load} variant="inline" />
+                    ) : null}
 
                     <View style={styles.hero}>
                         <Text style={styles.value}>{has ? latest?.score : '—'}</Text>
@@ -227,7 +230,6 @@ const styles = StyleSheet.create({
     },
     headerTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
     content: { padding: Spacing.xl, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
-    error: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.danger },
 
     hero: { alignItems: 'center', gap: 2 },
     value: { fontSize: 56, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 64 },
