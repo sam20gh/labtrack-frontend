@@ -157,6 +157,32 @@ export default function SourcesScreen() {
                         watch or another app writes there comes through automatically.
                     </Text>
 
+                    {/*
+                      * A bracelet is a second source, not an alternative to the one above.
+                      *
+                      * It talks to the app directly over Bluetooth rather than writing into
+                      * the phone's health store, so somebody can perfectly well have both —
+                      * which is why this is a row here rather than a choice between them.
+                      * It also reads families no phone store reports at all: blood oxygen,
+                      * body temperature and an ECG.
+                      */}
+                    <Pressable
+                        onPress={() => router.push('/bracelet')}
+                        style={styles.card}
+                        accessibilityRole="button"
+                    >
+                        <View style={styles.cardHead}>
+                            <Ionicons name="watch-outline" size={22} color={Palette.primary} />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.cardTitle}>Health bracelet</Text>
+                                <Text style={styles.cardMeta}>
+                                    Pair a J-Style 2208A or V8 to sync it directly
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+                        </View>
+                    </Pressable>
+
                     {connected.length > 0 ? (
                         connected.map((source) => (
                             <View key={source.id} style={styles.card}>

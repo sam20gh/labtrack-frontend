@@ -12,7 +12,7 @@
  * only thing a caller has to decide is whether to mention it.
  */
 import { getWearableStatus, syncBatch } from '@/lib/activity';
-import { probe, readSince, platformFor } from './index';
+import { probe, readSince, sources } from './index';
 import type { HealthPlatform } from './types';
 
 export interface SyncResult {
@@ -23,6 +23,15 @@ export interface SyncResult {
     /** Present when the sync did not run or did not finish. Written to be shown. */
     reason?: string;
     platform?: HealthPlatform | null;
+    /**
+     * One entry per source that was tried.
+     *
+     * A phone can now have two at once — the OS health store and a paired bracelet — and
+     * they fail independently: a bracelet out of range says nothing about whether Health
+     * Connect synced. The flattened fields above are the aggregate, kept so the four
+     * screens that already read `ran` and `daysUpdated` did not have to change.
+     */
+    perSource?: { platform: HealthPlatform; ran: boolean; reason?: string; days: number }[];
 }
 
 /**
@@ -37,22 +46,17 @@ const MIN_INTERVAL_MS = 2 * 60 * 1000;
 let lastRunAt = 0;
 let inFlight: Promise<SyncResult> | null = null;
 
-const run = async (force: boolean): Promise<SyncResult> => {
-    const platform = platformFor();
-    if (!platform) return { ran: false, daysUpdated: [], reason: 'Not a mobile device.', platform };
-
-    const capability = await probe();
+/**
+ * Sync one source.
+ *
+ * Never throws. A source that cannot run reports why and the others carry on — which is
+ * the whole reason this is a per-source function rather than a loop body: a bracelet that
+ * is out of range must not cost somebody their Health Connect sync.
+ */
+const runOne = async (platform: HealthPlatform): Promise<SyncResult> => {
+    const capability = await probe(platform);
     if (!capability.available || !capability.granted) {
-        return {
-            ran: false,
-            daysUpdated: [],
-            reason: capability.reason,
-            platform,
-        };
-    }
-
-    if (!force && Date.now() - lastRunAt < MIN_INTERVAL_MS) {
-        return { ran: false, daysUpdated: [], platform };
+        return { ran: false, daysUpdated: [], reason: capability.reason, platform };
     }
 
     try {
@@ -60,20 +64,35 @@ const run = async (force: boolean): Promise<SyncResult> => {
         const status = await getWearableStatus();
         const source = status.sources.find((s) => s.platform === platform);
 
-        const batch = await readSince(source?.cursor ?? null);
+        const batch = await readSince(source?.cursor ?? null, platform);
         if (!batch) return { ran: false, daysUpdated: [], platform };
 
         const total = batch.activities.length + batch.sleep.length
-            + batch.heart.length + batch.days.length;
+            + batch.heart.length + batch.days.length
+            + (batch.spo2?.length ?? 0) + (batch.temperature?.length ?? 0)
+            + (batch.bloodPressure?.length ?? 0) + (batch.ecg?.length ?? 0);
 
-        // Nothing changed. Still record the run so the interval guard holds.
+        // Nothing changed. Still a run, so the interval guard holds.
         if (total === 0) {
-            lastRunAt = Date.now();
-            return { ran: true, daysUpdated: [], counts: { activities: 0, sleep: 0, heart: 0, days: 0 }, platform };
+            return {
+                ran: true,
+                daysUpdated: [],
+                counts: { activities: 0, sleep: 0, heart: 0, days: 0 },
+                platform,
+            };
         }
 
         const result = await syncBatch(batch);
-        lastRunAt = Date.now();
+
+        // Only now may the bracelet forget what it just handed over. Its storage is the
+        // only copy until this POST is acknowledged, so acknowledging any earlier would
+        // turn a dropped connection into permanent data loss. No other source has this
+        // step, which is why it is here rather than on `HealthReader`.
+        if (platform === 'jstyle_bracelet') {
+            try {
+                await require('./jstyle/reader').acknowledgeSynced();
+            } catch { /* it keeps the rows and re-sends them; the server upserts */ }
+        }
 
         return {
             ran: true,
@@ -89,6 +108,63 @@ const run = async (force: boolean): Promise<SyncResult> => {
             platform,
         };
     }
+};
+
+/**
+ * Sync every source this device has.
+ *
+ * Sequential rather than parallel, and that is load-bearing for the bracelet: it holds a
+ * BLE connection and the vendor codec keeps decode state in static fields, so overlapping
+ * it with anything else that talks to it is not safe. The phone store is fast enough that
+ * running it first costs nothing.
+ */
+const run = async (force: boolean): Promise<SyncResult> => {
+    const list = sources();
+    if (!list.length) {
+        return { ran: false, daysUpdated: [], reason: 'Not a mobile device.', platform: null };
+    }
+
+    if (!force && Date.now() - lastRunAt < MIN_INTERVAL_MS) {
+        return { ran: false, daysUpdated: [], platform: list[0] };
+    }
+
+    const results: SyncResult[] = [];
+    for (const platform of list) {
+        results.push(await runOne(platform));
+    }
+
+    const ran = results.some((r) => r.ran);
+    if (ran) lastRunAt = Date.now();
+
+    // Days are unioned rather than concatenated: both sources can touch the same day, and
+    // a caller uses this list to decide what to refetch.
+    const daysUpdated = [...new Set(results.flatMap((r) => r.daysUpdated))];
+
+    const counts = results.reduce(
+        (acc, r) => ({
+            activities: acc.activities + (r.counts?.activities ?? 0),
+            sleep: acc.sleep + (r.counts?.sleep ?? 0),
+            heart: acc.heart + (r.counts?.heart ?? 0),
+            days: acc.days + (r.counts?.days ?? 0),
+        }),
+        { activities: 0, sleep: 0, heart: 0, days: 0 },
+    );
+
+    return {
+        ran,
+        daysUpdated,
+        counts: ran ? counts : undefined,
+        // Only worth showing when *nothing* ran. If one source worked, a message about the
+        // other one failing is noise on a screen that just updated.
+        reason: ran ? undefined : results.find((r) => r.reason)?.reason,
+        platform: results.find((r) => r.ran)?.platform ?? list[0],
+        perSource: results.map((r) => ({
+            platform: r.platform as HealthPlatform,
+            ran: r.ran,
+            reason: r.reason,
+            days: r.daysUpdated.length,
+        })),
+    };
 };
 
 /**

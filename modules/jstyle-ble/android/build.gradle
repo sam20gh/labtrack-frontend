@@ -1,0 +1,40 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
+
+group = 'com.labtrack.jstyleble'
+version = '1.0.0'
+
+def expoModulesCorePlugin = new File(
+    project(":expo-modules-core").projectDir.absolutePath,
+    "ExpoModulesCorePlugin.gradle",
+)
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useExpoPublishing()
+
+android {
+    namespace "com.labtrack.jstyleble"
+    compileSdkVersion rootProject.ext.has('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 35
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+
+    defaultConfig {
+        minSdkVersion rootProject.ext.has('minSdkVersion') ? rootProject.ext.minSdkVersion : 24
+        targetSdkVersion rootProject.ext.has('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 35
+    }
+
+    lintOptions { abortOnError false }
+}
+
+dependencies {
+    // The two vendor codecs. Same vendor, same class names, different packages
+    // (`blesdk2208a` / `blesdkv8`), so they coexist without shading.
+    implementation files('libs/2208asdk2.0.jar')
+    implementation files('libs/v8sdk1.0.jar')
+}

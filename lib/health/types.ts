@@ -8,7 +8,7 @@
  * need to know which phone it was running on.
  */
 
-export type HealthPlatform = 'apple_health' | 'health_connect' | 'aggregator';
+export type HealthPlatform = 'apple_health' | 'health_connect' | 'aggregator' | 'jstyle_bracelet';
 
 /** The data families a person grants separately, and the app asks for separately. */
 export type HealthScope = 'activity' | 'sleep' | 'heart';
@@ -110,6 +110,95 @@ export interface DayRow {
     zoneMinutes?: number[];
 }
 
+/**
+ * A blood-oxygen reading.
+ *
+ * `manual` is a measurement somebody started themselves; `automatic` is the bracelet's own
+ * periodic sweep. Kept apart because they are not equally trustworthy — an automatic sweep
+ * fires whether or not the band is seated properly, and a run of low automatic readings
+ * from a loose strap should not read like a run of low deliberate ones.
+ */
+export interface Spo2Row {
+    externalId: string;
+    measuredAt: string;
+    /** Percent. */
+    spo2: number;
+    context: 'manual' | 'automatic';
+    sourceDevice?: SourceDevice;
+}
+
+/**
+ * A body-temperature reading.
+ *
+ * `site` matters more than the number. A wrist reading runs degrees below core and is a
+ * trend line rather than a temperature; an axillary reading is a real clinical site. Storing
+ * both under one figure would let a normal wrist reading of 33 °C look like hypothermia.
+ */
+export interface TemperatureRow {
+    externalId: string;
+    measuredAt: string;
+    /** Celsius, always. Display units are `lib/units.ts`'s job. */
+    celsius: number;
+    site: 'wrist' | 'axillary';
+    sourceDevice?: SourceDevice;
+}
+
+/**
+ * A blood-pressure estimate from the bracelet's optical sensor.
+ *
+ * **This is not a cuff reading**, and `method` is what says so on every row. It is derived
+ * from pulse-wave features, it is not validated against a sphygmomanometer, and the vendor
+ * exposes a calibration command precisely because it drifts per person.
+ *
+ * It is nonetheless classified like any other reading, by product decision, so
+ * `utils/bloodPressure.js` stages it and a crisis reading raises a crisis. `method` travels
+ * with it so a screen, a clinician or a later change of mind can tell the two apart in the
+ * record — which would be impossible if the provenance were dropped at ingest.
+ */
+export interface BloodPressureRow {
+    externalId: string;
+    measuredAt: string;
+    systolic: number;
+    diastolic: number;
+    pulse?: number;
+    method: 'optical_estimate';
+    sourceDevice?: SourceDevice;
+}
+
+/**
+ * One ECG or PPG measurement the person ran on the bracelet.
+ *
+ * `samples` is the waveform and it is the reason this is its own row rather than a field:
+ * a single trace is thousands of integers, which is a document of its own and never
+ * something to embed in a day's rollup.
+ *
+ * Every derived figure here is **the bracelet's own output**, carried rather than computed.
+ * Nothing in LabTrack interprets an ECG — there is no engine behind it and writing one is a
+ * clinical decision, not a feature. The same line the symptom checker holds.
+ */
+export interface EcgRow {
+    externalId: string;
+    measuredAt: string;
+    kind: 'ecg' | 'ppg';
+    /** Waveform samples, raw vendor units. Empty when only a result was reported. */
+    samples: number[];
+    /** Samples per second, where the device reported it. */
+    sampleRateHz?: number;
+    durationSec?: number;
+    /** The device's own readings, never re-derived here. */
+    result?: {
+        hrBpm?: number;
+        hrvMs?: number;
+        stress?: number;
+        breathRate?: number;
+        systolic?: number;
+        diastolic?: number;
+        /** The vendor's own quality score. A low one is why a trace may be unreadable. */
+        quality?: number;
+    };
+    sourceDevice?: SourceDevice;
+}
+
 export interface SyncBatch {
     platform: HealthPlatform;
     /** `Date.getTimezoneOffset()`. The server cannot infer the calendar the user lives in. */
@@ -123,6 +212,20 @@ export interface SyncBatch {
     sleep: SleepRow[];
     heart: HeartRow[];
     days: DayRow[];
+
+    /**
+     * Families only a bracelet reports.
+     *
+     * Optional because neither phone health store fills them: HealthKit and Health Connect
+     * readers send batches without these keys and the server has to keep accepting those
+     * unchanged. A missing key means "this source does not measure it", which is not the
+     * same as an empty array meaning "it measured nothing this time" — the distinction
+     * `alignment: 'unassessed'` makes everywhere else in this codebase.
+     */
+    spo2?: Spo2Row[];
+    temperature?: TemperatureRow[];
+    bloodPressure?: BloodPressureRow[];
+    ecg?: EcgRow[];
 }
 
 export interface HealthReader {

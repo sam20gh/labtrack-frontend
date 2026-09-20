@@ -19,6 +19,7 @@ import { getPaymentStatus } from '@/lib/payments';
 import * as Notifications from 'expo-notifications';
 import { routeForNotification, syncRegistration } from '@/lib/notifications';
 import { hydrateUnits } from '@/lib/units';
+import { hydrateHealthSources } from '@/lib/health';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
@@ -42,6 +43,16 @@ export default function RootLayout() {
   // `lib/units.ts`, so the stored value has to be in the module cache before the first
   // screen paints. Failure is swallowed there and leaves the metric defaults in place.
   useEffect(() => { hydrateUnits(); }, []);
+
+  /**
+   * Warm the paired-bracelet record before anything renders.
+   *
+   * `sources()` is read from render paths and answers synchronously, so it has to be able
+   * to say "a bracelet is paired" without awaiting — the same reason `hydrateUnits()` runs
+   * here. Failure is silent and means only that no bracelet row is drawn, which is exactly
+   * what an unpaired phone shows anyway.
+   */
+  useEffect(() => { hydrateHealthSources().catch(() => { /* nothing paired */ }); }, []);
 
   // A device whose permission was granted but whose token never reached the account gets
   // no reminders at all, and looks identical to one that opted out. Re-register on every
@@ -122,6 +133,7 @@ export default function RootLayout() {
             titled "activity/index". */}
         <Stack.Screen name="activity" options={{ headerShown: false }} />
         <Stack.Screen name="sleep" options={{ headerShown: false }} />
+        <Stack.Screen name="bracelet" options={{ headerShown: false }} />
         <Stack.Screen name="score" options={{ headerShown: false }} />
         {/* Predictive health analysis. One entry: expo-router nests the whole directory,
             and every screen under it draws its own top inset. */}

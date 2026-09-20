@@ -1,0 +1,15 @@
+// Exposes both vendor ObjC SDKs to Swift as one clang module.
+//
+// CocoaPods does not support bridging headers inside a pod, which is the usual way Swift
+// reaches Objective-C. A hand-written module map is the standard way round it and is also
+// the more honest one: the two SDKs are a fixed, read-only dependency, so declaring them as
+// a module says exactly that.
+//
+// The two headers never collide. Their classes are `BleSDK_J2208A` / `DeviceData_J2208A`
+// and `BleSDK_V8` / `DeviceData_V8`, and a symbol diff of the two archives found one shared
+// name — a compiler-generated weak block descriptor, which the linker coalesces.
+module JStyleVendor {
+    header "j2208a/BleSDK_J2208A.h"
+    header "v8/BleSDK_V8.h"
+    export *
+}

@@ -42,7 +42,11 @@
         "android.permission.health.READ_HEART_RATE",
         "android.permission.health.READ_RESTING_HEART_RATE",
         "android.permission.health.READ_HEART_RATE_VARIABILITY",
-        "android.permission.health.READ_VO2_MAX"
+        "android.permission.health.READ_VO2_MAX",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN"
       ]
     },
     "web": {
@@ -105,7 +109,14 @@
           "background": false
         }
       ],
-      "react-native-health-connect"
+      "react-native-health-connect",
+      [
+        "react-native-ble-plx",
+        {
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "LabTrack uses Bluetooth to sync activity, sleep and heart data from your health bracelet."
+        }
+      ]
     ]
   }
 }

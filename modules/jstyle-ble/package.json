@@ -1,0 +1,7 @@
+{
+  "name": "jstyle-ble",
+  "version": "1.0.0",
+  "description": "Protocol codec for J-Style 2208A and V8 health bracelets.",
+  "main": "index.ts",
+  "private": true
+}

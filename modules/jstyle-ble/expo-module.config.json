@@ -1,0 +1,5 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": { "modules": ["JstyleBleModule"] },
+  "android": { "modules": ["com.labtrack.jstyleble.JstyleBleModule"] }
+}
