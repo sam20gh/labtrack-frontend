@@ -170,6 +170,10 @@ export default function RootLayout() {
             default header would stack a second bar titled "voice" above it. */}
         <Stack.Screen name="assistant/voice" options={{ headerShown: false }} />
         <Stack.Screen name="assistant/settings" options={{ headerShown: false }} />
+        {/* The notification centre. It has its own `_layout.tsx`, so this line names the
+            directory; without both, every screen under it falls through to the root's
+            default native header. */}
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
         <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
         <Stack.Screen name="order-details" options={{ headerShown: false }} />
         <Stack.Screen name="orders-history" options={{ title: "Your orders", headerShown: true }} />

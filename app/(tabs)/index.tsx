@@ -69,6 +69,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import { Avatar } from '@/components/Avatar';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import Toast from 'react-native-toast-message';
 
 import { api, ApiError } from '@/lib/api';
@@ -1199,6 +1200,12 @@ const HomeHeader = ({
             <TouchableOpacity style={styles.headerSearch} onPress={onSearch} accessibilityLabel="Search">
                 <Ionicons name="search" size={20} color={Palette.primaryDark} />
             </TouchableOpacity>
+
+            {/* The notification centre. It counts its own unread and refreshes on focus —
+                see `components/notifications/NotificationBell.tsx`. Placed between search
+                and the avatar because it is a *destination*, like the profile, rather than
+                a control on this screen. */}
+            <NotificationBell />
 
             {/* Photo, then initials, then the generic glyph — and a photo that fails to
                 load falls back the same way. See `components/Avatar.tsx`. */}
