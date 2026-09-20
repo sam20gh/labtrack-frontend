@@ -50,6 +50,11 @@ import type { Product } from '@/types/api';
 const GUTTER = 20;
 /** The gap between the two columns. */
 const COLUMN_GAP = 14;
+/**
+ * The floor a category chip stands on: a 13pt label and a 13pt icon inside 8pt of padding,
+ * rounded up to a comfortable touch target. A floor, never a cap — see `styles.railScroll`.
+ */
+const CHIP_HEIGHT = 38;
 
 /** A press that adds something to the basket is worth a tap of feedback; a miss is not. */
 const tap = () => {
@@ -508,11 +513,17 @@ const styles = StyleSheet.create({
 
     // Category rail ---------------------------------------------------------
     /**
-     * `flexGrow: 0` keeps the strip from eating the scroll area. There is deliberately no
-     * `maxHeight`: the chips are a text row, and a text row's height is the font's, which
-     * changes with the reader's accessibility setting.
+     * `flexGrow: 0` keeps the strip from eating the scroll area, and `flexShrink: 0` stops
+     * the catalogue below it from squeezing it flat. There is deliberately no `maxHeight`
+     * — the chips are a text row, and a text row's height is the font's, which changes
+     * with the reader's accessibility setting; a cap is what clipped the labels before.
+     *
+     * `minHeight` is the opposite and is safe: a horizontal ScrollView does not reliably
+     * take its cross-axis size from its content, so without a floor the strip collapsed
+     * and the chips drew as slivers with neither icon nor label visible. A floor can only
+     * ever be exceeded, never enforced, so larger text still grows the row.
      */
-    railScroll: { flexGrow: 0 },
+    railScroll: { flexGrow: 0, flexShrink: 0, minHeight: CHIP_HEIGHT + Spacing.md * 2 },
     rail: {
         paddingHorizontal: GUTTER,
         paddingVertical: Spacing.md,
@@ -521,6 +532,7 @@ const styles = StyleSheet.create({
     },
     chip: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
+        minHeight: CHIP_HEIGHT,
         paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
         borderRadius: Radius.pill,
         borderWidth: 1, borderColor: Palette.borderSlate,
