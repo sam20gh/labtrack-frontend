@@ -14,10 +14,11 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
+import Svg, { Circle, Defs, G, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import type { GoalProgress } from '@/lib/activity';
+import { GoalRunnerArt, GOAL_RUNNER_ART } from '@/components/activity/art';
 
 const SIZE = 62;
 const STROKE = 6;
@@ -31,6 +32,13 @@ function Ring({ progress }: { progress: GoalProgress }) {
     return (
         <View style={styles.ringBox}>
             <Svg width={SIZE} height={SIZE} style={StyleSheet.absoluteFill}>
+                {/* The kit's violet-to-indigo, so progress reads as a fill rather than a line. */}
+                <Defs>
+                    <LinearGradient id="goalRing" x1="0" y1="0" x2="1" y2="1">
+                        <Stop offset="0" stopColor={Palette.primaryLight} />
+                        <Stop offset="1" stopColor={Palette.indigo} />
+                    </LinearGradient>
+                </Defs>
                 <G rotation={-90} origin={`${SIZE / 2}, ${SIZE / 2}`}>
                     <Circle
                         cx={SIZE / 2} cy={SIZE / 2} r={r}
@@ -39,7 +47,7 @@ function Ring({ progress }: { progress: GoalProgress }) {
                     {filled > 0 && (
                         <Circle
                             cx={SIZE / 2} cy={SIZE / 2} r={r}
-                            stroke={Palette.primary}
+                            stroke="url(#goalRing)"
                             strokeWidth={STROKE}
                             strokeDasharray={c}
                             strokeDashoffset={c * (1 - filled)}
@@ -81,6 +89,9 @@ export function GoalRings({ goal, band }: Props) {
     const targets: { key: string; value: string; label: string }[] = [];
     if (goal.calories) targets.push({ key: 'kcal', value: pair(goal.calories), label: 'kcal goal' });
     targets.push({ key: 'min', value: pair(goal.minutes), label: 'min goal' });
+    // Only the sessions target, which is the card's headline. Hitting the kcal goal alone is
+    // not "the week's goal", and celebrating it would contradict the 3/5 printed above.
+    const reached = goal.sessions.target > 0 && goal.sessions.done >= goal.sessions.target;
     if (goal.distanceKm) targets.push({ key: 'km', value: pair(goal.distanceKm, 1), label: 'km goal' });
 
     return (
@@ -109,6 +120,29 @@ export function GoalRings({ goal, band }: Props) {
                     </View>
                 ))}
             </View>
+
+            {/*
+              The one moment the card has to celebrate, with `Design/activity.svg` frame 42's
+              runner. Drawn only once it is true — a runner beside "2/5" would be a picture of
+              an achievement that has not happened.
+            */}
+            {reached && (
+                <View style={styles.reached}>
+                    <View style={styles.reachedCopy}>
+                        <Text style={styles.reachedTitle}>Weekly goal reached</Text>
+                        <Text style={styles.reachedBody}>
+                            {Math.round(goal.sessions.done)} activities this week. Nicely done.
+                        </Text>
+                    </View>
+                    <View
+                        style={styles.reachedArt}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
+                    >
+                        <GoalRunnerArt width={GOAL_RUNNER_ART.width * 0.62} />
+                    </View>
+                </View>
+            )}
         </View>
     );
 }
@@ -139,4 +173,19 @@ const styles = StyleSheet.create({
     target: { flex: 1, gap: 2 },
     targetValue: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
     targetLabel: { fontSize: 11.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
+
+    reached: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Palette.primaryTint,
+        borderRadius: Radius.md,
+        marginTop: Spacing.lg,
+        paddingLeft: Spacing.lg,
+        overflow: 'hidden',
+        minHeight: 76,
+    },
+    reachedCopy: { flex: 1, gap: 2, paddingVertical: Spacing.md },
+    reachedTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.primary },
+    reachedBody: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    reachedArt: { alignSelf: 'flex-end' },
 });

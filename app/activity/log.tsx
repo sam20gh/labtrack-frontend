@@ -15,23 +15,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import { logActivity } from '@/lib/activity';
+import { typeStyle } from '@/lib/activityTypes';
 import { ApiError } from '@/lib/api';
 
 /** The design's ten. `normaliseType` on the server maps these onto the same buckets a watch uses. */
-const TYPES: { key: string; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { key: 'walking', label: 'Walking', icon: 'walk-outline' },
-    { key: 'yoga', label: 'Yoga', icon: 'body-outline' },
-    { key: 'jogging', label: 'Jogging', icon: 'walk-outline' },
-    { key: 'meditation', label: 'Meditation', icon: 'leaf-outline' },
-    { key: 'biking', label: 'Biking', icon: 'bicycle-outline' },
-    { key: 'rowing', label: 'Rowing', icon: 'boat-outline' },
-    { key: 'weightlifting', label: 'Weightlifting', icon: 'barbell-outline' },
-    { key: 'hiking', label: 'Hiking', icon: 'trail-sign-outline' },
-    { key: 'swimming', label: 'Swimming', icon: 'water-outline' },
-    { key: 'soccer', label: 'Soccer', icon: 'football-outline' },
+const TYPES: { key: string; label: string }[] = [
+    { key: 'walking', label: 'Walking' },
+    { key: 'yoga', label: 'Yoga' },
+    { key: 'jogging', label: 'Jogging' },
+    { key: 'meditation', label: 'Meditation' },
+    { key: 'biking', label: 'Biking' },
+    { key: 'rowing', label: 'Rowing' },
+    { key: 'weightlifting', label: 'Weightlifting' },
+    { key: 'hiking', label: 'Hiking' },
+    { key: 'swimming', label: 'Swimming' },
+    { key: 'soccer', label: 'Soccer' },
 ];
 
 const DURATIONS = [10, 15, 20, 30, 45, 60, 90];
@@ -115,6 +116,9 @@ export default function LogActivityScreen() {
                 <View style={styles.grid}>
                     {TYPES.map((t) => {
                         const active = type === t.key;
+                        // The same glyph and tint the session card will draw once this is
+                        // saved, so what is picked here is what shows up in the history.
+                        const look = typeStyle(t.key);
                         return (
                             <Pressable
                                 key={t.key}
@@ -123,11 +127,9 @@ export default function LogActivityScreen() {
                                 accessibilityRole="radio"
                                 accessibilityState={{ selected: active }}
                             >
-                                <Ionicons
-                                    name={t.icon}
-                                    size={22}
-                                    color={active ? Palette.primary : Palette.text}
-                                />
+                                <View style={[styles.tileIcon, { backgroundColor: look.surface }]}>
+                                    <MaterialCommunityIcons name={look.icon} size={22} color={look.tint} />
+                                </View>
                                 <Text style={[styles.tileLabel, active && styles.tileLabelActive]}>
                                     {t.label}
                                 </Text>
@@ -247,7 +249,14 @@ const styles = StyleSheet.create({
         minHeight: 92,
         justifyContent: 'space-between',
     },
-    tileActive: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
+    tileActive: { borderColor: Palette.primary, backgroundColor: Palette.primaryTint },
+    tileIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     tileLabel: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
     tileLabelActive: { fontFamily: Fonts.semibold, color: Palette.primary },
 

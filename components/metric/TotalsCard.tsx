@@ -13,24 +13,10 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import { formatType, type ActivityBreakdownRow } from '@/lib/activity';
-
-const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-    walking: 'walk-outline',
-    jogging: 'walk-outline',
-    running: 'walk-outline',
-    hiking: 'trail-sign-outline',
-    biking: 'bicycle-outline',
-    swimming: 'water-outline',
-    yoga: 'body-outline',
-    meditation: 'leaf-outline',
-    rowing: 'boat-outline',
-    weightlifting: 'barbell-outline',
-    soccer: 'football-outline',
-    other: 'ellipsis-horizontal',
-};
+import { typeStyle } from '@/lib/activityTypes';
 
 export interface TotalsFigure {
     key: string;
@@ -74,14 +60,17 @@ export function TotalsCard({ count, countLabel, figures, types = [] }: Props) {
 
             {types.length > 0 && (
                 <View style={styles.chips}>
-                    {types.map((t) => (
-                        <View key={t.type} style={styles.chip}>
-                            <Ionicons name={ICONS[t.type] || 'fitness-outline'} size={14} color={Palette.text} />
-                            <Text style={styles.chipText} numberOfLines={1}>
-                                {formatType(t.type)} {t.count}
-                            </Text>
-                        </View>
-                    ))}
+                    {types.map((t) => {
+                        const look = typeStyle(t.type);
+                        return (
+                            <View key={t.type} style={[styles.chip, { backgroundColor: look.surface }]}>
+                                <MaterialCommunityIcons name={look.icon} size={15} color={look.tint} />
+                                <Text style={[styles.chipText, { color: look.tint }]} numberOfLines={1}>
+                                    {formatType(t.type)} {t.count}
+                                </Text>
+                            </View>
+                        );
+                    })}
                 </View>
             )}
         </View>
@@ -119,10 +108,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
-        borderWidth: 1,
-        borderColor: Palette.border,
-        borderRadius: Radius.md,
-        paddingHorizontal: Spacing.sm,
+        borderRadius: Radius.pill,
+        paddingHorizontal: 10,
         paddingVertical: 5,
     },
     chipText: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.text },

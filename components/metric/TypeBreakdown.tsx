@@ -13,25 +13,16 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import { formatType, type ActivityBreakdownRow } from '@/lib/activity';
+import { typeStyle } from '@/lib/activityTypes';
 
-/** The design's ten types, and something reasonable for everything else. */
-const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-    walking: 'walk-outline',
-    jogging: 'walk-outline',
-    running: 'walk-outline',
-    hiking: 'trail-sign-outline',
-    biking: 'bicycle-outline',
-    swimming: 'water-outline',
-    yoga: 'body-outline',
-    meditation: 'leaf-outline',
-    rowing: 'boat-outline',
-    weightlifting: 'barbell-outline',
-    soccer: 'football-outline',
-    other: 'ellipsis-horizontal',
-};
+/**
+ * The tint at a third strength, for the outline and the leader. The kit draws both a step
+ * paler than the label; a full-strength outline would box every row in.
+ */
+const soften = (hex: string) => `${hex}55`;
 
 /** The narrowest a pill may be drawn, so a one-session type is still a readable label. */
 const MIN_SHARE = 0.34;
@@ -52,18 +43,28 @@ export function TypeBreakdown({ rows, onSeeAll }: Props) {
         <View style={styles.card}>
             {rows.map((r) => {
                 const share = Math.max(MIN_SHARE, r.count / max);
+                // Each type in its own categorical tint — the kit draws every pill violet,
+                // which makes five rows one colour and the eye has to read every label to
+                // tell them apart.
+                const look = typeStyle(r.type);
                 return (
                     <View key={r.type} style={styles.row}>
-                        <View style={[styles.pill, { flexGrow: share, flexShrink: 1, flexBasis: 0 }]}>
-                            <Ionicons name={ICONS[r.type] || 'fitness-outline'} size={16} color={Palette.primary} />
-                            <Text style={styles.pillLabel} numberOfLines={1}>{formatType(r.type)}</Text>
+                        <View
+                            style={[
+                                styles.pill,
+                                { flexGrow: share, flexShrink: 1, flexBasis: 0 },
+                                { backgroundColor: look.surface, borderColor: soften(look.tint) },
+                            ]}
+                        >
+                            <MaterialCommunityIcons name={look.icon} size={16} color={look.tint} />
+                            <Text style={[styles.pillLabel, { color: look.tint }]} numberOfLines={1}>{formatType(r.type)}</Text>
                         </View>
 
                         {/*
                           The design's dashed leader, drawn as a border rather than as a
                           string of hyphens so it stretches to whatever the pill leaves.
                         */}
-                        <View style={[styles.leader, { flexGrow: Math.max(0.001, 1 - share), flexShrink: 1, flexBasis: 0 }]} />
+                        <View style={[styles.leader, { borderColor: soften(look.tint) }, { flexGrow: Math.max(0.001, 1 - share), flexShrink: 1, flexBasis: 0 }]} />
 
                         <Text style={styles.count}>{r.count}x</Text>
                     </View>

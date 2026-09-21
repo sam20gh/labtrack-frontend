@@ -62,6 +62,34 @@ export const Palette = {
      */
     amber: '#EA8C00',
 
+    /**
+     * The streak badge's flame, from `Design/activity.svg` frame 18 — a light-to-deep
+     * gradient that reads as something earned. Only for streaks: `amber` stays the one
+     * warm accent a figure is drawn in, and none of these is ever a verdict on a result.
+     */
+    flameLight: '#FBBF24',
+    flame: '#F59E0B',
+    flameDeep: '#EA580C',
+
+    /**
+     * Categorical tints — one per *kind of activity*, never per outcome. They tell a swim
+     * from a walk at a glance on the activity screens and carry no judgement, which is why
+     * the clinical `success`/`danger`/`warning` hexes are deliberately not among them: a
+     * red run would read as a bad run. `lib/activityTypes.ts` is the only thing that should
+     * assign them.
+     */
+    teal: '#0F766E',
+    tealSurface: '#F0FDFA',
+    sky: '#0369A1',
+    skySurface: '#F0F9FF',
+    pink: '#BE185D',
+    pinkSurface: '#FDF2F8',
+    lime: '#4D7C0F',
+    limeSurface: '#F7FEE7',
+    orange: '#C2410C',
+    orangeSurface: '#FFF7ED',
+    indigoSurface: '#EEF2FF',
+
     // Neutrals
     text: '#1F2937',
     textSecondary: '#6B7280',

@@ -14,25 +14,10 @@
  */
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import { formatDuration, formatDistance, formatPace, formatType, type ActivitySession } from '@/lib/activity';
-
-/** The design's ten types, and something reasonable for everything else. */
-const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-    walking: 'walk-outline',
-    jogging: 'walk-outline',
-    hiking: 'trail-sign-outline',
-    biking: 'bicycle-outline',
-    swimming: 'water-outline',
-    yoga: 'body-outline',
-    meditation: 'leaf-outline',
-    rowing: 'boat-outline',
-    weightlifting: 'barbell-outline',
-    soccer: 'football-outline',
-};
-
-const iconFor = (type: string) => ICONS[type] || 'fitness-outline';
+import { typeStyle } from '@/lib/activityTypes';
 
 interface Stat {
     icon: keyof typeof Ionicons.glyphMap;
@@ -90,6 +75,7 @@ export function SessionCard({ session, onPress }: Props) {
     const ended = session.endedAt ? new Date(session.endedAt) : null;
 
     const stats = statsFor(session);
+    const look = typeStyle(session.type);
 
     return (
         <Pressable
@@ -99,8 +85,12 @@ export function SessionCard({ session, onPress }: Props) {
             accessibilityLabel={`${formatType(session.type)}, ${formatDuration(session.durationSec)} on ${dateLabel}`}
         >
             <View style={styles.top}>
-                <View style={styles.icon}>
-                    <Ionicons name={iconFor(session.type)} size={22} color={Palette.text} />
+                {/*
+                  The type's own glyph on its own tint, so a list of a week reads as walks,
+                  swims and rides before a word of it is read. See `lib/activityTypes.ts`.
+                */}
+                <View style={[styles.icon, { backgroundColor: look.surface }]}>
+                    <MaterialCommunityIcons name={look.icon} size={22} color={look.tint} />
                 </View>
 
                 <View style={styles.heading}>
@@ -128,6 +118,9 @@ export function SessionCard({ session, onPress }: Props) {
     );
 }
 
+/** The icon tile's side, which the stats grid indents by so it lines up under the title. */
+const ICON = 40;
+
 const styles = StyleSheet.create({
     card: {
         backgroundColor: Palette.white,
@@ -140,7 +133,13 @@ const styles = StyleSheet.create({
     pressed: { opacity: 0.7 },
 
     top: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    icon: { width: 34, alignItems: 'center' },
+    icon: {
+        width: ICON,
+        height: ICON,
+        borderRadius: Radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     heading: { flex: 1, gap: 2 },
     title: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
     when: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
@@ -150,7 +149,7 @@ const styles = StyleSheet.create({
     stats: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        paddingLeft: 34 + Spacing.md,
+        paddingLeft: ICON + Spacing.md,
         rowGap: Spacing.sm,
     },
     stat: {

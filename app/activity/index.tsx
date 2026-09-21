@@ -58,6 +58,9 @@ import { TotalsCard, type TotalsFigure } from '@/components/metric/TotalsCard';
 import { TypeBreakdown } from '@/components/metric/TypeBreakdown';
 import { ActiveHours } from '@/components/metric/ActiveHours';
 import { PeriodCompare } from '@/components/metric/PeriodCompare';
+import { ArtCard } from '@/components/activity/ArtCard';
+import { WelcomeCard } from '@/components/activity/WelcomeCard';
+import { CyclistArt, TargetArt, FlexArt, FLEX_ART } from '@/components/activity/art';
 import {
     getSummary, getDay, getCalendar, getWearableStatus, today, formatDistance, formatType,
     formatDuration, dayHasData,
@@ -386,6 +389,13 @@ export default function ActivityDashboard() {
 
     const isToday = selectedDay === today();
 
+    /**
+     * Nothing has ever arrived: no session, no measured day, no streak. Only then does the
+     * page open on frame 0's welcome rather than on a chart of zeros. Someone whose phone
+     * synced steps has data, and greeting them as new would read as the app not noticing.
+     */
+    const isNewcomer = Boolean(summary) && sessionCount === 0 && !hasMeasured && !summary?.streak;
+
     const insight = summary?.insight;
     const breakdown = insight?.breakdown || [];
     const periodLabel = PERIOD_LABEL[range];
@@ -602,6 +612,19 @@ export default function ActivityDashboard() {
                     <ErrorState error={error} subject="your activity" onRetry={load} variant="inline" />
                 ) : (
                     <>
+                        {isNewcomer && (
+                            <View style={styles.section}>
+                                <WelcomeCard
+                                    onLog={() => router.push('/activity/log')}
+                                    // Only where there is a store to connect. Offering it on a
+                                    // phone with none is a button whose only outcome is "no".
+                                    onConnect={capability?.available && !capability.granted
+                                        ? () => router.push('/activity/sources')
+                                        : undefined}
+                                />
+                            </View>
+                        )}
+
                         <View style={styles.section}>
                             <MetricPicker metrics={metrics} value={active?.key ?? metric} onChange={setMetric} />
                             <View style={{ height: Spacing.md }} />
@@ -778,58 +801,35 @@ export default function ActivityDashboard() {
                             </View>
 
                             {sessions.length === 0 ? (
-                                <View style={styles.empty}>
-                                    <Ionicons
-                                        name={dayError ? 'cloud-offline-outline' : 'fitness-outline'}
-                                        size={26}
-                                        color={Palette.textMuted}
-                                    />
-                                    {/*
-                                      "Nothing logged" is a claim about the person's record and
-                                      is only made when the day was actually read. A failed
-                                      fetch says so and offers a retry — telling somebody their
-                                      workout is not there because a request timed out is the
-                                      worst thing this block can do.
-                                    */}
-                                    <Text style={styles.emptyTitle}>
-                                        {dayError
-                                            ? 'Couldn’t load this day'
-                                            : isToday ? 'Nothing logged today' : 'No activities that day'}
-                                    </Text>
-                                    <Text style={styles.emptyBody}>
-                                        {dayError
-                                            ? 'Your activities for this day couldn’t be fetched. Nothing has been lost — pull down to refresh, or try again.'
-                                            : isToday
-                                                ? 'Log an activity and it will show up here, on your calendar and in your plan.'
-                                                : 'No workout was synced or logged for this day.'}
-                                    </Text>
+                                /*
+                                  Frame 6's empty card, with its cyclist. "Nothing logged" is a
+                                  claim about the person's record and is only made when the day
+                                  was actually read: a failed fetch says so and offers a retry —
+                                  telling somebody their workout is not there because a request
+                                  timed out is the worst thing this block can do.
 
-                                    {dayError && (
-                                        <Pressable
-                                            onPress={() => loadDay(selectedDay)}
-                                            accessibilityRole="button"
-                                            style={styles.emptyCta}
-                                        >
-                                            <Text style={styles.emptyCtaText}>Try again</Text>
-                                            <Ionicons name="refresh" size={16} color={Palette.white} />
-                                        </Pressable>
-                                    )}
-                                    {/*
-                                      The log screen opens on the current time, so offering it
-                                      from a day three weeks back would hand somebody a form
-                                      pointing at the wrong date.
-                                    */}
-                                    {isToday && !dayError && (
-                                        <Pressable
-                                            onPress={() => router.push('/activity/log')}
-                                            style={styles.emptyCta}
-                                            accessibilityRole="button"
-                                        >
-                                            <Text style={styles.emptyCtaText}>Log activity</Text>
-                                            <Ionicons name="add" size={16} color={Palette.white} />
-                                        </Pressable>
-                                    )}
-                                </View>
+                                  The log screen opens on the current time, so it is offered
+                                  from today only; from a day three weeks back it would hand
+                                  somebody a form pointing at the wrong date.
+                                */
+                                <ArtCard
+                                    title={dayError
+                                        ? 'Couldn’t load this day'
+                                        : isToday ? 'Nothing logged today' : 'No activities that day'}
+                                    body={dayError
+                                        ? 'Nothing has been lost — pull down to refresh, or try again.'
+                                        : isToday
+                                            ? 'Log an activity to see it here, on your calendar and in your plan.'
+                                            : 'No workout was synced or logged for this day.'}
+                                    action={dayError
+                                        ? { label: 'Try again', icon: 'refresh', onPress: () => loadDay(selectedDay) }
+                                        : isToday
+                                            ? { label: 'Log activity', onPress: () => router.push('/activity/log') }
+                                            : undefined}
+                                    art={<CyclistArt width={104} />}
+                                    artOffset={{ top: -30, right: 0 }}
+                                    copyWidth="64%"
+                                />
                             ) : (
                                 <View style={{ gap: Spacing.sm }}>
                                     {sessions.map((s) => (
@@ -842,6 +842,23 @@ export default function ActivityDashboard() {
                                 </View>
                             )}
                         </View>
+
+                        {summary && !summary.goal && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Activity goal</Text>
+                                {/*
+                                  Frame 6's target. There is no goal until there is a plan to
+                                  measure against, and the goal screen is what makes one — so
+                                  this is an invitation, never an empty ring reading 0/5.
+                                */}
+                                <ArtCard
+                                    body="Set a weekly goal and your progress, score and streaks will be measured against it."
+                                    action={{ label: 'Set new goal', onPress: () => router.push('/activity/goal') }}
+                                    art={<TargetArt width={140} />}
+                                    artOffset={{ top: -12, right: -17 }}
+                                />
+                            </View>
+                        )}
 
                         {summary?.goal && (
                             <View style={styles.section}>
@@ -861,6 +878,24 @@ export default function ActivityDashboard() {
                         {summary && summary.guidance.length > 0 && (
                             <View style={styles.section}>
                                 <PlanGuidanceCard guidance={summary.guidance} />
+                            </View>
+                        )}
+
+                        {/*
+                          Frame 6's "You have no recommendation", with its figure. The advice
+                          comes from the health plan, so the way to get some is results, not a
+                          button here — which is why this card has none.
+                        */}
+                        {summary && summary.guidance.length === 0 && !isNewcomer && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>From your health plan</Text>
+                                <ArtCard
+                                    title="No exercise advice yet"
+                                    body="When your results are analysed, advice for you appears here and your targets move with it."
+                                    art={<FlexArt width={FLEX_ART.width * 0.72} />}
+                                    copyWidth="56%"
+                                    minHeight={FLEX_ART.height * 0.72 + Spacing.sm}
+                                />
                             </View>
                         )}
                     </>
@@ -962,32 +997,6 @@ const styles = StyleSheet.create({
         marginTop: Spacing.sm,
     },
 
-    empty: {
-        alignItems: 'center',
-        gap: Spacing.sm,
-        backgroundColor: Palette.surface,
-        borderRadius: Radius.lg,
-        padding: Spacing.xxl,
-    },
-    emptyTitle: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
-    emptyBody: {
-        fontSize: 13,
-        fontFamily: Fonts.regular,
-        color: Palette.textSecondary,
-        textAlign: 'center',
-        lineHeight: 19,
-    },
-    emptyCta: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        backgroundColor: Palette.primary,
-        paddingHorizontal: Spacing.xl,
-        paddingVertical: Spacing.md,
-        borderRadius: Radius.pill,
-        marginTop: Spacing.sm,
-    },
-    emptyCtaText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.white },
 
     fab: {
         position: 'absolute',

@@ -15,11 +15,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { SessionCard } from '@/components/metric/SessionCard';
+import { NoMatchArt, NO_MATCH_ART, RunnerHeroArt } from '@/components/activity/art';
 import { listSessions, formatType, type ActivitySession } from '@/lib/activity';
+import { typeStyle } from '@/lib/activityTypes';
 import { ApiError } from '@/lib/api';
 
 const TYPE_FILTERS = ['walking', 'jogging', 'biking', 'swimming', 'yoga', 'weightlifting'];
@@ -116,14 +118,20 @@ export default function ActivityHistory() {
             <View style={styles.filters}>
                 {TYPE_FILTERS.map((t) => {
                     const active = types.includes(t);
+                    const look = typeStyle(t);
                     return (
                         <Pressable
                             key={t}
                             onPress={() => setTypes(active ? types.filter((x) => x !== t) : [...types, t])}
-                            style={[styles.filter, active && styles.filterActive]}
+                            style={[styles.filter, styles.filterRow, active && styles.filterActive]}
                             accessibilityRole="button"
                             accessibilityState={{ selected: active }}
                         >
+                            <MaterialCommunityIcons
+                                name={look.icon}
+                                size={15}
+                                color={active ? Palette.primary : look.tint}
+                            />
                             <Text style={[styles.filterText, active && styles.filterTextActive]}>
                                 {formatType(t)}
                             </Text>
@@ -154,9 +162,23 @@ export default function ActivityHistory() {
                     ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
                     ListEmptyComponent={
                         <View style={styles.centre}>
-                            <Ionicons name="search-outline" size={30} color={Palette.textMuted} />
+                            {/*
+                              Frame 11's two runners for a search that found nothing — the
+                              kit's own "Whoops! Activity Not Found" — and frame 0's runner for
+                              a history that is simply empty. Two different facts, two pictures:
+                              one says "try another word", the other "start here".
+                            */}
+                            <View
+                                style={styles.emptyArt}
+                                accessibilityElementsHidden
+                                importantForAccessibility="no-hide-descendants"
+                            >
+                                {filtering
+                                    ? <NoMatchArt width={Math.min(NO_MATCH_ART.width, 280)} />
+                                    : <RunnerHeroArt width={180} />}
+                            </View>
                             <Text style={styles.emptyTitle}>
-                                {filtering ? 'No activities match' : 'Nothing logged yet'}
+                                {filtering ? 'Whoops! No activities found' : 'Nothing logged yet'}
                             </Text>
                             <Text style={styles.emptyBody}>
                                 {filtering
@@ -227,6 +249,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Palette.border,
     },
+    filterRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     filterActive: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
     filterText: { fontSize: 12.5, fontFamily: Fonts.medium, color: Palette.textSecondary },
     filterTextActive: { fontFamily: Fonts.semibold, color: Palette.primary },
@@ -241,7 +264,8 @@ const styles = StyleSheet.create({
     },
 
     centre: { alignItems: 'center', gap: Spacing.sm, padding: Spacing.xxxl },
-    emptyTitle: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
+    emptyArt: { marginBottom: Spacing.lg },
+    emptyTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     emptyBody: {
         fontSize: 13,
         fontFamily: Fonts.regular,
