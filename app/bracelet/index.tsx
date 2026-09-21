@@ -39,6 +39,7 @@ import { runSync, resetSyncThrottle } from '@/lib/health/sync';
 
 import DeviceStage, { type StageState } from '@/components/bracelet/DeviceStage';
 import BraceletArt from '@/components/bracelet/BraceletArt';
+import DevicePhoto, { hasPhoto } from '@/components/bracelet/DevicePhoto';
 import StatusChips from '@/components/bracelet/StatusChips';
 import DiscoveredRow from '@/components/bracelet/DiscoveredRow';
 import ReadsList from '@/components/bracelet/ReadsList';
@@ -262,15 +263,17 @@ export default function BraceletScreen() {
                 >
                     <DeviceStage state={stage} battery={paired?.lastBattery}>
                         {/*
-                          * The plinth stays empty until there is something real to put on
-                          * it. A ghost bracelet standing there while nothing is paired
-                          * would be the same claim the kit's product shot makes.
+                          * The device is on the plinth in every state, so the screen shows
+                          * what it is for before anything is paired. The V8 is drawn from
+                          * its product photograph; a paired 2208A has no photograph and
+                          * falls back to the drawn bracelet rather than showing somebody a
+                          * device they do not own.
                           */}
-                        {paired ? (
+                        {paired && !hasPhoto(paired.variant) ? (
                             <BraceletArt mood="live" width={172} />
-                        ) : scanning ? (
-                            <BraceletArt mood="searching" width={172} />
-                        ) : null}
+                        ) : (
+                            <DevicePhoto variant={paired?.variant ?? 'v8'} width={196} />
+                        )}
                     </DeviceStage>
 
                     {paired
