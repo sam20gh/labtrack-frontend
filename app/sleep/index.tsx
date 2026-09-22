@@ -42,7 +42,7 @@ import { StageRows } from '@/components/sleep/StageRows';
 import { BedIllustration } from '@/components/sleep/BedIllustration';
 import {
     getOverview, listNights, updateSchedule, formatMinutes, formatClock, splitMinutes,
-    dayLabel, STAGE_ORDER,
+    dayLabel, STAGE_ORDER, STAGE_META,
     type SleepOverview, type SleepNight,
 } from '@/lib/sleep';
 import { getWearableStatus, type WearableStatus } from '@/lib/activity';
@@ -283,11 +283,45 @@ export default function SleepDashboard() {
                             <Text style={styles.figureValue}>
                                 {formatMinutes(latest?.stages?.remMin)}
                             </Text>
-                            <View style={[styles.figureDot, { backgroundColor: Palette.primaryDeep }]} />
+                            <View style={[styles.figureDot, { backgroundColor: STAGE_META.rem.tint }]} />
                         </View>
                         <Text style={styles.figureLabel}>REM sleep</Text>
                     </View>
                 </View>
+
+                {/* ------------------------------------------------ the record
+                    Always drawn, data or not: it is the way into every night and nap, and
+                    hiding it behind "has data this week" left it unreachable for anyone
+                    whose watch had not synced in seven days. */}
+                <Pressable
+                    onPress={() => router.push('/sleep/record')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open your sleep record"
+                >
+                    <LinearGradient
+                        colors={[Palette.primaryDeep, Palette.primary]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.recordCard}
+                    >
+                        <View style={styles.recordBars}>
+                            {[0.55, 0.8, 0.65, 0.95, 0.7].map((h, i) => (
+                                <View key={i} style={[styles.recordBar, { height: `${h * 100}%` }]}>
+                                    <View style={{ flex: 2, backgroundColor: STAGE_META.rem.tint }} />
+                                    <View style={{ flex: 3, backgroundColor: STAGE_META.light.tint }} />
+                                    <View style={{ flex: 2, backgroundColor: Palette.white }} />
+                                </View>
+                            ))}
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.recordTitle}>Sleep record</Text>
+                            <Text style={styles.recordBody}>
+                                Every night and nap, by stage — day, week, month or all time.
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={Palette.white} />
+                    </LinearGradient>
+                </Pressable>
 
                 {/* ---------------------------------------------------- goal */}
                 <Section title="Sleep goal" action="Edit" onAction={() => router.push('/sleep/goal')}>
@@ -492,6 +526,15 @@ export default function SleepDashboard() {
 }
 
 const styles = StyleSheet.create({
+    recordCard: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+        padding: Spacing.lg, borderRadius: 18,
+    },
+    recordBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 40, width: 40 },
+    recordBar: { flex: 1, borderRadius: 2, overflow: 'hidden' },
+    recordTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
+    recordBody: { fontSize: 12, fontFamily: Fonts.regular, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+
     screen: { flex: 1, backgroundColor: Palette.background },
     content: { padding: Spacing.xl, paddingBottom: Spacing.xxxl * 2, gap: Spacing.xl },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xl },

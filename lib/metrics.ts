@@ -238,7 +238,7 @@ export const METRIC_ROUTE: Record<MetricKey, string> = {
     blood_pressure: '/metrics/blood-pressure',
     hydration: '/metrics/water',
     heart_rate: '/activity',
-    sleep: '/activity',
+    sleep: '/sleep/record',
     steps: '/activity',
 };
 

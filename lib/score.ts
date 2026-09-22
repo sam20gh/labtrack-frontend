@@ -182,7 +182,7 @@ export const isMostlyReported = (score: HealthScore) =>
 /** Screens that fill a given pillar, for the breakdown's "fix this" action. */
 export const PILLAR_ROUTE: Partial<Record<PillarKey, string>> = {
     activity: '/activity',
-    sleep: '/activity/sources',
+    sleep: '/sleep',
     nutrition: '/nutrition',
     medication: '/medications',
     // Vitals and body are now fillable by hand, so they point at the screen that fills them
