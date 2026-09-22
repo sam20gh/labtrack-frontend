@@ -36,7 +36,7 @@ export default function HelpCenterScreen() {
      */
     const emailSupport = () => {
         const version = Constants.expoConfig?.version ?? '1.0.0';
-        const subject = encodeURIComponent(`LabTrack support — v${version}`);
+        const subject = encodeURIComponent(`Miovix support — v${version}`);
         Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${subject}`).catch(() => { });
     };
 

@@ -27,7 +27,7 @@
  *    the radio: `@react-native-community/netinfo` would tell us whether the phone has a
  *    route, at the cost of a native module — and a native module added to `package.json`
  *    moves the fingerprint, which silently strands every build already in someone's hands
- *    (see CLAUDE.md, the fourth trap). "We could not reach LabTrack" is both true and
+ *    (see CLAUDE.md, the fourth trap). "We could not reach Miovix" is both true and
  *    enough, and the recovery is the same either way.
  * 3. **A recoverable state leads with the recovery.** 404 leads with the way out, because
  *    retrying a record that is not there just fails again. Everything else leads with
@@ -118,7 +118,7 @@ const SPEC: Record<StateKey, Omit<StateDescriptor, 'key' | 'badge' | 'detail'> &
         tone: 'alert',
         badgeIcon: 'warning-outline',
         title: 'Not Allowed',
-        body: 'This part of LabTrack is not available to your account. If that looks wrong, support can check it for you.',
+        body: 'This part of Miovix is not available to your account. If that looks wrong, support can check it for you.',
         retryable: false,
     },
     locked: {
@@ -133,7 +133,7 @@ const SPEC: Record<StateKey, Omit<StateDescriptor, 'key' | 'badge' | 'detail'> &
         tone: 'accent',
         badgeIcon: 'phone-portrait-outline',
         title: 'Update Required',
-        body: 'A newer version of LabTrack is ready. Update to carry on where you left off.',
+        body: 'A newer version of Miovix is ready. Update to carry on where you left off.',
         retryable: false,
     },
     empty: {
@@ -211,7 +211,7 @@ export const describeError = (error: unknown, options: DescribeOptions = {}): St
     if (status === 0) {
         return describeState('offline', {
             body: subject
-                ? `We could not reach LabTrack to load ${subject}. Please check your connection and try again.`
+                ? `We could not reach Miovix to load ${subject}. Please check your connection and try again.`
                 : SPEC.offline.body,
         });
     }

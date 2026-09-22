@@ -72,7 +72,7 @@ export default function BasketScreen() {
             const bundle = await createPaymentIntent(order._id);
 
             const { error: initError } = await initPaymentSheet({
-                merchantDisplayName: 'LabTrack',
+                merchantDisplayName: 'Miovix',
                 customerId: bundle.customerId,
                 customerEphemeralKeySecret: bundle.ephemeralKey,
                 paymentIntentClientSecret: bundle.clientSecret,

@@ -24,8 +24,8 @@
  *   6. **The trackers that have data**, most time-sensitive first.
  *   7. **Symptom Checker** — the illustration, the search, the common symptoms and the
  *      checks already run, as `Design/sympt.svg` draws them.
- *   8. **Ask LabTrack AI** — the assistant, and the last thing it said.
- *   9. **Get more from LabTrack** — every tracker with nothing in it, as one list of rows
+ *   8. **Ask Miovix AI** — the assistant, and the last thing it said.
+ *   9. **Get more from Miovix** — every tracker with nothing in it, as one list of rows
  *      rather than as six full cards each saying "connect a watch".
  *  10. **News & Resources.**
  *
@@ -180,7 +180,7 @@ interface HomeAction {
 }
 
 /**
- * One row of the "Get more from LabTrack" list.
+ * One row of the "Get more from Miovix" list.
  *
  * A tracker nobody has started. It is a row rather than the card that feature would draw,
  * because six cards each saying "connect a watch" is a screen about what the person has
@@ -1028,7 +1028,7 @@ export default function HomeScreen() {
 
                         {/*
                           Symptom Checker, from `Design/sympt.svg`. It sits directly above
-                          Ask LabTrack AI because the two are one act — the symptom screen
+                          Ask Miovix AI because the two are one act — the symptom screen
                           composes what you pick into a message and posts it to the
                           assistant — and the card below is where the answer comes back.
 
@@ -1050,7 +1050,7 @@ export default function HomeScreen() {
                             />
                         </Section>
 
-                        <Section title="Ask LabTrack AI">
+                        <Section title="Ask Miovix AI">
                             <AskCard
                                 conversation={conversation}
                                 onOpen={openAssistant}
@@ -1063,10 +1063,10 @@ export default function HomeScreen() {
 
                           Each row names the pillar it fills, because that is the true answer
                           to "why should I bother" — the score above genuinely cannot move
-                          until one of these has data. See **The LabTrack score**.
+                          until one of these has data. See **The Miovix score**.
                         */}
                         {setup.length > 0 && (
-                            <Section title="Get more from LabTrack">
+                            <Section title="Get more from Miovix">
                                 <View style={styles.card}>
                                     <Text style={styles.cardBody}>
                                         Each of these fills a pillar of your score. Until one has data,
@@ -1148,7 +1148,7 @@ export default function HomeScreen() {
  * to overlap it by half — the card is pulled up with a negative margin instead of being
  * absolutely positioned, so the sections below still flow underneath it.
  *
- * The kit puts a green presence dot on the avatar. LabTrack models no presence, so there
+ * The kit puts a green presence dot on the avatar. Miovix models no presence, so there
  * is none here; the streak chip beside the date is real (`ActivitySummary.streak`) and is
  * hidden rather than shown as a zero.
  */
@@ -1242,7 +1242,7 @@ const HomeHeader = ({
  * 2. **It does not invent a movement.** `score.change` is null until there are two
  *    snapshots to compare, and a delta of zero is drawn as "no change", not as "+0".
  * 3. **It does not describe a null score as a bad one.** No score is a statement about
- *    coverage — see **The LabTrack score** in CLAUDE.md.
+ *    coverage — see **The Miovix score** in CLAUDE.md.
  */
 const ScoreCard = React.memo(({ score, attention, onPress }: {
     score: HealthScore; attention: number; onPress: () => void;
@@ -1959,7 +1959,7 @@ const AppointmentsCard = React.memo(({ appointments, onOpen, onBook }: {
     appointments: Appointment[]; onOpen: () => void; onBook: () => void;
 }) => {
     // The caller only renders this section when there is a live appointment — an empty
-    // diary is a row in "Get more from LabTrack" instead. This guard is here so the
+    // diary is a row in "Get more from Miovix" instead. This guard is here so the
     // destructure below cannot read a professional off `undefined` if it is ever reused.
     if (appointments.length === 0) return null;
 
@@ -2109,11 +2109,11 @@ const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen 
 MedicationsCard.displayName = 'MedicationsCard';
 
 // ---------------------------------------------------------------------------
-// Ask LabTrack AI — symptoms and the assistant, in one card
+// Ask Miovix AI — symptoms and the assistant, in one card
 // ---------------------------------------------------------------------------
 
 /**
- * Ask LabTrack AI.
+ * Ask Miovix AI.
  *
  * The symptom half of this card moved out to `SymptomCheckerCard`, which is the section
  * directly above it. They are still one act — `app/symptoms` composes what you pick into a
@@ -2177,7 +2177,7 @@ const AskCard = React.memo(({ conversation, onOpen }: {
                     <View style={styles.divider} />
                     <TouchableOpacity style={styles.footerAction} onPress={onOpen} activeOpacity={0.8}>
                         <Text style={styles.footerActionText}>
-                            {last ? 'Continue the conversation' : 'Chat with LabTrack AI'}
+                            {last ? 'Continue the conversation' : 'Chat with Miovix AI'}
                         </Text>
                         <Ionicons name="chatbubble-ellipses-outline" size={17} color={Palette.primary} />
                     </TouchableOpacity>
@@ -2583,7 +2583,7 @@ const SignedOut = ({ products, router, topInset }: {
             end={{ x: 1, y: 1 }}
             style={[styles.welcomeHero, { paddingTop: topInset + Spacing.xxl }]}
         >
-            <Text style={styles.heroEyebrow}>LabTrack</Text>
+            <Text style={styles.heroEyebrow}>Miovix</Text>
             <Text style={styles.welcomeTitle}>Understand what your results actually mean</Text>
             <Text style={styles.heroHeadline}>
                 Upload a lab report and get an interpretation, a tracked history, and a plan you can act on.
@@ -2598,7 +2598,7 @@ const SignedOut = ({ products, router, topInset }: {
             </View>
         </LinearGradient>
 
-        <Section title="Why LabTrack">
+        <Section title="Why Miovix">
             <View style={styles.benefitGrid}>
                 {BENEFITS.map((b) => (
                     <View key={b.title} style={styles.benefitCard}>
@@ -2778,7 +2778,7 @@ const styles = StyleSheet.create({
     actionTitle: { fontSize: 16, lineHeight: 22, color: Palette.text, fontFamily: Fonts.semibold },
     actionCta: { fontSize: 14, fontFamily: Fonts.bold, marginTop: 7 },
 
-    // Get more from LabTrack -----------------------------------------------
+    // Get more from Miovix -----------------------------------------------
     setupRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     setupIcon: {
         width: 38, height: 38, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,

@@ -34,7 +34,7 @@ const Dot = ({ delay }: { delay: number }) => {
 
 export default function TypingIndicator() {
     return (
-        <View style={styles.bubble} accessibilityLabel="LabTrack AI is typing">
+        <View style={styles.bubble} accessibilityLabel="Miovix AI is typing">
             <Dot delay={0} />
             <Dot delay={150} />
             <Dot delay={300} />

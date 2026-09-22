@@ -5,7 +5,7 @@
  *
  * **What this screen refuses to be is a goal editor.** The kit's next five frames are "Set
  * Hydration Goal": weight, activity and sex on a form, a suggested figure, and a slider to
- * override it. LabTrack derives the target instead — `utils/hydrationTargets.js` computes
+ * override it. Miovix derives the target instead — `utils/hydrationTargets.js` computes
  * 33 ml/kg of measured body mass plus 8 ml per recorded minute of exercise, clamped to a
  * ceiling that exists because water intoxication is real and the people most likely to chase
  * a number on a screen are the ones who should not. There is no endpoint that writes a

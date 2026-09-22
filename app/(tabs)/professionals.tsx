@@ -6,7 +6,7 @@
  * list instead of two screens later. That strip is the whole point of the kit's layout — a
  * directory you can only browse is a directory nobody finishes.
  *
- * The kit labels those days "Available" / "Unavailable" against a doctor's diary. LabTrack
+ * The kit labels those days "Available" / "Unavailable" against a doctor's diary. Miovix
  * has no availability model, so the days here say what the API can actually back: which
  * days are open to a *request*, and which days the person already has something booked with
  * that specialist. See `lib/appointments.ts` for why that distinction is load-bearing.
@@ -240,7 +240,7 @@ const ProfessionalsScreen = () => {
                         <Text style={styles.emptyBody}>
                             {filtered
                                 ? 'Try a different speciality, or clear the filters to see everyone.'
-                                : 'Specialists appear here once they join LabTrack.'}
+                                : 'Specialists appear here once they join Miovix.'}
                         </Text>
                         {filtered && (
                             <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>

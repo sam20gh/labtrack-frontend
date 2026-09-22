@@ -17,7 +17,7 @@
  * 2. **The card is shown before it is shared, on this screen.** Tapping Share opens the
  *    preview; sharing again from there is what opens the system sheet. One extra tap buys
  *    the person sight of exactly what will be published, which matters because the link is
- *    public and the audience is not LabTrack.
+ *    public and the audience is not Miovix.
  * 3. **The ladder shows every rung, including the ones still ahead.** The kit draws only the
  *    next milestone. Seeing all four is what makes a level-one badge feel like the start of
  *    something rather than a thing that is finished.

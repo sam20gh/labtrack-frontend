@@ -116,7 +116,7 @@ export default function SourcesScreen() {
     const confirmDisconnect = (id: string, label: string) => {
         Alert.alert(
             `Disconnect ${label}?`,
-            'LabTrack will stop reading new data. Everything already imported stays in your history.',
+            'Miovix will stop reading new data. Everything already imported stays in your history.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -153,7 +153,7 @@ export default function SourcesScreen() {
             ) : (
                 <ScrollView contentContainerStyle={styles.content}>
                     <Text style={styles.intro}>
-                        LabTrack reads workouts, sleep and heart rate from {label}. Anything your
+                        Miovix reads workouts, sleep and heart rate from {label}. Anything your
                         watch or another app writes there comes through automatically.
                     </Text>
 
@@ -289,7 +289,7 @@ export default function SourcesScreen() {
                             // HealthKit refuses to report read-permission status at all, so
                             // the app genuinely cannot tell a refusal from an empty day.
                             ? 'iOS doesn’t tell apps which health data you shared. If something looks missing, check Health → Sharing → Apps.'
-                            : 'Android syncs when you open LabTrack — Health Connect has no way to wake the app in the background.'}
+                            : 'Android syncs when you open Miovix — Health Connect has no way to wake the app in the background.'}
                     </Text>
                 </ScrollView>
             )}

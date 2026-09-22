@@ -495,7 +495,7 @@ const statusCapability = async (): Promise<HealthCapability> => {
             available: false,
             granted: false,
             needsInstall: true,
-            reason: 'Health Connect needs to be installed or updated from the Play Store before LabTrack can read your activity.',
+            reason: 'Health Connect needs to be installed or updated from the Play Store before Miovix can read your activity.',
         };
     }
 

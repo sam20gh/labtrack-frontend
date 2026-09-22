@@ -262,7 +262,7 @@ export default function HydrationEntryScreen() {
                     accessibilityRole="button"
                 >
                     <Ionicons name="sparkles" size={17} color={Palette.white} />
-                    <Text style={styles.primaryText}>Ask LabTrack AI about this</Text>
+                    <Text style={styles.primaryText}>Ask Miovix AI about this</Text>
                 </Pressable>
 
                 <Pressable

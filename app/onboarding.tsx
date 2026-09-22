@@ -48,7 +48,7 @@ interface OnboardingSlide {
 const slides: OnboardingSlide[] = [
     {
         id: '1',
-        title: 'Welcome to the ultimate helth app\nLabTrack!',
+        title: 'Welcome to the ultimate helth app\nMiovix!',
         description: 'We bring all of your health information together on one app, with the power of AI',
     },
     {

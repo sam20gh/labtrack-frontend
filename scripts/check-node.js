@@ -22,7 +22,7 @@ const major = Number(process.versions.node.split('.')[0]);
 
 if (Number.isFinite(major) && major < MINIMUM_MAJOR) {
     console.error(
-        `\n  LabTrack needs Node ${MINIMUM_MAJOR} or newer — you are on ${process.version}.\n\n` +
+        `\n  Miovix needs Node ${MINIMUM_MAJOR} or newer — you are on ${process.version}.\n\n` +
         '  Run `nvm use` in this directory (.nvmrc pins the right version), then try again.\n\n' +
         '  Note: `nvm use 20 & <command>` does NOT work. The single "&" backgrounds nvm,\n' +
         '  so it never changes the shell that runs your command. Use `&&`.\n'

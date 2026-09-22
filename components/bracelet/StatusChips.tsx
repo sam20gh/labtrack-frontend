@@ -2,7 +2,7 @@
  * The two facts under a device's name.
  *
  * `Design/device.svg` draws a lightning bolt with a percentage and a link glyph with
- * Connected / Not Connected, and this is the first screen in LabTrack where **both are
+ * Connected / Not Connected, and this is the first screen in Miovix where **both are
  * true**.
  *
  * That is worth stating plainly, because `app/activity/sources.tsx` refuses to draw either

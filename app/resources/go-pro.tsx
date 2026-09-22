@@ -44,7 +44,7 @@ export default function GoProScreen() {
                         <View style={styles.heroBadge}>
                             <Ionicons name="lock-open-outline" size={26} color={Palette.white} />
                         </View>
-                        <Text style={styles.heroTitle}>LabTrack Pro</Text>
+                        <Text style={styles.heroTitle}>Miovix Pro</Text>
                         <Text style={styles.heroBody}>
                             The full health library — every article, course and recording, without a preview cut-off.
                         </Text>
@@ -80,7 +80,7 @@ export default function GoProScreen() {
                     activeOpacity={0.85}
                     onPress={() => Alert.alert(
                         'Thanks',
-                        'We will let you know as soon as LabTrack Pro is available.',
+                        'We will let you know as soon as Miovix Pro is available.',
                         [{ text: 'OK', onPress: () => router.back() }],
                     )}
                 >

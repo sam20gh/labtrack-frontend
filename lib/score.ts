@@ -1,5 +1,5 @@
 /**
- * LabTrack score client.
+ * Miovix score client.
  *
  * The score used to be computed here, in `lib/healthScore.ts`, from the biomarkers and the
  * health assessment the home screen happened to have loaded. It is now computed on the

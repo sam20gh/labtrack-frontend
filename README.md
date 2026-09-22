@@ -1,6 +1,6 @@
-# LabTrack — mobile app
+# Miovix — mobile app
 
-React Native 0.76 + Expo SDK 52 client for LabTrack. File-based routing via
+React Native 0.76 + Expo SDK 52 client for Miovix. File-based routing via
 [expo-router](https://docs.expo.dev/router/introduction), TypeScript, prebuild (bare)
 workflow with committed `ios/` and `android/` directories.
 
@@ -78,7 +78,7 @@ until `complete.tsx`, which sends `PUT /users/:id` followed by
 `PUT /users/:id/health-assessment`.
 
 A mismatched param name therefore drops data with no error. Several mismatches exist today —
-read `docs/KNOWN-ISSUES.md` in the LabTrack workspace before adding or renaming a step.
+read `docs/KNOWN-ISSUES.md` in the Miovix workspace before adding or renaming a step.
 
 ## Builds
 
@@ -93,7 +93,7 @@ eas build --platform ios --profile production
 
 ## Further reading
 
-These live in the LabTrack workspace directory that contains this repo, not in this repo
+These live in the Miovix workspace directory that contains this repo, not in this repo
 itself:
 
 - `CLAUDE.md` — full architecture and conventions across both repos

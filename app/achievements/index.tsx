@@ -4,7 +4,7 @@
  * ```
  * Achievement   count, three featured badges, "My Achievements" with progress
  * Leaderboard   your points and rank, then the board — opt-in, see below
- * Stats         everything you have done in LabTrack, by tracker
+ * Stats         everything you have done in Miovix, by tracker
  * ```
  *
  * Five things about it are deliberate:
@@ -382,7 +382,7 @@ function StatsTab({ data }: { data: Stats | null }) {
                     value={data.header.memberSince ? String(new Date(data.header.memberSince).getFullYear()) : '—'}
                     label="Member since"
                 />
-                <Stat icon="time-outline" value={`${data.header.daysWithLabTrack}d`} label="With LabTrack" />
+                <Stat icon="time-outline" value={`${data.header.daysWithLabTrack}d`} label="With Miovix" />
                 <Stat icon="ribbon-outline" value={String(data.header.achievementsUnlocked)} label="Unlocked" />
             </View>
 

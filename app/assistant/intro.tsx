@@ -7,7 +7,7 @@
  * land on the mode picker having skipped the limitations.
  *
  * The middle step is the one that matters. An assistant that reads someone's blood results
- * and answers in the voice of "Dr. LabTrack" will be read as medical advice unless it says
+ * and answers in the voice of "Dr. Miovix" will be read as medical advice unless it says
  * plainly that it is not, before the first message rather than in a footer afterwards.
  */
 import React, { useState } from 'react';

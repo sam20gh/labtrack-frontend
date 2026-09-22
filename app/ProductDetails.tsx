@@ -395,7 +395,7 @@ export default function ProductDetails() {
                     <View style={styles.note}>
                         <Ionicons name="shield-checkmark-outline" size={17} color={Palette.primary} />
                         <Text style={styles.noteText}>
-                            Results land in your record and are read alongside everything else LabTrack
+                            Results land in your record and are read alongside everything else Miovix
                             knows about you, so the analysis is about you rather than about the number.
                         </Text>
                     </View>

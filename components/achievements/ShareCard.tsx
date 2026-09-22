@@ -69,7 +69,7 @@ export function ShareCard({ name, shape, glyph, tone, how, level, person, host }
                 ) : (
                     // No name is a real state — somebody can share without publishing one —
                     // and an empty row would leave the chip floating with nothing to balance.
-                    <Text style={styles.anonymous}>A LabTrack member</Text>
+                    <Text style={styles.anonymous}>A Miovix member</Text>
                 )}
 
                 {level && level > 1 ? (
@@ -96,7 +96,7 @@ export function ShareCard({ name, shape, glyph, tone, how, level, person, host }
             <View style={styles.footer}>
                 <BrandMark size={18} color={Palette.primary} />
                 <View style={styles.footerText}>
-                    <Text style={styles.wordmark}>LabTrack</Text>
+                    <Text style={styles.wordmark}>Miovix</Text>
                     {host ? <Text style={styles.host}>{host}</Text> : null}
                 </View>
             </View>

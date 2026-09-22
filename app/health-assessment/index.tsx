@@ -73,7 +73,7 @@ export default function HealthAssessmentWelcome() {
 
                 {/* Title */}
                 <Text style={styles.title}>
-                    Let's fully set up your{'\n'}LabTrack health{'\n'}account.
+                    Let's fully set up your{'\n'}Miovix health{'\n'}account.
                 </Text>
 
                 {/* Subtitle */}

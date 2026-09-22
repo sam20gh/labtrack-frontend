@@ -142,7 +142,7 @@ export default function HealthProfileReviewScreen() {
             title: 'Goals',
             rows: [
                 {
-                    label: 'What you want from LabTrack',
+                    label: 'What you want from Miovix',
                     value: listOrUndefined((ha?.healthGoals ?? []).map(g => labelFor(healthGoals, g))),
                     href: '/health-assessment/health-goals',
                 },
@@ -249,7 +249,7 @@ export default function HealthProfileReviewScreen() {
                         <Text style={styles.statusBody}>
                             {started
                                 ? `Last updated ${formatDate(ha?.completedAt) ?? 'recently'}. Tap any answer to change it.`
-                                : 'The assessment tells LabTrack what to weigh alongside your results.'}
+                                : 'The assessment tells Miovix what to weigh alongside your results.'}
                         </Text>
                     </View>
                 </View>

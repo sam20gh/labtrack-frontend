@@ -3,7 +3,7 @@
  *
  * **Every metric appears, including the ones that cannot be predicted yet.** A metric that
  * vanished for want of data would leave somebody with no way to discover that logging it
- * unlocks anything, which is the same argument the home screen's "Get more from LabTrack"
+ * unlocks anything, which is the same argument the home screen's "Get more from Miovix"
  * rows make. A metric that is not ready is drawn dimmed with the sentence saying what is
  * missing, and tapping it opens that sentence as the design's modal rather than doing
  * nothing.

@@ -1,16 +1,16 @@
 /**
- * Authentication for LabTrack.
+ * Authentication for Miovix.
  *
  * Two token families exist during the Supabase migration:
  *   1. Supabase access tokens — the target state, auto-refreshed by supabase-js
- *   2. Legacy tokens issued by the LabTrack API and stored in AsyncStorage under
+ *   2. Legacy tokens issued by the Miovix API and stored in AsyncStorage under
  *      'authToken' — kept working so existing installs are not signed out by an update
  *
  * `getAccessToken()` is the single place that decides which to use. Every API call goes
  * through `apiFetch` in lib/api.ts, so no screen needs to know which family is in play.
  *
  * After any successful Supabase sign-in the client MUST call `syncAccount()`: Supabase
- * owns the credential, but medical records hang off a LabTrack `User` document, and
+ * owns the credential, but medical records hang off a Miovix `User` document, and
  * `POST /api/auth/supabase/sync` is the only thing that creates or links it. Until it
  * runs, the API answers 403 for that token by design.
  */
@@ -39,7 +39,7 @@ export const AUTH_RESET_URL = `${APP_SCHEME}://auth/reset`;
 /** AsyncStorage keys shared across the app. */
 export const STORAGE_KEYS = {
     userId: 'userId',
-    /** Legacy LabTrack-issued JWT. Absent for Supabase-only accounts. */
+    /** Legacy Miovix-issued JWT. Absent for Supabase-only accounts. */
     legacyToken: 'authToken',
     keepSignedIn: 'keepSignedIn',
     hasSeenOnboarding: 'hasSeenOnboarding',
@@ -60,7 +60,7 @@ export const getAccessToken = async (): Promise<string | null> => {
     return AsyncStorage.getItem(STORAGE_KEYS.legacyToken);
 };
 
-/** The signed-in LabTrack user id, or null. */
+/** The signed-in Miovix user id, or null. */
 export const getUserId = async (): Promise<string | null> =>
     AsyncStorage.getItem(STORAGE_KEYS.userId);
 
@@ -70,7 +70,7 @@ export const isSignedIn = async (): Promise<boolean> => {
 };
 
 /**
- * Create or link the LabTrack account behind the current Supabase identity and cache its
+ * Create or link the Miovix account behind the current Supabase identity and cache its
  * id. Idempotent — safe to call after every sign-in.
  */
 export const syncAccount = async (): Promise<{ ok: boolean; userId?: string; error?: string }> => {

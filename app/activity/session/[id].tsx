@@ -73,7 +73,7 @@ export default function ActivityDetail() {
             'Delete this activity?',
             synced
                 // Saying so up front beats the row silently reappearing tomorrow
-                ? 'This came from your health app, so it will come back the next time LabTrack syncs. To remove it for good, delete it there too.'
+                ? 'This came from your health app, so it will come back the next time Miovix syncs. To remove it for good, delete it there too.'
                 : 'This cannot be undone.',
             [
                 { text: 'Cancel', style: 'cancel' },

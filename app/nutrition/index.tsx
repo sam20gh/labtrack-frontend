@@ -2,7 +2,7 @@
  * Nutrition tracker — today.
  *
  * The plan's dietary advice sits above the numbers on purpose. A calorie ring on its own is
- * a calorie counter; what makes this part of LabTrack is that the targets underneath it
+ * a calorie counter; what makes this part of Miovix is that the targets underneath it
  * were derived from the person's interpretation, and every meal is scored against the
  * advice their plan actually gave them.
  *

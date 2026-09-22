@@ -215,7 +215,7 @@ export default function MyPlansScreen() {
 
                 {actionable && item.type !== 'lifestyle' && !canOrder && !canBook ? (
                     <Text style={styles.unavailable}>
-                        Not yet available to book through LabTrack — ask your clinician about this one.
+                        Not yet available to book through Miovix — ask your clinician about this one.
                     </Text>
                 ) : null}
 

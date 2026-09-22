@@ -22,7 +22,7 @@ export type JstyleVariant = 'j2208a' | 'v8';
  *
  * Deliberately smaller than either SDK. Both expose alarms, dial faces, weather push,
  * find-my-phone, take-photo mode and social-distance reminders; none of that is health data
- * and LabTrack has no screen for any of it. A command here is one the sync or the pairing
+ * and Miovix has no screen for any of it. A command here is one the sync or the pairing
  * flow actually issues — adding one that nothing calls is the dummy control this codebase
  * keeps removing.
  */

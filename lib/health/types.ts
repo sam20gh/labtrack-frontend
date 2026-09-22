@@ -173,7 +173,7 @@ export interface BloodPressureRow {
  * something to embed in a day's rollup.
  *
  * Every derived figure here is **the bracelet's own output**, carried rather than computed.
- * Nothing in LabTrack interprets an ECG — there is no engine behind it and writing one is a
+ * Nothing in Miovix interprets an ECG — there is no engine behind it and writing one is a
  * clinical decision, not a feature. The same line the symptom checker holds.
  */
 export interface EcgRow {

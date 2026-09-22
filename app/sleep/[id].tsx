@@ -254,7 +254,7 @@ export default function SleepDetailScreen() {
                     onPress={() => router.push('/(tabs)/assistant')}
                 >
                     <Ionicons name="chatbubbles-outline" size={18} color={Palette.primary} />
-                    <Text style={styles.assistantLabel}>Ask LabTrack AI about this night</Text>
+                    <Text style={styles.assistantLabel}>Ask Miovix AI about this night</Text>
                 </Pressable>
             </ScrollView>
         </SafeAreaView>

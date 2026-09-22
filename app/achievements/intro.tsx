@@ -60,7 +60,7 @@ export default function AchievementsIntroScreen() {
                     <Ionicons name="trophy-outline" size={18} color={Palette.white} />
                 </TouchableOpacity>
                 <Text style={styles.small}>
-                    Points measure how you use LabTrack. They are not a health score, and nobody
+                    Points measure how you use Miovix. They are not a health score, and nobody
                     else can see your results.
                 </Text>
             </View>
