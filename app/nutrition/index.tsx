@@ -24,12 +24,13 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ApiError } from '@/lib/api';
-import { getDay, getGallery, getInsight, getRecommendations, MACRO_META } from '@/lib/nutrition';
+import { getDay, getGallery, getInsight, getRecommendations } from '@/lib/nutrition';
 import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { MacroBars } from '@/components/nutrition/MacroBars';
 import { PlanGuidanceCard } from '@/components/nutrition/PlanGuidanceCard';
 import { MealCard } from '@/components/nutrition/MealCard';
 import { MealGallery } from '@/components/nutrition/MealGallery';
+import { MacroWeekChart } from '@/components/nutrition/MacroWeekChart';
 import { SuggestionCard } from '@/components/nutrition/SuggestionCard';
 import { SkeletonGroup, SkeletonBlock } from '@/components/nutrition/Skeleton';
 import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
@@ -349,14 +350,16 @@ export default function NutritionScreen() {
                     )}
 
                     {/*
-                      Nutrition Insight, in miniature. Seven bars and the week's average —
-                      enough to say whether the week has a shape, with the reading itself
-                      behind See All. A weekday with nothing logged draws no bar, the same
-                      rule the full chart follows.
+                      The last seven days, stacked by where the energy came from. Its own
+                      rules — ghost days, a neutral goal line, tap-to-compare — are in the
+                      component's header. The fuller reading stays behind See All.
                     */}
                     <View style={styles.section}>
                         <View style={styles.sectionHead}>
-                            <Text style={styles.sectionTitle}>Nutrition Insight</Text>
+                            <View style={styles.sectionTitleRow}>
+                                <Ionicons name="bar-chart-outline" size={16} color={Palette.primary} />
+                                <Text style={styles.sectionTitle}>Your Week in Macros</Text>
+                            </View>
                             <TouchableOpacity onPress={() => router.push('/nutrition/insight')} hitSlop={8}>
                                 <Text style={styles.seeAll}>See All</Text>
                             </TouchableOpacity>
@@ -371,53 +374,14 @@ export default function NutritionScreen() {
                                 <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
                             </TouchableOpacity>
                         ) : (
-                            <TouchableOpacity
-                                style={styles.insightCard}
-                                activeOpacity={0.85}
-                                onPress={() => router.push('/nutrition/insight')}
-                            >
-                                <Text style={styles.insightValue}>
-                                    {insight.averageCalories?.toLocaleString()}
-                                    <Text style={styles.insightUnit}>kcal</Text>
+                            <>
+                                <Text style={styles.sectionCaption}>
+                                    {insight.averageCalories?.toLocaleString()} kcal on an average day across{' '}
+                                    {insight.loggedDays} logged {insight.loggedDays === 1 ? 'day' : 'days'}.
+                                    Tap a day to compare.
                                 </Text>
-                                <Text style={styles.insightLabel}>
-                                    average day across {insight.loggedDays}
-                                    {insight.loggedDays === 1 ? ' logged day' : ' logged days'} this week
-                                </Text>
-
-                                <View style={styles.miniChart}>
-                                    {insight.weekdays.map((w) => {
-                                        const peak = Math.max(
-                                            1,
-                                            ...insight.weekdays.map((x) => x.calories ?? 0)
-                                        );
-                                        return (
-                                            <View key={w.label} style={styles.miniCol}>
-                                                <View style={styles.miniTrack}>
-                                                    {w.calories != null && (
-                                                        <View style={[
-                                                            styles.miniBar,
-                                                            { height: `${Math.max(8, (w.calories / peak) * 100)}%` },
-                                                        ]} />
-                                                    )}
-                                                </View>
-                                                <Text style={styles.miniLabel}>{w.label.slice(0, 1)}</Text>
-                                            </View>
-                                        );
-                                    })}
-                                </View>
-
-                                <View style={styles.miniLegend}>
-                                    {MACRO_META.map((m) => (
-                                        <View key={m.key} style={styles.miniLegendItem}>
-                                            <View style={[styles.miniLegendDot, { backgroundColor: m.color }]} />
-                                            <Text style={styles.miniLegendText}>
-                                                {m.label} {insight.averages?.[m.key]}g
-                                            </Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </TouchableOpacity>
+                                <MacroWeekChart insight={insight} />
+                            </>
                         )}
                     </View>
 
@@ -599,30 +563,6 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.borderSlate, padding: Spacing.lg,
     },
     promptText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
-
-    insightCard: {
-        backgroundColor: Palette.background, borderRadius: Radius.lg,
-        borderWidth: 1, borderColor: Palette.borderSlate, padding: Spacing.lg,
-    },
-    insightValue: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.text },
-    insightUnit: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textMuted },
-    insightLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
-
-    miniChart: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg },
-    miniCol: { flex: 1, alignItems: 'center', gap: Spacing.xs },
-    miniTrack: { width: '100%', height: 56, justifyContent: 'flex-end' },
-    // No bar at all on a weekday with nothing logged — never a bar at zero
-    miniBar: { width: '100%', borderRadius: Radius.sm, backgroundColor: Palette.primaryLight },
-    miniLabel: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted },
-
-    miniLegend: {
-        flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md,
-        marginTop: Spacing.lg, paddingTop: Spacing.md,
-        borderTopWidth: 1, borderTopColor: Palette.border,
-    },
-    miniLegendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-    miniLegendDot: { width: 7, height: 7, borderRadius: 4 },
-    miniLegendText: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
 
     empty: {
         alignItems: 'center',

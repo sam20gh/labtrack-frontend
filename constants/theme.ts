@@ -72,6 +72,15 @@ export const Palette = {
     flameDeep: '#EA580C',
 
     /**
+     * Fat's segment on the weekly macro chart (`MacroWeekChart`), light to deep. A rose,
+     * deliberately not `danger`: fat is a nutrient, not a finding, and the clinical red on
+     * a third of every meal would read as a verdict on it. Carbohydrate and protein use
+     * `flameLight`/`flame` and `primaryLight`/`primary`.
+     */
+    macroFat: '#F472B6',
+    macroFatDeep: '#DB2777',
+
+    /**
      * Categorical tints — one per *kind of activity*, never per outcome. They tell a swim
      * from a walk at a glance on the activity screens and carry no judgement, which is why
      * the clinical `success`/`danger`/`warning` hexes are deliberately not among them: a
