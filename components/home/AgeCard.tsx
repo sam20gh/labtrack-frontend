@@ -34,10 +34,19 @@ export default function AgeCard({ age, onPress }: Props) {
 
     return (
         <TouchableOpacity style={styles.card} onPress={onPress} accessibilityRole="button">
-            <AgeOrb value={age.value} band={age.band ?? null} size={132} />
+            {/*
+              `chronologicalAge` is what the dial's tick is, so the arc has nothing to measure
+              from without it and would sit at zero however large the gap.
+            */}
+            <AgeOrb
+                value={age.value}
+                band={age.band ?? null}
+                chronologicalAge={age.chronologicalAge ?? null}
+                size={140}
+            />
 
             <View style={styles.body}>
-                <Text style={[styles.gap, { color: tint }]}>{deltaLabel(age.delta)}</Text>
+                <Text style={[styles.gap, { color: tint }]}>{deltaLabel(age.delta, age.band)}</Text>
                 <Text style={styles.chrono}>
                     Your body against {age.chronologicalAge?.toFixed(0)} calendar years
                 </Text>
@@ -77,7 +86,7 @@ const styles = StyleSheet.create({
         padding: Spacing.lg, borderWidth: 1, borderColor: Palette.border,
     },
     body: { flex: 1 },
-    gap: { fontFamily: Fonts.bold, fontSize: 17 },
+    gap: { fontFamily: Fonts.bold, fontSize: 15.5 },
     chrono: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2, lineHeight: 17 },
     paceRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: Spacing.sm },
     paceText: { fontFamily: Fonts.medium, fontSize: 11.5, color: Palette.textSecondary },

@@ -140,7 +140,7 @@ export default function MiovixAgeScreen() {
         );
     }
 
-    const gap = age?.ok ? deltaLabel(age.delta) : '';
+    const gap = age?.ok ? deltaLabel(age.delta, age.band) : '';
     const tint = tintForBand(age?.band);
 
     return (
@@ -158,8 +158,9 @@ export default function MiovixAgeScreen() {
                     <AgeOrb
                         value={age?.ok ? age.value! : null}
                         band={age?.band ?? null}
+                        chronologicalAge={age?.chronologicalAge ?? null}
                         caption={age?.ok ? gap : age?.message}
-                        size={250}
+                        size={246}
                     />
                     {age?.ok && (
                         <Text style={styles.chrono}>

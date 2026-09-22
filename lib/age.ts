@@ -189,16 +189,30 @@ export const getAgeLevers = () =>
  * ------------------------------------------------------------------ */
 
 /**
- * The gap, worded.
+ * The gap, worded — **from the band, so the words and the colour cannot disagree**.
  *
- * "4.1 years younger", the way the design's hero reads it. A gap inside half a year reads as
- * level rather than as "0.2 years older", which is a precision the number does not have and
- * a distinction nobody acts on.
+ * The first version took its own view: anything inside half a year read as level, everything
+ * else was "0.5 years younger". The server's bands are ±2 years, so a gap of −0.5 produced
+ * the words "0.5 year younger" over an orb tinted for `on_track` — grey. The label was
+ * claiming something the colour was denying, on the one line of the card people actually read.
+ *
+ * Passing the band in is what makes that impossible. Both now come from the same decision,
+ * which is made once, on the server, in `DELTA_BANDS`. A threshold restated here would drift
+ * from it the first time either moved — the argument `predictionMetrics.blood_pressure.band`
+ * makes by delegating to `bloodPressure.classify` rather than keeping its own cut-offs.
+ *
+ * The exact figure is not lost: every surface that calls this also prints the two ages.
  */
-export const deltaLabel = (delta: number | null | undefined): string => {
+export const deltaLabel = (
+    delta: number | null | undefined,
+    band?: AgeBand | null,
+): string => {
     if (delta === null || delta === undefined || !Number.isFinite(delta)) return '';
+    if (band === 'on_track') return 'About your age';
     const years = Math.abs(delta);
-    if (years < 0.5) return 'about your age';
+    // No band given — a historic row, or a half rendered on its own. Fall back to the band
+    // boundary rather than to a threshold of this file's own invention.
+    if (!band && years <= 2) return 'About your age';
     const rounded = years.toFixed(1);
     return `${rounded} ${years < 1.05 ? 'year' : 'years'} ${delta < 0 ? 'younger' : 'older'}`;
 };
