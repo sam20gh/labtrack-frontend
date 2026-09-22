@@ -502,6 +502,8 @@ export interface HealthAssessmentResponse { healthAssessment: HealthAssessment }
  */
 export interface NutritionGuidance {
     planItemId?: Id;
+    /** Every plan item giving this same advice, when several were collapsed into one. */
+    planItemIds?: Id[];
     key: string;
     kind: 'pattern' | 'emphasise' | 'reduce' | 'other';
     label?: string;

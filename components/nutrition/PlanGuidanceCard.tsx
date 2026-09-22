@@ -7,6 +7,10 @@
  *
  * The directive is rendered verbatim, as the interpretation worded it. Paraphrasing it into
  * something shorter is how a tracker ends up coaching advice nobody gave.
+ *
+ * One row per sentence, not per entry. A sentence that matches two rules ("a Mediterranean
+ * diet, lower in saturated fat") arrives as two entries so each can move the macros, and
+ * drawing both printed the same advice twice in a row.
  */
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
@@ -29,6 +33,26 @@ const KIND_ICON: Record<string, string> = {
     other: 'information-circle-outline',
 };
 
+/** Entries sharing a directive, merged into one row with the union of their chips. */
+function rowsOf(guidance: NutritionGuidance[]): NutritionGuidance[] {
+    const rows: NutritionGuidance[] = [];
+    const byDirective = new Map<string, NutritionGuidance>();
+    for (const g of guidance) {
+        const key = g.directive.trim().toLowerCase();
+        const row = byDirective.get(key);
+        if (!row) {
+            const fresh = { ...g, emphasise: [...(g.emphasise ?? [])] };
+            byDirective.set(key, fresh);
+            rows.push(fresh);
+            continue;
+        }
+        for (const e of g.emphasise ?? []) {
+            if (!row.emphasise!.includes(e)) row.emphasise!.push(e);
+        }
+    }
+    return rows;
+}
+
 export function PlanGuidanceCard({ guidance, onPressItem, emptyHint }: Props) {
     if (!guidance.length) {
         return (
@@ -49,7 +73,7 @@ export function PlanGuidanceCard({ guidance, onPressItem, emptyHint }: Props) {
                 <Text style={styles.headerText}>From your health plan</Text>
             </View>
 
-            {guidance.map((g, i) => (
+            {rowsOf(guidance).map((g, i) => (
                 <TouchableOpacity
                     key={`${g.key}-${i}`}
                     style={[styles.row, i > 0 && styles.rowDivided]}
