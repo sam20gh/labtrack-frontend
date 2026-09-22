@@ -23,10 +23,19 @@
  * 5. **Stale content stays up while the next window loads.** Switching range dims the page
  *    rather than blanking it; replacing real content with a spinner to report that more is
  *    coming is the flicker `StaleNotice` exists to avoid.
+ * 6. **The hero collapses as you scroll.** Expanded it is almost half the screen, which is
+ *    right for the first glance and wrong for reading the cards under it. The controls —
+ *    back, range, ‹ › — stay pinned; the big figure fades out and its value moves into the
+ *    title, so the one number the hero exists for never leaves the screen. It is measured
+ *    rather than hard-coded, because the chips wrap and a Dynamic Type setting changes
+ *    every height in it. Built on core `Animated`, not Reanimated: a scroll-linked height
+ *    on one view does not need a worklet, and the hero sits in the layout flow rather than
+ *    floating over the list so that pull-to-refresh stays visible below it.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
+    View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Animated,
+    useWindowDimensions, type ScrollView, type LayoutChangeEvent, type NativeSyntheticEvent, type NativeScrollEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -112,6 +121,10 @@ function HeroChip({ icon, label }: { icon: IconName; label: string }) {
         </View>
     );
 }
+
+/** Hero padding above the controls, and below them once folded. */
+const HERO_PAD_TOP = Spacing.md;
+const HERO_PAD_COLLAPSED = 14;
 
 /** Deterministic "stars" for the night-sky hero — positions fixed so nothing shifts on render. */
 const STARS = [
@@ -342,15 +355,69 @@ export default function SleepRecordScreen() {
     );
     const mainNight = data?.timeline?.find((t) => t.kind === 'night') ?? null;
 
+    /* ------------------------------------------------ the collapsing hero */
+    const { height: windowHeight } = useWindowDimensions();
+    const scrollY = useRef(new Animated.Value(0)).current;
+    const scrollRef = useRef<ScrollView>(null);
+    const lastY = useRef(0);
+    const [topH, setTopH] = useState(0);
+    const [figureH, setFigureH] = useState(0);
+
+    const onTopLayout = (e: LayoutChangeEvent) => setTopH(Math.round(e.nativeEvent.layout.height));
+    const onFigureLayout = (e: LayoutChangeEvent) => setFigureH(Math.round(e.nativeEvent.layout.height));
+
+    const expanded = HERO_PAD_TOP + topH + figureH;
+    const collapsed = HERO_PAD_TOP + topH + HERO_PAD_COLLAPSED;
+    const collapseBy = Math.max(0, expanded - collapsed);
+    const measured = topH > 0 && figureH > 0 && collapseBy > 0;
+    // Guard against a zero-length input range before the first layout pass.
+    const range0 = Math.max(1, collapseBy);
+
+    const anim = useMemo(() => {
+        const clamp = { extrapolate: 'clamp' as const };
+        return {
+            heroHeight: scrollY.interpolate({ inputRange: [0, range0], outputRange: [expanded, collapsed], ...clamp }),
+            figureOpacity: scrollY.interpolate({ inputRange: [0, range0 * 0.6], outputRange: [1, 0], ...clamp }),
+            figureShift: scrollY.interpolate({ inputRange: [0, range0], outputRange: [0, -24], ...clamp }),
+            figureScale: scrollY.interpolate({ inputRange: [0, range0], outputRange: [1, 0.9], ...clamp }),
+            titleOpacity: scrollY.interpolate({ inputRange: [range0 * 0.55, range0 * 0.9], outputRange: [1, 0], ...clamp }),
+            compactOpacity: scrollY.interpolate({ inputRange: [range0 * 0.6, range0], outputRange: [0, 1], ...clamp }),
+            compactShift: scrollY.interpolate({ inputRange: [range0 * 0.6, range0], outputRange: [8, 0], ...clamp }),
+        };
+    }, [scrollY, range0, expanded, collapsed]);
+    const heroHeight = measured ? anim.heroHeight : null;
+    const { figureOpacity, figureShift, figureScale, titleOpacity, compactOpacity, compactShift } = anim;
+
+    // JS driver: `height` is a layout property and the native driver cannot animate it.
+    const onScroll = useMemo(() => Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        {
+            useNativeDriver: false,
+            listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => { lastY.current = e.nativeEvent.contentOffset.y; },
+        }
+    ), [scrollY]);
+
+    /** Never leave the hero stuck half-folded: settle to whichever end is nearer. */
+    const snap = () => {
+        const y = lastY.current;
+        if (!collapseBy || y <= 0 || y >= collapseBy) return;
+        scrollRef.current?.scrollTo({ y: y < collapseBy / 2 ? 0 : collapseBy, animated: true });
+    };
+
+    const compactLabel = heroMinutes !== null
+        ? `${formatMinutes(heroMinutes)} · ${range === '1d' ? 'asleep' : 'avg night'}`
+        : 'Sleep record';
+
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
             {/* ------------------------------------------------------ night-sky hero */}
-            <LinearGradient
-                colors={[Palette.primaryDeep, Palette.primaryDark, Palette.primary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.hero}
-            >
+            <Animated.View style={[styles.hero, heroHeight ? { height: heroHeight } : null]}>
+                <LinearGradient
+                    colors={[Palette.primaryDeep, Palette.primaryDark, Palette.primary]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                />
                 {STARS.map((s, i) => (
                     <View
                         key={i}
@@ -358,88 +425,123 @@ export default function SleepRecordScreen() {
                         style={[styles.star, { top: `${s.t}%`, left: `${s.l}%`, width: s.s, height: s.s }]}
                     />
                 ))}
-                <Ionicons name="moon" size={78} color="rgba(255,255,255,0.07)" style={styles.heroMoon} />
+                <Animated.View pointerEvents="none" style={[styles.heroMoon, { opacity: figureOpacity }]}>
+                    <Ionicons name="moon" size={78} color="rgba(255,255,255,0.07)" />
+                </Animated.View>
 
-                <View style={styles.heroRow}>
-                    <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Back">
-                        <Ionicons name="chevron-back" size={24} color={Palette.white} />
-                    </Pressable>
-                    <Text style={styles.heroTitle}>Sleep record</Text>
-                    <Pressable onPress={() => router.push('/sleep/history')} hitSlop={10} accessibilityLabel="Sleep history">
-                        <Ionicons name="list-outline" size={22} color={Palette.white} />
-                    </Pressable>
-                </View>
-
-                <RangeTabs value={range} onChange={changeRange} />
-
-                <View style={styles.stepper}>
-                    <Pressable
-                        onPress={() => data?.previousEnd && setEnd(data.previousEnd)}
-                        disabled={!data?.previousEnd}
-                        hitSlop={10}
-                        style={[styles.stepButton, !data?.previousEnd && styles.stepDisabled]}
-                        accessibilityLabel="Earlier"
-                    >
-                        <Ionicons name="chevron-back" size={16} color={Palette.white} />
-                    </Pressable>
-                    <Text style={styles.stepLabel}>{periodLabel(data, range)}</Text>
-                    <Pressable
-                        onPress={() => data?.nextEnd && setEnd(data.nextEnd)}
-                        disabled={!data?.nextEnd}
-                        hitSlop={10}
-                        style={[styles.stepButton, !data?.nextEnd && styles.stepDisabled]}
-                        accessibilityLabel="Later"
-                    >
-                        <Ionicons name="chevron-forward" size={16} color={Palette.white} />
-                    </Pressable>
-                </View>
-
-                <View style={styles.heroFigure}>
-                    {hero ? (
-                        <Text style={styles.heroValue}>
-                            {hero.hours}
-                            <Text style={styles.heroUnit}>h </Text>
-                            {hero.mins}
-                            <Text style={styles.heroUnit}>m</Text>
-                        </Text>
-                    ) : (
-                        <Text style={styles.heroValue}>—</Text>
-                    )}
-                    <Text style={styles.heroCaption}>
-                        {range === '1d'
-                            ? 'asleep that night'
-                            : summary && summary.nights
-                                ? `average night · ${summary.nights} of ${summary.dayCount} nights recorded`
-                                : 'average night'}
-                    </Text>
-                    <DeltaChip comparison={summary?.comparison?.asleepMin} period={PERIOD_WORD[range]} />
-                </View>
-
-                {summary && !empty ? (
-                    <View style={styles.heroChips}>
-                        {finite(summary.avgScore) ? <HeroChip icon="star" label={`Score ${summary.avgScore}`} /> : null}
-                        {summary.goal && summary.goal.nights ? (
-                            <HeroChip icon="flag" label={`Goal ${summary.goal.met}/${summary.goal.nights}`} />
-                        ) : null}
-                        {summary.naps.count ? (
-                            <HeroChip
-                                icon="partly-sunny"
-                                label={`${summary.naps.count} ${summary.naps.count === 1 ? 'nap' : 'naps'} · ${formatMinutes(summary.naps.totalMin)}`}
-                            />
-                        ) : null}
+                <View style={styles.heroTop} onLayout={onTopLayout}>
+                    <View style={styles.heroRow}>
+                        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Back">
+                            <Ionicons name="chevron-back" size={24} color={Palette.white} />
+                        </Pressable>
+                        <View style={styles.heroTitleSlot}>
+                            <Animated.Text style={[styles.heroTitle, { opacity: titleOpacity }]}>
+                                Sleep record
+                            </Animated.Text>
+                            {/* The figure, carried up into the bar once the hero has folded. */}
+                            <Animated.Text
+                                numberOfLines={1}
+                                style={[
+                                    styles.heroTitle, styles.heroCompact,
+                                    { opacity: compactOpacity, transform: [{ translateY: compactShift }] },
+                                ]}
+                                accessibilityElementsHidden
+                                importantForAccessibility="no-hide-descendants"
+                            >
+                                {compactLabel}
+                            </Animated.Text>
+                        </View>
+                        <Pressable onPress={() => router.push('/sleep/history')} hitSlop={10} accessibilityLabel="Sleep history">
+                            <Ionicons name="list-outline" size={22} color={Palette.white} />
+                        </Pressable>
                     </View>
-                ) : null}
-            </LinearGradient>
+
+                    <RangeTabs value={range} onChange={changeRange} />
+
+                    <View style={styles.stepper}>
+                        <Pressable
+                            onPress={() => data?.previousEnd && setEnd(data.previousEnd)}
+                            disabled={!data?.previousEnd}
+                            hitSlop={10}
+                            style={[styles.stepButton, !data?.previousEnd && styles.stepDisabled]}
+                            accessibilityLabel="Earlier"
+                        >
+                            <Ionicons name="chevron-back" size={16} color={Palette.white} />
+                        </Pressable>
+                        <Text style={styles.stepLabel}>{periodLabel(data, range)}</Text>
+                        <Pressable
+                            onPress={() => data?.nextEnd && setEnd(data.nextEnd)}
+                            disabled={!data?.nextEnd}
+                            hitSlop={10}
+                            style={[styles.stepButton, !data?.nextEnd && styles.stepDisabled]}
+                            accessibilityLabel="Later"
+                        >
+                            <Ionicons name="chevron-forward" size={16} color={Palette.white} />
+                        </Pressable>
+                    </View>
+                </View>
+
+                <Animated.View
+                    onLayout={onFigureLayout}
+                    style={[
+                        styles.heroBody,
+                        { opacity: figureOpacity, transform: [{ translateY: figureShift }, { scale: figureScale }] },
+                    ]}
+                >
+                    <View style={styles.heroFigure}>
+                        {hero ? (
+                            <Text style={styles.heroValue}>
+                                {hero.hours}
+                                <Text style={styles.heroUnit}>h </Text>
+                                {hero.mins}
+                                <Text style={styles.heroUnit}>m</Text>
+                            </Text>
+                        ) : (
+                            <Text style={styles.heroValue}>—</Text>
+                        )}
+                        <Text style={styles.heroCaption}>
+                            {range === '1d'
+                                ? 'asleep that night'
+                                : summary && summary.nights
+                                    ? `average night · ${summary.nights} of ${summary.dayCount} nights recorded`
+                                    : 'average night'}
+                        </Text>
+                        <DeltaChip comparison={summary?.comparison?.asleepMin} period={PERIOD_WORD[range]} />
+                    </View>
+
+                    {summary && !empty ? (
+                        <View style={styles.heroChips}>
+                            {finite(summary.avgScore) ? <HeroChip icon="star" label={`Score ${summary.avgScore}`} /> : null}
+                            {summary.goal && summary.goal.nights ? (
+                                <HeroChip icon="flag" label={`Goal ${summary.goal.met}/${summary.goal.nights}`} />
+                            ) : null}
+                            {summary.naps.count ? (
+                                <HeroChip
+                                    icon="partly-sunny"
+                                    label={`${summary.naps.count} ${summary.naps.count === 1 ? 'nap' : 'naps'} · ${formatMinutes(summary.naps.totalMin)}`}
+                                />
+                            ) : null}
+                        </View>
+                    ) : null}
+                </Animated.View>
+            </Animated.View>
 
             {!data && loading ? (
                 <View style={styles.centre}><ActivityIndicator color={Palette.primary} /></View>
             ) : !data && error ? (
                 <ErrorState error={error} subject="your sleep record" onRetry={load} />
             ) : data && summary ? (
-                <ScrollView
-                    contentContainerStyle={styles.content}
+                <Animated.ScrollView
+                    ref={scrollRef}
+                    contentContainerStyle={[styles.content, { minHeight: windowHeight + collapseBy }]}
                     showsVerticalScrollIndicator={false}
                     style={loading && !refreshing ? styles.dimmed : undefined}
+                    onScroll={onScroll}
+                    scrollEventThrottle={16}
+                    onScrollEndDrag={(e) => {
+                        if (Math.abs(e.nativeEvent.velocity?.y ?? 0) < 0.2) snap();
+                    }}
+                    onMomentumScrollEnd={snap}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
@@ -692,7 +794,7 @@ export default function SleepRecordScreen() {
                             ) : null}
                         </>
                     )}
-                </ScrollView>
+                </Animated.ScrollView>
             ) : null}
         </SafeAreaView>
     );
@@ -704,10 +806,14 @@ const styles = StyleSheet.create({
     dimmed: { opacity: 0.55 },
 
     hero: {
-        paddingHorizontal: Spacing.xl, paddingTop: Spacing.md, paddingBottom: Spacing.xl,
-        gap: Spacing.lg, overflow: 'hidden',
-        borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
+        paddingHorizontal: Spacing.xl, paddingTop: HERO_PAD_TOP,
+        overflow: 'hidden', zIndex: 2,
+        borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
     },
+    heroTop: { gap: Spacing.lg },
+    heroBody: { paddingTop: Spacing.lg, paddingBottom: Spacing.xl, gap: Spacing.lg },
+    heroTitleSlot: { flex: 1, alignItems: 'center', justifyContent: 'center', marginHorizontal: Spacing.md },
+    heroCompact: { position: 'absolute', fontSize: 15 },
     star: { position: 'absolute', borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)' },
     heroMoon: { position: 'absolute', right: -8, top: 86 },
     heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
