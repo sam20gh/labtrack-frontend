@@ -322,6 +322,101 @@ export const deleteSchedule = (id: string) =>
     api.delete<{ message: string }>(`/sleep/schedules/${id}`);
 
 // ---------------------------------------------------------------------------
+// Sleep record — nights and naps, stacked. See `utils/sleepRecord.js`.
+// ---------------------------------------------------------------------------
+
+export type RecordBucket = 'day' | 'week' | 'month';
+
+/**
+ * One bar. For a day it is that night; for a week or month it is the typical night in it,
+ * with every stage divided by the same count so the segments still sum to `asleepMin`.
+ * Everything is null on a bar nothing was recorded for — no bar is drawn, not a zero.
+ */
+export interface SleepRecordBar {
+    from: string;
+    to: string;
+    dayCount: number;
+    nights: number;
+    asleepMin: number | null;
+    deepMin: number | null;
+    remMin: number | null;
+    lightMin: number | null;
+    /** Time asleep that no stage accounts for — all of it on a source that reports a total. */
+    unstagedMin: number | null;
+    awakeMin: number | null;
+    inBedMin: number | null;
+    score: number | null;
+    efficiency: number | null;
+    bedtimeMin: number | null;
+    wakeMin: number | null;
+    /** Nap minutes per day with any sleep. Zero is real here: slept, and did not nap. */
+    napMin: number | null;
+    napCount: number;
+    /** Day bars only. */
+    nightId?: string | null;
+    naps?: SleepRecordNap[];
+}
+
+export interface SleepRecordNap {
+    id: string;
+    day?: string;
+    startMin: number | null;
+    endMin: number | null;
+    minutes: number;
+}
+
+export interface SleepRecordHighlight { id: string; day: string; value: number }
+
+export interface SleepRecord {
+    range: SleepRange;
+    bucket: RecordBucket;
+    days: string[];
+    today: string;
+    end: string;
+    previousEnd: string | null;
+    nextEnd: string | null;
+    series: SleepRecordBar[];
+    summary: {
+        nights: number;
+        dayCount: number;
+        totalAsleepMin: number | null;
+        avgAsleepMin: number | null;
+        avgInBedMin: number | null;
+        avgEfficiency: number | null;
+        avgScore: number | null;
+        /** `share` is a percentage of the reported stage minutes, awake included. */
+        stages: Record<SleepStageKey, { avgMin: number | null; share: number | null }>;
+        stagedNights: number;
+        bedtime: { avgMin: number | null; spreadMin: number | null };
+        wake: { avgMin: number | null; spreadMin: number | null };
+        goal: { minutes: number; met: number; nights: number } | null;
+        naps: { count: number; totalMin: number | null; avgMin: number | null; days: number };
+        highlights: {
+            longest: SleepRecordHighlight | null;
+            shortest: SleepRecordHighlight | null;
+            bestScore: SleepRecordHighlight | null;
+            mostDeep: SleepRecordHighlight | null;
+        };
+        comparison: { asleepMin: PeriodComparison; score: PeriodComparison } | null;
+    };
+    naps: SleepRecordNap[];
+    /** `1d` only: the night and the naps, with segments, for the timeline. */
+    timeline?: {
+        id: string;
+        kind: 'night' | 'nap';
+        startedAt: string;
+        endedAt: string;
+        asleepMin: number | null;
+        segments: SleepSegment[];
+    }[];
+}
+
+export const getRecord = (range: SleepRange, end?: string | null) =>
+    api.get<SleepRecord>(
+        `/sleep/record?range=${range}&tzOffset=${tzOffset()}${end ? `&end=${end}` : ''}`
+    );
+
+// ---------------------------------------------------------------------------
 // Formatting and colour — kept here so every screen renders a night the same way
 // ---------------------------------------------------------------------------
 
@@ -375,33 +470,48 @@ export const dayLabel = (day: string): string => {
  * the argument `METRIC_TINT` in `lib/prediction.ts` makes about extending rather than
  * restating a palette.
  *
- * The tones are the kit's own. Deep is the primary purple because it is the band the design
- * puts first and the one people are looking for; awake is the amber the app already uses for
- * *earned* rather than *judged* numbers, because time awake in the night is a fact about a
- * night, not a clinical flag.
+ * **The tones are chosen to be told apart, not to match.** They used to be four purples and an
+ * amber, and deep and REM — the two stages people look for — were violet and near-black
+ * violet: indistinguishable on a 4pt bar and invisible to anyone with a colour deficiency.
+ * Now deep stays the brand violet (the band the design puts first), light is its pale
+ * step because light and deep are the same kind of sleep at different depths, REM is cyan
+ * because it is a different kind altogether, and awake keeps the amber the app uses for
+ * facts rather than verdicts. Validated with the dataviz palette checker: every pair clears
+ * the colour-vision separation floor. Light and awake fall under 3:1 against white, which is
+ * why every chart that uses them prints the legend with its values rather than relying on
+ * colour alone.
  */
 export const STAGE_META: Record<SleepStageKey, { label: string; tint: string; description: string }> = {
     deep: {
         label: 'Deep',
-        tint: '#7C3AED',
+        tint: '#5B21B6',
         description: 'The restorative part of the night — physical repair and immune function.',
     },
     rem: {
         label: 'REM',
-        tint: '#2E1065',
+        tint: '#0891B2',
         description: 'When most dreaming happens, and when memory is consolidated.',
     },
     light: {
         label: 'Light',
-        tint: '#C4B5FD',
+        tint: '#A78BFA',
         description: 'Most of a normal night. The stage you pass through between the others.',
     },
     awake: {
         label: 'Awake',
-        tint: '#EA8C00',
+        tint: '#F59E0B',
         description: 'Time in bed but not asleep. Brief waking through the night is normal.',
     },
 };
+
+/**
+ * The two things a record draws that are not stages. A nap is its own hue (pink, validated
+ * with the stages above) because it is a separate sleep, not a part of the night. Unstaged
+ * is grey: a source that reported only a total measured the night but not its make-up, and
+ * a colour would claim a stage nobody recorded.
+ */
+export const NAP_META = { label: 'Nap', tint: '#DB2777' } as const;
+export const UNSTAGED_META = { label: 'No stage data', tint: '#CBD5E1' } as const;
 
 export const STAGE_ORDER: SleepStageKey[] = ['deep', 'rem', 'light', 'awake'];
 

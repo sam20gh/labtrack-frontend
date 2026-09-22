@@ -342,7 +342,7 @@ export default function SleepDashboard() {
 
                 {/* ------------------------------------------------- the trend */}
                 {overview && overview.series.some((p) => Number.isFinite(p.asleepMin as number)) ? (
-                    <Section title="Sleep over time" action="Insight" onAction={() => router.push('/sleep/insight')}>
+                    <Section title="Sleep over time" action="Full record" onAction={() => router.push('/sleep/record')}>
                         <View style={styles.card}>
                             <RangeTabs value={range} onChange={setRange} />
                             <MetricAreaChart

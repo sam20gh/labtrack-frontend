@@ -17,6 +17,7 @@ export default function SleepLayout() {
             <Stack.Screen name="goal" />
             <Stack.Screen name="history" />
             <Stack.Screen name="insight" />
+            <Stack.Screen name="record" />
             <Stack.Screen name="score" />
             <Stack.Screen name="log" />
             <Stack.Screen name="schedule/index" />
