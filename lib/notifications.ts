@@ -122,6 +122,8 @@ const syncTokenWithServer = async (): Promise<{
                 token,
                 platform: Platform.OS === 'ios' ? 'ios' : 'android',
                 deviceName: Device.deviceName ?? undefined,
+                // Lets the server send time-of-day nudges in this phone's own clock.
+                tzOffset: new Date().getTimezoneOffset(),
             },
         });
 
