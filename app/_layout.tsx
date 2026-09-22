@@ -137,6 +137,7 @@ export default function RootLayout() {
         <Stack.Screen name="sleep" options={{ headerShown: false }} />
         <Stack.Screen name="bracelet" options={{ headerShown: false }} />
         <Stack.Screen name="score" options={{ headerShown: false }} />
+        <Stack.Screen name="age" options={{ headerShown: false }} />
         {/* Predictive health analysis. One entry: expo-router nests the whole directory,
             and every screen under it draws its own top inset. */}
         <Stack.Screen name="predict" options={{ headerShown: false }} />

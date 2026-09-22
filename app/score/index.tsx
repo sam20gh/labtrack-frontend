@@ -31,6 +31,7 @@ import {
     getScore, getTrend, recompute, bandMeta, SOURCE_META, PILLAR_ICON, PILLAR_ROUTE,
     type HealthScore, type ScoreTrend, type TrendRange, type Pillar,
 } from '@/lib/score';
+import { openAge } from '@/lib/age';
 import {
     getLatestInterpretation, type LatestInterpretation,
 } from '@/lib/interpretation';
@@ -340,6 +341,31 @@ export default function ScoreBreakdownScreen() {
                         <Text style={styles.predictTitle}>Predict my score</Text>
                         <Text style={styles.predictBody}>
                             Project this number forward, with the range it is actually heading for.
+                        </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={Palette.primary} />
+                </TouchableOpacity>
+
+                {/*
+                  The other aggregate number, and the two are adjacent questions.
+
+                  This score says how well somebody is using their trackers; the Miovix Age
+                  says what those trackers imply about their body. Somebody reading a
+                  suboptimal score is exactly the person who wants the second, and linking
+                  rather than embedding it is the same call the predict row above makes —
+                  `/age` reads six months across five collections, and this screen is one
+                  people open several times a day.
+                */}
+                <TouchableOpacity
+                    style={styles.predictRow}
+                    onPress={() => { openAge(router); }}
+                    accessibilityRole="button"
+                >
+                    <Ionicons name="hourglass-outline" size={18} color={Palette.primary} />
+                    <View style={styles.flexOne}>
+                        <Text style={styles.predictTitle}>How old is your body?</Text>
+                        <Text style={styles.predictBody}>
+                            What your blood results and six months of habits say your age is.
                         </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={Palette.primary} />

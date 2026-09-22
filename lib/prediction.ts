@@ -314,6 +314,7 @@ export const getStatus = () =>
 /** Icons per metric. A metric with no icon here falls back to the analytics glyph. */
 export const METRIC_ICON: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
     turing_score: 'medkit',
+    age_delta: 'hourglass',
     blood_pressure: 'heart',
     weight: 'barbell',
     sleep: 'moon',
@@ -339,6 +340,7 @@ export const iconFor = (metric: string) => METRIC_ICON[metric] ?? 'analytics';
  */
 export const METRIC_ROUTE: Record<string, string> = {
     turing_score: '/score',
+    age_delta: '/age',
     calories: '/nutrition',
     resting_heart_rate: TRACKER_ROUTE.heart_rate,
     blood_pressure: TRACKER_ROUTE.blood_pressure,
@@ -378,6 +380,16 @@ export const METRIC_TINT: Record<string, string> = {
     calories: '#F97316',
     /** Resting heart rate shares the heart-rate rose; it is the same measurement, at rest. */
     resting_heart_rate: TRACKER_TINT.heart_rate,
+    /**
+     * Teal, and deliberately outside the violet ramp the score occupies.
+     *
+     * The score and the age gap are the two aggregate numbers in the app and the picker lists
+     * them adjacently, so they have to be separable at glyph size. Drawing the age in another
+     * violet would make it read as a second view of the score, which is the one thing it is
+     * not: the score says how well somebody is using their trackers, the gap says what those
+     * trackers imply about their body.
+     */
+    age_delta: Palette.teal,
 };
 
 export const tintFor = (metric: string) => METRIC_TINT[metric] ?? Palette.primary;

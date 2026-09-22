@@ -85,6 +85,8 @@ import {
     RISK_META, byRiskSeverity, type LatestInterpretation,
 } from '@/lib/interpretation';
 import { getScore, bandMeta, isMostlyReported, type HealthScore } from '@/lib/score';
+import { getAge, openAge, type MiovixAge } from '@/lib/age';
+import AgeCard, { AgeCardSkeleton } from '@/components/home/AgeCard';
 import {
     getOverview, METRIC_ICON, METRIC_TINT, METRIC_ROUTE,
     type MetricCard as MetricCardData,
@@ -242,6 +244,15 @@ export default function HomeScreen() {
     const [nutrition, setNutrition] = useState<NutritionDay | null>(null);
     const [resources, setResources] = useState<ResourceCardType[]>([]);
     const [score, setScore] = useState<HealthScore>(EMPTY_SCORE);
+    /**
+     * Miovix Age.
+     *
+     * `null` means not loaded yet and draws a skeleton; a loaded refusal is a real answer and
+     * sends the feature to the setup list. The two are distinguished because a card that
+     * vanished mid-load would make the sections under it jump.
+     */
+    const [age, setAge] = useState<MiovixAge | null>(null);
+    const [ageLoaded, setAgeLoaded] = useState(false);
     const [metrics, setMetrics] = useState<MetricCardData[]>([]);
     const [activity, setActivity] = useState<ActivitySummary | null>(null);
     const [sessions, setSessions] = useState<ActivitySession[]>([]);
@@ -371,11 +382,44 @@ export default function HomeScreen() {
         }, [load]),
     );
 
+    /**
+     * Miovix Age, after the first paint and on its own timeline.
+     *
+     * **Deliberately not in the `allSettled` above.** `GET /age` reads six months of activity,
+     * sleep, heart and body rollups plus three years of biomarkers, and recomputes both halves
+     * on a cache miss — the heaviest single read this screen could make. Putting it in the
+     * first-paint batch would hold the whole home screen behind it, and `useFocusEffect`
+     * refires on every return, so it would read as the screen you navigated *back from* being
+     * slow. That is the failure `app/nutrition/index.tsx` documents and `TrophyCase` repeats
+     * for the same query-weight reason.
+     *
+     * A `mounted` ref guards the write, and a failure leaves the card absent rather than
+     * surfacing an error: the age is the one thing on this screen that is not time-sensitive.
+     */
+    const ageMounted = useRef(true);
+
+    const loadAge = useCallback(async () => {
+        try {
+            const data = await getAge();
+            if (ageMounted.current) setAge(data);
+        } catch {
+            if (ageMounted.current) setAge({ ok: false, disclaimer: '' } as MiovixAge);
+        } finally {
+            if (ageMounted.current) setAgeLoaded(true);
+        }
+    }, []);
+
+    useFocusEffect(useCallback(() => {
+        ageMounted.current = true;
+        loadAge();
+        return () => { ageMounted.current = false; };
+    }, [loadAge]));
+
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await load();
+        await Promise.all([load(), loadAge()]);
         setRefreshing(false);
-    }, [load]);
+    }, [load, loadAge]);
 
     /**
      * Generate (or regenerate) the interpretation for the newest result.
@@ -717,6 +761,47 @@ export default function HomeScreen() {
 
     const trackers: { id: string; order: number; node: React.ReactNode }[] = [];
     const setup: SetupItem[] = [];
+
+    /**
+     * Miovix Age.
+     *
+     * Earned like everything else here: a section only once there is an answer, a setup row
+     * otherwise. While it is still loading it draws a skeleton in its slot rather than
+     * nothing, because this one arrives after the first paint and a card appearing later
+     * would shove every section below it down the screen.
+     *
+     * **`order: 1.5`, and the fraction is load-bearing.** It sits above the individual
+     * trackers, for the reason the score does — a summary before its parts — but *below* the
+     * two slots that are time-sensitive: doses still due today take 0, and an appointment
+     * inside 48 hours takes 1. A number computed over a six-month window, which cannot
+     * meaningfully move between two app opens, must never push something happening tomorrow
+     * down the screen. That is rule 5 of this file's header, and at a whole number it would
+     * have tied with the imminent appointment and won on push order alone — silently, and
+     * only for the people who had one.
+     */
+    if (!ageLoaded) {
+        trackers.push({ id: 'age', order: 1.5, node: <Section title="Miovix Age"><AgeCardSkeleton /></Section> });
+    } else if (age?.ok) {
+        trackers.push({
+            id: 'age',
+            order: 1.5,
+            node: (
+                <Section title="Miovix Age" action="See All" onAction={() => { openAge(router); }}>
+                    <AgeCard age={age} onPress={() => { openAge(router); }} />
+                </Section>
+            ),
+        });
+    } else {
+        setup.push({
+            id: 'age',
+            icon: 'hourglass-outline',
+            title: 'Find your Miovix Age',
+            body: 'How old your blood results and your habits say you are, and the things that '
+                + 'would lower it. A blood test or a connected watch is enough to start.',
+            route: '/age',
+            open: () => { openAge(router); },
+        });
+    }
 
     /**
      * Looking ahead.
