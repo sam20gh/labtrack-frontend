@@ -1,18 +1,25 @@
 /**
  * One AI meal suggestion.
  *
- * **The kit's card is a full-bleed food photograph, and this one is not.** There is no
- * source for a picture of a meal that has not been cooked: every photograph in this feature
- * is one the person took, and dropping stock imagery of someone else's salmon into a health
- * record dresses a suggestion up as evidence. So the tile is a tinted panel carrying the
- * dish, its macros and the one line saying which part of their plan it serves — which is
- * the information the photograph was decorating.
+ * **The photograph is an example, and the card says so.** Nothing has been cooked, so no
+ * picture on this card can be of the meal: it is somebody else's dish with a similar name,
+ * from Unsplash, chosen on the server by `utils/mealImages.js`. The first version of this
+ * card refused stock imagery for exactly that reason — a picture dresses a suggestion up as
+ * evidence. It is back because a rail of six tinted panels gave nobody an idea of what they
+ * were being offered, and it is back on three conditions:
  *
- * The gradient is picked from the meal slot rather than at random, so the same suggestion
- * looks the same on the rail and on its detail sheet, and a rail of six does not shimmer.
+ *   1. **"Example photo" is printed on the picture itself**, not in a footnote, together with
+ *      the photographer's credit that Unsplash requires anyway.
+ *   2. **The server skips any photo whose description names something this person cannot
+ *      eat**, using the same screen the dish passed. A safe salad under a stock shot covered
+ *      in walnuts would be the one thing on this card a nut-allergic person should not see.
+ *   3. **A missing photo is the old card, not a broken one.** Older cached sets, no key on
+ *      the server, a rate limit, a search that found nothing safe: the tile falls back to the
+ *      tinted panel, picked from the meal slot so a rail of six does not shimmer.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Linking } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
@@ -34,6 +41,79 @@ const SLOT_ICON: Record<MealType, string> = {
     snack: 'cafe-outline',
 };
 
+/** Top and bottom shade, so white chips and the credit read over any photograph. */
+const SCRIM: [string, string, string] = ['rgba(15,23,42,0.28)', 'rgba(15,23,42,0)', 'rgba(15,23,42,0.62)'];
+
+const open = (url?: string) => { if (url) Linking.openURL(url).catch(() => {}); };
+
+interface HeroProps {
+    suggestion: MealSuggestion;
+    height: number;
+    /** `full` spells the credit out and links both names; `compact` fits a 250pt card. */
+    credit?: 'compact' | 'full';
+    children?: React.ReactNode;
+}
+
+/**
+ * The top of a suggestion: its example photograph with the credit, or the tinted panel.
+ * Shared by the card and the detail sheet so the two cannot disagree about the label.
+ */
+export function SuggestionHero({ suggestion, height, credit = 'compact', children }: HeroProps) {
+    const slot = suggestion.mealType || 'lunch';
+    const image = suggestion.image;
+
+    if (!image?.url) {
+        return (
+            <LinearGradient
+                colors={SLOT_WASH[slot]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.hero, { height }]}
+            >
+                <View style={styles.chipRow}>{children}</View>
+            </LinearGradient>
+        );
+    }
+
+    return (
+        <View style={[styles.hero, { height, backgroundColor: image.color || Palette.canvas }]}>
+            <Image
+                source={{ uri: image.url }}
+                placeholder={image.blurHash ? { blurhash: image.blurHash } : undefined}
+                contentFit="cover"
+                transition={200}
+                style={StyleSheet.absoluteFill}
+                accessibilityIgnoresInvertColors
+                // Decoration: the dish is named in text directly below
+                accessible={false}
+            />
+            <LinearGradient colors={SCRIM} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+
+            <View style={styles.chipRow}>{children}</View>
+
+            <View style={styles.credit}>
+                <Ionicons name="image-outline" size={11} color={Palette.white} />
+                {credit === 'full' ? (
+                    <Text style={styles.creditText} numberOfLines={1}>
+                        Example photo by{' '}
+                        <Text style={styles.creditLink} onPress={() => open(image.authorUrl)}>
+                            {image.author || 'a photographer'}
+                        </Text>
+                        {' '}on{' '}
+                        <Text style={styles.creditLink} onPress={() => open(image.photoUrl)}>Unsplash</Text>
+                    </Text>
+                ) : (
+                    <Pressable onPress={() => open(image.authorUrl || image.photoUrl)} hitSlop={6} style={styles.creditPress}>
+                        <Text style={styles.creditText} numberOfLines={1}>
+                            Example photo · {image.author ? `${image.author} / ` : ''}Unsplash
+                        </Text>
+                    </Pressable>
+                )}
+            </View>
+        </View>
+    );
+}
+
 interface Props {
     suggestion: MealSuggestion;
     onPress?: () => void;
@@ -43,6 +123,8 @@ interface Props {
 
 export function SuggestionCard({ suggestion, onPress, variant = 'rail' }: Props) {
     const slot = suggestion.mealType || 'lunch';
+    // The panel only needs room for chips; a photograph needs room to be a picture
+    const height = suggestion.image?.url ? (variant === 'rail' ? 132 : 168) : 96;
 
     return (
         <TouchableOpacity
@@ -51,12 +133,7 @@ export function SuggestionCard({ suggestion, onPress, variant = 'rail' }: Props)
             disabled={!onPress}
             activeOpacity={0.85}
         >
-            <LinearGradient
-                colors={SLOT_WASH[slot]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.wash}
-            >
+            <SuggestionHero suggestion={suggestion} height={height}>
                 <View style={styles.slotChip}>
                     <Ionicons name={SLOT_ICON[slot] as any} size={12} color={Palette.text} />
                     <Text style={styles.slotText}>{MEAL_TYPE_LABEL[slot]}</Text>
@@ -68,7 +145,7 @@ export function SuggestionCard({ suggestion, onPress, variant = 'rail' }: Props)
                         <Text style={styles.slotText}>{suggestion.prepMinutes}m</Text>
                     </View>
                 )}
-            </LinearGradient>
+            </SuggestionHero>
 
             <View style={styles.body}>
                 <Text style={styles.name} numberOfLines={2}>{suggestion.name}</Text>
@@ -106,8 +183,8 @@ const styles = StyleSheet.create({
     },
     rail: { width: 250 },
     list: { width: '100%' },
-    wash: {
-        height: 96,
+    hero: { overflow: 'hidden', justifyContent: 'space-between' },
+    chipRow: {
         padding: Spacing.md,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -123,6 +200,17 @@ const styles = StyleSheet.create({
         paddingVertical: 3,
     },
     slotText: { fontFamily: Fonts.semibold, fontSize: 10, color: Palette.text },
+
+    credit: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: Spacing.md,
+        paddingBottom: Spacing.sm,
+    },
+    creditPress: { flexShrink: 1 },
+    creditText: { flexShrink: 1, fontFamily: Fonts.medium, fontSize: 10, color: Palette.white },
+    creditLink: { fontFamily: Fonts.semibold, textDecorationLine: 'underline' },
 
     body: { padding: Spacing.md, gap: Spacing.xs },
     name: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.text },

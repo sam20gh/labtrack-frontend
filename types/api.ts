@@ -748,9 +748,25 @@ export interface NutritionCalendar {
  * drops rather than flags: a suggestion that reaches the client is one the person can eat.
  * `ingredients` is listed on the detail sheet so they can check for themselves anyway.
  */
+/**
+ * An example photograph of a dish like this one — never of this person's meal. Hotlinked
+ * from Unsplash, which requires the credit to be drawn with it. Absent on older sets and
+ * whenever none was found or none was safe to show.
+ */
+export interface SuggestionImage {
+    provider: 'unsplash';
+    url: string;
+    blurHash?: string;
+    color?: string;
+    author?: string;
+    authorUrl?: string;
+    photoUrl?: string;
+}
+
 export interface MealSuggestion {
     name: string;
     mealType: MealType;
+    image?: SuggestionImage;
     why?: string;
     ingredients: string[];
     tags: string[];

@@ -294,7 +294,7 @@ export default function NutritionScreen() {
                                 >
                                     {[0, 1].map((i) => (
                                         <View key={i} style={styles.suggestionSkeleton}>
-                                            <SkeletonBlock width="100%" height={96} radius={0} />
+                                            <SkeletonBlock width="100%" height={132} radius={0} />
                                             <View style={styles.suggestionSkeletonBody}>
                                                 <SkeletonBlock width="80%" height={16} />
                                                 <SkeletonBlock width="100%" height={12} />

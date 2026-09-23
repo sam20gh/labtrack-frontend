@@ -25,7 +25,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getRecommendations, logMeal, mealFromSuggestion, MEAL_TYPE_LABEL, MACRO_META } from '@/lib/nutrition';
-import { SuggestionCard } from '@/components/nutrition/SuggestionCard';
+import { SuggestionCard, SuggestionHero } from '@/components/nutrition/SuggestionCard';
 import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
 import type { NutritionRecommendations, MealSuggestion } from '@/types/api';
 
@@ -150,6 +150,11 @@ export default function RecommendationsScreen() {
                     <View style={styles.sheet}>
                         <View style={styles.sheetHandle} />
                         <ScrollView showsVerticalScrollIndicator={false}>
+                            {open.image?.url ? (
+                                <View style={styles.sheetHero}>
+                                    <SuggestionHero suggestion={open} height={196} credit="full" />
+                                </View>
+                            ) : null}
                             <Text style={styles.sheetSlot}>{MEAL_TYPE_LABEL[open.mealType]}</Text>
                             <Text style={styles.sheetTitle}>{open.name}</Text>
                             {open.why ? <Text style={styles.sheetWhy}>{open.why}</Text> : null}
@@ -289,6 +294,7 @@ const styles = StyleSheet.create({
         width: 36, height: 4, borderRadius: 2, backgroundColor: Palette.border,
         alignSelf: 'center', marginBottom: Spacing.lg,
     },
+    sheetHero: { borderRadius: Radius.lg, overflow: 'hidden', marginBottom: Spacing.lg },
     sheetSlot: {
         fontFamily: Fonts.bold, fontSize: 11, color: Palette.primary,
         textTransform: 'uppercase', letterSpacing: 0.6,
