@@ -80,8 +80,8 @@ export function QuickActionsSheet({ visible, onClose, onSelect, barHeight }: Pro
                                 accessibilityRole="button"
                                 accessibilityLabel={action.label}
                             >
-                                <View style={styles.actionIcon}>
-                                    <Ionicons name={action.icon} size={22} color={Palette.text} />
+                                <View style={[styles.actionIcon, { backgroundColor: action.surface }]}>
+                                    <Ionicons name={action.icon} size={22} color={action.tint} />
                                 </View>
                                 <Text style={styles.actionLabel} numberOfLines={1}>{action.label}</Text>
                             </TouchableOpacity>
@@ -130,8 +130,8 @@ const styles = StyleSheet.create({
     action: { width: '33.333%', alignItems: 'center', gap: Spacing.sm, paddingHorizontal: Spacing.xs },
     actionIcon: {
         width: 52, height: 52, borderRadius: 26,
-        backgroundColor: Palette.surface,
-        borderWidth: 1, borderColor: Palette.borderLight,
+        // Background comes from the action's own `surface`. No border: a pale tinted disc on
+        // white already reads as a shape, and a grey ring around fifteen colours muddies them.
         alignItems: 'center', justifyContent: 'center',
     },
     actionLabel: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.text },

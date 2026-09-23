@@ -29,6 +29,7 @@ import type { Router } from 'expo-router';
 import { openResourcesHub } from './resources';
 import { openPredictions } from './prediction';
 import { openAchievements } from './achievements';
+import { Palette } from '@/constants/theme';
 
 export interface QuickAction {
     id: string;
@@ -42,24 +43,49 @@ export interface QuickAction {
      * Predict both do; the flag exists so neither puts its AsyncStorage read into a component.
      */
     gated?: boolean;
+    /**
+     * The glyph's colour and the disc behind it. **Wayfinding, never a verdict** — the same
+     * rule the tab bar follows — so none of these is `success`/`warning`/`danger`: a red
+     * Symptoms tile would read as "something is wrong with you" before anyone had tapped it.
+     * Where a feature already owns a colour elsewhere (Sleep's indigo, Hydration's blue,
+     * Predict's violet, Results' teal on the tab bar) the tile reuses it, so the colour
+     * someone taps is the colour the screen opens in.
+     *
+     * Assigned so no two tiles that touch in the 3-column grid share a hue. Adding one
+     * means checking its neighbours, not just picking a colour nobody else has.
+     */
+    tint: string;
+    surface: string;
 }
 
+const T = {
+    teal: { tint: Palette.teal, surface: Palette.tealSurface },
+    violet: { tint: Palette.primary, surface: Palette.primaryTint },
+    pink: { tint: Palette.pink, surface: Palette.pinkSurface },
+    orange: { tint: Palette.orange, surface: Palette.orangeSurface },
+    lime: { tint: Palette.lime, surface: Palette.limeSurface },
+    indigo: { tint: Palette.indigo, surface: Palette.indigoSurface },
+    sky: { tint: Palette.sky, surface: Palette.skySurface },
+    flame: { tint: Palette.flameDeep, surface: Palette.orangeSurface },
+    gold: { tint: Palette.amber, surface: Palette.warningSurface },
+} as const;
+
 export const QUICK_ACTIONS: QuickAction[] = [
-    { id: 'add-result', icon: 'add-circle-outline', label: 'Add result', route: '/add-result' },
-    { id: 'metrics', icon: 'analytics-outline', label: 'Metrics', route: '/metrics' },
-    { id: 'symptoms', icon: 'pulse-outline', label: 'Symptoms', route: '/symptoms' },
-    { id: 'nutrition', icon: 'restaurant-outline', label: 'Nutrition', route: '/nutrition' },
-    { id: 'activity', icon: 'fitness-outline', label: 'Activity', route: '/activity' },
-    { id: 'sleep', icon: 'moon-outline', label: 'Sleep', route: '/sleep' },
-    { id: 'medications', icon: 'medkit-outline', label: 'Medications', route: '/medications' },
-    { id: 'hydration', icon: 'water-outline', label: 'Hydration', route: '/metrics/water' },
-    { id: 'plan', icon: 'calendar-outline', label: 'My plan', route: '/myplans' },
-    { id: 'consult', icon: 'people-outline', label: 'Consult', route: '/(tabs)/professionals' },
-    { id: 'appointments', icon: 'today-outline', label: 'Diary', route: '/appointments' },
-    { id: 'resources', icon: 'library-outline', label: 'Resources', route: '/resources', gated: true },
-    { id: 'predict', icon: 'sparkles-outline', label: 'Predict', route: '/predict', gated: true },
-    { id: 'achievements', icon: 'trophy-outline', label: 'Badges', route: '/achievements', gated: true },
-    { id: 'score', icon: 'speedometer-outline', label: 'Score', route: '/score' },
+    { id: 'add-result', icon: 'add-circle-outline', label: 'Add result', route: '/add-result', ...T.teal },
+    { id: 'metrics', icon: 'analytics-outline', label: 'Metrics', route: '/metrics', ...T.violet },
+    { id: 'symptoms', icon: 'pulse-outline', label: 'Symptoms', route: '/symptoms', ...T.pink },
+    { id: 'nutrition', icon: 'restaurant-outline', label: 'Nutrition', route: '/nutrition', ...T.orange },
+    { id: 'activity', icon: 'fitness-outline', label: 'Activity', route: '/activity', ...T.lime },
+    { id: 'sleep', icon: 'moon-outline', label: 'Sleep', route: '/sleep', ...T.indigo },
+    { id: 'medications', icon: 'medkit-outline', label: 'Medications', route: '/medications', ...T.pink },
+    { id: 'hydration', icon: 'water-outline', label: 'Hydration', route: '/metrics/water', ...T.sky },
+    { id: 'plan', icon: 'calendar-outline', label: 'My plan', route: '/myplans', ...T.flame },
+    { id: 'consult', icon: 'people-outline', label: 'Consult', route: '/(tabs)/professionals', ...T.teal },
+    { id: 'appointments', icon: 'today-outline', label: 'Diary', route: '/appointments', ...T.pink },
+    { id: 'resources', icon: 'library-outline', label: 'Resources', route: '/resources', gated: true, ...T.lime },
+    { id: 'predict', icon: 'sparkles-outline', label: 'Predict', route: '/predict', gated: true, ...T.violet },
+    { id: 'achievements', icon: 'trophy-outline', label: 'Badges', route: '/achievements', gated: true, ...T.gold },
+    { id: 'score', icon: 'speedometer-outline', label: 'Score', route: '/score', ...T.indigo },
 ];
 
 /**
