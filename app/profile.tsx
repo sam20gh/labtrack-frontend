@@ -652,7 +652,7 @@ const PromoCard = ({ onPress }: { onPress: () => void }) => (
             </View>
         </View>
         <View style={styles.promoGlyph}>
-            <Ionicons name="flask-outline" size={30} color={Palette.primaryLight} />
+            <Ionicons name="flask-outline" size={30} color={Palette.textSecondary} />
         </View>
     </Pressable>
 );

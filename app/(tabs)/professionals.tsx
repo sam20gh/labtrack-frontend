@@ -232,7 +232,7 @@ const ProfessionalsScreen = () => {
                         <Ionicons
                             name={filtered ? 'search-outline' : 'people-outline'}
                             size={38}
-                            color={Palette.primaryLight}
+                            color={Palette.textSecondary}
                         />
                         <Text style={styles.emptyTitle}>
                             {filtered ? 'No specialists match' : 'No specialists yet'}

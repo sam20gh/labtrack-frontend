@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm,
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    windowOn: { backgroundColor: Palette.primarySurface, borderColor: Palette.primaryLight },
+    windowOn: { backgroundColor: Palette.primarySurface, borderColor: Palette.primary },
     windowText: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary },
     windowTextOn: { fontFamily: Fonts.semibold, color: Palette.primary },
 

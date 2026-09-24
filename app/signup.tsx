@@ -253,7 +253,7 @@ const RegisterScreen = () => {
                   <Ionicons
                     name="log-out-outline"
                     size={20}
-                    color={isFormValid ? Palette.white : Palette.primaryLight}
+                    color={isFormValid ? Palette.white : Palette.primary}
                   />
                 </>
               )}

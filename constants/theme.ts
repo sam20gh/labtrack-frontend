@@ -16,6 +16,14 @@ export const Palette = {
     /** Primary accent — the turing kit purple. */
     primary: '#7C3AED',
     primaryDark: '#6D28D9',
+    /**
+     * A **fill and decoration** weight, never text on a light ground: 2.72:1 on white and
+     * 2.31:1 on `primarySurface`, under both AA text (4.5:1) and non-text (3:1). Fine as a
+     * chart mark beside a label, a gradient stop, a border on a card whose fill already
+     * defines it, or anything on a dark surface (5.6:1 on `primaryDeep`, 7.7:1 on black).
+     * For text, an icon that means something, or the outline that alone marks a selected
+     * state, use `primary` (5.7:1).
+     */
     primaryLight: '#A78BFA',
     /**
      * One stop paler than `primaryLight`, and the kit's own value for a violet that has to

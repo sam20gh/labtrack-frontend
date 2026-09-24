@@ -44,7 +44,9 @@ export const authStyles = StyleSheet.create({
         color: Palette.white,
     },
     primaryButtonTextDisabled: {
-        color: Palette.primaryLight,
+        // `primary`, not `primaryLight`: 2.3:1 on this fill. A disabled control is exempt
+        // from contrast rules, but somebody still has to read what it will do.
+        color: Palette.primary,
     },
 
     divider: {

@@ -2644,7 +2644,7 @@ const ProductCard = ({ product, onPress }: { product: Product; onPress: () => vo
         {product.image
             ? <Image source={{ uri: product.image }} style={styles.productImage} />
             : <View style={[styles.productImage, styles.productPlaceholder]}>
-                <Ionicons name="flask-outline" size={26} color={Palette.primaryLight} />
+                <Ionicons name="flask-outline" size={26} color={Palette.textSecondary} />
             </View>}
         <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
         <Text style={styles.productPrice}>£{product.price}</Text>

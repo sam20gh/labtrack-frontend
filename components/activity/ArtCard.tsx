@@ -62,7 +62,7 @@ export function ArtCard({
                         style={({ pressed }) => [styles.action, pressed && styles.pressed]}
                     >
                         <Text style={styles.actionText}>{action.label}</Text>
-                        <Ionicons name={action.icon ?? 'add'} size={17} color={Palette.primaryLight} />
+                        <Ionicons name={action.icon ?? 'add'} size={17} color={Palette.primary} />
                     </Pressable>
                 )}
             </View>
