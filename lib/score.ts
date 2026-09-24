@@ -140,11 +140,16 @@ export const recompute = (trigger: 'sync' | 'manual' = 'manual') =>
  * and a person who simply has not logged anything for a fortnight must not be told they are
  * in a critical state by a number that knows nothing about them.
  */
-export const BAND_META: Record<ScoreBand | 'unknown', { label: string; color: string }> = schemed((Palette, scheme) => ({
-    healthy: { label: 'Healthy', color: tone('#34D399', scheme) },
-    suboptimal: { label: 'Suboptimal', color: tone('#FBBF24', scheme) },
-    attention: { label: 'Needs attention', color: tone('#FB7185', scheme) },
-    unknown: { label: 'Not enough data', color: Palette.borderStrong },
+/*
+ * `headline` is the sentence the home score card leads with. It used to be `${label} health`,
+ * which read "Healthy health" and "Needs attention health". Each is a statement about the
+ * records rather than about the body, for the same reason the bottom band is not "Critical".
+ */
+export const BAND_META: Record<ScoreBand | 'unknown', { label: string; headline: string; color: string }> = schemed((Palette, scheme) => ({
+    healthy: { label: 'Healthy', headline: "You're on track", color: tone('#34D399', scheme) },
+    suboptimal: { label: 'Suboptimal', headline: 'Room to improve', color: tone('#FBBF24', scheme) },
+    attention: { label: 'Needs attention', headline: 'Some areas need attention', color: tone('#FB7185', scheme) },
+    unknown: { label: 'Not enough data', headline: 'Not enough data yet', color: Palette.borderStrong },
 }));
 
 export const bandMeta = (band: ScoreBand | null) => BAND_META[band ?? 'unknown'];

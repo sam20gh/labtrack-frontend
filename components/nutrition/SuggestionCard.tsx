@@ -22,7 +22,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Pressable, Linking } from 're
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Fonts, Spacing, Radius, BodyFont, activePalette, tone, schemed } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont, activePalette, tone, schemed, Palettes } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { MEAL_TYPE_LABEL } from '@/lib/nutrition';
 import type { MealSuggestion, MealType } from '@/types/api';
@@ -41,6 +41,13 @@ const SLOT_ICON: Record<MealType, string> = {
     dinner: 'moon-outline',
     snack: 'cafe-outline',
 };
+
+/**
+ * Ink for the white chips on the picture. The chip is white in both schemes — it sits on a
+ * photograph, which does not change with the theme — so its label must not either. Reading
+ * the live `Palette.text` here drew near-white text on a white chip in dark mode.
+ */
+const CHIP_INK = Palettes.light.text;
 
 /** Top and bottom shade, so white chips and the credit read over any photograph. */
 const SCRIM: [string, string, string] = ['rgba(15,23,42,0.28)', 'rgba(15,23,42,0)', 'rgba(15,23,42,0.62)'];
@@ -125,7 +132,6 @@ interface Props {
 }
 
 export function SuggestionCard({ suggestion, onPress, variant = 'rail' }: Props) {
-    const Palette = usePalette();
     const styles = useStyles();
     const slot = suggestion.mealType || 'lunch';
     // The panel only needs room for chips; a photograph needs room to be a picture
@@ -140,13 +146,13 @@ export function SuggestionCard({ suggestion, onPress, variant = 'rail' }: Props)
         >
             <SuggestionHero suggestion={suggestion} height={height}>
                 <View style={styles.slotChip}>
-                    <Ionicons name={SLOT_ICON[slot] as any} size={12} color={Palette.text} />
+                    <Ionicons name={SLOT_ICON[slot] as any} size={12} color={CHIP_INK} />
                     <Text style={styles.slotText}>{MEAL_TYPE_LABEL[slot]}</Text>
                 </View>
 
                 {suggestion.prepMinutes != null && (
                     <View style={styles.slotChip}>
-                        <Ionicons name="time-outline" size={12} color={Palette.text} />
+                        <Ionicons name="time-outline" size={12} color={CHIP_INK} />
                         <Text style={styles.slotText}>{suggestion.prepMinutes}m</Text>
                     </View>
                 )}
@@ -208,7 +214,7 @@ const useStyles = makeStyles((Palette) => ({
         paddingHorizontal: Spacing.sm,
         paddingVertical: 3,
     },
-    slotText: { fontFamily: Fonts.semibold, fontSize: 10, color: Palette.text },
+    slotText: { fontFamily: Fonts.semibold, fontSize: 10, color: CHIP_INK },
 
     credit: {
         flexDirection: 'row',

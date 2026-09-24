@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { getGallery, ALIGNMENT_META, MEAL_TYPE_LABEL } from '@/lib/nutrition';
-import { Fonts, Spacing, Radius, Shadow, BodyFont, tone } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont, tone, Palettes } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { NutritionGalleryItem } from '@/types/api';
 
@@ -241,7 +241,8 @@ export default function NutritionGalleryScreen() {
 
                             <SafeAreaView style={styles.viewerTop} edges={['top']}>
                                 <TouchableOpacity style={styles.viewerClose} onPress={() => setViewing(null)} hitSlop={8}>
-                                    <Ionicons name="close" size={22} color={Palette.text} />
+                                    {/* Dark ink on a white disc in both schemes — the disc is over a photograph. */}
+                                    <Ionicons name="close" size={22} color={Palettes.light.text} />
                                 </TouchableOpacity>
                             </SafeAreaView>
 

@@ -55,7 +55,7 @@
  * SafeAreaView the way the other tab screens are; the gradient takes `insets.top` as
  * padding instead. Same rule, applied to a screen whose first element is full-bleed.
  */
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
     RefreshControl, useWindowDimensions,
@@ -177,6 +177,11 @@ interface HomeAction {
     icon: React.ComponentProps<typeof Ionicons>['name'];
     color: string;
     surface: string;
+    /**
+     * A picture of the thing being asked for — the product cover `planGeneratorV2` copies
+     * onto a plan item. Drawn in place of the icon when present; the icon is the fallback.
+     */
+    image?: string | null;
     title: string;
     body: string;
     cta: string;
@@ -676,6 +681,7 @@ export default function HomeScreen() {
                 icon: (PLAN_TYPE_ICON[item.type] ?? 'calendar-outline') as HomeAction['icon'],
                 color: PLAN_STATUS_META.urgent.color,
                 surface: PLAN_STATUS_META.urgent.bg,
+                image: item.image,
                 title: item.title,
                 body: dueLabel(item),
                 cta: item.type === 'consultation' ? 'Book it' : 'Order it',
@@ -705,6 +711,7 @@ export default function HomeScreen() {
                 icon: (PLAN_TYPE_ICON[item.type] ?? 'calendar-outline') as HomeAction['icon'],
                 color: PLAN_STATUS_META.due.color,
                 surface: PLAN_STATUS_META.due.bg,
+                image: item.image,
                 title: item.title,
                 body: dueLabel(item),
                 cta: item.type === 'consultation' ? 'Book it' : 'Order it',
@@ -1332,7 +1339,8 @@ const HomeHeader = ({
  *
  * Three things it deliberately does not do:
  *
- * 1. **It does not print the band twice.** It used to read "Suboptimal health" and then
+ * 1. **It does not print the band twice.** It used to read "Suboptimal health" (and
+ *    "Healthy health") and then
  *    "Suboptimal" again on the line below, which spends the most valuable line on the
  *    screen restating the line above it. The band is the title; the meta row is movement.
  * 2. **It does not invent a movement.** `score.change` is null until there are two
@@ -1367,7 +1375,7 @@ const ScoreCard = React.memo(({ score, attention, onPress }: {
 
                 <View style={styles.flex}>
                     <Text style={styles.scoreBand} numberOfLines={1}>
-                        {score.value === null ? 'No score yet' : `${band.label} health`}
+                        {score.value === null ? 'No score yet' : band.headline}
                     </Text>
 
                     <View style={styles.scoreMetaRow}>
@@ -1447,6 +1455,8 @@ ScoreCard.displayName = 'ScoreCard';
  * movement is good — up is not improvement, it depends on the analyte and on which way it
  * was wrong, which is exactly why that judgement lives in `lib/biomarkers.ts` and not here.
  */
+const BLOOD_DROP = require('@/assets/images/blood-drop.png');
+
 const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: () => void }) => {
     const Palette = usePalette();
     const styles = useStyles();
@@ -1477,6 +1487,19 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
                 movement?.label,
             ].filter(Boolean).join(', ')}
         >
+            {/* A watermark, half of it clipped by the card's edge. Painted first so every
+                line of text sits above it, and hidden from screen readers: it says nothing
+                the tile does not. */}
+            <Image
+                source={BLOOD_DROP}
+                style={styles.markerDrop}
+                contentFit="contain"
+                pointerEvents="none"
+                accessible={false}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+            />
+
             {/* The flag gets its own line. Beside the movement it had about 80pt for
                 "Critically high", which either wraps to two lines or truncates — and a
                 truncated clinical label is the one string on this tile that must not be
@@ -1552,9 +1575,19 @@ const ActionRow = ({ action }: { action: HomeAction }) => {
     const styles = useStyles();
     return (
         <TouchableOpacity style={styles.actionRow} onPress={action.onPress} activeOpacity={0.85}>
-            <View style={[styles.actionIcon, { backgroundColor: action.surface }]}>
-                <Ionicons name={action.icon} size={20} color={action.color} />
-            </View>
+            {action.image ? (
+                <Image
+                    source={{ uri: action.image }}
+                    style={[styles.actionIcon, styles.actionImage]}
+                    contentFit="cover"
+                    transition={150}
+                    accessible={false}
+                />
+            ) : (
+                <View style={[styles.actionIcon, { backgroundColor: action.surface }]}>
+                    <Ionicons name={action.icon} size={20} color={action.color} />
+                </View>
+            )}
             <View style={styles.flex}>
                 <Text style={styles.actionTitle} numberOfLines={2}>{action.title}</Text>
                 <Text style={styles.cardBody} numberOfLines={2}>{action.body}</Text>
@@ -2179,6 +2212,11 @@ AppointmentsCard.displayName = 'AppointmentsCard';
  *
  * A dose scheduled for tonight is neither taken nor missed, which is why the header counts
  * what is *left* rather than showing an adherence percentage a day can never reach yet.
+ *
+ * **Once every dose is recorded the card collapses** to one ticked summary line plus a chip
+ * per dose. Three settled rows each carrying an undo button is a finished job drawn at the
+ * same weight as an unfinished one. The rows are one tap away rather than gone, because
+ * undo lives on them and a mis-tap has to stay correctable.
  */
 const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen }: {
     schedule: MedicationScheduleDay | null;
@@ -2187,13 +2225,22 @@ const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen 
     onAdd: () => void;
     onOpen: (id: string) => void;
 }) => {
+    const Palette = usePalette();
     const styles = useStyles();
+    const [expanded, setExpanded] = useState(false);
+    const doses = schedule?.doses ?? [];
+    const pending = doses.filter((d) => d.status === 'scheduled').length;
+    const taken = doses.filter((d) => d.status === 'taken').length;
+    const skipped = doses.length - pending - taken;
+    const done = doses.length > 0 && pending === 0;
+
+    // An undo reopens the day; finishing it again should land collapsed, not where the
+    // person last left the toggle.
+    useEffect(() => { if (!done) setExpanded(false); }, [done]);
+
     // Gated by the caller: a day with no doses is a setup row, not a card. See the
     // tracker/setup split in `HomeScreen`.
-    const doses = schedule?.doses ?? [];
     if (doses.length === 0) return null;
-
-    const pending = doses.filter((d) => d.status === 'scheduled').length;
 
     // Pending doses lead, so recording one surfaces the next one rather than leaving it
     // buried behind three already-settled rows — the card only has room for three.
@@ -2203,27 +2250,103 @@ const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen 
         return aPending - bPending;
     });
 
+    const rows = (
+        <View style={styles.rowList}>
+            {ordered.slice(0, 3).map((dose) => (
+                <DoseRow
+                    key={dose._id}
+                    dose={dose}
+                    busy={busyDose === dose._id}
+                    onTake={() => onDose(dose._id, 'take')}
+                    onSkip={() => onDose(dose._id, 'skip')}
+                    onUndo={() => onDose(dose._id, 'undo')}
+                    onPress={() => onOpen(dose.medicationId)}
+                />
+            ))}
+        </View>
+    );
+
+    if (done) {
+        // "All taken" only when that is true. A skipped dose is recorded, not taken, and a
+        // tick beside it would say otherwise.
+        const allTaken = skipped === 0;
+        return (
+            <View style={styles.card}>
+                <TouchableOpacity
+                    style={styles.medDoneHead}
+                    onPress={() => setExpanded((v) => !v)}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded }}
+                    accessibilityHint={expanded ? 'Hides today\'s doses' : 'Shows today\'s doses'}
+                >
+                    <View style={[styles.medDoneBadge, !allTaken && styles.medDoneBadgeMixed]}>
+                        <Ionicons
+                            name={allTaken ? 'checkmark-done' : 'checkmark'}
+                            size={22}
+                            color={allTaken ? Palette.white : Palette.textSecondary}
+                        />
+                    </View>
+                    <View style={styles.flex}>
+                        <Text style={styles.medDoneTitle}>
+                            {allTaken ? 'All doses taken today' : 'Every dose recorded today'}
+                        </Text>
+                        <Text style={styles.medDoneMeta}>
+                            {[
+                                taken > 0 && `${taken} taken`,
+                                skipped > 0 && `${skipped} skipped`,
+                            ].filter(Boolean).join('  ·  ')}
+                        </Text>
+                    </View>
+                    <Ionicons
+                        name={expanded ? 'chevron-up' : 'chevron-down'}
+                        size={20}
+                        color={Palette.textMuted}
+                    />
+                </TouchableOpacity>
+
+                {expanded ? rows : (
+                    <View style={styles.medChips}>
+                        {ordered.map((dose) => {
+                            const ok = dose.status === 'taken';
+                            return (
+                                <TouchableOpacity
+                                    key={dose._id}
+                                    style={[styles.medChip, !ok && styles.medChipSkipped]}
+                                    onPress={() => onOpen(dose.medicationId)}
+                                    activeOpacity={0.8}
+                                    accessibilityLabel={`${dose.medicationName}, ${dose.time}, ${ok ? 'taken' : 'skipped'}`}
+                                >
+                                    <Ionicons
+                                        name={ok ? 'checkmark-circle' : 'remove-circle'}
+                                        size={15}
+                                        color={ok ? Palette.success : Palette.textMuted}
+                                    />
+                                    <Text
+                                        style={[styles.medChipText, !ok && styles.medChipTextSkipped]}
+                                        numberOfLines={1}
+                                    >
+                                        {dose.medicationName}
+                                    </Text>
+                                    <Text style={styles.medChipTime}>{dose.time}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                )}
+
+                <CardFooterAction label="Add medication" onPress={onAdd} />
+            </View>
+        );
+    }
+
     return (
         <View style={styles.card}>
             <Text style={styles.cardBody}>
-                {pending === 0
-                    ? 'Every dose today has been recorded.'
-                    : `${pending} dose${pending === 1 ? '' : 's'} left today.`}
+                {`${pending} dose${pending === 1 ? '' : 's'} left today.`}
             </Text>
 
-            <View style={styles.rowList}>
-                {ordered.slice(0, 3).map((dose) => (
-                    <DoseRow
-                        key={dose._id}
-                        dose={dose}
-                        busy={busyDose === dose._id}
-                        onTake={() => onDose(dose._id, 'take')}
-                        onSkip={() => onDose(dose._id, 'skip')}
-                        onUndo={() => onDose(dose._id, 'undo')}
-                        onPress={() => onOpen(dose.medicationId)}
-                    />
-                ))}
-            </View>
+            {rows}
 
             <CardFooterAction label="Add medication" onPress={onAdd} />
         </View>
@@ -2875,6 +2998,27 @@ const useStyles = makeStyles((Palette) => ({
     footerAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
     footerActionText: { fontSize: 15, color: Palette.primary, fontFamily: Fonts.semibold },
     rowList: { gap: Spacing.md },
+
+    // Medications, once the day is done -------------------------------------
+    medDoneHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    medDoneBadge: {
+        width: 40, height: 40, borderRadius: 20, backgroundColor: Palette.successFill,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    // A skipped dose is recorded, not taken: same shape, without the green's verdict.
+    medDoneBadgeMixed: { backgroundColor: Palette.borderLight },
+    medDoneTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.semibold },
+    medDoneMeta: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 2 },
+    medChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    medChip: {
+        flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '100%',
+        paddingVertical: 6, paddingLeft: 8, paddingRight: 10, borderRadius: Radius.pill,
+        backgroundColor: Palette.successSurface,
+    },
+    medChipSkipped: { backgroundColor: Palette.borderLight },
+    medChipText: { flexShrink: 1, fontSize: 13, color: Palette.text, ...BodyFont.medium },
+    medChipTextSkipped: { color: Palette.textSecondary, textDecorationLine: 'line-through' },
+    medChipTime: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, fontVariant: ['tabular-nums'] },
     rowItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     rowTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
     rowMeta: { fontSize: 12.5, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 1 },
@@ -2895,6 +3039,12 @@ const useStyles = makeStyles((Palette) => ({
         // is set per flag at the call site.
         backgroundColor: Palette.surfaceWarm, borderWidth: 1,
         gap: Spacing.sm,
+        overflow: 'hidden',   // clips the watermark drop to half
+    },
+    // Centred on the right edge, so exactly half the drop is inside the card.
+    markerDrop: {
+        position: 'absolute', right: -52, top: '50%', marginTop: -52,
+        width: 104, height: 104, opacity: 0.1,
     },
     markerHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.sm },
     markerFlag: {
@@ -2920,6 +3070,11 @@ const useStyles = makeStyles((Palette) => ({
     actionIcon: {
         width: 40, height: 40, borderRadius: Radius.lg,
         alignItems: 'center', justifyContent: 'center',
+    },
+    // A product photo is larger than the glyph it replaces — at 40pt a test kit is a smudge.
+    actionImage: {
+        width: 56, height: 56,
+        backgroundColor: Palette.borderLight, borderWidth: 1, borderColor: Palette.border,
     },
     actionTitle: { fontSize: 16, lineHeight: 22, color: Palette.text, fontFamily: Fonts.semibold },
     actionCta: { fontSize: 14, fontFamily: Fonts.bold, marginTop: 7 },
