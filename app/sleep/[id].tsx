@@ -17,6 +17,10 @@
  * 3. **The kit's "-1 Less Sleep · your score has decreased" card is not reproduced.** It
  *    implies a running points balance that nothing here keeps: the sleep score is a mark out
  *    of a hundred for one night, not a currency.
+ *
+ * A nap opens here too, and is drawn as one: no score and no goal bar, because both are
+ * about a night, and a 40-minute nap graded against an eight-hour goal is a failing mark for
+ * doing something sensible. What it contributes to the day is in the analysis instead.
  */
 import React, { useCallback, useState } from 'react';
 import {
@@ -29,14 +33,18 @@ import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { Hypnogram, StageLegend } from '@/components/sleep/Hypnogram';
 import { StageRows } from '@/components/sleep/StageRows';
+import { SleepAnalysisCard } from '@/components/sleep/SleepAnalysisCard';
 import {
-    getNight, deleteNight, formatMinutes, formatClock, dayLabel, bandTint, splitMinutes,
-    type SleepNight, type SleepSegment, type StageBreakdown,
+    getNight, deleteNight, formatMinutes, formatClock, dayLabel, bandTint, splitMinutes, NAP_META,
+    type SleepNight, type SleepSegment, type StageBreakdown, type SleepAnalysis, type SleepDayTotals,
 } from '@/lib/sleep';
 import { ApiError } from '@/lib/api';
 
 interface Loaded {
     night: SleepNight & { segments: SleepSegment[] };
+    kind: 'night' | 'nap';
+    day: SleepDayTotals | null;
+    analysis: SleepAnalysis | null;
     breakdown: StageBreakdown['stages'];
     goalMinutes: number | null;
     explanation: string;
@@ -90,11 +98,12 @@ export default function SleepDetailScreen() {
 
     const remove = () => {
         if (!data) return;
+        const noun = data.kind === 'nap' ? 'nap' : 'night';
         Alert.alert(
-            'Delete this night?',
+            `Delete this ${noun}?`,
             data.night.source === 'manual'
-                ? 'This night was entered by hand and will be removed.'
-                : 'Your health store still has this night, so it will come back the next time '
+                ? `This ${noun} was entered by hand and will be removed.`
+                : `Your health store still has this ${noun}, so it will come back the next time `
                 + 'the app syncs. To remove it for good, delete it there.',
             [
                 { text: 'Cancel', style: 'cancel' },
@@ -135,9 +144,13 @@ export default function SleepDetailScreen() {
         );
     }
 
-    const { night, breakdown, goalMinutes, explanation } = data;
+    const { night, breakdown, goalMinutes, explanation, analysis, day } = data;
+    const isNap = data.kind === 'nap';
     const split = splitMinutes(night.asleepMin);
     const progress = night.goalProgress;
+    // The goal is a day's total, so a night followed by a nap is measured with the nap in.
+    const napMin = !isNap && day?.napMin ? day.napMin : 0;
+    const dayProgress = goalMinutes && day && napMin ? Math.min(1, day.totalMin / goalMinutes) : progress;
 
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
@@ -145,7 +158,7 @@ export default function SleepDetailScreen() {
                 <Pressable onPress={() => router.back()} hitSlop={10}>
                     <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </Pressable>
-                <Text style={styles.headerTitle}>Sleep details</Text>
+                <Text style={styles.headerTitle}>{isNap ? 'Nap details' : 'Sleep details'}</Text>
                 <Pressable onPress={remove} hitSlop={10}>
                     <Ionicons name="trash-outline" size={20} color={Palette.textSecondary} />
                 </Pressable>
@@ -153,13 +166,13 @@ export default function SleepDetailScreen() {
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.hero}>
-                    <View style={styles.heroMark}>
-                        <Ionicons name="moon" size={22} color={Palette.primary} />
+                    <View style={[styles.heroMark, isNap ? { backgroundColor: Palette.pinkSurface } : null]}>
+                        <Ionicons name={isNap ? 'partly-sunny' : 'moon'} size={22} color={isNap ? NAP_META.tint : Palette.primary} />
                     </View>
                     <Text style={styles.heroValue}>
                         {split ? `${split.hours}h ${split.mins}m` : '—'}
                     </Text>
-                    {night.band ? (
+                    {!isNap && night.band ? (
                         <Text style={[styles.heroBand, { color: bandTint(night.band.key) }]}>
                             {`${night.band.label} · ${night.score} out of 100`}
                         </Text>
@@ -168,24 +181,33 @@ export default function SleepDetailScreen() {
                         {`${dayLabel(night.day)} · ${formatClock(night.bedtimeMin)} – ${formatClock(night.wakeMin)}`}
                     </Text>
                     {/* The server's own account of the score, not a verdict about the person. */}
-                    <Text style={styles.heroExplain}>{explanation}</Text>
+                    {isNap ? null : <Text style={styles.heroExplain}>{explanation}</Text>}
                 </View>
 
                 {/* ------------------------------------------------ goal progress */}
-                {progress !== null && goalMinutes ? (
+                {!isNap && dayProgress !== null && goalMinutes ? (
                     <View style={styles.card}>
                         <Text style={styles.cardTitle}>Goal progress</Text>
                         <View style={styles.progressRow}>
                             <View style={styles.progressTrack}>
-                                <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+                                <View style={[styles.progressFill, { width: `${dayProgress * 100}%` }]} />
+                                {napMin && progress !== null ? (
+                                    // The night's share, with the nap's share drawn after it in the nap colour.
+                                    <View style={[styles.progressNap, { left: `${progress * 100}%`, width: `${Math.max(0, dayProgress - progress) * 100}%` }]} />
+                                ) : null}
                             </View>
-                            <Text style={styles.progressValue}>{Math.round(progress * 100)}%</Text>
+                            <Text style={styles.progressValue}>{Math.round(dayProgress * 100)}%</Text>
                         </View>
                         <Text style={styles.cardNote}>
-                            {`Against a goal of ${formatMinutes(goalMinutes)} a night.`}
+                            {napMin && day
+                                ? `${formatMinutes(night.asleepMin)} night + ${formatMinutes(napMin)} of naps = ${formatMinutes(day.totalMin)}, against a goal of ${formatMinutes(goalMinutes)} a day.`
+                                : `Against a goal of ${formatMinutes(goalMinutes)} a day.`}
                         </Text>
                     </View>
                 ) : null}
+
+                {/* ------------------------------------------------ analysis */}
+                {analysis ? <SleepAnalysisCard analysis={analysis} /> : null}
 
                 {/* ------------------------------------------------- the hypnogram */}
                 {night.segments?.length ? (
@@ -228,11 +250,13 @@ export default function SleepDetailScreen() {
                         value={Number.isFinite(night.efficiency as number) ? `${night.efficiency}` : '—'}
                         unit={Number.isFinite(night.efficiency as number) ? '%' : undefined}
                     />
-                    <Stat
-                        icon="speedometer-outline"
-                        label="Sleep score"
-                        value={Number.isFinite(night.score as number) ? `${night.score}` : '—'}
-                    />
+                    {isNap ? null : (
+                        <Stat
+                            icon="speedometer-outline"
+                            label="Sleep score"
+                            value={Number.isFinite(night.score as number) ? `${night.score}` : '—'}
+                        />
+                    )}
                 </View>
 
                 {/* ------------------------------------------------ where it came from */}
@@ -254,7 +278,7 @@ export default function SleepDetailScreen() {
                     onPress={() => router.push('/(tabs)/assistant')}
                 >
                     <Ionicons name="chatbubbles-outline" size={18} color={Palette.primary} />
-                    <Text style={styles.assistantLabel}>Ask Predyqt AI about this night</Text>
+                    <Text style={styles.assistantLabel}>{`Ask Predyqt AI about this ${isNap ? 'nap' : 'night'}`}</Text>
                 </Pressable>
             </ScrollView>
         </SafeAreaView>
@@ -301,6 +325,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.borderLight, overflow: 'hidden',
     },
     progressFill: { height: 10, borderRadius: 5, backgroundColor: Palette.primary },
+    progressNap: { position: 'absolute', top: 0, height: 10, backgroundColor: NAP_META.tint },
     progressValue: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
 
     stat: {

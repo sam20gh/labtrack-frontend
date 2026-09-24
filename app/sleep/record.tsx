@@ -341,7 +341,13 @@ export default function SleepRecordScreen() {
     const summary = data?.summary;
     const empty = Boolean(data && summary && summary.nights === 0 && summary.naps.count === 0);
     const selectedBar = data && selected !== null ? data.series[selected] : null;
-    const heroMinutes = range === '1d' ? data?.series[0]?.asleepMin ?? null : summary?.avgAsleepMin ?? null;
+    // A single day is headed by its total — night plus naps — which is the figure every other
+    // health app shows as "total sleep". The night alone is on the tile below.
+    const dayBar = range === '1d' ? data?.series[0] ?? null : null;
+    const dayNaps = dayBar?.napCount ? dayBar.napMin : null;
+    const heroMinutes = range === '1d'
+        ? dayBar?.totalAsleepMin ?? dayBar?.asleepMin ?? null
+        : summary?.avgAsleepMin ?? null;
     const hero = splitMinutes(heroMinutes);
 
     const listBars = useMemo(
@@ -405,7 +411,7 @@ export default function SleepRecordScreen() {
     };
 
     const compactLabel = heroMinutes !== null
-        ? `${formatMinutes(heroMinutes)} · ${range === '1d' ? 'asleep' : 'avg night'}`
+        ? `${formatMinutes(heroMinutes)} · ${range === '1d' ? 'total sleep' : 'avg night'}`
         : 'Sleep record';
 
     return (
@@ -501,7 +507,9 @@ export default function SleepRecordScreen() {
                         )}
                         <Text style={styles.heroCaption}>
                             {range === '1d'
-                                ? 'asleep that night'
+                                ? (dayNaps && finite(dayBar?.asleepMin)
+                                    ? `total sleep · ${formatMinutes(dayBar?.asleepMin)} night + ${formatMinutes(dayNaps)} ${dayBar?.napCount === 1 ? 'nap' : 'naps'}`
+                                    : dayNaps ? 'total sleep · naps only' : 'asleep that night')
                                 : summary && summary.nights
                                     ? `average night · ${summary.nights} of ${summary.dayCount} nights recorded`
                                     : 'average night'}
@@ -631,9 +639,13 @@ export default function SleepRecordScreen() {
                             <View style={styles.grid}>
                                 <StatTile
                                     icon="moon" tint={Palette.primary} surface={Palette.primarySurface}
-                                    label={range === '1d' ? 'Time asleep' : 'Avg asleep'}
+                                    label={range === '1d' ? 'Night sleep' : 'Avg night'}
                                     value={formatMinutes(summary.avgAsleepMin)}
-                                    note={range !== '1d' && finite(summary.totalAsleepMin) ? `${formatMinutes(summary.totalAsleepMin)} in total` : null}
+                                    note={range === '1d'
+                                        ? (dayNaps ? `${formatMinutes(dayBar?.totalAsleepMin)} with naps` : null)
+                                        : finite(summary.totalSleep?.avgMin) && summary.naps.count
+                                            ? `${formatMinutes(summary.totalSleep.avgMin)} a day with naps`
+                                            : finite(summary.totalAsleepMin) ? `${formatMinutes(summary.totalAsleepMin)} in total` : null}
                                 />
                                 <StatTile
                                     icon="bed" tint={Palette.indigo} surface={Palette.indigoSurface}
@@ -675,7 +687,7 @@ export default function SleepRecordScreen() {
                                             ? (summary.goal.met ? 'Yes' : 'Not quite')
                                             : `${summary.goal.met} of ${summary.goal.nights}`)
                                         : '—'}
-                                    note={summary.goal ? `goal ${formatMinutes(summary.goal.minutes)} a night` : 'No sleep goal set'}
+                                    note={summary.goal ? `goal ${formatMinutes(summary.goal.minutes)} a day, naps included` : 'No sleep goal set'}
                                 />
                                 <StatTile
                                     icon="partly-sunny" tint={NAP_META.tint} surface={Palette.pinkSurface}
@@ -766,8 +778,8 @@ export default function SleepRecordScreen() {
                                         </Pressable>
                                     )) : (
                                         <Text style={styles.cardSubtitle}>
-                                            No naps in this period. A nap is a sleep of up to three hours that
-                                            starts between 9am and 8pm.
+                                            No naps in this period. A nap is a sleep of up to three hours during
+                                            the day, at least an hour apart from your night.
                                         </Text>
                                     )}
                                 </Card>

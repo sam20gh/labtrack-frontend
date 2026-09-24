@@ -285,9 +285,40 @@ export const listNights = (query: NightQuery = {}) => {
     );
 };
 
+/** `positive` and `attention` are about the record, never a verdict on the person. */
+export type SleepAnalysisTone = 'positive' | 'neutral' | 'attention';
+
+/**
+ * How one sleep went and what would improve the next — `utils/sleepAnalysis.js`, a
+ * deterministic table, so every sentence traces back to a figure on the same screen.
+ */
+export interface SleepAnalysis {
+    kind: 'night' | 'nap';
+    headline: string;
+    tone: 'positive' | 'mixed' | 'attention';
+    findings: { key: string; tone: SleepAnalysisTone; title: string; detail: string }[];
+    recommendations: {
+        key: string;
+        title: string;
+        detail: string;
+        /** `plan` when it is the health plan's own wording. */
+        source?: 'plan';
+        /** An app route that acts on it, when there is one. */
+        route?: string;
+    }[];
+    basis: string;
+}
+
+/** A day's sleep: its night, its naps, and the two together. */
+export interface SleepDayTotals { nightMin: number | null; napMin: number; totalMin: number }
+
 export const getNight = (id: string) =>
     api.get<{
         night: SleepNight & { segments: SleepSegment[] };
+        /** Whether this row is the day's night or one of its naps. */
+        kind: 'night' | 'nap';
+        day: SleepDayTotals | null;
+        analysis: SleepAnalysis | null;
         breakdown: StageBreakdown['stages'];
         goalMinutes: number | null;
         explanation: string;
@@ -352,6 +383,8 @@ export interface SleepRecordBar {
     /** Nap minutes per day with any sleep. Zero is real here: slept, and did not nap. */
     napMin: number | null;
     napCount: number;
+    /** Night plus naps, per day with any sleep. What other health apps call "total sleep". */
+    totalAsleepMin: number | null;
     /** Day bars only. */
     nightId?: string | null;
     naps?: SleepRecordNap[];
@@ -389,7 +422,10 @@ export interface SleepRecord {
         stagedNights: number;
         bedtime: { avgMin: number | null; spreadMin: number | null };
         wake: { avgMin: number | null; spreadMin: number | null };
-        goal: { minutes: number; met: number; nights: number } | null;
+        /** Night plus naps. `avgMin` is per day with any sleep. */
+        totalSleep: { avgMin: number | null; totalMin: number | null; days: number };
+        /** Judged on the day's total, naps included. */
+        goal: { minutes: number; met: number; nights: number; includesNaps?: boolean } | null;
         naps: { count: number; totalMin: number | null; avgMin: number | null; days: number };
         highlights: {
             longest: SleepRecordHighlight | null;
