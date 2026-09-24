@@ -77,7 +77,7 @@ export default function MessageBubble({ message, onSuggestion }: Props) {
                 <View style={styles.avatar}>
                     <Ionicons name="sparkles" size={13} color={Palette.white} />
                 </View>
-                <Text style={styles.theirsName}>Miovix AI</Text>
+                <Text style={styles.theirsName}>Predyqt AI</Text>
                 <Text style={styles.theirsTime}>{messageTime(message.createdAt)}</Text>
             </View>
 

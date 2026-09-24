@@ -326,7 +326,7 @@ export default function ProfileScreen() {
                             accessibilityRole="button"
                             accessibilityLabel={
                                 score?.value != null
-                                    ? `Miovix score ${score.value}. Open the breakdown.`
+                                    ? `Predyqt score ${score.value}. Open the breakdown.`
                                     : 'Open your score breakdown'
                             }
                         >
@@ -553,7 +553,7 @@ export default function ProfileScreen() {
                             <Ionicons name="add" size={18} color={Palette.primary} />
                         </View>
                         <Text style={styles.footerVersion}>
-                            Miovix v{Constants.expoConfig?.version ?? '1.0.0'}
+                            Predyqt v{Constants.expoConfig?.version ?? '1.0.0'}
                         </Text>
                         <Text style={styles.footerRights}>
                             All rights reserved, {new Date().getFullYear()} ©

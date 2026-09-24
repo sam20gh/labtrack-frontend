@@ -7,7 +7,7 @@
  * the rail is there to show *when* someone ate and how far apart, and empty hours between
  * 1 AM and 6 AM carry none of that.
  *
- * **This is a record, not a plan.** Nothing in Miovix schedules a meal in advance:
+ * **This is a record, not a plan.** Nothing in Predyqt schedules a meal in advance:
  * `NutritionPlan.mealsPerDay` says how many times a day someone eats and nothing says at
  * what time. So a future day is drawn as empty with the meal slots they usually fill listed
  * as a reminder, and never as appointments they have missed. Drawing an unlogged 8 PM

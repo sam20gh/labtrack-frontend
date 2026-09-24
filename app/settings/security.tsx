@@ -42,7 +42,7 @@ const UNAVAILABLE = [
     {
         icon: 'keypad-outline',
         title: 'PIN code',
-        blurb: 'Unlock Miovix with a 4-digit PIN',
+        blurb: 'Unlock Predyqt with a 4-digit PIN',
         reason: 'Needs on-device authentication, which this build does not include yet.',
     },
     {

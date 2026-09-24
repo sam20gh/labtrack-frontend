@@ -3,7 +3,7 @@
  *
  * The turing kit's doctor profile (Doctor Appointment, frame 5) is a photo panel with the
  * identity card floating over its lower edge and a single primary action pinned at the
- * bottom. This is that shape, minus the two things the kit shows that Miovix has no data
+ * bottom. This is that shape, minus the two things the kit shows that Predyqt has no data
  * for: a star rating (there is no review model for professionals) and a clinic map (there
  * are no coordinates on `Professional`). Drawing either would mean inventing it.
  *

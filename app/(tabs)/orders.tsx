@@ -272,7 +272,7 @@ export default function OrdersScreen() {
             >
                 <View style={styles.headerRow}>
                     <View style={styles.headerText}>
-                        <Text style={styles.eyebrow}>Miovix shop</Text>
+                        <Text style={styles.eyebrow}>Predyqt shop</Text>
                         <Text style={styles.title}>Order a test</Text>
                     </View>
 

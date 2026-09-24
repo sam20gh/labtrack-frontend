@@ -1,5 +1,5 @@
 /**
- * Miovix Score Prediction — the design's frame 3.
+ * Predyqt Score Prediction — the design's frame 3.
  *
  * The kit titles this "Turing Score" throughout; that is the design system's name, not the
  * product's, and nothing user-facing in this app uses it.
@@ -15,7 +15,7 @@
  *
  * The two cards under the chart are the design's spO2 / lung pair, filled with whichever
  * *other* metrics this person actually has enough history for. The kit's own pair is
- * placeholder — Miovix measures neither — and two cards showing metrics nobody tracks
+ * placeholder — Predyqt measures neither — and two cards showing metrics nobody tracks
  * would be the dummy control this app keeps removing.
  */
 import React, { useCallback, useEffect, useState } from 'react';
@@ -92,7 +92,7 @@ export default function ScorePredictionScreen() {
                 <TouchableOpacity onPress={() => router.back()} hitSlop={12} accessibilityLabel="Back">
                     <Ionicons name="chevron-back" size={22} color={Palette.text} />
                 </TouchableOpacity>
-                <Text style={styles.topTitle}>Miovix Score</Text>
+                <Text style={styles.topTitle}>Predyqt Score</Text>
                 <TouchableOpacity
                     onPress={() => router.push('/score')}
                     hitSlop={12}

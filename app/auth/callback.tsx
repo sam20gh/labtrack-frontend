@@ -5,7 +5,7 @@
  * (The Google OAuth flow does NOT land here — `WebBrowser.openAuthSessionAsync` intercepts
  * that redirect and returns the URL to `signInWithGoogle` directly.)
  *
- * Supabase appends a PKCE `code`, which is exchanged for a session; the Miovix account
+ * Supabase appends a PKCE `code`, which is exchanged for a session; the Predyqt account
  * is then created or linked before the app is entered.
  */
 import React, { useEffect, useState } from 'react';

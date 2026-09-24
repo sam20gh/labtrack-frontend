@@ -24,8 +24,8 @@
  *   6. **The trackers that have data**, most time-sensitive first.
  *   7. **Symptom Checker** — the illustration, the search, the common symptoms and the
  *      checks already run, as `Design/sympt.svg` draws them.
- *   8. **Ask Miovix AI** — the assistant, and the last thing it said.
- *   9. **Get more from Miovix** — every tracker with nothing in it, as one list of rows
+ *   8. **Ask Predyqt AI** — the assistant, and the last thing it said.
+ *   9. **Get more from Predyqt** — every tracker with nothing in it, as one list of rows
  *      rather than as six full cards each saying "connect a watch".
  *  10. **News & Resources.**
  *
@@ -85,7 +85,7 @@ import {
     RISK_META, byRiskSeverity, type LatestInterpretation,
 } from '@/lib/interpretation';
 import { getScore, bandMeta, isMostlyReported, type HealthScore } from '@/lib/score';
-import { getAge, openAge, type MiovixAge } from '@/lib/age';
+import { getAge, openAge, type PredyqtAge } from '@/lib/age';
 import AgeCard, { AgeCardSkeleton } from '@/components/home/AgeCard';
 import {
     getOverview, METRIC_ICON, METRIC_TINT, METRIC_ROUTE,
@@ -182,7 +182,7 @@ interface HomeAction {
 }
 
 /**
- * One row of the "Get more from Miovix" list.
+ * One row of the "Get more from Predyqt" list.
  *
  * A tracker nobody has started. It is a row rather than the card that feature would draw,
  * because six cards each saying "connect a watch" is a screen about what the person has
@@ -245,13 +245,13 @@ export default function HomeScreen() {
     const [resources, setResources] = useState<ResourceCardType[]>([]);
     const [score, setScore] = useState<HealthScore>(EMPTY_SCORE);
     /**
-     * Miovix Age.
+     * Predyqt Age.
      *
      * `null` means not loaded yet and draws a skeleton; a loaded refusal is a real answer and
      * sends the feature to the setup list. The two are distinguished because a card that
      * vanished mid-load would make the sections under it jump.
      */
-    const [age, setAge] = useState<MiovixAge | null>(null);
+    const [age, setAge] = useState<PredyqtAge | null>(null);
     const [ageLoaded, setAgeLoaded] = useState(false);
     const [metrics, setMetrics] = useState<MetricCardData[]>([]);
     const [activity, setActivity] = useState<ActivitySummary | null>(null);
@@ -383,7 +383,7 @@ export default function HomeScreen() {
     );
 
     /**
-     * Miovix Age, after the first paint and on its own timeline.
+     * Predyqt Age, after the first paint and on its own timeline.
      *
      * **Deliberately not in the `allSettled` above.** `GET /age` reads six months of activity,
      * sleep, heart and body rollups plus three years of biomarkers, and recomputes both halves
@@ -403,7 +403,7 @@ export default function HomeScreen() {
             const data = await getAge();
             if (ageMounted.current) setAge(data);
         } catch {
-            if (ageMounted.current) setAge({ ok: false, disclaimer: '' } as MiovixAge);
+            if (ageMounted.current) setAge({ ok: false, disclaimer: '' } as PredyqtAge);
         } finally {
             if (ageMounted.current) setAgeLoaded(true);
         }
@@ -763,7 +763,7 @@ export default function HomeScreen() {
     const setup: SetupItem[] = [];
 
     /**
-     * Miovix Age.
+     * Predyqt Age.
      *
      * Earned like everything else here: a section only once there is an answer, a setup row
      * otherwise. While it is still loading it draws a skeleton in its slot rather than
@@ -780,13 +780,13 @@ export default function HomeScreen() {
      * only for the people who had one.
      */
     if (!ageLoaded) {
-        trackers.push({ id: 'age', order: 1.5, node: <Section title="Miovix Age"><AgeCardSkeleton /></Section> });
+        trackers.push({ id: 'age', order: 1.5, node: <Section title="Predyqt Age"><AgeCardSkeleton /></Section> });
     } else if (age?.ok) {
         trackers.push({
             id: 'age',
             order: 1.5,
             node: (
-                <Section title="Miovix Age" action="See All" onAction={() => { openAge(router); }}>
+                <Section title="Predyqt Age" action="See All" onAction={() => { openAge(router); }}>
                     <AgeCard age={age} onPress={() => { openAge(router); }} />
                 </Section>
             ),
@@ -795,7 +795,7 @@ export default function HomeScreen() {
         setup.push({
             id: 'age',
             icon: 'hourglass-outline',
-            title: 'Find your Miovix Age',
+            title: 'Find your Predyqt Age',
             body: 'How old your blood results and your habits say you are, and the things that '
                 + 'would lower it. A blood test or a connected watch is enough to start.',
             route: '/age',
@@ -1113,7 +1113,7 @@ export default function HomeScreen() {
 
                         {/*
                           Symptom Checker, from `Design/sympt.svg`. It sits directly above
-                          Ask Miovix AI because the two are one act — the symptom screen
+                          Ask Predyqt AI because the two are one act — the symptom screen
                           composes what you pick into a message and posts it to the
                           assistant — and the card below is where the answer comes back.
 
@@ -1135,7 +1135,7 @@ export default function HomeScreen() {
                             />
                         </Section>
 
-                        <Section title="Ask Miovix AI">
+                        <Section title="Ask Predyqt AI">
                             <AskCard
                                 conversation={conversation}
                                 onOpen={openAssistant}
@@ -1148,10 +1148,10 @@ export default function HomeScreen() {
 
                           Each row names the pillar it fills, because that is the true answer
                           to "why should I bother" — the score above genuinely cannot move
-                          until one of these has data. See **The Miovix score**.
+                          until one of these has data. See **The Predyqt score**.
                         */}
                         {setup.length > 0 && (
-                            <Section title="Get more from Miovix">
+                            <Section title="Get more from Predyqt">
                                 <View style={styles.card}>
                                     <Text style={styles.cardBody}>
                                         Each of these fills a pillar of your score. Until one has data,
@@ -1233,7 +1233,7 @@ export default function HomeScreen() {
  * to overlap it by half — the card is pulled up with a negative margin instead of being
  * absolutely positioned, so the sections below still flow underneath it.
  *
- * The kit puts a green presence dot on the avatar. Miovix models no presence, so there
+ * The kit puts a green presence dot on the avatar. Predyqt models no presence, so there
  * is none here; the streak chip beside the date is real (`ActivitySummary.streak`) and is
  * hidden rather than shown as a zero.
  */
@@ -1327,7 +1327,7 @@ const HomeHeader = ({
  * 2. **It does not invent a movement.** `score.change` is null until there are two
  *    snapshots to compare, and a delta of zero is drawn as "no change", not as "+0".
  * 3. **It does not describe a null score as a bad one.** No score is a statement about
- *    coverage — see **The Miovix score** in CLAUDE.md.
+ *    coverage — see **The Predyqt score** in CLAUDE.md.
  */
 const ScoreCard = React.memo(({ score, attention, onPress }: {
     score: HealthScore; attention: number; onPress: () => void;
@@ -2044,7 +2044,7 @@ const AppointmentsCard = React.memo(({ appointments, onOpen, onBook }: {
     appointments: Appointment[]; onOpen: () => void; onBook: () => void;
 }) => {
     // The caller only renders this section when there is a live appointment — an empty
-    // diary is a row in "Get more from Miovix" instead. This guard is here so the
+    // diary is a row in "Get more from Predyqt" instead. This guard is here so the
     // destructure below cannot read a professional off `undefined` if it is ever reused.
     if (appointments.length === 0) return null;
 
@@ -2194,11 +2194,11 @@ const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen 
 MedicationsCard.displayName = 'MedicationsCard';
 
 // ---------------------------------------------------------------------------
-// Ask Miovix AI — symptoms and the assistant, in one card
+// Ask Predyqt AI — symptoms and the assistant, in one card
 // ---------------------------------------------------------------------------
 
 /**
- * Ask Miovix AI.
+ * Ask Predyqt AI.
  *
  * The symptom half of this card moved out to `SymptomCheckerCard`, which is the section
  * directly above it. They are still one act — `app/symptoms` composes what you pick into a
@@ -2262,7 +2262,7 @@ const AskCard = React.memo(({ conversation, onOpen }: {
                     <View style={styles.divider} />
                     <TouchableOpacity style={styles.footerAction} onPress={onOpen} activeOpacity={0.8}>
                         <Text style={styles.footerActionText}>
-                            {last ? 'Continue the conversation' : 'Chat with Miovix AI'}
+                            {last ? 'Continue the conversation' : 'Chat with Predyqt AI'}
                         </Text>
                         <Ionicons name="chatbubble-ellipses-outline" size={17} color={Palette.primary} />
                     </TouchableOpacity>
@@ -2668,7 +2668,7 @@ const SignedOut = ({ products, router, topInset }: {
             end={{ x: 1, y: 1 }}
             style={[styles.welcomeHero, { paddingTop: topInset + Spacing.xxl }]}
         >
-            <Text style={styles.heroEyebrow}>Miovix</Text>
+            <Text style={styles.heroEyebrow}>Predyqt</Text>
             <Text style={styles.welcomeTitle}>Understand what your results actually mean</Text>
             <Text style={styles.heroHeadline}>
                 Upload a lab report and get an interpretation, a tracked history, and a plan you can act on.
@@ -2683,7 +2683,7 @@ const SignedOut = ({ products, router, topInset }: {
             </View>
         </LinearGradient>
 
-        <Section title="Why Miovix">
+        <Section title="Why Predyqt">
             <View style={styles.benefitGrid}>
                 {BENEFITS.map((b) => (
                     <View key={b.title} style={styles.benefitCard}>
@@ -2863,7 +2863,7 @@ const styles = StyleSheet.create({
     actionTitle: { fontSize: 16, lineHeight: 22, color: Palette.text, fontFamily: Fonts.semibold },
     actionCta: { fontSize: 14, fontFamily: Fonts.bold, marginTop: 7 },
 
-    // Get more from Miovix -----------------------------------------------
+    // Get more from Predyqt -----------------------------------------------
     setupRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     setupIcon: {
         width: 38, height: 38, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,

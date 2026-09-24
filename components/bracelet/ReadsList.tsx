@@ -69,11 +69,11 @@ export default function ReadsList({ variant }: { variant: JstyleVariant }) {
             {/*
               * The ECG caveat travels with the list, because the list is where somebody
               * learns the bracelet takes one. `EcgRecording` stores the device's own
-              * numbers and nothing in Miovix interprets a trace — the line the symptom
+              * numbers and nothing in Predyqt interprets a trace — the line the symptom
               * checker holds when it refuses to name a condition.
               */}
             <Text style={styles.footnote}>
-                Readings come from the bracelet&apos;s own sensors. Miovix stores them and
+                Readings come from the bracelet&apos;s own sensors. Predyqt stores them and
                 shows them; it does not diagnose.
             </Text>
         </View>

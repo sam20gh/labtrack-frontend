@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 
 /**
- * The Miovix Age stack.
+ * The Predyqt Age stack.
  *
  * **Without this file nothing errors and every screen here looks broken.** expo-router would
  * register `age/index`, `age/intro`, `age/how` and `age/levers` individually on the *root*

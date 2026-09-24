@@ -305,7 +305,7 @@ export default function ImmersiveAssistant() {
                             <InputDock
                                 onSend={send}
                                 busy={sending}
-                                placeholder="Type anything to Miovix AI…"
+                                placeholder="Type anything to Predyqt AI…"
                                 allowImages={capabilities.vision}
                                 onVoice={() => router.push({
                                     pathname: '/assistant/voice',
@@ -313,7 +313,7 @@ export default function ImmersiveAssistant() {
                                 })}
                                 voiceDisabledReason={capabilities.voice
                                     ? null
-                                    : 'This Miovix server has no speech-to-text configured, '
+                                    : 'This Predyqt server has no speech-to-text configured, '
                                     + 'so questions have to be typed for now.'}
                             />
                         </View>

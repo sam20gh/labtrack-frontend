@@ -30,7 +30,7 @@ interface Props {
     size?: number;
     /** Band thresholds from the server, so the dial cannot drift from the engine. */
     bands: { key: ScoreBand; label: string; min: number; max: number }[];
-    /** The kit's third line under the numeral — "Miovix Score", with its info dot. */
+    /** The kit's third line under the numeral — "Predyqt Score", with its info dot. */
     caption?: string;
     /** Given, the caption carries a tappable ⓘ that opens the explainer. */
     onInfo?: () => void;

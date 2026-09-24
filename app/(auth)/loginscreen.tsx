@@ -3,7 +3,7 @@
  *
  * Everything a person can do here goes through `lib/auth` — the screen never touches
  * Supabase, a token, or `fetch`. `signInWithEmail` and `signInWithGoogle` both call
- * `syncAccount()` on success, which is the only thing that creates the Miovix `User` the
+ * `syncAccount()` on success, which is the only thing that creates the Predyqt `User` the
  * API needs, so there is nothing to do here after they return `ok`.
  */
 import React, { useState } from 'react';

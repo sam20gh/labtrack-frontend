@@ -9,7 +9,7 @@
  *  2. **Ordered by usefulness, not by drama.** Medicines and nutrition first. Risk last,
  *     and only if the person asked for it.
  *  3. **A finding that moves a reference range links to that biomarker.** The genotype
- *     explaining a number they already track is the thing Miovix does that a genetics
+ *     explaining a number they already track is the thing Predyqt does that a genetics
  *     app does not.
  *
  * Layout follows the turing kit's health-record screens: one gradient hero carrying the

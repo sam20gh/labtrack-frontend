@@ -26,7 +26,7 @@ export default function AuthHeader({ tagline }: Props) {
                 <View style={styles.glow} />
                 <BrandMark size={MARK_SIZE} color={Palette.primary} />
             </View>
-            <Text style={styles.wordmark}>Miovix</Text>
+            <Text style={styles.wordmark}>Predyqt</Text>
             <Text style={styles.tagline}>{tagline}</Text>
         </View>
     );

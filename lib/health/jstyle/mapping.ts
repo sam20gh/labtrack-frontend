@@ -1,5 +1,5 @@
 /**
- * Vendor payloads into Miovix rows.
+ * Vendor payloads into Predyqt rows.
  *
  * The only file that knows what the SDK's dictionary keys mean. Everything above it works
  * in `lib/health/types.ts` vocabulary, so a firmware change or a vendor rename is a change
@@ -439,7 +439,7 @@ export const toTemperature = (
  * One measurement, waveform and all.
  *
  * Every derived figure is the bracelet's own. Nothing here computes a heart rate from the
- * trace or an interval from the peaks: Miovix has no ECG engine, and inventing one in a
+ * trace or an interval from the peaks: Predyqt has no ECG engine, and inventing one in a
  * mapping file would be a clinical claim made in the quietest possible place.
  */
 export const toEcg = (packets: JstylePacket[], ctx: MapContext): EcgRow[] => {

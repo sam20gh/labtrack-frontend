@@ -1,5 +1,5 @@
 /**
- * Miovix Age client.
+ * Predyqt Age client.
  *
  * Fetch only, like `lib/score.ts`, and for the same three reasons — the number spans six
  * months across five collections, the pace needs a stored history to have a slope at all, and
@@ -114,7 +114,7 @@ export interface AgePace {
     };
 }
 
-export interface MiovixAge {
+export interface PredyqtAge {
     ok: boolean;
     value?: number;
     chronologicalAge?: number;
@@ -172,7 +172,7 @@ export interface AgeTrendPoint {
 }
 
 export const getAge = (opts: { refresh?: boolean } = {}) =>
-    api.get<MiovixAge>(
+    api.get<PredyqtAge>(
         `/age?tzOffset=${tzOffset()}${opts.refresh ? '&refresh=true' : ''}`,
     );
 

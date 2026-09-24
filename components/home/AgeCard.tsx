@@ -1,5 +1,5 @@
 /**
- * Miovix Age — the home card.
+ * Predyqt Age — the home card.
  *
  * A compact version of the hub's hero: the orb at a glanceable size, the gap worded, and the
  * pace beside it. Nothing else — the contributors, the levers and the provenance detail all
@@ -8,7 +8,7 @@
  *
  * **It is only ever drawn when there is a number**, and it carries no empty state of its own.
  * `HomeScreen` decides: an answer earns a `<Section>`, and no answer produces a `SetupItem`
- * row in "Get more from Miovix" instead. This is the rule the home screen is built on — a
+ * row in "Get more from Predyqt" instead. This is the rule the home screen is built on — a
  * card saying "connect a watch" used to occupy exactly as much of the screen as one showing a
  * real reading. The guard below therefore cannot fire from that screen, and exists so the
  * component is honest on its own terms.
@@ -18,11 +18,11 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import AgeOrb from '@/components/age/AgeOrb';
-import { deltaLabel, tintForBand, type MiovixAge } from '@/lib/age';
+import { deltaLabel, tintForBand, type PredyqtAge } from '@/lib/age';
 import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
 
 interface Props {
-    age: MiovixAge | null;
+    age: PredyqtAge | null;
     onPress: () => void;
 }
 

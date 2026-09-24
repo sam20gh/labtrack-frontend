@@ -37,7 +37,7 @@ export default function AgeHowScreen() {
 
             <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
                 <Text style={styles.lede}>
-                    Your Miovix Age is built from two separate estimates. They are not equally well
+                    Your Predyqt Age is built from two separate estimates. They are not equally well
                     founded, and the app always tells you which one you are looking at.
                 </Text>
 

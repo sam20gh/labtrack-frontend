@@ -1,5 +1,5 @@
 /**
- * What would move your Miovix Age.
+ * What would move your Predyqt Age.
  *
  * The hub shows three; this shows everything the server offered, grouped by what kind of
  * acting each one would take.
@@ -76,7 +76,7 @@ export default function AgeLeversScreen() {
                 >
                     {data?.ok && (
                         <Text style={styles.lede}>
-                            Your Miovix Age is {data.value?.toFixed(1)} — {deltaLabel(data.delta)}. Each
+                            Your Predyqt Age is {data.value?.toFixed(1)} — {deltaLabel(data.delta)}. Each
                             figure below is what that one change alone would be worth.
                         </Text>
                     )}

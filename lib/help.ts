@@ -78,7 +78,7 @@ export const FAQ: FaqSection[] = [
     },
     {
         id: 'score',
-        title: 'Your Miovix score',
+        title: 'Your Predyqt score',
         entries: [
             {
                 id: 'no-score',

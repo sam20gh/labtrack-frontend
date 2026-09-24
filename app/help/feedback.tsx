@@ -48,7 +48,7 @@ export default function FeedbackScreen() {
 
     const subject = useMemo(() => {
         const labels = FEEDBACK_TOPICS.filter((t) => topics.includes(t.id)).map((t) => t.label);
-        return labels.length ? `Miovix feedback — ${labels.join(', ')}` : 'Miovix feedback';
+        return labels.length ? `Predyqt feedback — ${labels.join(', ')}` : 'Predyqt feedback';
     }, [topics]);
 
     const send = async () => {

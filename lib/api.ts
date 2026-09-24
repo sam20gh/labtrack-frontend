@@ -1,5 +1,5 @@
 /**
- * The single entry point for Miovix API calls.
+ * The single entry point for Predyqt API calls.
  *
  * Every protected endpoint needs a bearer token, and Supabase access tokens expire and
  * refresh. Reading the token at each call site (the old `AsyncStorage.getItem('authToken')`
@@ -72,7 +72,7 @@ type ApiOptions = Omit<RequestInit, 'body'> & {
 };
 
 /**
- * Call the Miovix API.
+ * Call the Predyqt API.
  *
  * @param path endpoint path beginning with '/', e.g. `/users/${id}`
  * @throws {ApiError} on any non-2xx response
@@ -108,7 +108,7 @@ export const apiFetch = async <T = any>(path: string, options: ApiOptions = {}):
         throw new ApiError('Network error. Please check your connection.', 0);
     }
 
-    // Any answer at all — including a 500 — means the request reached Miovix, which is
+    // Any answer at all — including a 500 — means the request reached Predyqt, which is
     // the only thing `reachable` claims.
     setReachable(true);
 

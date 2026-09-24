@@ -4,7 +4,7 @@
  * The turing kit draws each onboarding slide the same way: a phone body peeking up from the
  * bottom of a lavender stage, with one or more white cards floating over its top edge
  * showing the feature being described. The cards are the point — they are miniatures of
- * real Miovix surfaces, not decoration — so each one is rebuilt here rather than shipped
+ * real Predyqt surfaces, not decoration — so each one is rebuilt here rather than shipped
  * as a flat PNG. That keeps them on the app's own type and palette and lets them re-render
  * at any screen width.
  *

@@ -2,7 +2,7 @@
  * Supabase client.
  *
  * Supabase owns credentials (email/password, Google, and — once enabled — phone OTP).
- * The Miovix API owns medical data and trusts Supabase access tokens, verifying them
+ * The Predyqt API owns medical data and trusts Supabase access tokens, verifying them
  * against the project's public JWKS. See `labtrack-backend/config/supabase.js`.
  *
  * The publishable key below is *designed* to be shipped inside clients — it grants only

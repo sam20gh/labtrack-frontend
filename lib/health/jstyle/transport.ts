@@ -107,8 +107,8 @@ export const scanBlockedReason = async (): Promise<string | null> => {
         case State.PoweredOff: return 'Bluetooth is off. Turn it on to find your bracelet.';
         case State.Unauthorized:
             return Platform.OS === 'ios'
-                ? 'Miovix needs Bluetooth permission. Enable it in Settings › Miovix.'
-                : 'Miovix needs the Nearby devices permission to find your bracelet.';
+                ? 'Predyqt needs Bluetooth permission. Enable it in Settings › Predyqt.'
+                : 'Predyqt needs the Nearby devices permission to find your bracelet.';
         case State.Unsupported: return 'This device has no Bluetooth LE radio.';
         default: return 'Bluetooth is still starting up. Try again in a moment.';
     }

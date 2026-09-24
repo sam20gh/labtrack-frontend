@@ -164,7 +164,7 @@ export default function AssistantScreen() {
                     <Ionicons name="sparkles" size={18} color={Palette.white} />
                 </View>
                 <View style={styles.headerText}>
-                    <Text style={styles.headerName}>Miovix AI</Text>
+                    <Text style={styles.headerName}>Predyqt AI</Text>
                     <Text style={styles.headerCaption}>
                         {sending ? 'Thinking…' : 'Knows your results and your plan'}
                     </Text>
@@ -242,7 +242,7 @@ export default function AssistantScreen() {
                         })}
                         voiceDisabledReason={capabilities.voice
                             ? null
-                            : 'This Miovix server has no speech-to-text configured, '
+                            : 'This Predyqt server has no speech-to-text configured, '
                               + 'so questions have to be typed for now.'}
                     />
                 ) : (

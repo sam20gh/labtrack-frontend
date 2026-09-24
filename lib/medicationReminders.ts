@@ -23,7 +23,7 @@ const COPY: Record<ReminderState, { title: string; body: string; canFixInSetting
     },
     denied: {
         title: 'Notifications are turned off',
-        body: 'Your medication is saved, but reminders cannot reach you until notifications are allowed for Miovix in your device settings.',
+        body: 'Your medication is saved, but reminders cannot reach you until notifications are allowed for Predyqt in your device settings.',
         canFixInSettings: true,
     },
     unsupported: {

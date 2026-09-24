@@ -158,8 +158,8 @@ export default function ScoreBreakdownScreen() {
                 <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
                     <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Miovix Score</Text>
-                <TouchableOpacity onPress={() => setExplainerOpen(true)} hitSlop={12} accessibilityLabel="What is the Miovix score?">
+                <Text style={styles.headerTitle}>Predyqt Score</Text>
+                <TouchableOpacity onPress={() => setExplainerOpen(true)} hitSlop={12} accessibilityLabel="What is the Predyqt score?">
                     <Ionicons name="help-circle-outline" size={24} color={Palette.text} />
                 </TouchableOpacity>
             </View>
@@ -174,7 +174,7 @@ export default function ScoreBreakdownScreen() {
                         band={score?.band ?? null}
                         bands={score?.bands ?? []}
                         size={Math.min(260, width - 100)}
-                        caption="Miovix Score"
+                        caption="Predyqt Score"
                         onInfo={() => setExplainerOpen(true)}
                     />
                     {score && (
@@ -349,7 +349,7 @@ export default function ScoreBreakdownScreen() {
                 {/*
                   The other aggregate number, and the two are adjacent questions.
 
-                  This score says how well somebody is using their trackers; the Miovix Age
+                  This score says how well somebody is using their trackers; the Predyqt Age
                   says what those trackers imply about their body. Somebody reading a
                   suboptimal score is exactly the person who wants the second, and linking
                   rather than embedding it is the same call the predict row above makes —
@@ -554,7 +554,7 @@ const BandRow = ({ band, current, open, onToggle }: {
 };
 
 /**
- * "What is the Miovix score?" — frame 2 of `Design/score.svg`.
+ * "What is the Predyqt score?" — frame 2 of `Design/score.svg`.
  *
  * The kit fronts this with an illustrated AI brain. There is no such asset in the repo and
  * a stock one would be the only decorative image in the app, so the sheet leads with the
@@ -569,9 +569,9 @@ const ScoreExplainer = ({ visible, onClose }: { visible: boolean; onClose: () =>
                     <Ionicons name="sparkles" size={26} color={Palette.primary} />
                 </View>
 
-                <Text style={styles.sheetTitle}>What is the Miovix score?</Text>
+                <Text style={styles.sheetTitle}>What is the Predyqt score?</Text>
                 <Text style={styles.sheetBody}>
-                    One number over everything Miovix holds for you — your labs, activity, sleep,
+                    One number over everything Predyqt holds for you — your labs, activity, sleep,
                     nutrition, medication and vitals — weighted by how much each one says about your
                     health.
                 </Text>

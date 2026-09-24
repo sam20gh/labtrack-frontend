@@ -105,7 +105,7 @@ export default function SplashScreen() {
                 ]}
             >
                 <BrandMark size={92} color={Palette.white} />
-                <Text style={styles.wordmark}>Miovix</Text>
+                <Text style={styles.wordmark}>Predyqt</Text>
                 <Text style={styles.tagline}>Smart Health Starts Here.</Text>
             </Animated.View>
 

@@ -1,5 +1,5 @@
 /**
- * Miovix Age.
+ * Predyqt Age.
  *
  * The orb, the pace, what each half contributed, and the three things that would move it.
  *
@@ -36,7 +36,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AgeOrb from '@/components/age/AgeOrb';
 import {
     getAge, getAgeLevers, deltaLabel, tintForBand, paceLabel, paceFraction, refusalTitle,
-    type MiovixAge, type AgeLever, type AgeHalf, type AgeHalfRefusal, type AgeSource,
+    type PredyqtAge, type AgeLever, type AgeHalf, type AgeHalfRefusal, type AgeSource,
 } from '@/lib/age';
 import { ApiError } from '@/lib/api';
 import { describeError } from '@/lib/appState';
@@ -51,9 +51,9 @@ const SOURCE_LABEL: Record<AgeSource, string> = {
     blended: 'Blood results and trackers',
 };
 
-export default function MiovixAgeScreen() {
+export default function PredyqtAgeScreen() {
     const router = useRouter();
-    const [age, setAge] = useState<MiovixAge | null>(null);
+    const [age, setAge] = useState<PredyqtAge | null>(null);
     const [levers, setLevers] = useState<AgeLever[] | null>(null);
     const [error, setError] = useState<ApiError | null>(null);
     const [loading, setLoading] = useState(true);
@@ -219,7 +219,7 @@ const Header = ({ onBack, onHow }: { onBack: () => void; onHow: () => void }) =>
         <TouchableOpacity onPress={onBack} hitSlop={12} accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={24} color={Palette.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Miovix Age</Text>
+        <Text style={styles.headerTitle}>Predyqt Age</Text>
         <TouchableOpacity onPress={onHow} hitSlop={12} accessibilityLabel="How this works">
             <Ionicons name="information-circle-outline" size={22} color={Palette.textSecondary} />
         </TouchableOpacity>
@@ -251,7 +251,7 @@ const SourceChip = ({ source, weights }: { source: AgeSource; weights?: Partial<
  * The track is the −1×…3× scale the design draws. An `unknown` pace draws **no marker at
  * all** — not one parked at 1.0 — for the reason in the file header.
  */
-const PaceCard = ({ age, tint }: { age: MiovixAge; tint: string }) => {
+const PaceCard = ({ age, tint }: { age: PredyqtAge; tint: string }) => {
     const pace = age.pace;
     const fraction = paceFraction(pace);
     const provisional = pace?.state === 'provisional';

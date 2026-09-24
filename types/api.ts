@@ -1,5 +1,5 @@
 /**
- * Shared shapes for everything the Miovix API returns.
+ * Shared shapes for everything the Predyqt API returns.
  *
  * These mirror the Mongoose schemas in `labtrack-backend/models/`. Keeping them in one
  * place means screens stop writing `useState([])` — which TypeScript infers as `never[]`,

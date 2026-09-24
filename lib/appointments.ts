@@ -3,7 +3,7 @@
  *
  * The turing kit's Doctor Appointment flow draws a diary: each doctor card carries a strip
  * of days labelled "Available" / "Unavailable", and the booking screen picks a slot out of
- * it. **Miovix has no availability model** — `models/Appointment.js` stores a booking and
+ * it. **Predyqt has no availability model** — `models/Appointment.js` stores a booking and
  * nothing describes a professional's working hours. Rendering the kit's labels literally
  * would mean inventing a signal, and "Available" is the one word on that screen a person
  * acts on.

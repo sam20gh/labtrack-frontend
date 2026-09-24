@@ -319,7 +319,7 @@ export default function HydrationScreen() {
                         <Ionicons name="sparkles" size={18} color={Palette.primary} />
                     </View>
                     <View style={styles.flex}>
-                        <Text style={styles.askTitle}>Ask Miovix AI about your hydration</Text>
+                        <Text style={styles.askTitle}>Ask Predyqt AI about your hydration</Text>
                         <Text style={styles.askBlurb}>
                             It reads your results, plan and trackers — so the answer is about you rather
                             than about water in general.

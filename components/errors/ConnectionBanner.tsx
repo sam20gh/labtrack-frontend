@@ -14,7 +14,7 @@
  * Four things to know:
  *
  * 1. **It reports reachability, not the radio.** See `isReachable` in `lib/api.ts`. The
- *    copy says "Can't reach Miovix" rather than "You're offline" for that reason — one is
+ *    copy says "Can't reach Predyqt" rather than "You're offline" for that reason — one is
  *    something we observed, the other is a guess about somebody's phone.
  * 2. **It clears itself.** Any successful call anywhere in the app flips the signal back,
  *    so the banner disappears on the next thing that works rather than needing its own
@@ -58,7 +58,7 @@ const ConnectionBanner = ({ onRetry }: Props) => {
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
         }).start();
-        if (offline) AccessibilityInfo.announceForAccessibility("Can't reach Miovix. You may be offline.");
+        if (offline) AccessibilityInfo.announceForAccessibility("Can't reach Predyqt. You may be offline.");
     }, [offline, slide]);
 
     // Kept mounted while animating out, then removed — an absolutely positioned view that
@@ -94,11 +94,11 @@ const ConnectionBanner = ({ onRetry }: Props) => {
                 pointerEvents={onRetry ? 'auto' : 'none'}
                 accessibilityRole={onRetry ? 'button' : 'alert'}
                 accessibilityLabel={
-                    onRetry ? "Can't reach Miovix. Tap to retry." : "Can't reach Miovix. You may be offline."
+                    onRetry ? "Can't reach Predyqt. Tap to retry." : "Can't reach Predyqt. You may be offline."
                 }
             >
                 <Ionicons name="wifi-outline" size={14} color={Palette.alert} />
-                <Text style={styles.label}>Can&apos;t reach Miovix</Text>
+                <Text style={styles.label}>Can&apos;t reach Predyqt</Text>
                 {onRetry ? <Text style={styles.retry}>Retry</Text> : null}
             </Pressable>
         </Animated.View>

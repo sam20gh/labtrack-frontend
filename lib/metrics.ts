@@ -2,7 +2,7 @@
  * Health metrics client — weight, hydration, blood pressure.
  *
  * These are the three metrics in the design's list that no connected device reports into
- * Miovix yet, so **they are entered by hand and that entry is the source of truth**. A
+ * Predyqt yet, so **they are entered by hand and that entry is the source of truth**. A
  * logged weight is what the score's body pillar reads; `User.weight` from onboarding is only
  * the fallback, and is labelled as self-reported wherever it is shown.
  *

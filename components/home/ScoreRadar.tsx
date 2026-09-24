@@ -2,7 +2,7 @@
  * Hexagonal score radar.
  *
  * The turing kit draws the health score as a six-axis polygon with the axis labels sitting
- * outside the rings (Calorie / Steps / BMI / Sleep / BPM / Hydration). Miovix's axes are
+ * outside the rings (Calorie / Steps / BMI / Sleep / BPM / Hydration). Predyqt's axes are
  * the score pillars instead, because those are the dimensions this product actually
  * measures — and, since the score moved server-side, the dimensions it actually measured
  * rather than the ones someone described in onboarding. The caller picks which pillars to

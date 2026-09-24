@@ -2,7 +2,7 @@
  * Predictive health analysis client.
  *
  * **The forecast is computed on the server and this file only fetches it**, for the three
- * reasons `lib/score.ts` gives about the Miovix score, all of which apply harder here:
+ * reasons `lib/score.ts` gives about the Predyqt score, all of which apply harder here:
  * the fit reads up to a year of rows across four collections, the interval has to be stored
  * so it can be scored against what actually happened, and two phones must not disagree about
  * what somebody was told last week.

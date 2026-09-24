@@ -1,5 +1,5 @@
 /**
- * Miovix Age — the first-run screen.
+ * Predyqt Age — the first-run screen.
  *
  * Shown once, gated on `AGE_INTRO_KEY`, on the same terms as Predict, Resources and Badges: a
  * splash somebody has to dismiss on every visit is a tax on the feature it advertises.
@@ -79,7 +79,7 @@ export default function AgeIntroScreen() {
 
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.cta} onPress={start} accessibilityRole="button">
-                    <Text style={styles.ctaText}>Work out my Miovix Age</Text>
+                    <Text style={styles.ctaText}>Work out my Predyqt Age</Text>
                     <Ionicons name="arrow-forward" size={18} color={Palette.white} />
                 </TouchableOpacity>
             </View>

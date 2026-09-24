@@ -1,5 +1,5 @@
 /**
- * The Miovix Age hero.
+ * The Predyqt Age hero.
  *
  * ## What it draws, and why it is a dial rather than a glow
  *
@@ -406,7 +406,7 @@ export default function AgeOrb({
                             style={[styles.value, { fontSize: valueSize, lineHeight: valueSize * 1.12 }]}
                         />
                         <Text style={[styles.unit, { fontSize: unitSize }]} numberOfLines={1}>
-                            MIOVIX AGE
+                            PREDYQT AGE
                         </Text>
                         {!!caption && (
                             <Text

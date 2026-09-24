@@ -127,7 +127,7 @@ export default function MedicationsScreen() {
                     </View>
                     <Text style={styles.emptyTitle}>Track medications that matter</Text>
                     <Text style={styles.emptyBody}>
-                        Add what you take and Miovix will remind you, keep the record, and
+                        Add what you take and Predyqt will remind you, keep the record, and
                         check how your medicines sit together — against your own results and
                         conditions.
                     </Text>
@@ -254,7 +254,7 @@ export default function MedicationsScreen() {
                             <Text style={styles.reminderTitle}>Dose reminders are not arriving</Text>
                             <Text style={styles.reminderDetail}>
                                 {reminders === 'denied'
-                                    ? 'Notifications are turned off for Miovix. Tap to open your device settings.'
+                                    ? 'Notifications are turned off for Predyqt. Tap to open your device settings.'
                                     : reminders === 'unsupported'
                                         ? 'Push notifications do not work on a simulator.'
                                         : 'This device is not set up to receive them yet. Tap to turn them on.'}

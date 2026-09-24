@@ -1,5 +1,5 @@
 /**
- * The Miovix mark — the flared medical cross the turing kit draws on the splash screen.
+ * The Predyqt mark — the flared medical cross the turing kit draws on the splash screen.
  *
  * Four separate arms with a square of background showing through the middle, each arm a
  * hair wider at its outer end than at the hub. That gap is the whole identity of the shape:

@@ -18,7 +18,7 @@
  *   round — the same checkpoint report ingestion puts between a misread digit and the
  *   record. Initials remain the fallback and are what everyone sees until they pick one.
  * - **Email is read-only.** Supabase owns the credential; changing it here would move the
- *   Miovix record away from the address the token is issued against, and the next
+ *   Predyqt record away from the address the token is issued against, and the next
  *   `syncAccount()` would link a second account.
  * - **Height and weight are on the form.** The kit puts them in onboarding only, which
  *   means the only way to correct a mistyped height was to walk the 23-screen assessment

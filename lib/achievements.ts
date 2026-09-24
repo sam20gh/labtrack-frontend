@@ -107,7 +107,7 @@ export interface AchievementDetail extends Achievement {
      * on the server that builds the public card, so the preview cannot promise something
      * different from what the link resolves to.
      *
-     * Both null until they opt into a public profile. A card with no name reads "A Miovix
+     * Both null until they opt into a public profile. A card with no name reads "A Predyqt
      * member", which is complete: the badge is the subject.
      */
     person: { name: string | null; avatar: string | null };
@@ -329,8 +329,8 @@ export const shareAchievementLink = async (key: string): Promise<ShareOutcome> =
 
     const result = await Share.share(
         link.url
-            ? { message: `${link.message}\n${link.url}`, url: link.url, title: 'Miovix achievement' }
-            : { message: link.message, title: 'Miovix achievement' },
+            ? { message: `${link.message}\n${link.url}`, url: link.url, title: 'Predyqt achievement' }
+            : { message: link.message, title: 'Predyqt achievement' },
     );
 
     if (result.action === Share.dismissedAction) return 'dismissed';
