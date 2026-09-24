@@ -118,6 +118,8 @@ import { DoseRow } from '@/components/medications/DoseRow';
 import { Spacing, Radius, Shadow, Fonts, BodyFont, schemed, tone, Palettes } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { HeroStatusBar } from '@/components/ui/HeroStatusBar';
+import { FadeIn } from '@/components/ui/FadeIn';
+import { SkeletonGroup, SkeletonBlock } from '@/components/nutrition/Skeleton';
 import type {
     BiomarkerSummary, MedicationScheduleDay, NutritionDay, NutritionTargets, Product, User,
     Appointment, PlanItem,
@@ -373,11 +375,12 @@ export default function HomeScreen() {
     useFocusEffect(
         useCallback(() => {
             let active = true;
-            // `loading` is read in exactly one place, and only while `signedIn` is still
-            // null — the full-screen spinner before anything has ever loaded. Once the
-            // first load resolves, `signedIn` is a boolean forever and the flag is never
-            // read again, so flipping it on each later focus re-rendered this whole tree
-            // to change nothing. This screen refocuses constantly — every tab switch, and
+            // `loading` means "no load has ever resolved" — it holds the skeleton in place
+            // of the page, so nobody is shown the empty state while their data is simply
+            // in flight. Once the first load resolves the page is drawn from state and a
+            // later refresh updates it in place, so flipping the flag on each later focus
+            // would re-render this whole tree to change nothing — or worse, swap a full
+            // page back to a skeleton. This screen refocuses constantly — every tab switch, and
             // every return from the detail screens it pushes to — so that was one wasted
             // full-tree render per visit. Setting it back to `false` is already free:
             // React bails out when the value is unchanged.
@@ -742,14 +745,6 @@ export default function HomeScreen() {
     const firstName = user?.firstName?.trim() || 'there';
     const initials = ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase();
 
-    if (loading && signedIn === null) {
-        return (
-            <SafeAreaView style={[styles.container, styles.center]} edges={['top']}>
-                <ActivityIndicator size="large" color={Palette.primary} />
-            </SafeAreaView>
-        );
-    }
-
     /**
      * Which trackers get a section, in what order, and which become a setup row.
      *
@@ -799,7 +794,11 @@ export default function HomeScreen() {
             order: 1.5,
             node: (
                 <Section title="Predyqt Age" action="See All" onAction={() => { openAge(router); }}>
-                    <AgeCard age={age} onPress={() => { openAge(router); }} />
+                    {/* Arrives after the rest of the page, into the skeleton's slot — so it
+                        fades in rather than cutting from grey block to card. */}
+                    <FadeIn>
+                        <AgeCard age={age} onPress={() => { openAge(router); }} />
+                    </FadeIn>
                 </Section>
             ),
         });
@@ -1014,7 +1013,12 @@ export default function HomeScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Palette.primary} />
                 }
             >
-                {signedIn ? (
+                {/*
+                  `signedIn` is null for the moment it takes to read the session, and most
+                  people opening this screen are signed in — so that moment draws the
+                  signed-in skeleton, not a spinner and not the signed-out shop.
+                */}
+                {signedIn !== false ? (
                     <>
                         <HomeHeader
                             name={firstName}
@@ -1022,209 +1026,222 @@ export default function HomeScreen() {
                             photo={user?.profileImage ?? null}
                             streak={activity?.streak ?? null}
                             today={todayLine}
+                            loading={loading}
                             topInset={insets.top}
                             onSearch={() => router.push('/resources/search')}
                             onPressAvatar={() => router.push('/profile')}
                             onPressStreak={() => router.push('/activity/history')}
                         />
 
-                        <ScoreCard
-                            score={score}
-                            attention={attention.length}
-                            onPress={openScore}
-                        />
-
                         {/*
-                          The markers behind the number, worst first. The score card used to
-                          say "2 need attention" and stop there, which names a count and no
-                          nouns — the one thing a person wants from a health app is *which*
-                          two. Each tile carries its own movement, so a value that is still
-                          out of range but heading back reads as progress rather than as a
-                          second identical warning.
-                        */}
-                        {(attention.length > 0 || recovered.length > 0) && (
-                            <Section
-                                /* The section names what it actually contains. Somebody
-                                   whose every flagged marker has come back is not being
-                                   shown things to watch, and titling their good news
-                                   "Markers to watch" would be the screen refusing to
-                                   notice. */
-                                title={attention.length > 0 ? 'Markers to watch' : 'Back in range'}
-                                action="See All"
-                                onAction={() => router.push('/(tabs)/results')}
-                            >
-                                <ScrollView
-                                    horizontal
-                                    showsHorizontalScrollIndicator={false}
-                                    contentContainerStyle={styles.hScroll}
-                                >
-                                    {/* Recovered markers go last, so the rail reads worst
-                                        first and ends on the one that got better. Finding
-                                        it at the end of the scroll is the point: it is a
-                                        reward for looking, not a banner. */}
-                                    {[...attention.slice(0, 5), ...recovered].map((marker) => (
-                                        <MarkerTile
-                                            key={marker._id}
-                                            marker={marker}
-                                            onPress={() => router.push({
-                                                pathname: '/biomarker/[name]',
-                                                params: { name: marker.name },
-                                            })}
-                                        />
-                                    ))}
-                                </ScrollView>
-                            </Section>
-                        )}
+                          Skeleton until the first load resolves, then the page fades in.
 
-                        {/*
-                          Needs you.
-
-                          Above the analysis on purpose. The analysis explains, this asks —
-                          and a screen whose first actionable element is four scrolls down is
-                          a screen people learn to stop scrolling.
+                          Rendering the page from empty state while the batch was in flight
+                          drew every tracker as a setup row, "No score yet" and "Hello,
+                          there!" — the screen of somebody who has done nothing — and then
+                          cut to the real one. That is two false statements and a jump.
                         */}
-                        {actions.length > 0 && (
-                            <Section
-                                title="Needs you"
-                                action={plan.length > 0 ? 'Your plan' : undefined}
-                                onAction={plan.length > 0 ? () => router.push('/myplans') : undefined}
-                            >
-                                <View style={styles.actionList}>
-                                    {actions.map((action) => (
-                                        <ActionRow key={action.id} action={action} />
-                                    ))}
-                                </View>
-                            </Section>
-                        )}
-
-                        {/*
-                          Latest analysis — the one section `Design/index.svg` does not
-                          carry. It sits here because the interpretation is the product:
-                          every tracker below reports a measurement, and this is the only
-                          thing that says what the measurements mean.
-                        */}
-                        {analysis?.latestResult && (
-                            <Section
-                                title="Latest Analysis"
-                                action={analysis.interpretation ? 'View plan' : undefined}
-                                onAction={analysis.interpretation ? () => router.push('/myplans') : undefined}
-                            >
-                                <AnalysisCard
-                                    analysis={analysis}
-                                    generating={generating}
-                                    expanded={analysisExpanded}
-                                    onToggle={toggleAnalysis}
-                                    onGenerate={runGenerate}
-                                    onRegenerate={runRegenerate}
+                        {loading ? <HomeSkeleton /> : (
+                            <FadeIn style={styles.bodyLift}>
+                                <ScoreCard
+                                    score={score}
+                                    attention={attention.length}
+                                    onPress={openScore}
                                 />
-                            </Section>
-                        )}
 
-                        {/* The trackers that have something to say, most urgent first. */}
-                        {trackers.map((tracker) => (
-                            <React.Fragment key={tracker.id}>{tracker.node}</React.Fragment>
-                        ))}
+                                {/*
+                                  The markers behind the number, worst first. The score card used to
+                                  say "2 need attention" and stop there, which names a count and no
+                                  nouns — the one thing a person wants from a health app is *which*
+                                  two. Each tile carries its own movement, so a value that is still
+                                  out of range but heading back reads as progress rather than as a
+                                  second identical warning.
+                                */}
+                                {(attention.length > 0 || recovered.length > 0) && (
+                                    <Section
+                                        /* The section names what it actually contains. Somebody
+                                           whose every flagged marker has come back is not being
+                                           shown things to watch, and titling their good news
+                                           "Markers to watch" would be the screen refusing to
+                                           notice. */
+                                        title={attention.length > 0 ? 'Markers to watch' : 'Back in range'}
+                                        action="See All"
+                                        onAction={() => router.push('/(tabs)/results')}
+                                    >
+                                        <ScrollView
+                                            horizontal
+                                            showsHorizontalScrollIndicator={false}
+                                            contentContainerStyle={styles.hScroll}
+                                        >
+                                            {/* Recovered markers go last, so the rail reads worst
+                                                first and ends on the one that got better. Finding
+                                                it at the end of the scroll is the point: it is a
+                                                reward for looking, not a banner. */}
+                                            {[...attention.slice(0, 5), ...recovered].map((marker) => (
+                                                <MarkerTile
+                                                    key={marker._id}
+                                                    marker={marker}
+                                                    onPress={() => router.push({
+                                                        pathname: '/biomarker/[name]',
+                                                        params: { name: marker.name },
+                                                    })}
+                                                />
+                                            ))}
+                                        </ScrollView>
+                                    </Section>
+                                )}
 
-                        {/*
-                          Symptom Checker, from `Design/sympt.svg`. It sits directly above
-                          Ask Predyqt AI because the two are one act — the symptom screen
-                          composes what you pick into a message and posts it to the
-                          assistant — and the card below is where the answer comes back.
+                                {/*
+                                  Needs you.
 
-                          The search and the chips live here and only here. They were drawn
-                          on the assistant card too until this card existed, which put two
-                          identical fields eight points apart.
-                        */}
-                        <Section title="Symptom Checker">
-                            <SymptomCheckerCard
-                                checks={symptomChecks}
-                                commonIds={COMMON_SYMPTOM_IDS}
-                                onSearch={() => router.push('/symptoms')}
-                                onBrowse={() => router.push({ pathname: '/symptoms', params: { browse: '1' } })}
-                                onSymptom={(id) => router.push({ pathname: '/symptoms', params: { symptom: id } })}
-                                onOpenCheck={(check) => router.push({
-                                    pathname: '/symptoms',
-                                    params: { symptom: check.symptomIds.join(',') },
-                                })}
-                            />
-                        </Section>
+                                  Above the analysis on purpose. The analysis explains, this asks —
+                                  and a screen whose first actionable element is four scrolls down is
+                                  a screen people learn to stop scrolling.
+                                */}
+                                {actions.length > 0 && (
+                                    <Section
+                                        title="Needs you"
+                                        action={plan.length > 0 ? 'Your plan' : undefined}
+                                        onAction={plan.length > 0 ? () => router.push('/myplans') : undefined}
+                                    >
+                                        <View style={styles.actionList}>
+                                            {actions.map((action) => (
+                                                <ActionRow key={action.id} action={action} />
+                                            ))}
+                                        </View>
+                                    </Section>
+                                )}
 
-                        <Section title="Ask Predyqt AI">
-                            <AskCard
-                                conversation={conversation}
-                                onOpen={openAssistant}
-                            />
-                        </Section>
-
-                        {/*
-                          The trackers with nothing in them, as one list rather than as six
-                          full-height cards saying "connect a watch".
-
-                          Each row names the pillar it fills, because that is the true answer
-                          to "why should I bother" — the score above genuinely cannot move
-                          until one of these has data. See **The Predyqt score**.
-                        */}
-                        {setup.length > 0 && (
-                            <Section title="Get more from Predyqt">
-                                <View style={styles.card}>
-                                    <Text style={styles.cardBody}>
-                                        Each of these fills a pillar of your score. Until one has data,
-                                        that pillar is counted as unknown rather than as a failure.
-                                    </Text>
-                                    <View style={styles.rowList}>
-                                        {setup.map((item) => (
-                                            <TouchableOpacity
-                                                key={item.id}
-                                                style={styles.setupRow}
-                                                onPress={() => (item.open
-                                                    ? item.open()
-                                                    : router.push(item.route as never))}
-                                                activeOpacity={0.8}
-                                            >
-                                                <View style={styles.setupIcon}>
-                                                    <Ionicons name={item.icon} size={18} color={Palette.textSecondary} />
-                                                </View>
-                                                <View style={styles.flex}>
-                                                    <Text style={styles.rowTitle}>{item.title}</Text>
-                                                    <Text style={styles.rowMeta} numberOfLines={2}>{item.body}</Text>
-                                                </View>
-                                                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                </View>
-                            </Section>
-                        )}
-
-                        {/*
-                            News & Resources.
-
-                            The card is `ArticleCard` from `components/resources`, not a
-                            home-screen copy of it. The library already owns the byline, the
-                            category chip and the "2.5k" formatting, and a second version
-                            here is how the same article ends up with two different view
-                            counts on two screens.
-
-                            "See All" goes to the library rather than to a filtered list:
-                            this rail is a sample of everything, so its See All has to be
-                            everything too.
-                        */}
-                        {resources.length > 0 && (
-                            <Section title="News & Resources" action="See All" onAction={openResources}>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-                                    {resources.map((card) => (
-                                        <ArticleCard
-                                            key={card.id}
-                                            card={card}
-                                            width={Math.min(300, width * 0.8)}
-                                            onPress={() => {
-                                                const { pathname, params } = routeFor(card);
-                                                router.push({ pathname: pathname as any, params });
-                                            }}
+                                {/*
+                                  Latest analysis — the one section `Design/index.svg` does not
+                                  carry. It sits here because the interpretation is the product:
+                                  every tracker below reports a measurement, and this is the only
+                                  thing that says what the measurements mean.
+                                */}
+                                {analysis?.latestResult && (
+                                    <Section
+                                        title="Latest Analysis"
+                                        action={analysis.interpretation ? 'View plan' : undefined}
+                                        onAction={analysis.interpretation ? () => router.push('/myplans') : undefined}
+                                    >
+                                        <AnalysisCard
+                                            analysis={analysis}
+                                            generating={generating}
+                                            expanded={analysisExpanded}
+                                            onToggle={toggleAnalysis}
+                                            onGenerate={runGenerate}
+                                            onRegenerate={runRegenerate}
                                         />
-                                    ))}
-                                </ScrollView>
-                            </Section>
+                                    </Section>
+                                )}
+
+                                {/* The trackers that have something to say, most urgent first. */}
+                                {trackers.map((tracker) => (
+                                    <React.Fragment key={tracker.id}>{tracker.node}</React.Fragment>
+                                ))}
+
+                                {/*
+                                  Symptom Checker, from `Design/sympt.svg`. It sits directly above
+                                  Ask Predyqt AI because the two are one act — the symptom screen
+                                  composes what you pick into a message and posts it to the
+                                  assistant — and the card below is where the answer comes back.
+
+                                  The search and the chips live here and only here. They were drawn
+                                  on the assistant card too until this card existed, which put two
+                                  identical fields eight points apart.
+                                */}
+                                <Section title="Symptom Checker">
+                                    <SymptomCheckerCard
+                                        checks={symptomChecks}
+                                        commonIds={COMMON_SYMPTOM_IDS}
+                                        onSearch={() => router.push('/symptoms')}
+                                        onBrowse={() => router.push({ pathname: '/symptoms', params: { browse: '1' } })}
+                                        onSymptom={(id) => router.push({ pathname: '/symptoms', params: { symptom: id } })}
+                                        onOpenCheck={(check) => router.push({
+                                            pathname: '/symptoms',
+                                            params: { symptom: check.symptomIds.join(',') },
+                                        })}
+                                    />
+                                </Section>
+
+                                <Section title="Ask Predyqt AI">
+                                    <AskCard
+                                        conversation={conversation}
+                                        onOpen={openAssistant}
+                                    />
+                                </Section>
+
+                                {/*
+                                  The trackers with nothing in them, as one list rather than as six
+                                  full-height cards saying "connect a watch".
+
+                                  Each row names the pillar it fills, because that is the true answer
+                                  to "why should I bother" — the score above genuinely cannot move
+                                  until one of these has data. See **The Predyqt score**.
+                                */}
+                                {setup.length > 0 && (
+                                    <Section title="Get more from Predyqt">
+                                        <View style={styles.card}>
+                                            <Text style={styles.cardBody}>
+                                                Each of these fills a pillar of your score. Until one has data,
+                                                that pillar is counted as unknown rather than as a failure.
+                                            </Text>
+                                            <View style={styles.rowList}>
+                                                {setup.map((item) => (
+                                                    <TouchableOpacity
+                                                        key={item.id}
+                                                        style={styles.setupRow}
+                                                        onPress={() => (item.open
+                                                            ? item.open()
+                                                            : router.push(item.route as never))}
+                                                        activeOpacity={0.8}
+                                                    >
+                                                        <View style={styles.setupIcon}>
+                                                            <Ionicons name={item.icon} size={18} color={Palette.textSecondary} />
+                                                        </View>
+                                                        <View style={styles.flex}>
+                                                            <Text style={styles.rowTitle}>{item.title}</Text>
+                                                            <Text style={styles.rowMeta} numberOfLines={2}>{item.body}</Text>
+                                                        </View>
+                                                        <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    </Section>
+                                )}
+
+                                {/*
+                                    News & Resources.
+
+                                    The card is `ArticleCard` from `components/resources`, not a
+                                    home-screen copy of it. The library already owns the byline, the
+                                    category chip and the "2.5k" formatting, and a second version
+                                    here is how the same article ends up with two different view
+                                    counts on two screens.
+
+                                    "See All" goes to the library rather than to a filtered list:
+                                    this rail is a sample of everything, so its See All has to be
+                                    everything too.
+                                */}
+                                {resources.length > 0 && (
+                                    <Section title="News & Resources" action="See All" onAction={openResources}>
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                                            {resources.map((card) => (
+                                                <ArticleCard
+                                                    key={card.id}
+                                                    card={card}
+                                                    width={Math.min(300, width * 0.8)}
+                                                    onPress={() => {
+                                                        const { pathname, params } = routeFor(card);
+                                                        router.push({ pathname: pathname as any, params });
+                                                    }}
+                                                />
+                                            ))}
+                                        </ScrollView>
+                                    </Section>
+                                )}
+                            </FadeIn>
                         )}
                     </>
                 ) : (
@@ -1252,7 +1269,7 @@ export default function HomeScreen() {
  * hidden rather than shown as a zero.
  */
 const HomeHeader = ({
-    name, initials, photo, streak, today, topInset, onSearch, onPressAvatar, onPressStreak,
+    name, initials, photo, streak, today, loading, topInset, onSearch, onPressAvatar, onPressStreak,
 }: {
     name: string;
     initials: string;
@@ -1260,6 +1277,13 @@ const HomeHeader = ({
     /** Null until the activity summary lands — distinct from a real streak of zero. */
     streak: number | null;
     today: string;
+    /**
+     * The first load has not resolved. The greeting and the day line are drawn as bars:
+     * both are composed from loaded state, so before it arrives they would read "Hello,
+     * there!" over a day with nothing in it. The gradient, date and controls are real
+     * throughout, so the screen is recognisably home from the first frame after the splash.
+     */
+    loading: boolean;
     topInset: number;
     onSearch: () => void;
     onPressAvatar: () => void;
@@ -1296,7 +1320,15 @@ const HomeHeader = ({
                             </TouchableOpacity>
                         )}
                     </View>
-                    <Text style={styles.headerGreeting} numberOfLines={1}>Hello, {name}!</Text>
+                    {loading ? (
+                        <SkeletonGroup>
+                            <SkeletonBlock width="62%" height={26} radius={Radius.sm} style={styles.headerGreetingSkeleton} />
+                        </SkeletonGroup>
+                    ) : (
+                        <FadeIn rise={4}>
+                            <Text style={styles.headerGreeting} numberOfLines={1}>Hello, {name}!</Text>
+                        </FadeIn>
+                    )}
                 </View>
 
                 <TouchableOpacity style={styles.headerSearch} onPress={onSearch} accessibilityLabel="Search">
@@ -1325,7 +1357,15 @@ const HomeHeader = ({
                 to tell you; a person who opens the app twice before lunch needs the second
                 visit to differ from the first.
             */}
-            <Text style={styles.headerToday} numberOfLines={2}>{today}</Text>
+            {loading ? (
+                <SkeletonGroup>
+                    <SkeletonBlock width="84%" height={14} radius={Radius.sm} style={styles.headerTodaySkeleton} />
+                </SkeletonGroup>
+            ) : (
+                <FadeIn rise={4}>
+                    <Text style={styles.headerToday} numberOfLines={2}>{today}</Text>
+                </FadeIn>
+            )}
         </LinearGradient>
     );
 };
@@ -2791,6 +2831,78 @@ const AnalysisBlock = ({ title, children }: { title: string; children: React.Rea
     );
 };
 
+/**
+ * The page's shape while the first load is in flight.
+ *
+ * Shaped like what arrives most of the time — the score card over the header, then a list
+ * of rows, a full card and a rail — rather than one grey slab, because a skeleton is only
+ * honest when it has the shape of what is coming (see `components/nutrition/Skeleton.tsx`).
+ * It does not guess *which* sections a person has: that ranking is computed from the data
+ * this is waiting for.
+ *
+ * It carries the same `bodyLift` as the real body, so the score card lands exactly where
+ * its placeholder was and the swap reads as a fade in place rather than a jump.
+ */
+const HomeSkeleton = () => {
+    const styles = useStyles();
+    const rows = [0, 1, 2];
+    return (
+        <SkeletonGroup>
+            <View style={styles.bodyLift} accessibilityLabel="Loading your home screen" accessible>
+                <View style={styles.scoreCard}>
+                    <View style={styles.scoreTop}>
+                        <SkeletonBlock width={66} height={66} radius={Radius.lg} />
+                        <View style={[styles.flex, styles.skeletonLines]}>
+                            <SkeletonBlock width="58%" height={18} />
+                            <SkeletonBlock width="42%" height={13} />
+                        </View>
+                    </View>
+                    <View style={styles.scoreFoot}>
+                        <SkeletonBlock width="70%" height={13} />
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <SkeletonBlock width={110} height={18} />
+                    </View>
+                    <View style={styles.card}>
+                        {rows.map((row) => (
+                            <View key={row} style={styles.skeletonRow}>
+                                <SkeletonBlock width={36} height={36} radius={18} />
+                                <View style={[styles.flex, styles.skeletonLines]}>
+                                    <SkeletonBlock width="64%" height={14} />
+                                    <SkeletonBlock width="88%" height={12} />
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <SkeletonBlock width={140} height={18} />
+                    </View>
+                    <View style={styles.hScroll}>
+                        <SkeletonBlock height={164} radius={Radius.xl} />
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <SkeletonBlock width={120} height={18} />
+                    </View>
+                    <View style={[styles.hScroll, styles.skeletonRail]}>
+                        <SkeletonBlock width={150} height={116} radius={Radius.lg} />
+                        <SkeletonBlock width={150} height={116} radius={Radius.lg} />
+                        <SkeletonBlock width={150} height={116} radius={Radius.lg} />
+                    </View>
+                </View>
+            </View>
+        </SkeletonGroup>
+    );
+};
+
 const Section = ({ title, action, onAction, children }: {
     title: string; action?: string; onAction?: () => void; children: React.ReactNode;
 }) => {
@@ -2939,13 +3051,26 @@ const useStyles = makeStyles((Palette) => ({
         alignItems: 'center', justifyContent: 'center',
     },
     headerAvatar: { borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' },
+    // Placeholders on the deep hero. Translucent white rather than `borderLight`, which is
+    // a surface colour and would sit on the violet as an opaque grey bar.
+    headerGreetingSkeleton: { marginTop: 8, backgroundColor: 'rgba(255,255,255,0.22)' },
+    headerTodaySkeleton: { marginTop: Spacing.md, backgroundColor: 'rgba(255,255,255,0.16)' },
+
+    // Skeleton ------------------------------------------------------------
+    skeletonLines: { gap: 8 },
+    skeletonRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    skeletonRail: { flexDirection: 'row', overflow: 'hidden' },
 
     // Score card -----------------------------------------------------------
     // A column now, because the movement line sits under the whole thing rather than
     // beside the number. `scoreTop` carries what used to be on the card itself.
+    // Pulls the body — score card first — up over the header by half the card. It sits on
+    // the wrapper rather than on the card, because the card is a button and a child drawn
+    // outside its parent's bounds is not touchable on Android. See `components/ui/FadeIn.tsx`.
+    bodyLift: { marginTop: -Spacing.xxxl - Spacing.md },
     scoreCard: {
         gap: Spacing.md,
-        marginHorizontal: GUTTER, marginTop: -Spacing.xxxl - Spacing.md,
+        marginHorizontal: GUTTER,
         padding: Spacing.lg, borderRadius: Radius.xl,
         backgroundColor: Palette.background, ...Shadow.card,
         shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
