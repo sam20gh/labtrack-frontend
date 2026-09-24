@@ -364,12 +364,9 @@ export const METRIC_ROUTE: Record<string, string> = {
 export const METRIC_TINT: Record<string, string> = {
     ...TRACKER_TINT,
     /**
-     * The deep brand violet, **not** `Palette.primary`.
-     *
-     * `primary` is already blood pressure's tint in `lib/metrics.ts`, and the picker lists the
-     * two of them adjacently — two identical violet glyphs on the app's two most important
-     * metrics is the exact failure the tints were added to fix. The score is the aggregate of
-     * every other row, so the darkest point of the brand ramp is the right one for it.
+     * The deep brand violet — the one metric allowed a brand colour, because the score *is*
+     * the product's own number rather than a measurement of the body. The darkest point of the
+     * ramp, not `Palette.primary`, so it never reads as a button.
      */
     turing_score: Palette.primaryDeep,
     /**
@@ -381,18 +378,26 @@ export const METRIC_TINT: Record<string, string> = {
     /** Resting heart rate shares the heart-rate rose; it is the same measurement, at rest. */
     resting_heart_rate: TRACKER_TINT.heart_rate,
     /**
-     * Teal, and deliberately outside the violet ramp the score occupies.
+     * Olive, and deliberately outside the violet ramp the score occupies.
      *
      * The score and the age gap are the two aggregate numbers in the app and the picker lists
      * them adjacently, so they have to be separable at glyph size. Drawing the age in another
      * violet would make it read as a second view of the score, which is the one thing it is
      * not: the score says how well somebody is using their trackers, the gap says what those
      * trackers imply about their body.
+     *
+     * It was `Palette.teal`, which the picker's next row — blood pressure's ocean blue — sits
+     * 9.2 ΔE from; the teal was also under the validator's chroma floor, reading as grey.
+     * Olive clears BP at 20.6, steps at 18.1 and the score at 36.9.
      */
-    age_delta: Palette.teal,
+    age_delta: Palette.lime,
 };
 
-export const tintFor = (metric: string) => METRIC_TINT[metric] ?? Palette.primary;
+/**
+ * A metric with no tint of its own is drawn neutral, never in the brand: a violet fallback is
+ * how a data glyph ends up looking like a button.
+ */
+export const tintFor = (metric: string) => METRIC_TINT[metric] ?? Palette.textSecondary;
 
 /**
  * The soft wash behind a metric's icon.

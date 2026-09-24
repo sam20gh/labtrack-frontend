@@ -223,9 +223,23 @@ export const METRIC_ICON: Record<MetricKey, string> = {
     steps: 'walk-outline',
 };
 
+/**
+ * Identity colours — which metric a glyph or line belongs to, never whether it is good.
+ *
+ * **None of them may be a brand violet.** Blood pressure was `#7C3AED`, the brand itself, so
+ * its card read as chrome, and it sat 8.7 ΔE from sleep's indigo (3.5 under deuteranopia):
+ * the two failed the dataviz validator's normal-vision floor on the one screen that lists all
+ * six. `#0C6EA0` clears every other tint here and every brand step at ≥15, and sits 32 from
+ * `danger`: the BP card is the one most likely to carry a red Stage 2 chip beside its icon,
+ * so its identity must not be a red either. It is 12.7 from `info`, the closest it comes.
+ *
+ * Sleep's `#6366F1` is still 8.7 from the brand. That is not fixable here — the brand's three
+ * violets span the whole indigo-to-lavender band a night colour would live in — and waits on
+ * the brand, not on this table. Validate any change: `validate_palette.js --pairs all`.
+ */
 export const METRIC_TINT: Record<MetricKey, string> = {
     weight: '#F59E0B',
-    blood_pressure: '#7C3AED',
+    blood_pressure: '#0C6EA0',
     heart_rate: '#FB7185',
     sleep: '#6366F1',
     hydration: '#38BDF8',

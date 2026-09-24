@@ -31,15 +31,18 @@ import Toast from 'react-native-toast-message';
 import { ApiError } from '@/lib/api';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import {
-    getHistory, deleteLog,
+    getHistory, deleteLog, METRIC_TINT,
     type MetricHistory, type MetricLog, type LoggableKind,
 } from '@/lib/metrics';
 import { useUnits, unitLabel, displayWeight, type UnitPrefs } from '@/lib/units';
 import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 
+// Tints come from `METRIC_TINT` rather than being typed here: this table once held its own
+// copy of blood pressure's colour, which would have kept this screen purple after the
+// dashboard moved on.
 const META: Record<string, { title: string; unit: string; tint: string; logRoute: string }> = {
-    weight: { title: 'Weight', unit: 'kg', tint: '#F59E0B', logRoute: '/metrics/log/weight' },
-    'blood-pressure': { title: 'Blood Pressure', unit: 'mmHg', tint: '#7C3AED', logRoute: '/metrics/log/blood-pressure' },
+    weight: { title: 'Weight', unit: 'kg', tint: METRIC_TINT.weight, logRoute: '/metrics/log/weight' },
+    'blood-pressure': { title: 'Blood Pressure', unit: 'mmHg', tint: METRIC_TINT.blood_pressure, logRoute: '/metrics/log/blood-pressure' },
 };
 
 const RANGES = [
