@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import {
     getConversation, clearConversation, savePreferences,
     type AssistantMode, type Conversation,
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
         padding: Spacing.lg, gap: 2,
     },
     summaryValue: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text },
-    summaryLabel: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    summaryLabel: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
 
     sectionTitle: {
         fontSize: 12, fontFamily: Fonts.semibold, color: Palette.textSecondary,
@@ -213,11 +213,11 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.lg, paddingHorizontal: Spacing.lg,
         borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Palette.border,
     },
-    rowText: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
+    rowText: { fontSize: 14, ...BodyFont.medium, color: Palette.text },
 
     note: { backgroundColor: Palette.surface, borderRadius: Radius.xl, padding: Spacing.lg },
-    noteText: { fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    cleared: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    noteText: { fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
+    cleared: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 
     destructive: {
         height: 50, borderRadius: Radius.xl, borderWidth: 1, borderColor: Palette.danger,
@@ -226,5 +226,5 @@ const styles = StyleSheet.create({
     destructiveDisabled: { borderColor: Palette.border },
     destructiveText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.danger },
 
-    error: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.danger },
+    error: { fontSize: 13, ...BodyFont.medium, color: Palette.danger },
 });

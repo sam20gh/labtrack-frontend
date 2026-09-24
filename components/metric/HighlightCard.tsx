@@ -14,7 +14,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 const FLAMES = 5;
 
@@ -84,5 +84,5 @@ const styles = StyleSheet.create({
     },
     value: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.text },
     unit: { fontSize: 18, fontFamily: Fonts.semibold, color: Palette.text },
-    caption: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    caption: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary },
 });

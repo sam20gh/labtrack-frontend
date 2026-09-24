@@ -27,7 +27,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { previewInteractions, SEVERITY_META } from '@/lib/medications';
 import { FindingCard } from '@/components/medications/FindingCard';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { MedicationIdentifyResult, InteractionPreview } from '@/types/api';
 
 export default function ScanResultScreen() {
@@ -288,14 +288,14 @@ const styles = StyleSheet.create({
     matchText: { fontSize: 11, fontFamily: Fonts.semibold },
 
     name: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold, textTransform: 'capitalize', marginTop: Spacing.sm },
-    brand: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    plain: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.medium, marginTop: 2 },
+    brand: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
+    plain: { fontSize: 13, color: Palette.primary, ...BodyFont.medium, marginTop: 2 },
 
     factRow: { flexDirection: 'row', gap: Spacing.xxl, marginTop: Spacing.md },
     fact: { gap: 2 },
     factValue: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    factLabel: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    basis: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, marginTop: Spacing.md, lineHeight: 16 },
+    factLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
+    basis: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, marginTop: Spacing.md, lineHeight: 16 },
 
     uncertainCard: {
         backgroundColor: Palette.warningSurface, borderRadius: Radius.lg,
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     },
     uncertainHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     uncertainTitle: { fontSize: 14, color: Palette.warning, fontFamily: Fonts.bold },
-    uncertainBody: { fontSize: 13, color: Palette.text, fontFamily: Fonts.regular, lineHeight: 19 },
+    uncertainBody: { fontSize: 13, color: Palette.text, ...BodyFont.regular, lineHeight: 19 },
     altList: { gap: 6, marginTop: Spacing.sm },
     altHead: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.semibold },
     altRow: {
@@ -311,27 +311,27 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.white, borderRadius: Radius.md, padding: Spacing.md,
     },
     altName: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    altWhy: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 1 },
+    altWhy: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 1 },
 
     warnCard: {
         backgroundColor: Palette.surface, borderRadius: Radius.md,
         padding: Spacing.md, gap: Spacing.sm,
     },
     warnRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
-    warnText: { flex: 1, fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 18 },
+    warnText: { flex: 1, fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 18 },
 
     previewSection: { gap: Spacing.sm },
     sectionTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
     checkingRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', padding: Spacing.md },
-    checkingText: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    checkingText: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
     findingList: { gap: Spacing.sm },
-    introducedNote: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    introducedNote: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     neutralCard: {
         flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start',
         backgroundColor: Palette.white, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg,
     },
-    neutralText: { flex: 1, fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 19 },
+    neutralText: { flex: 1, fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 19 },
 
     primaryButton: {
         flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     },
     primaryButtonText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.semibold },
     escapeRow: { flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center' },
-    escape: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.medium },
+    escape: { fontSize: 13, color: Palette.primary, ...BodyFont.medium },
     escapeDivider: { fontSize: 13, color: Palette.textMuted },
-    footer: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, lineHeight: 17 },
+    footer: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 17 },
 });

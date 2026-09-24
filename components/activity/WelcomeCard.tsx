@@ -19,7 +19,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { RunnerHeroArt, RUNNER_HERO_ART } from './art';
 
 interface Props {
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     title: { fontSize: 19, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     body: {
         fontSize: 13,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         textAlign: 'center',
         lineHeight: 19,

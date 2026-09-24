@@ -28,7 +28,7 @@ import {
 import { ensureRemindersReady, reminderState, type ReminderState } from '@/lib/notifications';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { PillGlyph } from '@/components/medications/PillGlyph';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import type {
     TrackedMedication, MedicationScheduleDay, MedicationCheckResponse,
 } from '@/types/api';
@@ -409,13 +409,13 @@ const styles = StyleSheet.create({
     content: { padding: Spacing.xl, paddingTop: Spacing.sm, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
 
     hero: { borderRadius: Radius.lg, padding: Spacing.xl, gap: Spacing.lg },
-    heroLabel: { fontSize: 15, color: Palette.white, fontFamily: Fonts.medium },
-    heroNote: { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: Fonts.regular },
+    heroLabel: { fontSize: 15, color: Palette.white, ...BodyFont.medium },
+    heroNote: { fontSize: 11, color: 'rgba(255,255,255,0.75)', ...BodyFont.regular },
     statRow: { flexDirection: 'row', justifyContent: 'space-between' },
     stat: { flex: 1 },
     statValue: { fontSize: 24, color: Palette.white, fontFamily: Fonts.bold },
-    statPercent: { fontSize: 13, fontFamily: Fonts.regular },
-    statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.85)', fontFamily: Fonts.regular, marginTop: 2 },
+    statPercent: { fontSize: 13, ...BodyFont.regular },
+    statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.85)', ...BodyFont.regular, marginTop: 2 },
 
     reminderBanner: {
         flexDirection: 'row',
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     },
     reminderBody: { flex: 1 },
     reminderTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: '#92400E' },
-    reminderDetail: { fontFamily: Fonts.regular, fontSize: 12, color: '#B45309', marginTop: 2, lineHeight: 17 },
+    reminderDetail: { ...BodyFont.regular, fontSize: 12, color: '#B45309', marginTop: 2, lineHeight: 17 },
     checkCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -449,8 +449,8 @@ const styles = StyleSheet.create({
     },
     checkBody: { flex: 1, gap: 2 },
     checkTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
-    checkDetail: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 17 },
-    checkStale: { fontSize: 11, color: Palette.primary, fontFamily: Fonts.medium, marginTop: 2 },
+    checkDetail: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 17 },
+    checkStale: { fontSize: 11, color: Palette.primary, ...BodyFont.medium, marginTop: 2 },
 
     actionRow: { flexDirection: 'row', justifyContent: 'space-between' },
     action: { alignItems: 'center', gap: 6, flex: 1 },
@@ -459,11 +459,11 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
-    actionLabel: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    actionLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
 
     sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
-    sectionAction: { fontSize: 12, color: Palette.primary, fontFamily: Fonts.medium },
+    sectionAction: { fontSize: 12, color: Palette.primary, ...BodyFont.medium },
 
     doseList: { gap: Spacing.sm },
     medList: { gap: Spacing.sm },
@@ -479,8 +479,8 @@ const styles = StyleSheet.create({
     },
     medBody: { flex: 1, gap: 2 },
     medName: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    medStrength: { fontFamily: Fonts.regular, color: Palette.textSecondary },
-    medSub: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    medStrength: { ...BodyFont.regular, color: Palette.textSecondary },
+    medSub: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
     refillChip: {
         backgroundColor: Palette.warningSurface,
         paddingHorizontal: 8, paddingVertical: 3,
@@ -498,12 +498,12 @@ const styles = StyleSheet.create({
         borderColor: Palette.border,
         padding: Spacing.lg,
     },
-    quietText: { flex: 1, fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 19 },
+    quietText: { flex: 1, fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 19 },
 
     footer: {
         fontSize: 11,
         color: Palette.textMuted,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         lineHeight: 17,
         marginTop: Spacing.sm,
     },
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { fontSize: 21, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center' },
     emptyBody: {
-        fontSize: 14, color: Palette.textSecondary, fontFamily: Fonts.regular,
+        fontSize: 14, color: Palette.textSecondary, ...BodyFont.regular,
         textAlign: 'center', lineHeight: 21, marginBottom: Spacing.md,
     },
     primaryButton: {

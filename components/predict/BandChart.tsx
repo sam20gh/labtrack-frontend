@@ -12,7 +12,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Line, Text as SvgText, Defs, LinearGradient, Stop, G } from 'react-native-svg';
-import { Palette, Fonts } from '@/constants/theme';
+import { Palette, Fonts, BodyFont } from '@/constants/theme';
 import type { SeriesPoint } from '@/lib/prediction';
 
 interface Props {
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
         backgroundColor: Palette.borderLight, borderRadius: 12,
     },
-    emptyText: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    emptyText: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     legend: { flexDirection: 'row', justifyContent: 'center', gap: 18, marginTop: 2 },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     dot: { width: 7, height: 7, borderRadius: 4 },

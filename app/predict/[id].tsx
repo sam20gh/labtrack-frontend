@@ -48,7 +48,7 @@ import {
     ConfidenceChip, ChangeBadge, BandChip, GeneratedPill, PredictionDisclaimer,
 } from '@/components/predict/Chips';
 import { Avatar } from '@/components/Avatar';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const RISK_TONE = {
     high: { colour: Palette.danger, bg: Palette.dangerSurface },
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
         color: Palette.white, marginTop: Spacing.lg,
     },
     heroMeta: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular,
         color: 'rgba(255,255,255,0.85)', marginTop: Spacing.md,
     },
     heroToggle: { alignItems: 'center', paddingVertical: Spacing.md },
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     },
     outcomeTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text },
     outcomeBody: {
-        fontSize: 13, lineHeight: 19, fontFamily: Fonts.regular,
+        fontSize: 13, lineHeight: 19, ...BodyFont.regular,
         color: Palette.textSecondary, marginTop: 2,
     },
 
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     },
     riskLabel: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
     riskDetail: {
-        fontSize: 13, lineHeight: 19, fontFamily: Fonts.regular,
+        fontSize: 13, lineHeight: 19, ...BodyFont.regular,
         color: Palette.textOnWarm, marginTop: 2,
     },
     riskStats: {
@@ -459,14 +459,14 @@ const styles = StyleSheet.create({
         borderTopWidth: 1, borderTopColor: Palette.borderLight,
     },
     riskStat: { flex: 1, gap: 2 },
-    riskStatLabel: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textOnWarm },
+    riskStatLabel: { fontSize: 11, ...BodyFont.regular, color: Palette.textOnWarm },
     riskStatValue: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     riskFooter: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular,
         color: Palette.textMuted, marginTop: -Spacing.xs,
     },
 
-    summary: { fontSize: 14, lineHeight: 22, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    summary: { fontSize: 14, lineHeight: 22, ...BodyFont.regular, color: Palette.textSecondary },
 
     componentCard: {
         backgroundColor: Palette.surface, borderRadius: Radius.lg,
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border, overflow: 'hidden', justifyContent: 'flex-end',
     },
     stripFill: { height: '100%', opacity: 0.25 },
-    stripLabel: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    stripLabel: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 
     componentRow: { gap: 4 },
     componentRowDivided: {
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     },
     componentNote: {
         flex: 1, fontSize: 13, lineHeight: 19,
-        fontFamily: Fonts.regular, color: Palette.textSecondary,
+        ...BodyFont.regular, color: Palette.textSecondary,
     },
 
     chartCard: {
@@ -518,14 +518,14 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md, borderWidth: 1, borderColor: Palette.border,
         backgroundColor: Palette.white,
     },
-    chipText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.text },
+    chipText: { fontSize: 13, ...BodyFont.medium, color: Palette.text },
 
     suggestions: {
         backgroundColor: Palette.surface, borderRadius: Radius.lg,
         padding: Spacing.lg, gap: Spacing.md,
     },
     suggestion: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' },
-    suggestionText: { flex: 1, fontSize: 13, lineHeight: 20, fontFamily: Fonts.regular, color: Palette.text },
+    suggestionText: { flex: 1, fontSize: 13, lineHeight: 20, ...BodyFont.regular, color: Palette.text },
 
     provenance: {
         marginTop: Spacing.xl, backgroundColor: Palette.canvas,
@@ -536,8 +536,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row', justifyContent: 'space-between',
         gap: Spacing.md, paddingVertical: 5,
     },
-    provLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    provValue: { flex: 1, fontSize: 12, fontFamily: Fonts.medium, color: Palette.text, textAlign: 'right' },
+    provLabel: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
+    provValue: { flex: 1, fontSize: 12, ...BodyFont.medium, color: Palette.text, textAlign: 'right' },
 
     trackerCta: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
@@ -554,5 +554,5 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border,
     },
     proName: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text, marginTop: 6 },
-    proSpec: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    proSpec: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 });

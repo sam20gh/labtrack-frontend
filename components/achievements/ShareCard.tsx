@@ -36,7 +36,7 @@ import { Avatar } from '@/components/Avatar';
 import BrandMark from '@/components/BrandMark';
 import type { BadgeGlyph, BadgeShape } from './badgeArt';
 import type { BadgeTone } from './BadgeMedal';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 
 /** "Ada Lovelace" → "AL". One letter is fine; `Avatar` falls back to a glyph on empty. */
 const initialsOf = (name: string) =>
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
     person: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexShrink: 1 },
     personName: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text, flexShrink: 1 },
-    anonymous: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.textSecondary, flexShrink: 1 },
+    anonymous: { fontSize: 14, ...BodyFont.medium, color: Palette.textSecondary, flexShrink: 1 },
     levelChip: {
         paddingHorizontal: 10, paddingVertical: 4,
         borderRadius: Radius.pill,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     },
     how: {
         fontSize: 14,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         textAlign: 'center',
     },
@@ -158,5 +158,5 @@ const styles = StyleSheet.create({
     },
     footerText: { gap: 1 },
     wordmark: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 15 },
-    host: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 13 },
+    host: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 13 },
 });

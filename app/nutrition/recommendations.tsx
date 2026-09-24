@@ -26,7 +26,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getRecommendations, logMeal, mealFromSuggestion, MEAL_TYPE_LABEL, MACRO_META } from '@/lib/nutrition';
 import { SuggestionCard, SuggestionHero } from '@/components/nutrition/SuggestionCard';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { NutritionRecommendations, MealSuggestion } from '@/types/api';
 
 export default function RecommendationsScreen() {
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     headerTitle: { fontFamily: Fonts.semibold, fontSize: 16, color: Palette.text },
 
     loading: { alignItems: 'center', marginTop: Spacing.xxxl * 3, gap: Spacing.md },
-    loadingText: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary },
+    loadingText: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary },
 
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
     headline: { fontFamily: Fonts.bold, fontSize: 19, color: Palette.text, lineHeight: 27, marginBottom: Spacing.lg },
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
         padding: Spacing.md, marginBottom: Spacing.xl,
     },
     basisGeneral: { backgroundColor: Palette.canvas, borderWidth: 1, borderColor: Palette.borderSlate },
-    basisText: { flex: 1, fontFamily: Fonts.regular, fontSize: 12, color: Palette.primaryDark, lineHeight: 18 },
+    basisText: { flex: 1, ...BodyFont.regular, fontSize: 12, color: Palette.primaryDark, lineHeight: 18 },
     basisTextGeneral: { color: Palette.textSecondary },
 
     footer: {
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
 
     empty: { alignItems: 'center', paddingHorizontal: Spacing.xxxl, marginTop: Spacing.xxxl * 2, gap: Spacing.md },
     emptyTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
-    emptyBody: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
+    emptyBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
 
     backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)' },
     sheet: {
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase', letterSpacing: 0.6,
     },
     sheetTitle: { fontFamily: Fonts.bold, fontSize: 21, color: Palette.text, marginTop: Spacing.xs },
-    sheetWhy: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textSecondary, lineHeight: 21, marginTop: Spacing.sm },
+    sheetWhy: { ...BodyFont.regular, fontSize: 14, color: Palette.textSecondary, lineHeight: 21, marginTop: Spacing.sm },
 
     macroRow: {
         flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xl,
@@ -309,23 +309,23 @@ const styles = StyleSheet.create({
     },
     sheetStat: { flex: 1, alignItems: 'center' },
     sheetStatValue: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
-    sheetStatLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
+    sheetStatLabel: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
 
     tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.lg },
     tag: {
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.borderSlate,
         paddingHorizontal: Spacing.md, paddingVertical: 4,
     },
-    tagText: { fontFamily: Fonts.medium, fontSize: 11, color: Palette.textSecondary },
+    tagText: { ...BodyFont.medium, fontSize: 11, color: Palette.textSecondary },
 
     sheetSection: { fontFamily: Fonts.bold, fontSize: 14, color: Palette.text, marginTop: Spacing.xxl, marginBottom: Spacing.md },
     ingredients: { gap: Spacing.sm },
     ingredient: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     ingredientDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.primary },
-    ingredientText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: Palette.text },
+    ingredientText: { flex: 1, ...BodyFont.regular, fontSize: 13, color: Palette.text },
 
     disclaimer: {
-        fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted,
+        ...BodyFont.regular, fontSize: 11, color: Palette.textMuted,
         lineHeight: 17, marginTop: Spacing.xl,
     },
 

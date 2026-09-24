@@ -17,7 +17,7 @@ import {
     View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Fonts, Palette, Radius } from '@/constants/theme';
+import { Fonts, Palette, Radius, BodyFont } from '@/constants/theme';
 
 interface Props extends Omit<TextInputProps, 'style'> {
     label: string;
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: '100%',
         fontSize: 15,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.text,
         padding: 0,
     },

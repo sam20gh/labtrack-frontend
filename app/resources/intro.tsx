@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getCategories, RESOURCES_INTRO_KEY } from '@/lib/resources';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function ResourcesIntroScreen() {
     const router = useRouter();
@@ -101,12 +101,12 @@ const styles = StyleSheet.create({
 
     title: { fontSize: 28, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center', lineHeight: 36 },
     subtitle: {
-        fontSize: 15, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 15, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 23,
     },
     statRow: { flexDirection: 'row', gap: Spacing.xxl, marginTop: Spacing.lg },
     stat: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    statText: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    statText: { fontSize: 14, ...BodyFont.medium, color: Palette.textSecondary },
 
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,

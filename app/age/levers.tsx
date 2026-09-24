@@ -21,7 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getAgeLevers, deltaLabel, type AgeLever, type AgeLevers } from '@/lib/age';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function AgeLeversScreen() {
     const router = useRouter();
@@ -166,11 +166,11 @@ const styles = StyleSheet.create({
     },
     headerTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text },
     body: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
-    lede: { fontFamily: Fonts.regular, fontSize: 13.5, color: Palette.textSecondary, lineHeight: 20, marginBottom: Spacing.lg },
+    lede: { ...BodyFont.regular, fontSize: 13.5, color: Palette.textSecondary, lineHeight: 20, marginBottom: Spacing.lg },
 
     group: { marginBottom: Spacing.xl },
     groupTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
-    groupNote: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted, lineHeight: 17, marginTop: 2, marginBottom: Spacing.md },
+    groupNote: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted, lineHeight: 17, marginTop: 2, marginBottom: Spacing.md },
 
     row: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -179,15 +179,15 @@ const styles = StyleSheet.create({
     },
     saving: { alignItems: 'center', minWidth: 46 },
     years: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.teal },
-    unit: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted },
+    unit: { ...BodyFont.regular, fontSize: 10, color: Palette.textMuted },
     rowBody: { flex: 1 },
     label: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    detail: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 1 },
+    detail: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 1 },
 
     empty: { alignItems: 'center', paddingVertical: Spacing.xxxl, gap: Spacing.sm },
     emptyTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
-    emptyBody: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 19 },
+    emptyBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 19 },
 
-    footnote: { fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textMuted, lineHeight: 17 },
-    disclaimer: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, lineHeight: 17, marginTop: Spacing.lg },
+    footnote: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted, lineHeight: 17 },
+    disclaimer: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, lineHeight: 17, marginTop: Spacing.lg },
 });

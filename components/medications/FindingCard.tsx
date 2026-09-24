@@ -15,7 +15,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { SEVERITY_META, KIND_LABEL } from '@/lib/medications';
 import type { InteractionFinding } from '@/types/api';
 
@@ -68,10 +68,10 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
     severity: { fontSize: 12, fontFamily: Fonts.bold, textTransform: 'uppercase', letterSpacing: 0.4 },
     spacer: { flex: 1 },
-    kind: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    kind: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
     pair: { fontSize: 16, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    plus: { color: Palette.textMuted, fontFamily: Fonts.regular },
-    effect: { fontSize: 14, color: Palette.text, fontFamily: Fonts.regular, lineHeight: 21 },
+    plus: { color: Palette.textMuted, ...BodyFont.regular },
+    effect: { fontSize: 14, color: Palette.text, ...BodyFont.regular, lineHeight: 21 },
     actionBox: {
         flexDirection: 'row',
         gap: Spacing.sm,
@@ -82,6 +82,6 @@ const styles = StyleSheet.create({
         padding: Spacing.md,
         marginTop: Spacing.xs,
     },
-    action: { flex: 1, fontSize: 13, color: Palette.text, fontFamily: Fonts.medium, lineHeight: 19 },
-    source: { fontSize: 10, color: Palette.textMuted, fontFamily: Fonts.regular, marginTop: 2 },
+    action: { flex: 1, fontSize: 13, color: Palette.text, ...BodyFont.medium, lineHeight: 19 },
+    source: { fontSize: 10, color: Palette.textMuted, ...BodyFont.regular, marginTop: 2 },
 });

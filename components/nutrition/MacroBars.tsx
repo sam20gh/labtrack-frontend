@@ -8,7 +8,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 interface Macro {
     key: 'protein' | 'carbs' | 'fat';
@@ -63,6 +63,6 @@ const styles = StyleSheet.create({
     },
     fill: { height: '100%', borderRadius: Radius.pill },
     value: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
-    target: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },
-    label: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    target: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
+    label: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
 });

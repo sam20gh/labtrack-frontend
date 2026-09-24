@@ -17,7 +17,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 /**
  * The export's frame for the badge and its rings: centre (7398, 503), outer ring r 77.5.
@@ -156,5 +156,5 @@ const styles = StyleSheet.create({
     },
     body: { flex: 1, paddingVertical: Spacing.lg, paddingRight: Spacing.lg, gap: 4 },
     title: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.text },
-    copy: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textOnWarm, lineHeight: 18 },
+    copy: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textOnWarm, lineHeight: 18 },
 });

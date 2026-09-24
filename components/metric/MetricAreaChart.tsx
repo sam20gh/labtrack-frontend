@@ -12,7 +12,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Line, Circle, Text as SvgText } from 'react-native-svg';
-import { Palette, Fonts } from '@/constants/theme';
+import { Palette, BodyFont } from '@/constants/theme';
 
 export interface MetricPoint {
     day: string;
@@ -242,13 +242,13 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 13,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
     },
     caption: {
         marginTop: 6,
         fontSize: 11,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textMuted,
     },
 });

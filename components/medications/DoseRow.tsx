@@ -12,7 +12,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { formatTime, WITH_FOOD_LABEL } from '@/lib/medications';
 import { PillGlyph } from './PillGlyph';
 import type { MedicationDose } from '@/types/api';
@@ -119,10 +119,10 @@ const styles = StyleSheet.create({
     top: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
     body: { flex: 1, gap: 2 },
     name: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    strength: { fontFamily: Fonts.regular, color: Palette.textSecondary },
-    plain: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    strength: { ...BodyFont.regular, color: Palette.textSecondary },
+    plain: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2, flexWrap: 'wrap' },
-    meta: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    meta: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
     metaOverdue: { color: Palette.warning, fontFamily: Fonts.semibold },
 
     actions: { flexDirection: 'row', gap: Spacing.sm },
@@ -136,12 +136,12 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md,
     },
     skip: { backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border },
-    skipText: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    skipText: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium },
     take: { backgroundColor: Palette.primary },
     takeText: { fontSize: 13, color: Palette.white, fontFamily: Fonts.semibold },
 
     settledRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    settledText: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    settledText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
     spacer: { flex: 1 },
     undo: { fontSize: 12, color: Palette.primary, fontFamily: Fonts.semibold },
 });

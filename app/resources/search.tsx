@@ -25,7 +25,7 @@ import {
 } from '@/lib/resources';
 import { AutoCard } from '@/components/resources/ResourceCards';
 import FilterSheet, { EMPTY_FILTERS, countActive, toQuery, type Filters } from '@/components/resources/FilterSheet';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const TABS = [
     { key: 'all', label: 'All', icon: 'shapes-outline' },
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.lg, borderWidth: 1, borderColor: Palette.border,
         backgroundColor: Palette.background,
     },
-    searchInput: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.text, padding: 0 },
+    searchInput: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text, padding: 0 },
     filterDot: {
         position: 'absolute', top: -2, right: -2,
         width: 8, height: 8, borderRadius: 4, backgroundColor: Palette.primary,
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     tabRow: { paddingHorizontal: Spacing.xl, gap: Spacing.xxl },
     tab: { alignItems: 'center', gap: 4, paddingVertical: Spacing.md, borderBottomWidth: 2, borderBottomColor: 'transparent' },
     tabActive: { borderBottomColor: Palette.primary },
-    tabLabel: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    tabLabel: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
     tabLabelActive: { color: Palette.primary, fontFamily: Fonts.semibold },
 
     content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl * 2 },
@@ -266,5 +266,5 @@ const styles = StyleSheet.create({
     loader: { marginTop: Spacing.xxl },
     empty: { alignItems: 'center', paddingTop: Spacing.xxxl, gap: Spacing.sm },
     emptyTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
-    emptyBody: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center' },
+    emptyBody: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center' },
 });

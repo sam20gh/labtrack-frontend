@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import AgeOrb from '@/components/age/AgeOrb';
 import { deltaLabel, tintForBand, type PredyqtAge } from '@/lib/age';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 interface Props {
     age: PredyqtAge | null;
@@ -87,9 +87,9 @@ const styles = StyleSheet.create({
     },
     body: { flex: 1 },
     gap: { fontFamily: Fonts.bold, fontSize: 15.5 },
-    chrono: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2, lineHeight: 17 },
+    chrono: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2, lineHeight: 17 },
     paceRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: Spacing.sm },
-    paceText: { fontFamily: Fonts.medium, fontSize: 11.5, color: Palette.textSecondary },
+    paceText: { ...BodyFont.medium, fontSize: 11.5, color: Palette.textSecondary },
     cta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: Spacing.md },
     ctaText: { fontFamily: Fonts.semibold, fontSize: 12.5, color: Palette.primary },
     skeleton: { height: 164, borderRadius: Radius.xl, backgroundColor: Palette.borderLight },

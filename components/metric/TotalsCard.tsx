@@ -14,7 +14,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { formatType, type ActivityBreakdownRow } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
 
@@ -89,12 +89,12 @@ const styles = StyleSheet.create({
     top: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
     countBlock: { width: 96 },
     count: { fontSize: 62, lineHeight: 68, fontFamily: Fonts.bold, color: Palette.text },
-    countLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    countLabel: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 
     grid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', rowGap: Spacing.lg },
     cell: { width: '50%', gap: 2, paddingRight: Spacing.sm },
     value: { fontSize: 19, fontFamily: Fonts.bold, color: Palette.text },
-    label: { fontSize: 11.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    label: { fontSize: 11.5, ...BodyFont.regular, color: Palette.textSecondary },
 
     chips: {
         flexDirection: 'row',

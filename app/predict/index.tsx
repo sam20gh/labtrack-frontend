@@ -43,7 +43,7 @@ import { BandChart } from '@/components/predict/BandChart';
 import { MetricPredictionCard, PastPredictionRow } from '@/components/predict/PredictionCards';
 import { PredictionDisclaimer } from '@/components/predict/Chips';
 import { Avatar } from '@/components/Avatar';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 
 /** "Dr. Doug Mathers" → "DM". Falls back to one letter rather than to an empty circle. */
 const initialsOf = (name: string) =>
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     statBlock: { flex: 1 },
     statValue: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.white },
     statValueMuted: { fontSize: 26, fontFamily: Fonts.bold, color: 'rgba(255,255,255,0.55)' },
-    statLabel: { fontSize: 12, fontFamily: Fonts.regular, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+    statLabel: { fontSize: 12, ...BodyFont.regular, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
 
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.successSurface, borderRadius: Radius.lg,
         padding: Spacing.md, marginBottom: Spacing.lg,
     },
-    accuracyText: { flex: 1, fontSize: 12, lineHeight: 17, fontFamily: Fonts.medium, color: Palette.text },
+    accuracyText: { flex: 1, fontSize: 12, lineHeight: 17, ...BodyFont.medium, color: Palette.text },
 
     section: {
         fontSize: 16, fontFamily: Fonts.bold, color: Palette.text,
@@ -365,8 +365,8 @@ const styles = StyleSheet.create({
     scoreHead: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: Spacing.md },
     scoreValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
     scoreValue: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.text },
-    scoreUnit: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    scoreCaption: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    scoreUnit: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary },
+    scoreCaption: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
     scoreOpen: {
         width: 40, height: 40, borderRadius: 20, backgroundColor: Palette.text,
         alignItems: 'center', justifyContent: 'center',
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
     emptyBody: {
-        fontSize: 13, lineHeight: 19, fontFamily: Fonts.regular,
+        fontSize: 13, lineHeight: 19, ...BodyFont.regular,
         color: Palette.textSecondary, textAlign: 'center',
     },
     emptyCta: {
@@ -395,6 +395,6 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border,
     },
     proName: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text, marginTop: 6 },
-    proSpec: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    proSpec: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     proRate: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.primary, marginTop: 2 },
 });

@@ -17,7 +17,7 @@ import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'r
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import {
     formatCount, formatDuration, lengthLabel, formatPrice,
     type ResourceCard as Card,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     fullWidth: { width: '100%' },
 
     statRow: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm },
-    statText: { fontSize: 12, fontFamily: Fonts.medium, marginLeft: 4 },
+    statText: { fontSize: 12, ...BodyFont.medium, marginLeft: 4 },
     statGap: { marginLeft: Spacing.md },
 
     chip: {
@@ -262,9 +262,9 @@ const styles = StyleSheet.create({
     bylineAvatar: { width: 20, height: 20, borderRadius: 10, marginRight: 6 },
     avatarFallback: { backgroundColor: Palette.primarySurface, alignItems: 'center', justifyContent: 'center' },
     avatarInitial: { fontSize: 10, fontFamily: Fonts.bold, color: Palette.primary },
-    bylineName: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary, flexShrink: 1 },
+    bylineName: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary, flexShrink: 1 },
     bylineDot: { fontSize: 12, color: Palette.textMuted, marginHorizontal: 5 },
-    bylineMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    bylineMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
 
     // Featured
     featured: { borderRadius: Radius.xl, overflow: 'hidden', backgroundColor: Palette.background, ...Shadow.card },
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     durationBadgeCorner: { bottom: 6, left: 6 },
     durationText: { fontSize: 10, fontFamily: Fonts.semibold, color: Palette.text },
     shortTitle: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.text, marginTop: Spacing.sm, lineHeight: 17 },
-    shortAuthor: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    shortAuthor: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
 
     // Rows
     row: {
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     rowTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 20 },
-    rowSubtitle: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
-    rowMeta: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.primary, marginTop: 4 },
+    rowSubtitle: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
+    rowMeta: { fontSize: 12, ...BodyFont.medium, color: Palette.primary, marginTop: 4 },
     price: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.primary, marginTop: 6, textAlign: 'center' },
 });

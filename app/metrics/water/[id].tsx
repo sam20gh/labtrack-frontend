@@ -39,7 +39,7 @@ import {
 import { useUnits, formatVolume } from '@/lib/units';
 import { ContainerGlass } from '@/components/hydration/ContainerGlass';
 import { WaterHeader, SectionHeader, EmptyNote, cardStyles } from '@/components/hydration/HydrationChrome';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 /** Matches `STEPS` on the level screen. Behavioural, and deliberately free of figures. */
 const ADVICE = [
@@ -309,19 +309,19 @@ const styles = StyleSheet.create({
 
     hero: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.md },
     heroValue: { fontFamily: Fonts.bold, fontSize: 38, color: Palette.text, marginTop: Spacing.sm },
-    heroUnit: { fontFamily: Fonts.medium, fontSize: 17, color: Palette.textSecondary },
-    heroName: { fontFamily: Fonts.medium, fontSize: 15, color: Palette.textSecondary },
+    heroUnit: { ...BodyFont.medium, fontSize: 17, color: Palette.textSecondary },
+    heroName: { ...BodyFont.medium, fontSize: 15, color: Palette.textSecondary },
     stampRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.lg, marginTop: 2 },
     stamp: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    stampText: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },
+    stampText: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
     heroBlurb: {
-        fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 19, marginTop: Spacing.sm, paddingHorizontal: Spacing.md,
     },
 
     dayRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     dayValue: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.text },
-    dayLabel: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 2 },
+    dayLabel: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 2 },
     percentPill: {
         paddingHorizontal: 11, paddingVertical: 5,
         borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
@@ -329,16 +329,16 @@ const styles = StyleSheet.create({
     percentText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primaryDark },
     track: { height: 8, borderRadius: 4, backgroundColor: Palette.border, overflow: 'hidden', marginTop: Spacing.lg },
     fill: { height: '100%', borderRadius: 4, backgroundColor: '#2563EB' },
-    dayNote: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: Spacing.md, lineHeight: 18 },
+    dayNote: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: Spacing.md, lineHeight: 18 },
 
     stat: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md },
     statDivided: { borderBottomWidth: 1, borderBottomColor: Palette.border },
-    statLabel: { fontFamily: Fonts.medium, fontSize: 13.5, color: Palette.text },
-    statSub: { fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textMuted, marginTop: 1 },
+    statLabel: { ...BodyFont.medium, fontSize: 13.5, color: Palette.text },
+    statSub: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted, marginTop: 1 },
     statValue: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
 
     advice: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.md },
-    adviceText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
+    adviceText: { flex: 1, ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
     adviceLink: { borderTopWidth: 1, borderTopColor: Palette.border, paddingTop: Spacing.md, alignItems: 'center' },
     adviceLinkText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
 

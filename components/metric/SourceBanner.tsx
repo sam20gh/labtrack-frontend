@@ -16,7 +16,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { HealthCapability } from '@/lib/health';
 import type { WearableStatus } from '@/lib/activity';
 
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     muted: { backgroundColor: Palette.surface, borderColor: Palette.border },
     body: { flex: 1, gap: 2 },
     title: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    detail: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    detail: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
     actions: { flexDirection: 'row', gap: Spacing.lg, marginTop: Spacing.sm },
     action: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
 });

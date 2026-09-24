@@ -45,7 +45,7 @@ import { BadgeMedal, BADGE_TONES } from './BadgeMedal';
 import {
     nextUp, pickShelf, progressLabel, toneColour, type Achievement, type AchievementSummary,
 } from '@/lib/achievements';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 /**
  * The fan's geometry.
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
         textAlign: 'center', marginTop: Spacing.sm,
     },
     heroMeta: {
-        fontSize: 12, fontFamily: Fonts.regular, color: 'rgba(255,255,255,0.66)',
+        fontSize: 12, ...BodyFont.regular, color: 'rgba(255,255,255,0.66)',
         textAlign: 'center', marginTop: 2,
     },
 
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     tileHeld: { backgroundColor: 'rgba(255,255,255,0.92)' },
     tileEmpty: { backgroundColor: 'rgba(255,255,255,0.16)' },
     mosaicLabel: {
-        fontSize: 11, fontFamily: Fonts.medium, color: 'rgba(255,255,255,0.62)',
+        fontSize: 11, ...BodyFont.medium, color: 'rgba(255,255,255,0.62)',
         textAlign: 'center', marginTop: Spacing.md,
     },
 
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.52)',
     },
     nextName: { flexShrink: 1, fontSize: 14, fontFamily: Fonts.semibold, color: Palette.white },
-    nextValue: { fontSize: 11, fontFamily: Fonts.regular, color: 'rgba(255,255,255,0.66)' },
+    nextValue: { fontSize: 11, ...BodyFont.regular, color: 'rgba(255,255,255,0.66)' },
     nextTrack: {
         height: 5, borderRadius: 3,
         backgroundColor: 'rgba(255,255,255,0.18)',

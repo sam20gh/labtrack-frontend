@@ -10,7 +10,7 @@
 import React from 'react';
 import { View, Text, Pressable, Switch, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { formatClock, formatMinutes, type SleepSchedule } from '@/lib/sleep';
 
 /** `Mon, Wed, Sun` — or "Every day" for the empty list, which is what empty means. */
@@ -70,9 +70,9 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.borderLight,
     },
     body: { flex: 1, gap: 1 },
-    name: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    name: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
     time: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
-    detail: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    detail: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 });
 
 export default ScheduleCard;

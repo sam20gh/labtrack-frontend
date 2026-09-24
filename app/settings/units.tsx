@@ -26,7 +26,7 @@ import * as Haptics from 'expo-haptics';
 
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { UNIT_OPTIONS, setUnit, useUnits, type UnitKey } from '@/lib/units';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 export default function UnitsScreen() {
     const prefs = useUnits();
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     tileHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
     tileLabel: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
     tileLabelFixed: { color: Palette.textSecondary },
-    tileUnit: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    tileUnit: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     tileUnitFixed: { color: Palette.textMuted },
 
     note: {
@@ -139,10 +139,10 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.surface, borderRadius: Radius.xl, padding: Spacing.lg,
         marginTop: Spacing.sm,
     },
-    noteText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    noteText: { flex: 1, fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
 
     footer: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: Spacing.sm,
     },
 });

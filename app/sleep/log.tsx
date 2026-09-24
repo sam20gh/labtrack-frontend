@@ -26,7 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { logNight, formatMinutes } from '@/lib/sleep';
 import { ApiError } from '@/lib/api';
 
@@ -176,14 +176,14 @@ const styles = StyleSheet.create({
     },
     headerTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
     content: { padding: Spacing.xl, gap: Spacing.lg, paddingBottom: Spacing.xxxl },
-    intro: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 19 },
+    intro: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 19 },
 
     field: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         padding: Spacing.lg, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    fieldLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    fieldLabel: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     fieldValue: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
 
     summary: {
@@ -192,10 +192,10 @@ const styles = StyleSheet.create({
     },
     summaryValue: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.primary },
     summaryLabel: {
-        fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 18,
     },
-    note: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 17 },
+    note: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 17 },
 
     footer: {
         padding: Spacing.xl, paddingTop: Spacing.md,

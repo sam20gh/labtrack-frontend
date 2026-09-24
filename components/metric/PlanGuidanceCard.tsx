@@ -16,7 +16,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { ActivityGuidance } from '@/lib/activity';
 
 const KIND_STYLE: Record<
@@ -96,11 +96,11 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 0.4,
     },
-    directive: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.text, lineHeight: 20 },
-    rationale: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    directive: { fontSize: 14, ...BodyFont.medium, color: Palette.text, lineHeight: 20 },
+    rationale: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
     explanation: {
         fontSize: 12,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textMuted,
         lineHeight: 18,
         marginTop: Spacing.xs,
@@ -114,5 +114,5 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.surface,
     },
     emptyTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    emptyBody: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    emptyBody: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
 });

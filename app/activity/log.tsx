@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { logActivity } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
 import { ApiError } from '@/lib/api';
@@ -257,11 +257,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    tileLabel: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
+    tileLabel: { fontSize: 14, ...BodyFont.medium, color: Palette.text },
     tileLabelActive: { fontFamily: Fonts.semibold, color: Palette.primary },
 
     label: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text, marginTop: Spacing.xxl },
-    sublabel: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    sublabel: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
 
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md },
     chip: {
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.background,
     },
     chipActive: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    chipText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    chipText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     chipTextActive: { fontFamily: Fonts.semibold, color: Palette.primary },
 
     inputRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginTop: Spacing.md },
@@ -285,10 +285,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.md,
         fontSize: 15,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.text,
     },
-    unit: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    unit: { fontSize: 15, ...BodyFont.medium, color: Palette.textSecondary },
     notes: { marginTop: Spacing.md, minHeight: 88, textAlignVertical: 'top' },
 
     footer: {

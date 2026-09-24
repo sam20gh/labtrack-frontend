@@ -33,7 +33,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SlideVisual from '@/components/onboarding/SlideVisuals';
 import WelcomeIllustration from '@/components/onboarding/WelcomeIllustration';
-import { Fonts, Palette } from '@/constants/theme';
+import { Fonts, Palette, BodyFont } from '@/constants/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     },
     description: {
         fontSize: 15,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         textAlign: 'center',
         lineHeight: 26,
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     },
     signInText: {
         fontSize: 13,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
     },
     signInTextBold: {

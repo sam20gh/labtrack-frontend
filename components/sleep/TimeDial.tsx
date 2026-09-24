@@ -28,7 +28,7 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { View, Text, PanResponder, StyleSheet, type GestureResponderEvent } from 'react-native';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing } from '@/constants/theme';
+import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
 import { formatClock, formatMinutes } from '@/lib/sleep';
 
 /** Minutes the handles snap to. See note 2. */
@@ -213,8 +213,8 @@ const styles = StyleSheet.create({
     wrap: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center' },
     centre: { alignItems: 'center', gap: 2, paddingHorizontal: Spacing.xxl },
     span: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.text },
-    caption: { fontSize: 11, fontFamily: Fonts.medium, color: Palette.textSecondary },
-    times: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted, marginTop: 4 },
+    caption: { fontSize: 11, ...BodyFont.medium, color: Palette.textSecondary },
+    times: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted, marginTop: 4 },
 });
 
 export default TimeDial;

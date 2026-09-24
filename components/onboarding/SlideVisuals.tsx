@@ -21,7 +21,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
-import { Fonts, Palette } from '@/constants/theme';
+import { Fonts, Palette, BodyFont } from '@/constants/theme';
 
 /* ------------------------------------------------------------------ primitives */
 
@@ -743,12 +743,12 @@ const styles = StyleSheet.create({
     },
     mutedSmall: {
         fontSize: 11,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
     },
     axisLabel: {
         fontSize: 10,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
     },
     metricTitle: {
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
     },
     metricUnit: {
         fontSize: 11,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
     },
 
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
     },
     scoreCaption: {
         fontSize: 12,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.text,
         marginTop: 6,
     },
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
     },
     chipText: {
         fontSize: 11,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: Palette.text,
     },
     deltaText: {
@@ -843,7 +843,7 @@ const styles = StyleSheet.create({
     },
     activityTime: {
         fontSize: 10,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         marginBottom: 3,
     },
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     },
     joggingTime: {
         fontSize: 13,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         marginBottom: 6,
     },
@@ -927,7 +927,7 @@ const styles = StyleSheet.create({
     },
     bubbleSentText: {
         fontSize: 12,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.white,
         lineHeight: 18,
     },
@@ -946,7 +946,7 @@ const styles = StyleSheet.create({
     },
     bubbleReceivedText: {
         fontSize: 12,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.text,
         lineHeight: 18,
     },
@@ -959,12 +959,12 @@ const styles = StyleSheet.create({
     },
     bubbleTime: {
         fontSize: 10,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textMuted,
     },
     bubbleTimeLight: {
         fontSize: 10,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: 'rgba(255,255,255,0.8)',
     },
     avatar: {
@@ -1196,7 +1196,7 @@ const styles = StyleSheet.create({
     },
     medButtonGhostText: {
         fontSize: 12,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: Palette.textSecondary,
     },
     medButtonPrimary: {
@@ -1228,7 +1228,7 @@ const styles = StyleSheet.create({
     },
     symptomChipText: {
         fontSize: 11,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: Palette.white,
     },
     matchBadge: {
@@ -1279,12 +1279,12 @@ const styles = StyleSheet.create({
     },
     predictionChipText: {
         fontSize: 11,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: Palette.text,
     },
     predictionHeadline: {
         fontSize: 15,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: Palette.text,
         lineHeight: 23,
         marginTop: 10,

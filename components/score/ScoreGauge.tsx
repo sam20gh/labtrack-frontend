@@ -21,7 +21,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Fonts, Palette } from '@/constants/theme';
+import { Fonts, Palette, BodyFont } from '@/constants/theme';
 import type { ScoreBand } from '@/lib/score';
 
 interface Props {
@@ -176,10 +176,10 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     captionRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-    caption: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    caption: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
     end: {
         position: 'absolute',
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         fontSize: 9,
         letterSpacing: 0.8,
         color: Palette.textMuted,

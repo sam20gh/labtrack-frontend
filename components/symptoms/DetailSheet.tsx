@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import { ONSETS, SEVERITIES, NOTE_LIMIT, type OnsetId, type SymptomDraft } from '@/lib/symptoms';
 
 interface Props {
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     title: { flex: 1, fontSize: 18, fontFamily: Fonts.bold, color: Palette.text },
     subtitle: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         marginTop: Spacing.xs, lineHeight: 19,
     },
 
@@ -177,8 +177,8 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.white,
     },
     chipOn: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    chipText: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.text },
-    chipTextOn: { fontFamily: Fonts.medium, color: Palette.primary },
+    chipText: { fontSize: 14, ...BodyFont.regular, color: Palette.text },
+    chipTextOn: { ...BodyFont.medium, color: Palette.primary },
 
     faceRow: { flexDirection: 'row', gap: Spacing.md },
     face: {
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     },
     faceOn: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
     faceCaption: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: Spacing.md,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: Spacing.md,
     },
 
     noteBox: {
@@ -196,10 +196,10 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.white, padding: Spacing.lg, paddingBottom: Spacing.sm,
     },
     note: {
-        minHeight: 92, fontSize: 15, fontFamily: Fonts.regular, color: Palette.text, padding: 0,
+        minHeight: 92, fontSize: 15, ...BodyFont.regular, color: Palette.text, padding: 0,
     },
     counter: {
-        alignSelf: 'flex-end', fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted,
+        alignSelf: 'flex-end', fontSize: 12, ...BodyFont.regular, color: Palette.textMuted,
     },
 
     apply: {

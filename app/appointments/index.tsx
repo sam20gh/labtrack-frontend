@@ -29,7 +29,7 @@ import {
     professionalOf, professionalIdOf, nameOf, initialsOf, isLive, isImminent, splitByTime,
     DEFAULT_DURATION, type AppointmentMode,
 } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import type { Appointment } from '@/types/api';
 
 /** Days shown in the strip, starting today. */
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     },
     navButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
     pageTitle: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold },
-    pageSubtitle: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    pageSubtitle: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
 
     imminent: {
         marginHorizontal: GUTTER, marginBottom: Spacing.lg,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     liveText: { fontSize: 10, letterSpacing: 1, color: Palette.white, fontFamily: Fonts.bold },
     imminentTime: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: Fonts.semibold },
     imminentTitle: { fontSize: 18, lineHeight: 24, color: Palette.white, fontFamily: Fonts.bold },
-    imminentBody: { fontSize: 13, lineHeight: 19, color: 'rgba(255,255,255,0.75)', fontFamily: Fonts.regular },
+    imminentBody: { fontSize: 13, lineHeight: 19, color: 'rgba(255,255,255,0.75)', ...BodyFont.regular },
     imminentAction: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
         marginTop: Spacing.md, height: 42,
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
     dayCellActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
-    dayWeekday: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    dayWeekday: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
     dayNumber: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
     dayTextActive: { color: Palette.white },
     dayDot: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: 'transparent' },
@@ -519,18 +519,18 @@ const styles = StyleSheet.create({
     },
     apptInitials: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
     apptName: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold },
-    apptSpeciality: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    apptSpeciality: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     statusPill: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm },
     statusText: { fontSize: 10, fontFamily: Fonts.bold },
 
     apptMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    apptMetaText: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    apptMetaText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     metaDot: {
         width: 3, height: 3, borderRadius: Radius.pill,
         backgroundColor: Palette.textMuted, marginHorizontal: 3,
     },
     apptReason: {
-        fontSize: 12, lineHeight: 18, color: Palette.text, fontFamily: Fonts.regular,
+        fontSize: 12, lineHeight: 18, color: Palette.text, ...BodyFont.regular,
         paddingTop: 2,
     },
 
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     emptyBody: {
         fontSize: 13, lineHeight: 19, color: Palette.textSecondary,
-        textAlign: 'center', fontFamily: Fonts.regular,
+        textAlign: 'center', ...BodyFont.regular,
     },
     emptyCta: {
         flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm,
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
     sheetTitle: { fontSize: 18, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center' },
     sheetBody: {
         fontSize: 13, lineHeight: 20, color: Palette.textSecondary,
-        textAlign: 'center', fontFamily: Fonts.regular,
+        textAlign: 'center', ...BodyFont.regular,
     },
     sheetPrimary: {
         alignSelf: 'stretch', height: 48, marginTop: Spacing.md,

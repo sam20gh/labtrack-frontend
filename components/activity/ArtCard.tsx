@@ -17,7 +17,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 interface Props {
     /** Optional bold line above the body. Frame 6 has none; the sections' titles do that. */
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     art: { position: 'absolute', right: 0 },
     copy: { padding: Spacing.lg, gap: 6 },
     title: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    body: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 19 },
+    body: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 19 },
     action: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, alignSelf: 'flex-start' },
     actionText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
     pressed: { opacity: 0.6 },

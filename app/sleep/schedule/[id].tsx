@@ -21,7 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { TimeDial } from '@/components/sleep/TimeDial';
 import {
     listSchedules, createSchedule, updateSchedule, deleteSchedule,
@@ -283,19 +283,19 @@ const styles = StyleSheet.create({
 
     field: { gap: Spacing.sm },
     fieldLabel: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    hint: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    hint: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
 
     inputBox: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
         borderRadius: Radius.lg, borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    input: { flex: 1, fontSize: 15, fontFamily: Fonts.medium, color: Palette.text, padding: 0 },
+    input: { flex: 1, fontSize: 15, ...BodyFont.medium, color: Palette.text, padding: 0 },
 
     times: { flexDirection: 'row', gap: Spacing.lg, paddingTop: Spacing.md },
     timeHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     dot: { width: 8, height: 8, borderRadius: 4 },
-    timeLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    timeLabel: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     timeValue: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
 
     dayRow: { flexDirection: 'row', gap: Spacing.sm },
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
     dayOn: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    dayLetter: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    dayLetter: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     dayLetterOn: { color: Palette.primary },
 
     switchRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.borderSlate,
     },
     chipActive: { backgroundColor: Palette.primarySurface, borderColor: Palette.primary },
-    chipLabel: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    chipLabel: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     chipLabelActive: { color: Palette.primary },
 
     footer: {

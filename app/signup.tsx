@@ -29,7 +29,7 @@ import AuthField from '@/components/auth/AuthField';
 import AuthHeader from '@/components/auth/AuthHeader';
 import PasswordStrength from '@/components/auth/PasswordStrength';
 import { authStyles } from '@/components/auth/styles';
-import { Fonts, Palette } from '@/constants/theme';
+import { Fonts, Palette, BodyFont } from '@/constants/theme';
 import { signUpWithEmail } from '@/lib/auth';
 import { MIN_ACCEPTED_LEVEL, scorePassword } from '@/lib/password';
 
@@ -302,7 +302,7 @@ const confirmStyles = StyleSheet.create({
   title: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text, marginBottom: 12 },
   body: {
     fontSize: 15,
-    fontFamily: Fonts.regular,
+    ...BodyFont.regular,
     color: Palette.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -311,7 +311,7 @@ const confirmStyles = StyleSheet.create({
   email: { fontFamily: Fonts.semibold, color: Palette.text },
   hint: {
     fontSize: 13,
-    fontFamily: Fonts.regular,
+    ...BodyFont.regular,
     color: Palette.textMuted,
     textAlign: 'center',
     lineHeight: 20,

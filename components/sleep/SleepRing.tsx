@@ -23,7 +23,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts } from '@/constants/theme';
+import { Palette, Fonts, BodyFont } from '@/constants/theme';
 import { bandTint, type SleepBand } from '@/lib/sleep';
 
 interface Props {
@@ -117,9 +117,9 @@ const styles = StyleSheet.create({
     wrap: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center' },
     centre: { alignItems: 'center', gap: 2 },
     value: { fontSize: 44, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 52 },
-    outOf: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
+    outOf: { fontSize: 14, ...BodyFont.medium, color: Palette.text },
     bandRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-    band: { fontSize: 12, fontFamily: Fonts.medium },
+    band: { fontSize: 12, ...BodyFont.medium },
     chip: {
         position: 'absolute',
         width: 36, height: 36, borderRadius: 18,

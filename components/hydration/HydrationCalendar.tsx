@@ -21,7 +21,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { dayStatus, type DayStatus } from '@/lib/hydration';
 import type { SeriesPoint } from '@/lib/metrics';
 
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     week: { flexDirection: 'row' },
     weekday: {
         flex: 1, textAlign: 'center',
-        fontFamily: Fonts.medium, fontSize: 12, color: Palette.textSecondary,
+        ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary,
     },
 
     grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: Spacing.xs },
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     // The design boxes today rather than filling it, so the day's own mark still reads.
     innerToday: { borderColor: Palette.primary },
 
-    date: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.text },
+    date: { ...BodyFont.medium, fontSize: 13, color: Palette.text },
     dateFuture: { color: Palette.textMuted },
 
     mark: { width: MARK, height: MARK, borderRadius: MARK / 2, alignItems: 'center', justifyContent: 'center' },

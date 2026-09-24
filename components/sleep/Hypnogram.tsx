@@ -18,7 +18,7 @@
  */
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { STAGE_META, STAGE_ORDER, type SleepSegment, type SleepStageKey } from '@/lib/sleep';
 
 interface Props {
@@ -145,13 +145,13 @@ const styles = StyleSheet.create({
     },
     axis: { height: 18, marginTop: Spacing.xs, position: 'relative' },
     tick: {
-        position: 'absolute', fontSize: 10, fontFamily: Fonts.regular,
+        position: 'absolute', fontSize: 10, ...BodyFont.regular,
         color: Palette.textMuted, transform: [{ translateX: -8 }],
     },
     legend: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg, marginTop: Spacing.md },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     dot: { width: 8, height: 8, borderRadius: 4 },
-    legendLabel: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    legendLabel: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
 });
 
 export default Hypnogram;

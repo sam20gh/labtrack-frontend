@@ -33,7 +33,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Fonts, Palette, Radius, Shadow, Spacing } from '@/constants/theme';
+import { Fonts, Palette, Radius, Shadow, Spacing, BodyFont } from '@/constants/theme';
 import { isReachable, onReachabilityChange } from '@/lib/api';
 
 type Props = {
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.alertSurface,
         ...Shadow.card,
     },
-    label: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.alert },
+    label: { fontSize: 12, ...BodyFont.medium, color: Palette.alert },
     retry: { fontSize: 12, fontFamily: Fonts.bold, color: Palette.alert, textDecorationLine: 'underline' },
 });
 

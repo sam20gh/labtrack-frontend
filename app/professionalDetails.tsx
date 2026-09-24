@@ -31,7 +31,7 @@ import {
     formatDayShort, formatTime, MODE_LABEL, STATUS_META,
     type AppointmentMode, type BookableDay,
 } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import type { Appointment, Professional } from '@/types/api';
 
 export default function ProfessionalDetailsScreen() {
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     avatarText: { fontSize: 24, color: Palette.primary, fontFamily: Fonts.bold },
     name: { fontSize: 20, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center' },
     speciality: {
-        fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.medium, textAlign: 'center',
+        fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium, textAlign: 'center',
     },
 
     statRow: {
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     },
     stat: { flex: 1, alignItems: 'center', gap: 1 },
     statValue: { fontSize: 15, color: Palette.text, fontFamily: Fonts.bold },
-    statLabel: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular },
+    statLabel: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular },
     statDivider: { width: 1, height: 26, backgroundColor: Palette.borderLight },
 
     section: { paddingHorizontal: GUTTER, marginTop: Spacing.xxl, gap: Spacing.sm },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
         fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase',
         color: Palette.textMuted, fontFamily: Fonts.bold,
     },
-    body: { fontSize: 14, lineHeight: 21, color: Palette.text, fontFamily: Fonts.regular },
+    body: { fontSize: 14, lineHeight: 21, color: Palette.text, ...BodyFont.regular },
 
     mineRow: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.sm, backgroundColor: Palette.primarySurface, minWidth: 66,
     },
     mineDateText: { fontSize: 12, color: Palette.primary, fontFamily: Fonts.bold },
-    mineTimeText: { fontSize: 11, color: Palette.primary, fontFamily: Fonts.regular },
+    mineTimeText: { fontSize: 11, color: Palette.primary, ...BodyFont.regular },
     mineMode: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
     mineStatus: { fontSize: 11, fontFamily: Fonts.semibold },
 
@@ -357,10 +357,10 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md, backgroundColor: Palette.white,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    dayWeekday: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    dayWeekday: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
     dayNumber: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
     dayDot: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: Palette.success },
-    stripNote: { fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.regular },
+    stripNote: { fontSize: 12, color: Palette.textMuted, ...BodyFont.regular },
 
     footer: {
         paddingHorizontal: GUTTER, paddingTop: Spacing.md, paddingBottom: Spacing.xl,

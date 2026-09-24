@@ -35,7 +35,7 @@ import Toast from 'react-native-toast-message';
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { supabase } from '@/constants/supabase';
 import { STORAGE_KEYS, sendPasswordResetEmail, signOut } from '@/lib/auth';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 /** The three the kit draws that this build cannot honour, with what each one is waiting on. */
 const UNAVAILABLE = [
@@ -277,10 +277,10 @@ const styles = StyleSheet.create({
     rowTitle: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
     rowTitleDanger: { color: Palette.danger },
     rowTitleMuted: { color: Palette.textSecondary },
-    rowBlurb: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    rowBlurb: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 
     footnote: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: Spacing.xs,
     },
 });

@@ -29,7 +29,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { Hypnogram, StageLegend } from '@/components/sleep/Hypnogram';
 import { StageRows } from '@/components/sleep/StageRows';
@@ -303,9 +303,9 @@ const styles = StyleSheet.create({
     },
     heroValue: { fontSize: 34, fontFamily: Fonts.bold, color: Palette.text },
     heroBand: { fontSize: 13, fontFamily: Fonts.semibold },
-    heroMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    heroMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     heroExplain: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 19, marginTop: Spacing.sm,
     },
 
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
         ...Shadow.card,
     },
     cardTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    cardNote: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    cardNote: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 
     progressRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     progressTrack: {
@@ -333,13 +333,13 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.sm,
         borderTopWidth: 1, borderTopColor: Palette.borderLight,
     },
-    statLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.text },
+    statLabel: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text },
     statValueBox: { alignItems: 'flex-end' },
     statValue: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
-    statUnit: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    statUnit: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 
     provenance: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    provenanceText: { flex: 1, fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    provenanceText: { flex: 1, fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
 
     assistant: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,

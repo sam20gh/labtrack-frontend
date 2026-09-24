@@ -18,7 +18,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { PeriodComparison } from '@/lib/activity';
 
 interface Props {
@@ -142,6 +142,6 @@ const styles = StyleSheet.create({
     delta: { fontSize: 14, fontFamily: Fonts.bold },
     deltaUp: { color: Palette.successDeep },
     deltaDown: { color: Palette.textSecondary },
-    deltaLabel: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    copy: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    deltaLabel: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary },
+    copy: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
 });

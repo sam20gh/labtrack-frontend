@@ -21,7 +21,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { QUICK_ACTIONS, type QuickAction } from '@/lib/quickActions';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 interface Props {
     visible: boolean;
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
         // white already reads as a shape, and a grey ring around fifteen colours muddies them.
         alignItems: 'center', justifyContent: 'center',
     },
-    actionLabel: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.text },
+    actionLabel: { ...BodyFont.medium, fontSize: 12, color: Palette.text },
 
     caretWrap: { position: 'absolute', bottom: -CARET, left: 0, right: 0, alignItems: 'center' },
     caretBorder: {

@@ -29,7 +29,7 @@ import { useUnits, formatVolume } from '@/lib/units';
 import { HydrationLevelMeter } from '@/components/hydration/HydrationLevelMeter';
 import { DropRow } from '@/components/hydration/WaterDrop';
 import { WaterHeader, SectionHeader, cardStyles } from '@/components/hydration/HydrationChrome';
-import { Palette, Spacing, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Fonts, BodyFont } from '@/constants/theme';
 
 /**
  * How to move up a rung.
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     eyebrow: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.primary, letterSpacing: 1.2 },
     title: { fontFamily: Fonts.bold, fontSize: 28, color: Palette.text },
     subtitle: {
-        fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 19, paddingHorizontal: Spacing.lg,
     },
 
@@ -229,25 +229,25 @@ const styles = StyleSheet.create({
     badgeText: { fontFamily: Fonts.semibold, fontSize: 11.5, color: Palette.textSecondary },
     badgeTextActive: { color: Palette.primary },
     rungLabel: { flex: 1, fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    rungName: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary },
+    rungName: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary },
     rungBlurb: {
-        fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary,
         marginTop: Spacing.sm, marginLeft: 32, lineHeight: 18,
     },
 
     big: { fontFamily: Fonts.bold, fontSize: 30, color: Palette.text },
-    bigUnit: { fontFamily: Fonts.medium, fontSize: 15, color: Palette.textSecondary },
-    blurb: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
+    bigUnit: { ...BodyFont.medium, fontSize: 15, color: Palette.textSecondary },
+    blurb: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
     divider: { height: 1, backgroundColor: Palette.border, marginVertical: Spacing.lg },
 
     basisRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.sm },
-    basisText: { flex: 1, fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, lineHeight: 18 },
+    basisText: { flex: 1, ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, lineHeight: 18 },
 
     link: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         paddingVertical: Spacing.md, borderTopWidth: 1, borderTopColor: Palette.border,
     },
-    linkText: { flex: 1, fontFamily: Fonts.medium, fontSize: 13, color: Palette.text },
+    linkText: { flex: 1, ...BodyFont.medium, fontSize: 13, color: Palette.text },
 
     step: { flexDirection: 'row', gap: Spacing.md },
     stepRail: { alignItems: 'center', width: 16 },
@@ -258,9 +258,9 @@ const styles = StyleSheet.create({
     stepLine: { flex: 1, width: 2, backgroundColor: Palette.primaryLight, marginVertical: 3 },
     stepTitle: { fontFamily: Fonts.semibold, fontSize: 13.5, color: Palette.text },
     stepText: {
-        fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary,
         marginTop: 2, marginBottom: Spacing.lg, lineHeight: 18,
     },
 
-    note: { fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textMuted, lineHeight: 17 },
+    note: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted, lineHeight: 17 },
 });

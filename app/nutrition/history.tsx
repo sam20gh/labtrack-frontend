@@ -25,7 +25,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDay, getCalendar, today, addDays, MEAL_TYPE_LABEL } from '@/lib/nutrition';
 import { MacroChips } from '@/components/nutrition/MacroChips';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { MealLog, MealType, NutritionTargets } from '@/types/api';
 
 /** How far back the list reaches. The filter sheet narrows within this, never beyond it. */
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     },
     titleBlock: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.lg },
     title: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.text },
-    subtitle: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, marginTop: Spacing.xs },
+    subtitle: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginTop: Spacing.xs },
 
     searchRow: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.lg },
     search: {
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.borderSlate,
         paddingHorizontal: Spacing.md, height: 44,
     },
-    searchInput: { flex: 1, fontFamily: Fonts.regular, fontSize: 14, color: Palette.text },
+    searchInput: { flex: 1, ...BodyFont.regular, fontSize: 14, color: Palette.text },
     filterButton: {
         width: 44, height: 44, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.borderSlate, backgroundColor: Palette.canvas,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     group: { paddingHorizontal: Spacing.lg, marginTop: Spacing.lg },
     groupHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: Spacing.md },
     groupTitle: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.text },
-    groupTotal: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.textSecondary },
+    groupTotal: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary },
 
     row: {
         backgroundColor: Palette.canvas, borderRadius: Radius.lg,
@@ -417,14 +417,14 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.primarySurface, alignItems: 'center', justifyContent: 'center',
     },
     rowName: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    rowMeta: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
+    rowMeta: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
     rowCalories: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
     rowCaloriesValue: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.textSecondary },
     rowDivider: { height: 1, backgroundColor: Palette.border, marginVertical: Spacing.md },
 
     empty: { alignItems: 'center', paddingHorizontal: Spacing.xxxl, marginTop: Spacing.xxxl, gap: Spacing.sm },
     emptyTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text, marginTop: Spacing.sm },
-    emptyBody: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
+    emptyBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
 
     backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.4)' },
     sheet: {
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.lg, borderWidth: 1, borderColor: Palette.borderSlate,
     },
     chipOn: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    chipText: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary },
+    chipText: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary },
     chipTextOn: { fontFamily: Fonts.semibold, color: Palette.primary },
     apply: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
@@ -454,5 +454,5 @@ const styles = StyleSheet.create({
     },
     applyText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
     clear: { alignItems: 'center', paddingVertical: Spacing.md },
-    clearText: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary },
+    clearText: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary },
 });

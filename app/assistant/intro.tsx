@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import { savePreferences, type AssistantMode } from '@/lib/assistant';
 
 const PRECAUTIONS = [
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm,
     },
     title: { fontSize: 27, lineHeight: 34, fontFamily: Fonts.bold, color: Palette.text },
-    lede: { fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    lede: { fontSize: 14, lineHeight: 21, ...BodyFont.regular, color: Palette.textSecondary },
 
     list: { gap: Spacing.md, marginTop: Spacing.sm },
     listItem: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     listIconSelected: { backgroundColor: Palette.primary },
     listText: { flex: 1, gap: 3 },
     listTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    listBody: { fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    listBody: { fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
 
     modeCard: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     },
     modeCardSelected: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
 
-    error: { marginTop: Spacing.lg, fontSize: 13, fontFamily: Fonts.medium, color: Palette.danger },
+    error: { marginTop: Spacing.lg, fontSize: 13, ...BodyFont.medium, color: Palette.danger },
 
     footer: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg, paddingTop: Spacing.sm },
     cta: {

@@ -10,7 +10,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import AssistantWidgetCard from './AssistantWidget';
 import { messageTime, type AssistantMessage } from '@/lib/assistant';
 
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
         paddingVertical: 6, paddingHorizontal: Spacing.md,
         borderRadius: Radius.pill, backgroundColor: Palette.borderLight,
     },
-    missingImageText: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    missingImageText: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
     mineMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 4 },
     mineBubble: {
         maxWidth: '82%',
@@ -142,8 +142,8 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.lg,
     },
-    mineText: { fontSize: 14, lineHeight: 20, color: Palette.white, fontFamily: Fonts.regular },
-    mineTime: { fontSize: 10, color: Palette.textMuted, fontFamily: Fonts.regular },
+    mineText: { fontSize: 14, lineHeight: 20, color: Palette.white, ...BodyFont.regular },
+    mineTime: { fontSize: 10, color: Palette.textMuted, ...BodyFont.regular },
 
     theirsWrap: { alignItems: 'stretch', marginBottom: Spacing.lg },
     theirsHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     theirsName: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.text },
-    theirsTime: { fontSize: 10, fontFamily: Fonts.regular, color: Palette.textMuted },
+    theirsTime: { fontSize: 10, ...BodyFont.regular, color: Palette.textMuted },
     theirsBubble: {
         backgroundColor: Palette.surface,
         borderRadius: Radius.xl,
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.lg,
     },
-    theirsText: { fontSize: 14, lineHeight: 21, color: Palette.text, fontFamily: Fonts.regular },
+    theirsText: { fontSize: 14, lineHeight: 21, color: Palette.text, ...BodyFont.regular },
 
     escalate: {
         flexDirection: 'row',
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.lg,
         backgroundColor: Palette.dangerSurface,
     },
-    escalateText: { flex: 1, fontSize: 12, lineHeight: 17, color: Palette.danger, fontFamily: Fonts.medium },
+    escalateText: { flex: 1, fontSize: 12, lineHeight: 17, color: Palette.danger, ...BodyFont.medium },
 
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md },
     chip: {
@@ -186,5 +186,5 @@ const styles = StyleSheet.create({
         paddingVertical: 7,
         paddingHorizontal: Spacing.md,
     },
-    chipText: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.primaryDark },
+    chipText: { fontSize: 12, ...BodyFont.medium, color: Palette.primaryDark },
 });

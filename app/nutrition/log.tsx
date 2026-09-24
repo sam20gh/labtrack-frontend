@@ -21,7 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import {
     getStatus, analysePhoto, estimateFromDescription, logMeal, mealTypeForNow,
 } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { AnalysisResult } from '@/lib/nutrition';
 
 export default function LogMealScreen() {
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     title: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
     content: { padding: Spacing.lg, paddingTop: 0, gap: Spacing.md, paddingBottom: Spacing.xxxl },
     subtitle: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 14,
         color: Palette.textSecondary,
         marginBottom: Spacing.xs,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     },
     optionTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
     optionBody: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 12,
         color: Palette.textSecondary,
         lineHeight: 17,
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
         gap: Spacing.md,
     },
     describeInput: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 14,
         color: Palette.text,
         backgroundColor: Palette.canvas,
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
         textAlignVertical: 'top',
     },
     input: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 14,
         color: Palette.text,
         backgroundColor: Palette.canvas,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     numberField: { flex: 1 },
     numberInput: { textAlign: 'center' },
     numberLabel: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 11,
         color: Palette.textMuted,
         textAlign: 'center',
@@ -357,5 +357,5 @@ const styles = StyleSheet.create({
         gap: Spacing.sm,
         paddingVertical: Spacing.lg,
     },
-    manualLinkText: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.textSecondary },
+    manualLinkText: { ...BodyFont.medium, fontSize: 14, color: Palette.textSecondary },
 });

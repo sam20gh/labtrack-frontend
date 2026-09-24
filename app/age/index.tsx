@@ -41,7 +41,7 @@ import {
 import { ApiError } from '@/lib/api';
 import { describeError } from '@/lib/appState';
 import StateView from '@/components/errors/StateView';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const isHalf = (h: AgeHalf | AgeHalfRefusal | null | undefined): h is AgeHalf => Boolean(h?.ok);
 
@@ -412,14 +412,14 @@ const styles = StyleSheet.create({
     body: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
 
     hero: { alignItems: 'center', paddingVertical: Spacing.lg },
-    chrono: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary, marginTop: Spacing.sm },
+    chrono: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary, marginTop: Spacing.sm },
     sourceChip: {
         flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm,
         paddingHorizontal: Spacing.md, paddingVertical: 5,
         backgroundColor: Palette.surface, borderRadius: Radius.pill,
         borderWidth: 1, borderColor: Palette.border,
     },
-    sourceText: { fontFamily: Fonts.medium, fontSize: 11, color: Palette.textSecondary },
+    sourceText: { ...BodyFont.medium, fontSize: 11, color: Palette.textSecondary },
 
     section: { marginTop: Spacing.xl },
     sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     cardTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text, flex: 1 },
 
     paceValue: { fontFamily: Fonts.bold, fontSize: 32 },
-    paceLabel: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
+    paceLabel: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
     provisionalChip: {
         paddingHorizontal: Spacing.sm, paddingVertical: 3,
         backgroundColor: Palette.warningSurface, borderRadius: Radius.sm,
@@ -450,15 +450,15 @@ const styles = StyleSheet.create({
         borderWidth: 2, borderColor: Palette.background,
     },
     trackScale: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-    trackTick: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted },
-    paceNote: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
+    trackTick: { ...BodyFont.regular, fontSize: 10, color: Palette.textMuted },
+    paceNote: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
 
     halfValue: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
-    halfMeta: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
-    staleNote: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.warning, marginTop: Spacing.sm, lineHeight: 16 },
+    halfMeta: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
+    staleNote: { ...BodyFont.regular, fontSize: 11, color: Palette.warning, marginTop: Spacing.sm, lineHeight: 16 },
     refusalTitle: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.text, marginBottom: 2 },
-    refusalBody: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, lineHeight: 18 },
-    missing: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.text, marginTop: Spacing.sm },
+    refusalBody: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, lineHeight: 18 },
+    missing: { ...BodyFont.medium, fontSize: 12, color: Palette.text, marginTop: Spacing.sm },
     fixButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.md },
     fixText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
 
@@ -469,10 +469,10 @@ const styles = StyleSheet.create({
     },
     leverSaving: { alignItems: 'center', minWidth: 46 },
     leverYears: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.teal },
-    leverUnit: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted },
+    leverUnit: { ...BodyFont.regular, fontSize: 10, color: Palette.textMuted },
     leverBody: { flex: 1 },
     leverLabel: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    leverDetail: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 1 },
+    leverDetail: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 1 },
     clinicalChip: {
         paddingHorizontal: Spacing.sm, paddingVertical: 3,
         backgroundColor: Palette.infoSurface, borderRadius: Radius.sm,
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     },
     howText: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text, flex: 1 },
     disclaimer: {
-        fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted,
+        ...BodyFont.regular, fontSize: 11, color: Palette.textMuted,
         lineHeight: 17, marginTop: Spacing.xl,
     },
 });

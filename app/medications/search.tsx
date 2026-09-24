@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { searchCatalogue } from '@/lib/medications';
 import { PillGlyph } from '@/components/medications/PillGlyph';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { MedicationCatalogueEntry } from '@/types/api';
 
 const COMMON = ['ibuprofen', 'paracetamol', 'atorvastatin', 'metformin', 'levothyroxine', 'omeprazole'];
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border,
         paddingHorizontal: Spacing.md,
     },
-    searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: Palette.text, fontFamily: Fonts.regular },
+    searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: Palette.text, ...BodyFont.regular },
     content: { padding: Spacing.xl, paddingTop: Spacing.sm, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
 
     commonSection: { gap: Spacing.sm },
@@ -168,10 +168,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12, paddingVertical: 7, borderRadius: Radius.pill,
         backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
     },
-    chipText: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    chipText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
 
     results: { gap: Spacing.sm },
-    resultCount: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    resultCount: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     row: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         backgroundColor: Palette.white, borderRadius: Radius.lg,
@@ -179,8 +179,8 @@ const styles = StyleSheet.create({
     },
     rowBody: { flex: 1, gap: 1 },
     rowName: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    rowPlain: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    rowBrands: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular },
+    rowPlain: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
+    rowBrands: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular },
     rxChip: {
         backgroundColor: Palette.primarySurface, paddingHorizontal: 7, paddingVertical: 3,
         borderRadius: Radius.sm,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     },
     notFoundTitle: { fontSize: 17, color: Palette.text, fontFamily: Fonts.semibold },
     notFoundBody: {
-        fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular,
+        fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular,
         textAlign: 'center', lineHeight: 20, marginBottom: Spacing.md,
     },
     primaryButton: {

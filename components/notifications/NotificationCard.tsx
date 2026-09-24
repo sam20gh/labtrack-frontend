@@ -36,7 +36,7 @@ import {
     View, Text, StyleSheet, Pressable, TouchableOpacity, Image, Animated, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import { relativeTime, tintOf, type NotificationCard as Card } from '@/lib/notificationCentre';
 
 const GUTTER = 16;
@@ -251,15 +251,15 @@ const styles = StyleSheet.create({
     titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
     title: { flex: 1, fontSize: 15, lineHeight: 20, color: Palette.text, fontFamily: Fonts.semibold },
     ageRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 2 },
-    age: { fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.medium },
+    age: { fontSize: 12, color: Palette.textMuted, ...BodyFont.medium },
     dot: { width: 7, height: 7, borderRadius: 4 },
 
-    text: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    text: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, ...BodyFont.regular },
 
     meterWrap: { gap: 5, marginTop: 2 },
     meterTrack: { height: 6, borderRadius: Radius.pill, backgroundColor: Palette.border, overflow: 'hidden' },
     meterFill: { height: 6, borderRadius: Radius.pill },
-    meterLabel: { fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.medium },
+    meterLabel: { fontSize: 12, color: Palette.textMuted, ...BodyFont.medium },
 
     chip: {
         alignSelf: 'flex-start',

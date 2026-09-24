@@ -49,7 +49,7 @@ import {
     ServerErrorArt,
     UpdateRequiredArt,
 } from '@/components/errors/art';
-import { Fonts, Palette, Radius, Spacing } from '@/constants/theme';
+import { Fonts, Palette, Radius, Spacing, BodyFont } from '@/constants/theme';
 import type { StateDescriptor, StateKey } from '@/lib/appState';
 
 const ART: Record<StateKey, (props: { width?: number }) => React.ReactElement> = {
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         marginTop: 44,
     },
-    badgeLabel: { fontSize: 12, fontFamily: Fonts.medium },
+    badgeLabel: { fontSize: 12, ...BodyFont.medium },
 
     copy: { alignItems: 'center', marginTop: Spacing.xxl + Spacing.md },
     title: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
         marginTop: Spacing.md,
         fontSize: 15,
         lineHeight: 22,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         textAlign: 'center',
         paddingHorizontal: Spacing.md,
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
         marginTop: Spacing.xl,
         fontSize: 12,
         lineHeight: 17,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textMuted,
         textAlign: 'center',
         paddingHorizontal: Spacing.md,

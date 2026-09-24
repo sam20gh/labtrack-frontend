@@ -35,7 +35,7 @@ import {
     type MetricHistory, type MetricLog, type LoggableKind,
 } from '@/lib/metrics';
 import { useUnits, unitLabel, displayWeight, type UnitPrefs } from '@/lib/units';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 
 const META: Record<string, { title: string; unit: string; tint: string; logRoute: string }> = {
     weight: { title: 'Weight', unit: 'kg', tint: '#F59E0B', logRoute: '/metrics/log/weight' },
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
-    muted: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textMuted },
+    muted: { ...BodyFont.regular, fontSize: 14, color: Palette.textMuted },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
@@ -299,8 +299,8 @@ const styles = StyleSheet.create({
     rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
     big: { fontFamily: Fonts.bold, fontSize: 30, color: Palette.text },
-    bigUnit: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.textMuted },
-    hint: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, lineHeight: 16 },
+    bigUnit: { ...BodyFont.medium, fontSize: 14, color: Palette.textMuted },
+    hint: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, lineHeight: 16 },
 
     pill: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 4, borderRadius: Radius.pill },
     pillText: { fontFamily: Fonts.semibold, fontSize: 11 },
@@ -311,19 +311,19 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.borderLight, borderRadius: Radius.md, padding: Spacing.sm,
     },
     worstBoxUrgent: { backgroundColor: '#DC2626' },
-    worstText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12, color: Palette.text, lineHeight: 17 },
+    worstText: { flex: 1, ...BodyFont.medium, fontSize: 12, color: Palette.text, lineHeight: 17 },
     worstTextUrgent: { color: '#FFFFFF' },
 
     rangeRow: { flexDirection: 'row', gap: 5 },
     rangeChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: Radius.pill, backgroundColor: Palette.borderLight },
-    rangeText: { fontFamily: Fonts.medium, fontSize: 11, color: Palette.textSecondary },
+    rangeText: { ...BodyFont.medium, fontSize: 11, color: Palette.textSecondary },
     rangeTextActive: { color: '#FFFFFF' },
 
     sectionTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text, marginTop: Spacing.xs },
-    empty: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted, textAlign: 'center', paddingVertical: Spacing.lg },
+    empty: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted, textAlign: 'center', paddingVertical: Spacing.lg },
 
     logRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.sm },
     logDivider: { borderBottomWidth: 1, borderBottomColor: Palette.borderLight },
     logValue: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    logWhen: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, marginTop: 2 },
+    logWhen: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, marginTop: 2 },
 });

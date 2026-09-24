@@ -32,7 +32,7 @@ import {
     getAppointments, bookableDays, splitByTime, professionalIdOf, isLive,
     formatRelativeDay, type BookableDay,
 } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import type { Appointment, Professional } from '@/types/api';
 
 const ALL = '__all__';
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
     pageTitle: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold },
     pageSubtitle: {
-        fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: -2,
+        fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, marginTop: -2,
     },
 
     diaryButton: {
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md, height: 46,
     },
     searchInput: {
-        flex: 1, fontSize: 14, color: Palette.text, fontFamily: Fonts.regular, padding: 0,
+        flex: 1, fontSize: 14, color: Palette.text, ...BodyFont.regular, padding: 0,
     },
 
     chipRow: { gap: Spacing.sm, paddingBottom: Spacing.xs, paddingRight: GUTTER },
@@ -498,12 +498,12 @@ const styles = StyleSheet.create({
 
     metaRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3, marginTop: 1 },
     rate: { fontSize: 15, color: Palette.text, fontFamily: Fonts.bold },
-    rateUnit: { fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.regular },
+    rateUnit: { fontSize: 12, color: Palette.textMuted, ...BodyFont.regular },
     dot: {
         width: 3, height: 3, borderRadius: Radius.pill,
         backgroundColor: Palette.textMuted, marginHorizontal: Spacing.xs, alignSelf: 'center',
     },
-    country: { flex: 1, fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    country: { flex: 1, fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
 
     bookedNote: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md, backgroundColor: Palette.white,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    slotDay: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    slotDay: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
     slotDate: { fontSize: 13, color: Palette.text, fontFamily: Fonts.bold },
     slotBookedDot: {
         position: 'absolute', top: 6, right: 6,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
     emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     emptyBody: {
         fontSize: 13, lineHeight: 19, color: Palette.textSecondary,
-        textAlign: 'center', fontFamily: Fonts.regular,
+        textAlign: 'center', ...BodyFont.regular,
     },
     clearButton: {
         marginTop: Spacing.sm, paddingVertical: 10, paddingHorizontal: Spacing.xl,

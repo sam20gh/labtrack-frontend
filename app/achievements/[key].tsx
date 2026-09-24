@@ -43,7 +43,7 @@ import {
 } from '@/lib/achievements';
 import { BadgeMedal } from '@/components/achievements/BadgeMedal';
 import { ShareCard } from '@/components/achievements/ShareCard';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function AchievementDetailScreen() {
     const router = useRouter();
@@ -362,11 +362,11 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border, borderRadius: Radius.sm,
         paddingHorizontal: Spacing.md, paddingVertical: 6, marginTop: Spacing.md,
     },
-    earnedText: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    earnedText: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
 
     name: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.text, marginTop: Spacing.lg, textAlign: 'center' },
     blurb: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, textAlign: 'center', marginTop: Spacing.sm,
     },
 
@@ -377,13 +377,13 @@ const styles = StyleSheet.create({
     milestoneHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     milestoneTitle: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     milestoneLevel: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
-    milestoneNext: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    milestoneNext: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     track: { height: 8, borderRadius: 4, backgroundColor: Palette.borderLight, overflow: 'hidden' },
     fill: { height: 8, borderRadius: 4, backgroundColor: Palette.primary },
     milestoneFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
-    milestoneHow: { flex: 1, fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    milestoneHow: { flex: 1, fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     milestonePct: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
-    milestoneValue: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    milestoneValue: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 
     section: { alignSelf: 'flex-start', fontSize: 16, fontFamily: Fonts.bold, color: Palette.text, marginTop: Spacing.xxl },
     ladder: {
@@ -398,9 +398,9 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     rungNumber: { fontSize: 11, fontFamily: Fonts.semibold, color: Palette.textMuted },
-    rungHow: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.text },
+    rungHow: { fontSize: 13, ...BodyFont.medium, color: Palette.text },
     rungHowOff: { color: Palette.textSecondary },
-    rungDate: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, marginTop: 2 },
+    rungDate: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, marginTop: 2 },
 
     cta: {
         alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -422,10 +422,10 @@ const styles = StyleSheet.create({
     plateWrap: { borderRadius: Radius.xl, overflow: 'hidden' },
     plate: { padding: Spacing.lg },
     previewNote: {
-        fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center',
+        fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center',
     },
     cancel: {
-        fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary,
         textAlign: 'center', paddingVertical: Spacing.md,
     },
 });

@@ -13,7 +13,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import {
     iconFor, tintFor, tintSurface, relativeDay, confidencePct, outcomeOf,
     type Prediction, type Accuracy,
@@ -105,18 +105,18 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     main: { flex: 1, gap: 1 },
-    label: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    label: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     value: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
-    unit: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    meta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    unit: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
+    meta: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
     accuracy: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
         marginTop: Spacing.md, paddingTop: Spacing.md,
         borderTopWidth: 1, borderTopColor: Palette.borderLight,
     },
-    accuracyText: { flex: 1, fontSize: 12, lineHeight: 17, fontFamily: Fonts.medium, color: Palette.text },
+    accuracyText: { flex: 1, fontSize: 12, lineHeight: 17, ...BodyFont.medium, color: Palette.text },
     footnote: {
-        fontSize: 12, lineHeight: 17, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 12, lineHeight: 17, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: Spacing.md, paddingTop: Spacing.md,
         borderTopWidth: 1, borderTopColor: Palette.borderLight,
     },

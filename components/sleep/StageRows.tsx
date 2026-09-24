@@ -14,7 +14,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { Palette, Fonts, Spacing } from '@/constants/theme';
+import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
 import { STAGE_META, STAGE_ORDER, formatMinutes, type SleepStageKey } from '@/lib/sleep';
 
 export interface StageRow {
@@ -136,16 +136,16 @@ const styles = StyleSheet.create({
     donutWrap: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center' },
     donutCentre: { alignItems: 'center' },
     donutTotal: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
-    donutCaption: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    donutCaption: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 
     rows: { gap: Spacing.md },
     row: { gap: 6 },
     rowHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     dot: { width: 9, height: 9, borderRadius: 5 },
-    rowLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
+    rowLabel: { flex: 1, fontSize: 14, ...BodyFont.medium, color: Palette.text },
     rowValue: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    rowValueMissing: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
-    rowDescription: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, marginLeft: 17 },
+    rowValueMissing: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
+    rowDescription: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, marginLeft: 17 },
     track: {
         height: 6, borderRadius: 3, marginLeft: 17,
         backgroundColor: Palette.borderLight, overflow: 'hidden',

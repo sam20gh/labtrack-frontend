@@ -19,7 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { probe, requestPermissions, labelFor, platformFor, type HealthCapability } from '@/lib/health';
 import { runSync, resetSyncThrottle } from '@/lib/health/sync';
 import { getWearableStatus, disconnectSource, type WearableStatus } from '@/lib/activity';
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
 
     intro: {
         fontSize: 14,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         lineHeight: 20,
         marginBottom: Spacing.xl,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     },
     cardHead: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
     cardTitle: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
-    cardMeta: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    cardMeta: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
 
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
     chip: {
@@ -335,11 +335,11 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: Radius.pill,
     },
-    chipText: { fontSize: 11.5, fontFamily: Fonts.medium, color: Palette.primary },
+    chipText: { fontSize: 11.5, ...BodyFont.medium, color: Palette.primary },
 
     devices: { gap: 2 },
     devicesLabel: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.text },
-    device: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    device: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary },
 
     actions: {
         flexDirection: 'row',
@@ -355,13 +355,13 @@ const styles = StyleSheet.create({
 
     result: {
         fontSize: 13,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: Palette.text,
         marginTop: Spacing.sm,
     },
     footnote: {
         fontSize: 12,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textMuted,
         lineHeight: 18,
         marginTop: Spacing.xl,

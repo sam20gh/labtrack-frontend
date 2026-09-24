@@ -33,7 +33,7 @@ import {
     type MetricsReference, type BpCategory,
 } from '@/lib/metrics';
 import { useUnits, unitLabel, toCanonicalWeight, displayWeight } from '@/lib/units';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 
 const TITLES: Record<string, { title: string; blurb: string }> = {
     weight: { title: 'Log Your Weight', blurb: 'Log your weight here.' },
@@ -368,11 +368,11 @@ const styles = StyleSheet.create({
     content: { padding: Spacing.lg, paddingTop: 0, gap: Spacing.md, paddingBottom: Spacing.xl },
 
     title: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.text },
-    blurb: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textSecondary, marginBottom: Spacing.xs },
+    blurb: { ...BodyFont.regular, fontSize: 14, color: Palette.textSecondary, marginBottom: Spacing.xs },
 
     card: { backgroundColor: Palette.background, borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.sm, ...Shadow.card },
     fieldLabel: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.text },
-    hint: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary, lineHeight: 16 },
+    hint: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary, lineHeight: 16 },
 
     bigInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6 },
     bigInput: { fontFamily: Fonts.bold, fontSize: 44, color: Palette.text, minWidth: 120, padding: 0 },
@@ -380,16 +380,16 @@ const styles = StyleSheet.create({
 
     inlineInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     input: {
-        flex: 1, fontFamily: Fonts.medium, fontSize: 16, color: Palette.text,
+        flex: 1, ...BodyFont.medium, fontSize: 16, color: Palette.text,
         backgroundColor: Palette.borderLight, borderRadius: Radius.md,
         paddingHorizontal: Spacing.sm, paddingVertical: 10,
     },
-    inlineUnit: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.textMuted },
+    inlineUnit: { ...BodyFont.medium, fontSize: 14, color: Palette.textMuted },
 
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.pill, backgroundColor: Palette.borderLight },
     chipActive: { backgroundColor: Palette.primary },
-    chipText: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary },
+    chipText: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary },
     chipTextActive: { color: '#FFFFFF' },
 
     container: {
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     containerActive: { borderColor: Palette.primary, backgroundColor: '#F5F3FF' },
     containerLabel: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.textSecondary },
     containerLabelActive: { color: Palette.primary },
-    containerMl: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted },
+    containerMl: { ...BodyFont.regular, fontSize: 10, color: Palette.textMuted },
 
     bpRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     bpField: { flex: 1, gap: 4 },
@@ -407,24 +407,24 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.bold, fontSize: 34, color: Palette.text, textAlign: 'center',
         backgroundColor: Palette.borderLight, borderRadius: Radius.md, paddingVertical: 8,
     },
-    bpHint: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted, textAlign: 'center' },
+    bpHint: { ...BodyFont.regular, fontSize: 10, color: Palette.textMuted, textAlign: 'center' },
     bpSlash: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.textMuted, marginTop: 18 },
 
     legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
     legendDot: { width: 8, height: 8, borderRadius: 4 },
-    legendLabel: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.text, flex: 1 },
-    legendRange: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted },
+    legendLabel: { ...BodyFont.medium, fontSize: 12, color: Palette.text, flex: 1 },
+    legendRange: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
 
     resultTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     resultLabel: { fontFamily: Fonts.bold, fontSize: 19, color: Palette.text },
-    resultSummary: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
+    resultSummary: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
     crisisCard: { borderWidth: 2, borderColor: '#DC2626' },
     crisisText: { color: '#DC2626' },
     crisisBox: {
         flexDirection: 'row', gap: 8, alignItems: 'flex-start',
         backgroundColor: '#DC2626', borderRadius: Radius.md, padding: Spacing.sm,
     },
-    crisisBoxText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12, color: '#FFFFFF', lineHeight: 17 },
+    crisisBoxText: { flex: 1, ...BodyFont.medium, fontSize: 12, color: '#FFFFFF', lineHeight: 17 },
 
     footer: { padding: Spacing.lg, paddingTop: Spacing.sm },
     primary: { backgroundColor: Palette.primary, borderRadius: Radius.md, paddingVertical: 15, alignItems: 'center' },

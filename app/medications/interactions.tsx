@@ -30,7 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { getCheck, runCheck, interactionVerdict, SEVERITY_META } from '@/lib/medications';
 import { FindingCard } from '@/components/medications/FindingCard';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { MedicationCheckResponse } from '@/types/api';
 
 export default function InteractionsScreen() {
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     },
     verdictHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     verdictTitle: { fontSize: 18, color: Palette.text, fontFamily: Fonts.bold },
-    verdictDetail: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 20 },
+    verdictDetail: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 20 },
 
     summaryCard: {
         backgroundColor: Palette.white,
@@ -314,9 +314,9 @@ const styles = StyleSheet.create({
         padding: Spacing.lg,
         gap: Spacing.sm,
     },
-    summary: { fontSize: 14, color: Palette.text, fontFamily: Fonts.regular, lineHeight: 21 },
+    summary: { fontSize: 14, color: Palette.text, ...BodyFont.regular, lineHeight: 21 },
     degradedRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
-    degraded: { flex: 1, fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 16 },
+    degraded: { flex: 1, fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 16 },
 
     uncheckedCard: {
         backgroundColor: Palette.surface,
@@ -328,11 +328,11 @@ const styles = StyleSheet.create({
     },
     uncheckedHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     uncheckedTitle: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
-    uncheckedBody: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 18 },
+    uncheckedBody: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 18 },
 
     section: { gap: Spacing.sm },
     sectionTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
-    sectionSubtitle: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: -4 },
+    sectionSubtitle: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, marginTop: -4 },
     sectionBody: { gap: Spacing.sm, marginTop: Spacing.xs },
 
     timingCard: {
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     },
     timingRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' },
     timingMed: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    timingAdvice: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 18 },
+    timingAdvice: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 18 },
 
     questionCard: {
         backgroundColor: Palette.primarySurface,
@@ -357,9 +357,9 @@ const styles = StyleSheet.create({
         fontSize: 12, color: Palette.primary, fontFamily: Fonts.bold,
         width: 18, textAlign: 'center',
     },
-    question: { flex: 1, fontSize: 13, color: Palette.text, fontFamily: Fonts.medium, lineHeight: 19 },
+    question: { flex: 1, fontSize: 13, color: Palette.text, ...BodyFont.medium, lineHeight: 19 },
 
-    ranAt: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, textAlign: 'center' },
+    ranAt: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, textAlign: 'center' },
 
     runButton: {
         flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
@@ -370,11 +370,11 @@ const styles = StyleSheet.create({
     runButtonBusy: { opacity: 0.7 },
     runButtonText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.semibold },
     staleNote: {
-        fontSize: 11, color: Palette.warning, fontFamily: Fonts.medium,
+        fontSize: 11, color: Palette.warning, ...BodyFont.medium,
         textAlign: 'center', marginTop: -Spacing.sm,
     },
 
-    footer: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, lineHeight: 17, marginTop: Spacing.sm },
+    footer: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 17, marginTop: Spacing.sm },
 
     emptyCard: {
         alignItems: 'center', gap: Spacing.sm,
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
         padding: Spacing.xxxl,
     },
     emptyTitle: { fontSize: 17, color: Palette.text, fontFamily: Fonts.semibold },
-    emptyBody: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular, textAlign: 'center', lineHeight: 20 },
+    emptyBody: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, textAlign: 'center', lineHeight: 20 },
     primaryButton: {
         backgroundColor: Palette.primary, borderRadius: Radius.md,
         paddingVertical: 13, paddingHorizontal: Spacing.xxl, marginTop: Spacing.sm,

@@ -17,7 +17,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { capabilities, type JstyleCommand, type JstyleVariant } from '@/modules/jstyle-ble';
 
 /**
@@ -95,9 +95,9 @@ const styles = StyleSheet.create({
         paddingVertical: 8, paddingHorizontal: 12,
     },
     // `fontFamily` without `fontWeight`: Android renders the pair as regular.
-    label: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.text },
+    label: { ...BodyFont.medium, fontSize: 13, color: Palette.text },
     footnote: {
-        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted,
+        ...BodyFont.regular, fontSize: 12, color: Palette.textMuted,
         lineHeight: 18, marginTop: Spacing.md,
     },
 });

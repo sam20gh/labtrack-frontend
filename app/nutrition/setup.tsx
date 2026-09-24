@@ -20,7 +20,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getNutritionPlan, saveNutritionPlan, DIETARY_PREFERENCES } from '@/lib/nutrition';
 import { PlanGuidanceCard } from '@/components/nutrition/PlanGuidanceCard';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { NutritionPlan } from '@/types/api';
 
 export default function NutritionSetupScreen() {
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md,
         padding: Spacing.md,
     },
-    noticeText: { flex: 1, fontFamily: Fonts.regular, fontSize: 12, color: Palette.text, lineHeight: 17 },
+    noticeText: { flex: 1, ...BodyFont.regular, fontSize: 12, color: Palette.text, lineHeight: 17 },
 
     card: {
         backgroundColor: Palette.background,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     },
     cardTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
     cardBody: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 12,
         color: Palette.textSecondary,
         marginTop: 2,
@@ -325,16 +325,16 @@ const styles = StyleSheet.create({
         minWidth: 110,
         textAlign: 'center',
     },
-    calorieUnit: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textSecondary },
+    calorieUnit: { ...BodyFont.regular, fontSize: 14, color: Palette.textSecondary },
     explanation: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 12,
         color: Palette.textSecondary,
         lineHeight: 17,
         marginTop: Spacing.lg,
     },
     resetLink: {
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         fontSize: 12,
         color: Palette.primary,
         marginTop: Spacing.sm,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     splitRow: { flexDirection: 'row', gap: Spacing.md },
     splitCell: { flex: 1, alignItems: 'center' },
     splitValue: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
-    splitLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    splitLabel: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
 
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md },
     chip: {
@@ -357,11 +357,11 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.sm,
     },
     chipActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
-    chipText: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.textSecondary },
+    chipText: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary },
     chipTextActive: { color: Palette.white },
 
     notesInput: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 14,
         color: Palette.text,
         backgroundColor: Palette.canvas,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
         textAlignVertical: 'top',
     },
     allergyNote: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.md },
-    allergyText: { flex: 1, fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    allergyText: { flex: 1, ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
 
     footer: {
         padding: Spacing.lg,

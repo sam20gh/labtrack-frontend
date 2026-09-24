@@ -35,7 +35,7 @@ import {
 import { BandChart } from '@/components/predict/BandChart';
 import { HorizonTabs, ConfidenceChip, BandChip, PredictionDisclaimer } from '@/components/predict/Chips';
 import { NotEnoughDataIllustration } from '@/components/predict/NotEnoughDataIllustration';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 /** How many companion cards sit under the chart. Two, as the design draws. */
 const COMPANIONS = 2;
@@ -204,9 +204,9 @@ const styles = StyleSheet.create({
 
     hero: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 8 },
     heroValue: { fontSize: 38, fontFamily: Fonts.bold, color: Palette.text },
-    heroUnit: { fontSize: 16, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    heroUnit: { fontSize: 16, ...BodyFont.regular, color: Palette.textSecondary },
     heroCaption: {
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', marginTop: Spacing.xs,
     },
     tabs: { marginTop: Spacing.xl },
@@ -227,8 +227,8 @@ const styles = StyleSheet.create({
     },
     companionValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
     companionValue: { fontSize: 19, fontFamily: Fonts.bold, color: Palette.text },
-    companionUnit: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    companionCaption: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    companionUnit: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
+    companionCaption: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 
     saveCta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     refusal: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxl },
     refusalTitle: { fontSize: 19, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     refusalBody: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, textAlign: 'center',
     },
     refusalCta: {

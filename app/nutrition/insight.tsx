@@ -20,7 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getInsight, MACRO_META } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { NutritionInsight } from '@/types/api';
 
 /** The windows the header offers. 7 is a week's shape; 90 is whether anything has changed. */
@@ -378,12 +378,12 @@ const styles = StyleSheet.create({
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.borderSlate,
     },
     windowOn: { backgroundColor: Palette.primarySurface, borderColor: Palette.primaryLight },
-    windowText: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary },
+    windowText: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary },
     windowTextOn: { fontFamily: Fonts.semibold, color: Palette.primary },
 
     scroll: { paddingBottom: Spacing.xxxl * 2 },
     basis: {
-        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary,
         paddingHorizontal: Spacing.lg, lineHeight: 18,
     },
 
@@ -406,15 +406,15 @@ const styles = StyleSheet.create({
     },
     statInitialText: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.textSecondary },
     statValue: { fontFamily: Fonts.bold, fontSize: 22, color: Palette.text },
-    statUnit: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },
-    statLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2 },
+    statUnit: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
+    statLabel: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2 },
 
     bigValue: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.text },
-    bigLabel: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary },
+    bigLabel: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary },
 
     chart: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xl },
     chartAxis: { height: CHART_HEIGHT, justifyContent: 'space-between' },
-    axisLabel: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted },
+    axisLabel: { ...BodyFont.regular, fontSize: 10, color: Palette.textMuted },
     chartBody: { flex: 1 },
     barSlot: { flex: 1, justifyContent: 'flex-end', height: CHART_HEIGHT },
     bar: { borderRadius: Radius.sm },
@@ -428,10 +428,10 @@ const styles = StyleSheet.create({
     },
     avgChipText: { fontFamily: Fonts.bold, fontSize: 9, color: Palette.white },
     chartLabels: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-    chartLabel: { flex: 1, textAlign: 'center', fontFamily: Fonts.regular, fontSize: 10, color: Palette.textSecondary },
+    chartLabel: { flex: 1, textAlign: 'center', ...BodyFont.regular, fontSize: 10, color: Palette.textSecondary },
     chartLabelMuted: { color: Palette.border },
     coach: {
-        fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary,
         lineHeight: 20, marginTop: Spacing.xl,
     },
 
@@ -440,15 +440,15 @@ const styles = StyleSheet.create({
     goalLabel: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
     reached: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
     reachedText: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.success },
-    shortfall: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.textSecondary },
+    shortfall: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary },
     goalTrack: { height: 10, borderRadius: Radius.pill, backgroundColor: Palette.borderLight, overflow: 'hidden' },
     goalFill: { height: '100%', borderRadius: Radius.pill },
     goalMark: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 2, backgroundColor: Palette.borderStrong },
-    goalMeta: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.xs },
-    noTarget: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
+    goalMeta: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.xs },
+    noTarget: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
 
     guidanceLabel: { fontFamily: Fonts.bold, fontSize: 11, color: Palette.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
-    guidanceDirective: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.text, marginTop: 2, lineHeight: 19 },
+    guidanceDirective: { ...BodyFont.medium, fontSize: 13, color: Palette.text, marginTop: 2, lineHeight: 19 },
 
     linkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.md },
     link: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
 
     empty: { alignItems: 'center', paddingHorizontal: Spacing.xxxl, marginTop: Spacing.xxxl * 2, gap: Spacing.md },
     emptyTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
-    emptyBody: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
+    emptyBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
     emptyCta: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         backgroundColor: Palette.primary, borderRadius: Radius.lg,

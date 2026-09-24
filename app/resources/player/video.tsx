@@ -27,7 +27,7 @@ import {
     getResource, saveProgress, formatDuration, PROGRESS_INTERVAL_MS,
     type CourseSession, type ResourceDetail,
 } from '@/lib/resources';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 
 const CONTROLS_TIMEOUT_MS = 3500;
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     track: { height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' },
     trackFill: { height: '100%', borderRadius: 2, backgroundColor: Palette.primary },
     timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm },
-    time: { fontSize: 12, fontFamily: Fonts.medium, color: 'rgba(255,255,255,0.85)' },
+    time: { fontSize: 12, ...BodyFont.medium, color: 'rgba(255,255,255,0.85)' },
     transport: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xxxl,
         paddingVertical: Spacing.lg,
@@ -326,5 +326,5 @@ const styles = StyleSheet.create({
     sessionBody: { flex: 1 },
     sessionTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     sessionTitleLocked: { color: Palette.textMuted },
-    sessionMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    sessionMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
 });

@@ -14,7 +14,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { MODE_LABEL, formatDayLong, formatTime, type AppointmentMode } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function AppointmentConfirmedScreen() {
     const router = useRouter();
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     title: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center' },
     subtitle: {
         fontSize: 14, lineHeight: 21, color: Palette.textSecondary,
-        fontFamily: Fonts.regular, textAlign: 'center',
+        ...BodyFont.regular, textAlign: 'center',
     },
 
     slipCard: {
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
     },
     row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.md },
-    rowLabel: { flex: 1, fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    rowLabel: { flex: 1, fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
     rowValue: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold, maxWidth: '55%' },
     rowValuePending: { color: Palette.warning },
     divider: { height: 1, backgroundColor: Palette.borderLight },

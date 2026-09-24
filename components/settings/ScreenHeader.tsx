@@ -14,7 +14,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Palette, Fonts, Spacing } from '@/constants/theme';
+import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
 
 export const ScreenHeader = ({
     title, subtitle, action,
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
         marginTop: Spacing.md, includeFontPadding: false,
     },
     subtitle: {
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         marginTop: 6, lineHeight: 20,
     },
 });

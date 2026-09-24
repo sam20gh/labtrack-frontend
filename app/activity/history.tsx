@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { SessionCard } from '@/components/metric/SessionCard';
 import { NoMatchArt, NO_MATCH_ART, RunnerHeroArt } from '@/components/activity/art';
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
         borderColor: Palette.border,
         borderRadius: Radius.lg,
     },
-    search: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.text, padding: 0 },
+    search: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text, padding: 0 },
 
     filters: {
         flexDirection: 'row',
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     },
     filterRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     filterActive: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    filterText: { fontSize: 12.5, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    filterText: { fontSize: 12.5, ...BodyFont.medium, color: Palette.textSecondary },
     filterTextActive: { fontFamily: Fonts.semibold, color: Palette.primary },
 
     list: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg, paddingBottom: Spacing.xxxl },
@@ -268,14 +268,14 @@ const styles = StyleSheet.create({
     emptyTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     emptyBody: {
         fontSize: 13,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         textAlign: 'center',
     },
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
     footer: {
         fontSize: 12,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textMuted,
         textAlign: 'center',
         marginTop: Spacing.xl,

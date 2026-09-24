@@ -24,7 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BadgeMedal } from './BadgeMedal';
 import { Confetti } from './Confetti';
 import type { Unlock } from '@/lib/achievements';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 
 interface Props {
     unlock: Unlock | null;
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     },
     body: {
         fontSize: 14,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         textAlign: 'center',
         lineHeight: 21,

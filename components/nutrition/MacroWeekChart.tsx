@@ -27,7 +27,7 @@ import {
     View, Text, StyleSheet, Pressable, Animated, AccessibilityInfo,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import type { NutritionInsight } from '@/types/api';
 
 type MacroKey = 'carbs' | 'protein' | 'fat';
@@ -360,9 +360,9 @@ const styles = StyleSheet.create({
         color: Palette.textSecondary,
     },
     headline: { fontFamily: Fonts.bold, fontSize: 28, color: Palette.text, marginTop: 2 },
-    headlineUnit: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textMuted },
+    headlineUnit: { ...BodyFont.regular, fontSize: 14, color: Palette.textMuted },
     headlineEmpty: { fontFamily: Fonts.semibold, fontSize: 20, color: Palette.textMuted, marginTop: 4 },
-    subline: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    subline: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
     gapPill: {
         backgroundColor: Palette.primaryTint,
         borderRadius: Radius.pill,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 8, height: 8, borderRadius: 4 },
     legendGoal: { flexDirection: 'row', gap: 2 },
-    legendText: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
+    legendText: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
 
     columns: { flexDirection: 'row' },
     column: { flex: 1, alignItems: 'center', paddingTop: Spacing.sm },
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
         borderColor: Palette.borderStrong,
     },
 
-    dayLetter: { fontFamily: Fonts.medium, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.sm },
+    dayLetter: { ...BodyFont.medium, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.sm },
     dayLetterOn: { fontFamily: Fonts.bold, color: Palette.primary },
     dateBubble: {
         width: 24,
@@ -461,8 +461,8 @@ const styles = StyleSheet.create({
     },
     tileHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     swatch: { width: 10, height: 10, borderRadius: 3 },
-    tileLabel: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.textSecondary },
+    tileLabel: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary },
     tileValue: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text, marginTop: 2 },
-    tileUnit: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },
-    tileMeta: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textSecondary },
+    tileUnit: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
+    tileMeta: { ...BodyFont.regular, fontSize: 10, color: Palette.textSecondary },
 });

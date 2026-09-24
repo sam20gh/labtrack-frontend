@@ -24,7 +24,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 
 import StateView, { StateAction } from '@/components/errors/StateView';
-import { Fonts, Palette, Radius, Spacing } from '@/constants/theme';
+import { Palette, Radius, Spacing, BodyFont } from '@/constants/theme';
 import { describeError, describeState, DescribeOptions, StateKey } from '@/lib/appState';
 
 export { default as StateView } from '@/components/errors/StateView';
@@ -132,7 +132,7 @@ const staleStyles = StyleSheet.create({
         backgroundColor: Palette.surface,
         alignSelf: 'center',
     },
-    label: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    label: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
 });
 
 type EmptyStateProps = {

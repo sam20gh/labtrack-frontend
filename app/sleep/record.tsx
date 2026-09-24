@@ -41,7 +41,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import { ErrorState, StaleNotice } from '@/components/errors';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { Hypnogram } from '@/components/sleep/Hypnogram';
@@ -842,13 +842,13 @@ const styles = StyleSheet.create({
     heroFigure: { alignItems: 'center', gap: 4 },
     heroValue: { fontSize: 46, lineHeight: 52, fontFamily: Fonts.bold, color: Palette.white },
     heroUnit: { fontSize: 20, fontFamily: Fonts.semibold, color: 'rgba(255,255,255,0.75)' },
-    heroCaption: { fontSize: 13, fontFamily: Fonts.regular, color: 'rgba(255,255,255,0.8)' },
+    heroCaption: { fontSize: 13, ...BodyFont.regular, color: 'rgba(255,255,255,0.8)' },
     deltaChip: {
         flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4,
         paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.pill,
         backgroundColor: 'rgba(255,255,255,0.16)',
     },
-    deltaText: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.white },
+    deltaText: { fontSize: 12, ...BodyFont.medium, color: Palette.white },
     heroChips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.sm },
     heroChip: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -867,7 +867,7 @@ const styles = StyleSheet.create({
     cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
     cardTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
     cardSubtitle: {
-        fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary,
         lineHeight: 17, marginTop: 2,
     },
     cardCount: {
@@ -882,8 +882,8 @@ const styles = StyleSheet.create({
     panelHead: { flexDirection: 'row', alignItems: 'flex-start' },
     panelDate: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.primaryDark },
     panelValue: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text },
-    panelUnit: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
-    panelMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    panelUnit: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
+    panelMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     panelOpen: {
         flexDirection: 'row', alignItems: 'center', gap: 2,
         paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.pill,
@@ -897,7 +897,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.background,
     },
     dot: { width: 8, height: 8, borderRadius: 4 },
-    stageChipLabel: { fontSize: 11, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    stageChipLabel: { fontSize: 11, ...BodyFont.medium, color: Palette.textSecondary },
     stageChipValue: { fontSize: 11, fontFamily: Fonts.bold, color: Palette.text },
 
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
@@ -910,21 +910,21 @@ const styles = StyleSheet.create({
         width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
         marginBottom: 4,
     },
-    tileLabel: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    tileLabel: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
     tileValue: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
-    tileNote: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 15 },
+    tileNote: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 15 },
 
     sessionRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     sessionIcon: { width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     sessionTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    sessionMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    sessionMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     sessionValue: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text },
 
     highlight: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: 4,
     },
     highlightLabel: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    highlightDay: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    highlightDay: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     highlightValue: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text },
 
     napRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
@@ -932,7 +932,7 @@ const styles = StyleSheet.create({
 
     strip: { gap: 6, paddingVertical: 2 },
     stripHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    stripDate: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.text },
+    stripDate: { fontSize: 13, ...BodyFont.medium, color: Palette.text },
     stripRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     stripValue: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.text },
     stripTrack: { height: 8, borderRadius: 4, backgroundColor: Palette.borderLight, overflow: 'hidden' },
@@ -947,13 +947,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row', gap: Spacing.sm, padding: Spacing.md, borderRadius: 14,
         backgroundColor: Palette.surface,
     },
-    noteText: { flex: 1, fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 17 },
+    noteText: { flex: 1, fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 17 },
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary, textAlign: 'center' },
 
     empty: { alignItems: 'center', paddingVertical: Spacing.xxl },
     emptyTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     emptyBody: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 19, paddingHorizontal: Spacing.md,
     },
     emptyActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },

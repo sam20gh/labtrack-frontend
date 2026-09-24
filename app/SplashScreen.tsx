@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSignedIn } from '@/lib/auth';
 import BrandMark from '@/components/BrandMark';
-import { Fonts, Palette } from '@/constants/theme';
+import { Fonts, Palette, BodyFont } from '@/constants/theme';
 
 /** How long the mark is held on screen before we route. The bar is timed to match. */
 const DWELL_MS = 2500;
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     },
     tagline: {
         fontSize: 14,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: 'rgba(255,255,255,0.75)',
         letterSpacing: 0.4,
         marginTop: 8,

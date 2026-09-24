@@ -115,7 +115,7 @@ import SymptomCheckerCard from '@/components/home/SymptomCheckerCard';
 import { PredictionCard } from '@/components/home/PredictionCard';
 import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { DoseRow } from '@/components/medications/DoseRow';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import type {
     BiomarkerSummary, MedicationScheduleDay, NutritionDay, NutritionTargets, Product, User,
     Appointment, PlanItem,
@@ -2735,7 +2735,7 @@ const styles = StyleSheet.create({
     },
     headerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     dateRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    headerDate: { fontSize: 13, color: 'rgba(255,255,255,0.85)', fontFamily: Fonts.medium },
+    headerDate: { fontSize: 13, color: 'rgba(255,255,255,0.85)', ...BodyFont.medium },
     streakChip: {
         flexDirection: 'row', alignItems: 'center', gap: 3,
         backgroundColor: '#F59E0B', borderRadius: Radius.sm,
@@ -2748,7 +2748,7 @@ const styles = StyleSheet.create({
     headerGreeting: { fontSize: 26, color: Palette.white, fontFamily: Fonts.bold, marginTop: 6 },
     headerToday: {
         fontSize: 14, lineHeight: 20, marginTop: Spacing.sm,
-        color: 'rgba(255,255,255,0.92)', fontFamily: Fonts.medium,
+        color: 'rgba(255,255,255,0.92)', ...BodyFont.medium,
     },
     headerSearch: {
         width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.white,
@@ -2771,7 +2771,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: 6,
         borderTopWidth: 1, borderTopColor: Palette.borderLight, paddingTop: Spacing.md,
     },
-    scoreFootText: { flex: 1, fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    scoreFootText: { flex: 1, fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium },
     scoreBox: {
         width: 66, height: 66, borderRadius: Radius.lg,
         backgroundColor: Palette.primarySurface,
@@ -2781,7 +2781,7 @@ const styles = StyleSheet.create({
     scoreBand: { fontSize: 18, color: Palette.text, fontFamily: Fonts.bold },
     scoreMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' },
     scoreMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    scoreMetaText: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    scoreMetaText: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium },
     scoreDot: { fontSize: 13, color: Palette.textMuted },
 
     // Sections -------------------------------------------------------------
@@ -2801,10 +2801,10 @@ const styles = StyleSheet.create({
     },
     cardHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
     cardTitle: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
-    cardBody: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 3 },
-    cardNote: { fontSize: 12, lineHeight: 17, color: Palette.textMuted, fontFamily: Fonts.regular },
+    cardBody: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 3 },
+    cardNote: { fontSize: 12, lineHeight: 17, color: Palette.textMuted, ...BodyFont.regular },
     bigFigure: { fontSize: 30, color: Palette.text, fontFamily: Fonts.bold },
-    bigUnit: { fontSize: 15, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    bigUnit: { fontSize: 15, color: Palette.textSecondary, ...BodyFont.regular },
     divider: { height: 1, backgroundColor: Palette.border },
     subHeading: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
     roundButton: {
@@ -2816,7 +2816,7 @@ const styles = StyleSheet.create({
     rowList: { gap: Spacing.md },
     rowItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     rowTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
-    rowMeta: { fontSize: 12.5, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 1 },
+    rowMeta: { fontSize: 12.5, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 1 },
     statRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: 5 },
     stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     statText: { fontSize: 12.5, color: Palette.text, fontFamily: Fonts.semibold },
@@ -2846,7 +2846,7 @@ const styles = StyleSheet.create({
     markerValue: { fontSize: 22, fontFamily: Fonts.bold },   // colour is per flag
     markerUnit: { color: Palette.textOnWarm },              // `unit` is shared with metricTile
     markerName: { fontSize: 13, lineHeight: 17, color: Palette.text, fontFamily: Fonts.semibold },
-    markerPlain: { fontSize: 11.5, lineHeight: 15, color: Palette.textOnWarm, fontFamily: Fonts.regular },
+    markerPlain: { fontSize: 11.5, lineHeight: 15, color: Palette.textOnWarm, ...BodyFont.regular },
 
     // Needs you ------------------------------------------------------------
     actionList: { gap: Spacing.md, marginHorizontal: GUTTER },
@@ -2881,10 +2881,10 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     metricTileValue: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold },
-    metricTileLabel: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    metricTileNote: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.medium },
+    metricTileLabel: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
+    metricTileNote: { fontSize: 11, color: Palette.textMuted, ...BodyFont.medium },
     valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-    unit: { fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.regular },
+    unit: { fontSize: 12, color: Palette.textMuted, ...BodyFont.regular },
     dots: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: Spacing.md },
     dot: { width: 18, height: 5, borderRadius: Radius.pill, backgroundColor: Palette.border },
     dotActive: { width: 26, backgroundColor: Palette.primary },
@@ -2900,7 +2900,7 @@ const styles = StyleSheet.create({
     sleepBar: {
         width: '100%', borderRadius: Radius.sm, backgroundColor: Palette.primary, minHeight: 4,
     },
-    sleepLabel: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.medium },
+    sleepLabel: { fontSize: 11, color: Palette.textMuted, ...BodyFont.medium },
 
     // Nutrition ------------------------------------------------------------
     // The gradient runs to the card's edge, so the padding every other card carries on its
@@ -2928,15 +2928,15 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: Radius.pill,
         paddingHorizontal: Spacing.md, paddingVertical: 5,
     },
-    heroChipText: { flexShrink: 1, fontSize: 12, color: Palette.white, fontFamily: Fonts.medium },
+    heroChipText: { flexShrink: 1, fontSize: 12, color: Palette.white, ...BodyFont.medium },
     nutritionTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
     macroList: { flex: 1, gap: Spacing.lg },
     macro: { gap: 6 },
     macroHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.sm },
-    macroLabel: { fontSize: 12, color: 'rgba(255,255,255,0.82)', fontFamily: Fonts.regular },
+    macroLabel: { fontSize: 12, color: 'rgba(255,255,255,0.82)', ...BodyFont.regular },
     macroValue: { fontSize: 16, color: Palette.white, fontFamily: Fonts.bold },
     macroValueOver: { color: '#FDE68A' },
-    macroTarget: { fontSize: 11, color: 'rgba(255,255,255,0.72)', fontFamily: Fonts.regular },
+    macroTarget: { fontSize: 11, color: 'rgba(255,255,255,0.72)', ...BodyFont.regular },
     macroTrack: {
         height: 6, borderRadius: Radius.pill,
         backgroundColor: 'rgba(255,255,255,0.24)', overflow: 'hidden',
@@ -2958,7 +2958,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     dateChipDay: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
-    dateChipWeekday: { fontSize: 10, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    dateChipWeekday: { fontSize: 10, color: Palette.textSecondary, ...BodyFont.medium },
 
     // Assistant ------------------------------------------------------------
     bubbleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
@@ -2971,9 +2971,9 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.borderLight,
         padding: Spacing.md, gap: 4,
     },
-    bubbleText: { fontSize: 14.5, lineHeight: 21, color: Palette.text, fontFamily: Fonts.regular },
+    bubbleText: { fontSize: 14.5, lineHeight: 21, color: Palette.text, ...BodyFont.regular },
     bubbleFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
-    bubbleTime: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular },
+    bubbleTime: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular },
 
     // Latest analysis ------------------------------------------------------
     analysisCard: {
@@ -2987,13 +2987,13 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     analysisTest: { fontSize: 17, color: Palette.text, fontFamily: Fonts.semibold },
-    analysisMeta: { fontSize: 14, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 2 },
+    analysisMeta: { fontSize: 14, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 2 },
     aiBadge: {
         paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm,
         backgroundColor: Palette.primarySurface,
     },
     aiBadgeText: { fontSize: 12, color: Palette.primary, fontFamily: Fonts.bold, letterSpacing: 0.5 },
-    analysisSummary: { fontSize: 16, lineHeight: 24, color: Palette.text, fontFamily: Fonts.regular },
+    analysisSummary: { fontSize: 16, lineHeight: 24, color: Palette.text, ...BodyFont.regular },
 
     /**
      * The plain-language block.
@@ -3015,7 +3015,7 @@ const styles = StyleSheet.create({
         gap: 5, padding: Spacing.md, borderRadius: Radius.md,
         backgroundColor: Palette.primarySurface,
     },
-    nextStepText: { fontSize: 15.5, lineHeight: 22, color: Palette.text, fontFamily: Fonts.medium },
+    nextStepText: { fontSize: 15.5, lineHeight: 22, color: Palette.text, ...BodyFont.medium },
     analysisDetail: { gap: Spacing.lg, paddingTop: Spacing.xs },
     analysisBlock: { gap: 6 },
     analysisBlockTitle: {
@@ -3027,8 +3027,8 @@ const styles = StyleSheet.create({
         borderLeftWidth: 2, borderLeftColor: Palette.borderLight,
     },
     detailName: { fontSize: 16, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    detailBody: { fontSize: 15, lineHeight: 22, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    detailAction: { fontSize: 15, lineHeight: 22, color: Palette.primary, fontFamily: Fonts.medium },
+    detailBody: { fontSize: 15, lineHeight: 22, color: Palette.textSecondary, ...BodyFont.regular },
+    detailAction: { fontSize: 15, lineHeight: 22, color: Palette.primary, ...BodyFont.medium },
     riskRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
     riskPill: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm },
     riskText: { fontSize: 12, fontFamily: Fonts.bold },
@@ -3041,13 +3041,13 @@ const styles = StyleSheet.create({
     regenerateText: { fontSize: 15, color: Palette.textSecondary, fontFamily: Fonts.semibold },
     disabledText: { color: Palette.textMuted },
     buttonDisabled: { opacity: 0.6 },
-    analysisDisclaimer: { fontSize: 13, lineHeight: 19, color: Palette.textMuted, fontFamily: Fonts.regular },
+    analysisDisclaimer: { fontSize: 13, lineHeight: 19, color: Palette.textMuted, ...BodyFont.regular },
     staleNote: {
         flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm,
         padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Palette.warningSurface,
     },
     staleText: {
-        flex: 1, fontSize: 14, lineHeight: 20, color: Palette.warning, fontFamily: Fonts.medium,
+        flex: 1, fontSize: 14, lineHeight: 20, color: Palette.warning, ...BodyFont.medium,
     },
     withheldNote: {
         flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md,
@@ -3092,7 +3092,7 @@ const styles = StyleSheet.create({
         fontSize: 12, letterSpacing: 0.8,
         color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', fontFamily: Fonts.bold,
     },
-    heroHeadline: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.88)', fontFamily: Fonts.regular },
+    heroHeadline: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.88)', ...BodyFont.regular },
     welcomeTitle: { fontSize: 26, lineHeight: 34, color: Palette.white, fontFamily: Fonts.bold },
     ctaRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
     ctaPrimary: {
@@ -3117,7 +3117,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     benefitTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold },
-    benefitBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    benefitBody: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary, ...BodyFont.regular },
 
     // Products -------------------------------------------------------------
     productCard: { width: 152, gap: 6 },

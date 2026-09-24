@@ -30,7 +30,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
         flex: 1, fontFamily: Fonts.semibold, fontSize: 15, lineHeight: 20, color: 'rgba(255,255,255,0.92)',
     },
     heroHeadline: {
-        fontFamily: Fonts.regular, fontSize: 14, lineHeight: 20,
+        ...BodyFont.regular, fontSize: 14, lineHeight: 20,
         color: 'rgba(255,255,255,0.82)', marginTop: Spacing.md,
     },
     heroRule: { height: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: Spacing.lg },
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     heroStat: { flex: 1, alignItems: 'center' },
     heroStatDivider: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.18)' },
     heroStatValue: { fontFamily: Fonts.bold, fontSize: 20, color: Palette.white },
-    heroStatLabel: { fontFamily: Fonts.regular, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
+    heroStatLabel: { ...BodyFont.regular, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
 
     // DNA
     dnaCard: {
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     dnaTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
-    dnaBody: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2, lineHeight: 17 },
+    dnaBody: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2, lineHeight: 17 },
 
     // Empty
     empty: { alignItems: 'center', paddingVertical: 44, paddingHorizontal: GUTTER, gap: Spacing.md },
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
     emptyBody: {
-        fontFamily: Fonts.regular, fontSize: 14, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 14, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 21,
     },
 
@@ -647,12 +647,12 @@ const styles = StyleSheet.create({
     },
     chartTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text },
     chartBlurb: {
-        fontFamily: Fonts.regular, fontSize: 13, lineHeight: 19,
+        ...BodyFont.regular, fontSize: 13, lineHeight: 19,
         color: Palette.textSecondary, marginTop: 3,
     },
     chartRows: { marginTop: Spacing.lg, gap: Spacing.sm },
     chartRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    chartName: { width: 78, fontFamily: Fonts.medium, fontSize: 12, color: Palette.textSecondary },
+    chartName: { width: 78, ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary },
     chartAxis: { flex: 1, flexDirection: 'row', alignItems: 'center', height: 18 },
     chartHalfLeft: { flex: 1, alignItems: 'flex-end' },
     chartHalfRight: { flex: 1, alignItems: 'flex-start' },
@@ -664,9 +664,9 @@ const styles = StyleSheet.create({
     chartLegend: { flexDirection: 'row', gap: Spacing.lg, marginTop: Spacing.lg },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 8, height: 8, borderRadius: Radius.pill },
-    legendText: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    legendText: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
     chartFoot: {
-        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted,
+        ...BodyFont.regular, fontSize: 12, color: Palette.textMuted,
         lineHeight: 18, marginTop: Spacing.sm,
     },
 
@@ -695,18 +695,18 @@ const styles = StyleSheet.create({
     rowHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     rowChevron: { marginLeft: Spacing.sm, marginTop: 3 },
     name: { flex: 1, fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
-    plainName: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 2 },
+    plainName: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 2 },
     meaning: {
-        fontFamily: Fonts.regular, fontSize: 12.5, lineHeight: 18,
+        ...BodyFont.regular, fontSize: 12.5, lineHeight: 18,
         color: Palette.textSecondary, marginTop: 10,
     },
     valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 6 },
     value: { fontFamily: Fonts.bold, fontSize: 24, color: Palette.text },
-    unit: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },
+    unit: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
     movement: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.textMuted, marginLeft: 4 },
     movementGood: { color: Palette.success },
     movementBad: { color: Palette.warning },
-    count: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.sm },
+    count: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.sm },
     badge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
     badgeText: { fontFamily: Fonts.semibold, fontSize: 11 },
 
@@ -725,12 +725,12 @@ const styles = StyleSheet.create({
         marginLeft: -5, borderWidth: 2, borderColor: Palette.textMuted, backgroundColor: Palette.white,
     },
     gaugeScale: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
-    gaugeBound: { width: 40, fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted },
+    gaugeBound: { width: 40, ...BodyFont.regular, fontSize: 10, color: Palette.textMuted },
     gaugeBandLabel: {
-        flex: 1, textAlign: 'center', fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted,
+        flex: 1, textAlign: 'center', ...BodyFont.regular, fontSize: 10, color: Palette.textMuted,
     },
     unknownNote: {
-        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted, lineHeight: 18,
+        ...BodyFont.regular, fontSize: 12, color: Palette.textMuted, lineHeight: 18,
         marginHorizontal: GUTTER, marginTop: Spacing.md,
     },
 
@@ -742,8 +742,8 @@ const styles = StyleSheet.create({
     },
     reportsTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.textSecondary },
     reportRow: { flexDirection: 'row', padding: Spacing.lg },
-    reportLab: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.text },
-    reportMeta: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, marginTop: 2 },
+    reportLab: { ...BodyFont.medium, fontSize: 14, color: Palette.text },
+    reportMeta: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, marginTop: 2 },
 
     addButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,

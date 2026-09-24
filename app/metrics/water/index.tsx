@@ -58,7 +58,7 @@ import { ContainerGlass } from '@/components/hydration/ContainerGlass';
 import { HydrationCalendar } from '@/components/hydration/HydrationCalendar';
 import { Sparkline } from '@/components/hydration/Sparkline';
 import { WaterHeader, SectionHeader, EmptyNote, cardStyles } from '@/components/hydration/HydrationChrome';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 
 /** How many days each range asks the server for. The API clamps to 7–365. */
 const SPAN: Record<MetricRange, number> = { '1d': 7, '1w': 31, '1m': 31, '1y': 365, all: 365 };
@@ -375,28 +375,28 @@ const styles = StyleSheet.create({
     hero: { alignItems: 'center', gap: Spacing.sm },
     heroRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     heroValue: { fontFamily: Fonts.bold, fontSize: 44, color: Palette.text, letterSpacing: -1 },
-    heroUnit: { fontFamily: Fonts.medium, fontSize: 17, color: Palette.textSecondary },
-    heroLine: { fontFamily: Fonts.medium, fontSize: 15, color: Palette.textSecondary, textAlign: 'center' },
+    heroUnit: { ...BodyFont.medium, fontSize: 17, color: Palette.textSecondary },
+    heroLine: { ...BodyFont.medium, fontSize: 15, color: Palette.textSecondary, textAlign: 'center' },
 
     metaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.lg, marginTop: 2 },
     meta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    metaText: { fontFamily: Fonts.medium, fontSize: 12.5, color: Palette.textMuted },
+    metaText: { ...BodyFont.medium, fontSize: 12.5, color: Palette.textMuted },
 
     glassWrap: { alignItems: 'center', paddingVertical: Spacing.sm },
 
     legend: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg, marginTop: Spacing.lg },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     legendDot: { width: 11, height: 11, borderRadius: 6 },
-    legendText: { fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textSecondary },
+    legendText: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textSecondary },
 
     goalValue: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.text },
-    goalLine: { fontFamily: Fonts.regular, fontSize: 13.5, color: Palette.textSecondary, marginTop: 2 },
-    basis: { fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textMuted, marginTop: Spacing.md, lineHeight: 17 },
+    goalLine: { ...BodyFont.regular, fontSize: 13.5, color: Palette.textSecondary, marginTop: 2 },
+    basis: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted, marginTop: Spacing.md, lineHeight: 17 },
     divider: { height: 1, backgroundColor: Palette.border, marginVertical: Spacing.lg },
 
     highlight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     highlightValue: { fontFamily: Fonts.bold, fontSize: 24, color: Palette.text },
-    highlightLabel: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 2 },
+    highlightLabel: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 2 },
 
     entryList: { gap: Spacing.sm },
     entry: {
@@ -407,8 +407,8 @@ const styles = StyleSheet.create({
     },
     vesselSlot: { width: 34, alignItems: 'center', justifyContent: 'center' },
     entryValue: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
-    entryMeta: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 1 },
-    entryTime: { fontFamily: Fonts.medium, fontSize: 12.5, color: Palette.textSecondary },
+    entryMeta: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 1 },
+    entryTime: { ...BodyFont.medium, fontSize: 12.5, color: Palette.textSecondary },
 
     ask: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     askTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    askBlurb: { fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textSecondary, marginTop: 2, lineHeight: 16 },
+    askBlurb: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textSecondary, marginTop: 2, lineHeight: 16 },
 
-    note: { fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textMuted, lineHeight: 17 },
+    note: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted, lineHeight: 17 },
 });

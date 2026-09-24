@@ -44,7 +44,7 @@ import {
 import { recordCheck } from '@/lib/symptomChecks';
 import BodyAreaSheet from '@/components/symptoms/BodyAreaSheet';
 import DetailSheet from '@/components/symptoms/DetailSheet';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 import type { User } from '@/types/api';
 
 export default function SymptomsScreen() {
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     },
     searchFocused: { borderColor: Palette.primary, borderWidth: 1.5 },
     searchInput: {
-        flex: 1, fontSize: 15, fontFamily: Fonts.regular, color: Palette.text, padding: 0,
+        flex: 1, fontSize: 15, ...BodyFont.regular, color: Palette.text, padding: 0,
     },
 
     dropdown: {
@@ -407,10 +407,10 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md, borderWidth: 1, borderColor: 'transparent',
     },
     suggestionOn: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    suggestionText: { flex: 1, fontSize: 15, fontFamily: Fonts.regular, color: Palette.text },
-    suggestionTextOn: { fontFamily: Fonts.medium, color: Palette.primary },
+    suggestionText: { flex: 1, fontSize: 15, ...BodyFont.regular, color: Palette.text },
+    suggestionTextOn: { ...BodyFont.medium, color: Palette.primary },
     noMatch: {
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         padding: Spacing.md, lineHeight: 20,
     },
 
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md, borderWidth: 1, borderColor: Palette.border,
         backgroundColor: Palette.white,
     },
-    chipText: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.text },
+    chipText: { fontSize: 14, ...BodyFont.regular, color: Palette.text },
 
     detailSummary: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
@@ -436,11 +436,11 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg,
         borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
     },
-    detailSummaryText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.primary },
+    detailSummaryText: { fontSize: 13, ...BodyFont.medium, color: Palette.primary },
 
     empty: { alignItems: 'center', gap: Spacing.md, paddingTop: 72, paddingHorizontal: Spacing.xl },
     emptyText: {
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 14, ...BodyFont.regular, color: Palette.textMuted,
         textAlign: 'center', lineHeight: 20,
     },
 
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     },
     fill: { height: 6, minWidth: 8, borderRadius: Radius.pill, backgroundColor: Palette.primary },
     scoreCaption: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', marginTop: Spacing.md,
     },
 

@@ -9,7 +9,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Radius, Spacing } from '@/constants/theme';
+import { Palette, Fonts, Radius, Spacing, BodyFont } from '@/constants/theme';
 import {
     confidenceLabel, confidencePct, toneColour, toneSurface, DIRECTION_ICON,
     type Direction, type BetterWhen, type Horizon, type Band,
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center', paddingHorizontal: 10, paddingVertical: 5,
         borderRadius: Radius.sm, borderWidth: 1, backgroundColor: Palette.white,
     },
-    confidenceText: { fontSize: 12, fontFamily: Fonts.medium },
+    confidenceText: { fontSize: 12, ...BodyFont.medium },
 
     tabTrack: { gap: 4, padding: 4, backgroundColor: Palette.borderLight, borderRadius: 12 },
     tab: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 9 },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
         shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4,
         shadowOffset: { width: 0, height: 1 }, elevation: 1,
     },
-    tabLabel: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    tabLabel: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     tabLabelActive: { fontFamily: Fonts.semibold, color: Palette.text },
 
     badge: {
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     bandChipText: { fontSize: 12, fontFamily: Fonts.semibold },
 
     disclaimer: {
-        fontSize: 11, lineHeight: 16, fontFamily: Fonts.regular,
+        fontSize: 11, lineHeight: 16, ...BodyFont.regular,
         color: Palette.textMuted, textAlign: 'center',
     },
     disclaimerCard: {

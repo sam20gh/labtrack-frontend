@@ -26,7 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { SUPPORT_EMAIL, searchFaq, type FaqEntry } from '@/lib/help';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 // The accordion's height change is animated by the platform rather than by Reanimated:
 // one LayoutAnimation call is cheaper than a shared value per row, and Android needs the
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border,
         paddingHorizontal: Spacing.lg, height: 46,
     },
-    searchInput: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.text },
+    searchInput: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text },
 
     section: { gap: Spacing.sm },
     sectionTitle: {
@@ -202,14 +202,14 @@ const styles = StyleSheet.create({
         paddingLeft: Spacing.lg + 18 + Spacing.md,
         gap: Spacing.md,
     },
-    answer: { fontSize: 13, lineHeight: 20, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    answer: { fontSize: 13, lineHeight: 20, ...BodyFont.regular, color: Palette.textSecondary },
     answerLink: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
     answerLinkText: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
 
     emptyState: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xxxl },
     emptyTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     emptyBlurb: {
-        fontSize: 13, lineHeight: 19, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, lineHeight: 19, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', paddingHorizontal: Spacing.xl,
     },
 

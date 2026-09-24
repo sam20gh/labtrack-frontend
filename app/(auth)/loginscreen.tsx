@@ -27,7 +27,7 @@ import AuthField from '@/components/auth/AuthField';
 import AuthHeader from '@/components/auth/AuthHeader';
 import GoogleMark from '@/components/auth/GoogleMark';
 import { authStyles } from '@/components/auth/styles';
-import { Fonts, Palette, Radius } from '@/constants/theme';
+import { Fonts, Palette, Radius, BodyFont } from '@/constants/theme';
 import { signInWithEmail, signInWithGoogle, STORAGE_KEYS } from '@/lib/auth';
 
 const LoginScreen = () => {
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     },
     checkboxLabel: {
         fontSize: 14,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.text,
     },
     forgotPassword: {

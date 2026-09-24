@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { ScheduleCard } from '@/components/sleep/ScheduleCard';
 import { BedIllustration } from '@/components/sleep/BedIllustration';
@@ -132,14 +132,14 @@ const styles = StyleSheet.create({
     header: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
     titleBlock: { paddingHorizontal: Spacing.xl, gap: 2 },
     title: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
-    subtitle: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    subtitle: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     content: { padding: Spacing.xl, gap: Spacing.md, paddingBottom: Spacing.xxxl },
-    note: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 17, marginTop: Spacing.md },
+    note: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 17, marginTop: Spacing.md },
 
     empty: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxl },
     emptyTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     emptyBody: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', paddingHorizontal: Spacing.lg, lineHeight: 19,
     },
 

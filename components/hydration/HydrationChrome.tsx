@@ -9,7 +9,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 
 /**
  * Back, an optional status pill, and an optional action.
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
         maxWidth: 150,
     },
     pillDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.primary },
-    pillText: { fontFamily: Fonts.medium, fontSize: 12.5, color: Palette.primaryDark },
+    pillText: { ...BodyFont.medium, fontSize: 12.5, color: Palette.primaryDark },
 
     add: {
         width: 38, height: 38, borderRadius: 19,
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     seeAll: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
 
     empty: {
-        fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textMuted,
+        ...BodyFont.regular, fontSize: 12.5, color: Palette.textMuted,
         textAlign: 'center', paddingVertical: Spacing.lg, lineHeight: 18,
     },
 });

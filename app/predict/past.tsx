@@ -24,7 +24,7 @@ import {
     type Prediction, type PredictableMetric, type MetricKey,
 } from '@/lib/prediction';
 import { PastPredictionRow } from '@/components/predict/PredictionCards';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function PastPredictionsScreen() {
     const router = useRouter();
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     content: { padding: Spacing.lg, paddingBottom: Spacing.xxxl },
     title: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text },
     subtitle: {
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         marginTop: Spacing.xs, marginBottom: Spacing.lg,
     },
     filters: { gap: Spacing.sm, paddingBottom: Spacing.lg },
@@ -173,10 +173,10 @@ const styles = StyleSheet.create({
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.border,
     },
     filterActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
-    filterText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    filterText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     filterTextActive: { color: Palette.white, fontFamily: Fonts.semibold },
     empty: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxxl },
-    emptyText: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    emptyText: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary },
     emptyCta: {
         backgroundColor: Palette.primary, paddingHorizontal: Spacing.xl,
         paddingVertical: 12, borderRadius: Radius.lg,

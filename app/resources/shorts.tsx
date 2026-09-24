@@ -31,7 +31,7 @@ import {
     listResources, getResource, toggleLike, recordView, formatCount,
     type ResourceCard, type ResourceDetail,
 } from '@/lib/resources';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 type Short = ResourceCard & { videoUrl?: string | null };
 
@@ -271,7 +271,7 @@ export default function ShortsScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#000' },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
-    emptyText: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.white, textAlign: 'center' },
+    emptyText: { fontSize: 15, ...BodyFont.medium, color: Palette.white, textAlign: 'center' },
     emptyAction: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primaryLight },
     placeholder: { backgroundColor: '#111827' },
 
@@ -300,6 +300,6 @@ const styles = StyleSheet.create({
     captionTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.white, lineHeight: 23 },
     captionAuthor: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     captionAvatar: { width: 22, height: 22, borderRadius: 11 },
-    captionAuthorName: { fontSize: 13, fontFamily: Fonts.medium, color: 'rgba(255,255,255,0.9)' },
-    captionBody: { fontSize: 13, fontFamily: Fonts.regular, color: 'rgba(255,255,255,0.8)', lineHeight: 18 },
+    captionAuthorName: { fontSize: 13, ...BodyFont.medium, color: 'rgba(255,255,255,0.9)' },
+    captionBody: { fontSize: 13, ...BodyFont.regular, color: 'rgba(255,255,255,0.8)', lineHeight: 18 },
 });

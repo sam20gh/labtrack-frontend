@@ -40,7 +40,7 @@ import { ContainerGlass } from '@/components/hydration/ContainerGlass';
 import { Sparkline } from '@/components/hydration/Sparkline';
 import { WaterHeader, SectionHeader, EmptyNote, cardStyles } from '@/components/hydration/HydrationChrome';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const SPAN: Record<MetricRange, number> = { '1d': 7, '1w': 7, '1m': 31, '1y': 365, all: 365 };
 
@@ -324,11 +324,11 @@ const styles = StyleSheet.create({
     content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl * 2, gap: Spacing.lg },
 
     big: { fontFamily: Fonts.bold, fontSize: 30, color: Palette.text },
-    bigUnit: { fontFamily: Fonts.medium, fontSize: 15, color: Palette.textSecondary },
-    blurb: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2, lineHeight: 19 },
+    bigUnit: { ...BodyFont.medium, fontSize: 15, color: Palette.textSecondary },
+    blurb: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2, lineHeight: 19 },
     changeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm },
-    changeText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12.5 },
-    caption: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted, marginTop: Spacing.md, lineHeight: 18 },
+    changeText: { flex: 1, ...BodyFont.medium, fontSize: 12.5 },
+    caption: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted, marginTop: Spacing.md, lineHeight: 18 },
     divider: { height: 1, backgroundColor: Palette.border, marginVertical: Spacing.lg },
 
     vessels: { marginTop: Spacing.lg },
@@ -336,29 +336,29 @@ const styles = StyleSheet.create({
     vesselSlot: { width: 44, alignItems: 'center', justifyContent: 'center' },
     vesselDivided: { borderTopWidth: 1, borderTopColor: Palette.border },
     vesselCount: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
-    vesselTotal: { fontFamily: Fonts.medium, fontSize: 12.5, color: Palette.textSecondary, marginTop: 1 },
-    vesselRate: { fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textMuted, marginTop: 1 },
-    vesselLabel: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.textMuted },
+    vesselTotal: { ...BodyFont.medium, fontSize: 12.5, color: Palette.textSecondary, marginTop: 1 },
+    vesselRate: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted, marginTop: 1 },
+    vesselLabel: { ...BodyFont.medium, fontSize: 12, color: Palette.textMuted },
 
     levelCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
     ringLabel: { fontFamily: Fonts.bold, fontSize: 22, color: Palette.primary },
     levelTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
-    levelBlurb: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 3, lineHeight: 18 },
+    levelBlurb: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 3, lineHeight: 18 },
     learn: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: Spacing.sm },
     learnText: { fontFamily: Fonts.semibold, fontSize: 12.5, color: Palette.primary },
 
     row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     rowValue: { fontFamily: Fonts.bold, fontSize: 23, color: Palette.text },
-    rowLabel: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 2 },
+    rowLabel: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 2 },
 
     factRow: { flexDirection: 'row' },
     fact: { flex: 1, alignItems: 'center', gap: 2 },
     factValue: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text },
-    factLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, textAlign: 'center' },
+    factLabel: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, textAlign: 'center' },
 
     bars: { flexDirection: 'row', alignItems: 'flex-end', marginTop: Spacing.xl, gap: Spacing.xs },
     barCol: { flex: 1, alignItems: 'center', gap: 6 },
     barTrack: { width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
     bar: { width: '68%', borderRadius: Radius.sm, backgroundColor: '#3B82F6' },
-    barLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted },
+    barLabel: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
 });

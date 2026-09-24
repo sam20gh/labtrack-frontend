@@ -15,7 +15,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import type { Block, RatingValue } from '@/lib/resources';
 
 export const ArticleBody = ({ blocks }: { blocks: Block[] }) => (
@@ -163,29 +163,29 @@ export const RatingCard = ({ value, onRate }: {
 
 const styles = StyleSheet.create({
     heading: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text, marginTop: Spacing.xxl, marginBottom: Spacing.md },
-    paragraph: { fontSize: 15, fontFamily: Fonts.regular, color: Palette.text, lineHeight: 24, marginBottom: Spacing.md },
+    paragraph: { fontSize: 15, ...BodyFont.regular, color: Palette.text, lineHeight: 24, marginBottom: Spacing.md },
 
     quote: {
         borderLeftWidth: 3, borderLeftColor: Palette.primary,
         paddingLeft: Spacing.lg, marginVertical: Spacing.lg,
     },
-    quoteText: { fontSize: 16, fontFamily: Fonts.medium, color: Palette.text, lineHeight: 24, fontStyle: 'italic' },
+    quoteText: { fontSize: 16, ...BodyFont.medium, color: Palette.text, lineHeight: 24, fontStyle: 'italic' },
 
     callout: {
         flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start',
         padding: Spacing.lg, marginVertical: Spacing.md,
         borderRadius: Radius.lg, backgroundColor: Palette.infoSurface,
     },
-    calloutText: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.text, lineHeight: 21 },
+    calloutText: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text, lineHeight: 21 },
 
     list: { gap: Spacing.md, marginVertical: Spacing.sm },
     listRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
     bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.primary, marginTop: 8 },
-    listText: { flex: 1, fontSize: 15, fontFamily: Fonts.regular, color: Palette.text, lineHeight: 22 },
+    listText: { flex: 1, fontSize: 15, ...BodyFont.regular, color: Palette.text, lineHeight: 22 },
 
     imageBlock: { marginVertical: Spacing.lg },
     image: { width: '100%', height: 200, borderRadius: Radius.lg, backgroundColor: Palette.borderLight },
-    caption: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted, marginTop: Spacing.sm, textAlign: 'center' },
+    caption: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted, marginTop: Spacing.sm, textAlign: 'center' },
 
     pro: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.lg,
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     },
     proBody: { flex: 1 },
     proTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 21 },
-    proMeta: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    proMeta: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
     proLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: Spacing.md },
     proLinkText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
 
@@ -211,5 +211,5 @@ const styles = StyleSheet.create({
         width: 52, height: 52, borderRadius: 26, borderWidth: 1.5,
         alignItems: 'center', justifyContent: 'center',
     },
-    ratingLabel: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    ratingLabel: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
 });

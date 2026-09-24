@@ -29,7 +29,7 @@ import { ForecastChart, type ScrubPoint } from '@/components/predict/ForecastCha
 import { DirectionCalendar } from '@/components/predict/DirectionCalendar';
 import { HorizonTabs, ConfidenceChip, BandChip, PredictionDisclaimer } from '@/components/predict/Chips';
 import { NotEnoughDataIllustration } from '@/components/predict/NotEnoughDataIllustration';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 
 type View_ = 'chart' | 'calendar';
 
@@ -294,15 +294,15 @@ const styles = StyleSheet.create({
 
     headline: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
     headlineValue: { fontSize: 34, fontFamily: Fonts.bold, color: Palette.text },
-    headlineUnit: { fontSize: 15, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    headlineUnit: { fontSize: 15, ...BodyFont.regular, color: Palette.textSecondary },
     blurb: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, marginTop: Spacing.sm,
     },
     horizonRow: { marginTop: Spacing.lg, marginBottom: Spacing.lg },
 
     caption: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular,
         color: Palette.textMuted, marginTop: Spacing.sm,
     },
     captionStrong: { fontFamily: Fonts.bold, color: Palette.text },
@@ -321,9 +321,9 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.dangerSurface, borderRadius: Radius.lg,
         padding: Spacing.md, marginTop: Spacing.lg,
     },
-    crisisText: { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: Fonts.medium, color: Palette.danger },
+    crisisText: { flex: 1, fontSize: 13, lineHeight: 19, ...BodyFont.medium, color: Palette.danger },
     safety: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular,
         color: Palette.textSecondary, marginTop: Spacing.md,
     },
 
@@ -332,12 +332,12 @@ const styles = StyleSheet.create({
         padding: Spacing.lg, marginTop: Spacing.lg, gap: 4,
     },
     basisTitle: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.text },
-    basisBody: { fontSize: 12, lineHeight: 19, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    basisBody: { fontSize: 12, lineHeight: 19, ...BodyFont.regular, color: Palette.textSecondary },
 
     refusal: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxl },
     refusalTitle: { fontSize: 19, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     refusalBody: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, textAlign: 'center',
     },
 
@@ -376,5 +376,5 @@ const styles = StyleSheet.create({
     sheetIconDim: { opacity: 0.45 },
     sheetLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     sheetLabelDim: { color: Palette.textMuted },
-    sheetMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    sheetMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
 });

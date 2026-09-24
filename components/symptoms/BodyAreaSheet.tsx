@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import { BODY_AREAS, areaById, symptomsInArea } from '@/lib/symptoms';
 
 interface Props {
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     },
     tileOn: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
     tileLabel: {
-        fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary, textAlign: 'center',
+        fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary, textAlign: 'center',
     },
     tileLabelOn: { color: Palette.primary },
     badge: {
@@ -190,8 +190,8 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     boxOn: { backgroundColor: Palette.primary, borderColor: Palette.primary },
-    rowLabel: { flex: 1, fontSize: 15, fontFamily: Fonts.regular, color: Palette.text },
-    rowLabelOn: { fontFamily: Fonts.medium, color: Palette.primary },
+    rowLabel: { flex: 1, fontSize: 15, ...BodyFont.regular, color: Palette.text },
+    rowLabelOn: { ...BodyFont.medium, color: Palette.primary },
 
     apply: {
         height: 54, borderRadius: Radius.xl, backgroundColor: Palette.primary,

@@ -28,7 +28,7 @@ import { useUnits, formatVolume } from '@/lib/units';
 import { ContainerGlass } from '@/components/hydration/ContainerGlass';
 import { WaterHeader, EmptyNote } from '@/components/hydration/HydrationChrome';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const SPAN: Record<MetricRange, number> = { '1d': 7, '1w': 7, '1m': 31, '1y': 365, all: 365 };
 
@@ -175,9 +175,9 @@ const styles = StyleSheet.create({
     spinner: { marginTop: Spacing.xxxl },
 
     top: { gap: Spacing.md, paddingBottom: Spacing.lg },
-    blurb: { fontFamily: Fonts.regular, fontSize: 13.5, color: Palette.textSecondary },
+    blurb: { ...BodyFont.regular, fontSize: 13.5, color: Palette.textSecondary },
     controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    count: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary },
+    count: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary },
     sort: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     sortText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
 
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
         marginTop: Spacing.lg, marginBottom: Spacing.sm,
     },
     sectionTitle: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.text },
-    sectionTotal: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary },
+    sectionTotal: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary },
 
     row: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -198,6 +198,6 @@ const styles = StyleSheet.create({
     // Fixed slot: the vessels differ in size on purpose, and the rows still have to align.
     vesselSlot: { width: 34, alignItems: 'center', justifyContent: 'center' },
     rowValue: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
-    rowMeta: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 1 },
-    rowTime: { fontFamily: Fonts.medium, fontSize: 12.5, color: Palette.textSecondary },
+    rowMeta: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 1 },
+    rowTime: { ...BodyFont.medium, fontSize: 12.5, color: Palette.textSecondary },
 });

@@ -18,7 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { PlanGuidanceCard } from '@/components/metric/PlanGuidanceCard';
 import { getPlan, savePlan, type ActivityPlan } from '@/lib/activity';
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 0.4,
     },
-    fieldHint: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    fieldHint: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary },
     inputRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginTop: Spacing.sm },
     input: {
         flex: 1,
@@ -232,15 +232,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.md,
         fontSize: 15,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.text,
     },
-    unit: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    unit: { fontSize: 15, ...BodyFont.medium, color: Palette.textSecondary },
     reset: { fontSize: 12.5, fontFamily: Fonts.semibold, color: Palette.primary, marginTop: 6 },
 
     footnote: {
         fontSize: 12.5,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textMuted,
         lineHeight: 18,
         marginTop: Spacing.xxl,

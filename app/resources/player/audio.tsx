@@ -37,7 +37,7 @@ import {
     getResource, saveProgress, toggleLike, formatDuration,
     PROGRESS_INTERVAL_MS, type ResourceDetail,
 } from '@/lib/resources';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 
 export default function AudioPlayerScreen() {
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     playerAuthor: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.lg },
     playerAvatar: { width: 28, height: 28, borderRadius: 14 },
     avatarFallback: { backgroundColor: Palette.borderLight },
-    playerAuthorName: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    playerAuthorName: { fontSize: 14, ...BodyFont.medium, color: Palette.textSecondary },
 
     bigButton: {
         width: 92, height: 92, borderRadius: 46,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     playerTrack: { flex: 0, width: '100%' },
     trackFill: { height: '100%', borderRadius: 2, backgroundColor: Palette.primary },
     timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm, marginBottom: Spacing.xl },
-    timeSmall: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    timeSmall: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
 
     transcriptBar: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -393,12 +393,12 @@ const styles = StyleSheet.create({
     },
     transcriptBody: { padding: Spacing.xl, gap: Spacing.lg },
     cue: {
-        fontSize: 16, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 16, ...BodyFont.regular, color: Palette.textMuted,
         lineHeight: 26, textAlign: 'center', marginBottom: Spacing.lg,
     },
     cueActive: { color: Palette.text, fontFamily: Fonts.semibold },
     noTranscript: {
-        fontSize: 15, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 15, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', marginTop: Spacing.xxxl, lineHeight: 22,
     },
     transcriptControls: {

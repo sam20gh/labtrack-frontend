@@ -21,7 +21,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { ImageUpload } from '@/lib/assistant';
 
 type Props = {
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.primarySurface,
     },
     previewThumb: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Palette.border },
-    previewText: { flex: 1, fontSize: 12, lineHeight: 16, fontFamily: Fonts.medium, color: Palette.primaryDark },
+    previewText: { flex: 1, fontSize: 12, lineHeight: 16, ...BodyFont.medium, color: Palette.primaryDark },
 
     // 44pt square, unpadded: the kit draws these as bare glyphs against the pill, and the
     // touch target has to stay at the platform minimum regardless of the icon's size.
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
         paddingBottom: Platform.OS === 'ios' ? 13 : 10,
         fontSize: 14,
         lineHeight: 19,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.text,
     },
     send: {

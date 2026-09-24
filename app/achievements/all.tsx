@@ -23,7 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { getAchievements, type AchievementHub } from '@/lib/achievements';
 import { AchievementTile } from '@/components/achievements/AchievementCards';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const ALL = '__all__';
 
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
     title: { fontSize: 28, fontFamily: Fonts.bold, color: Palette.text },
     subtitle: {
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         marginTop: 4, marginBottom: Spacing.lg,
     },
     chips: { gap: Spacing.sm, paddingBottom: Spacing.lg, paddingRight: Spacing.lg },
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border,
     },
     chipOn: { backgroundColor: Palette.primary, borderColor: Palette.primary },
-    chipText: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    chipText: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
     chipTextOn: { color: Palette.white, fontFamily: Fonts.semibold },
     grid: { flexDirection: 'row', flexWrap: 'wrap' },
     cell: { width: '33.33%' },

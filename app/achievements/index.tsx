@@ -46,7 +46,7 @@ import { AchievementRow, FeaturedBadge } from '@/components/achievements/Achieve
 import { UnlockModal } from '@/components/achievements/UnlockModal';
 import { BadgeMedal } from '@/components/achievements/BadgeMedal';
 import { Avatar } from '@/components/Avatar';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 
 type Tab = 'achievement' | 'leaderboard' | 'stats';
 
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     },
     tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.sm },
     tabOn: { backgroundColor: Palette.background, ...Shadow.card },
-    tabText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    tabText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     tabTextOn: { fontFamily: Fonts.semibold, color: Palette.text },
 
     content: { padding: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.xl,
     },
     crownCount: { fontSize: 52, fontFamily: Fonts.bold, color: Palette.text },
-    crownLabel: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.textSecondary, marginTop: -4 },
+    crownLabel: { fontSize: 15, ...BodyFont.medium, color: Palette.textSecondary, marginTop: -4 },
     featuredRow: {
         flexDirection: 'row', alignItems: 'flex-start',
         gap: Spacing.md, marginTop: Spacing.xxl, alignSelf: 'stretch',
@@ -483,21 +483,21 @@ const styles = StyleSheet.create({
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
     linkOff: { color: Palette.textMuted },
     empty: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', paddingVertical: Spacing.xl, lineHeight: 20,
     },
 
     rail: { gap: Spacing.lg, paddingVertical: Spacing.sm, paddingRight: Spacing.lg },
     recent: { alignItems: 'center', gap: 4, width: 76 },
     recentName: { fontSize: 11, fontFamily: Fonts.semibold, color: Palette.text, textAlign: 'center' },
-    recentLevel: { fontSize: 10, fontFamily: Fonts.regular, color: Palette.textMuted },
+    recentLevel: { fontSize: 10, ...BodyFont.regular, color: Palette.textMuted },
 
     youCard: {
         alignItems: 'center', backgroundColor: Palette.background,
         borderRadius: Radius.xl, paddingVertical: Spacing.xxl, ...Shadow.card,
     },
     youPoints: { fontSize: 34, fontFamily: Fonts.bold, color: Palette.text },
-    youMeta: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    youMeta: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
 
     optIn: {
         backgroundColor: Palette.background, borderRadius: Radius.lg,
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     optInHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     optInTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     optInBody: {
-        fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary,
         lineHeight: 18, marginTop: 2,
     },
     nameRow: {
@@ -516,11 +516,11 @@ const styles = StyleSheet.create({
     nameInput: {
         flex: 1, borderWidth: 1, borderColor: Palette.borderStrong, borderRadius: Radius.sm,
         paddingHorizontal: Spacing.md, paddingVertical: 10,
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.text,
+        fontSize: 14, ...BodyFont.regular, color: Palette.text,
     },
 
     disclaimer: {
-        fontSize: 11, lineHeight: 17, fontFamily: Fonts.regular,
+        fontSize: 11, lineHeight: 17, ...BodyFont.regular,
         color: Palette.textMuted, marginTop: Spacing.lg,
     },
 
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     boardRowYou: { borderWidth: 1, borderColor: Palette.primaryPale },
     boardRank: { width: 22, fontSize: 13, fontFamily: Fonts.bold, color: Palette.primary },
     boardName: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    boardMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    boardMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 
     statHead: { flexDirection: 'row', gap: Spacing.md },
     stat: {
@@ -541,13 +541,13 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.lg, ...Shadow.card,
     },
     statBig: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
-    statSmall: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    statSmall: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
     statCard: { backgroundColor: Palette.background, borderRadius: Radius.lg, ...Shadow.card },
     statRow: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.md,
     },
     statRowDivided: { borderTopWidth: 1, borderTopColor: Palette.borderLight },
-    statLabel: { flex: 1, fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    statLabel: { flex: 1, fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     statValue: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
 });

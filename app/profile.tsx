@@ -69,7 +69,7 @@ import {
 import { getSummary as getActivitySummary, getWearableStatus } from '@/lib/activity';
 import { getPermissionStatus } from '@/lib/notifications';
 import { Avatar } from '@/components/Avatar';
-import { Palette, Fonts, Radius, Spacing } from '@/constants/theme';
+import { Palette, Fonts, Radius, Spacing, BodyFont } from '@/constants/theme';
 import type { User } from '@/types/api';
 
 /** `createdAt` comes from the model's `timestamps: true` and is not in the `User` type. */
@@ -762,9 +762,9 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.primaryLight,
     },
     bandPillText: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.primaryDark },
-    since: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    since: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
     name: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text, includeFontPadding: false },
-    email: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    email: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
 
     body: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xxl, gap: Spacing.xl },
 
@@ -790,10 +790,10 @@ const styles = StyleSheet.create({
     streakText: { flex: 1, gap: 2 },
     streakTitle: { fontSize: 15, fontFamily: Fonts.bold, color: '#92400E' },
     streakTitleIdle: { color: Palette.text },
-    streakBlurb: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    streakBlurb: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     streakDivider: { height: 1, backgroundColor: 'rgba(146,64,14,0.14)' },
     streakFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    streakFootLabel: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    streakFootLabel: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     streakFootValue: { fontSize: 22, fontFamily: Fonts.bold, color: '#92400E', includeFontPadding: false },
     streakFootValueIdle: { color: Palette.textSecondary },
 
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
     promoPressed: { backgroundColor: Palette.primarySurface },
     promoText: { flex: 1, gap: 4 },
     promoTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    promoBlurb: { fontSize: 12, lineHeight: 17, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    promoBlurb: { fontSize: 12, lineHeight: 17, ...BodyFont.regular, color: Palette.textSecondary },
     promoLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
     promoLinkText: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
     promoGlyph: {
@@ -839,11 +839,11 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     rowIconDanger: { backgroundColor: Palette.dangerSurface },
-    rowLabel: { flex: 1, fontSize: 15, fontFamily: Fonts.medium, color: Palette.text },
+    rowLabel: { flex: 1, fontSize: 15, ...BodyFont.medium, color: Palette.text },
     rowLabelDanger: { color: Palette.danger },
     // Shrinks before the label does, so a long device list truncates instead of squeezing
     // the thing the row is called.
-    rowValue: { flexShrink: 1, fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    rowValue: { flexShrink: 1, fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
 
     signOut: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
@@ -860,5 +860,5 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.xs,
     },
     footerVersion: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.textSecondary },
-    footerRights: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    footerRights: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 });

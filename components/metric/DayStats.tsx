@@ -20,7 +20,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { formatDistance, type DayMetrics } from '@/lib/activity';
 
 interface Tile {
@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.sm,
     },
     value: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
-    unit: { fontSize: 11, fontFamily: Fonts.medium, color: Palette.textSecondary },
-    label: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    unit: { fontSize: 11, ...BodyFont.medium, color: Palette.textSecondary },
+    label: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
 
     empty: {
         flexDirection: 'row',
@@ -213,5 +213,5 @@ const styles = StyleSheet.create({
         borderRadius: Radius.lg,
         padding: Spacing.lg,
     },
-    emptyText: { flex: 1, fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    emptyText: { flex: 1, fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
 });

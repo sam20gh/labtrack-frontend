@@ -28,7 +28,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 import {
     getGenotypeFile, setRiskConsent, groupByCategory, TONE_META,
     type GenotypeFile, type Finding, type Category, type Tone,
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     scroll: { paddingBottom: Spacing.xxxl * 2 },
     empty: { padding: Spacing.xxxl, alignItems: 'center' },
-    emptyText: { fontFamily: Fonts.regular, fontSize: 16, color: Palette.textSecondary },
+    emptyText: { ...BodyFont.regular, fontSize: 16, color: Palette.textSecondary },
 
     // Hero
     hero: {
@@ -745,11 +745,11 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.92)',
     },
     heroHeadline: {
-        fontFamily: Fonts.regular, fontSize: 14, lineHeight: 20,
+        ...BodyFont.regular, fontSize: 14, lineHeight: 20,
         color: 'rgba(255,255,255,0.82)', marginTop: Spacing.md,
     },
     heroMeta: {
-        fontFamily: Fonts.medium, fontSize: 12, lineHeight: 17,
+        ...BodyFont.medium, fontSize: 12, lineHeight: 17,
         color: 'rgba(255,255,255,0.62)', marginTop: Spacing.sm,
     },
     heroRule: {
@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
     heroStatDivider: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.18)' },
     heroStatValue: { fontFamily: Fonts.bold, fontSize: 20, color: Palette.white },
     heroStatLabel: {
-        fontFamily: Fonts.regular, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1,
+        ...BodyFont.regular, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1,
     },
 
     reviewBanner: {
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
         marginHorizontal: GUTTER, marginTop: Spacing.md,
     },
-    reviewText: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.info, flex: 1, lineHeight: 20 },
+    reviewText: { ...BodyFont.medium, fontSize: 14, color: Palette.info, flex: 1, lineHeight: 20 },
 
     // Highlights rail
     railWrap: { marginTop: Spacing.xxl },
@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         gap: Spacing.sm, marginTop: Spacing.md,
     },
-    railGene: { fontFamily: Fonts.medium, fontSize: 12, letterSpacing: 0.4, flex: 1 },
+    railGene: { ...BodyFont.medium, fontSize: 12, letterSpacing: 0.4, flex: 1 },
 
     // Chart
     chartCard: {
@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
     },
     chartTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text },
     chartBlurb: {
-        fontFamily: Fonts.regular, fontSize: 13, lineHeight: 19,
+        ...BodyFont.regular, fontSize: 13, lineHeight: 19,
         color: Palette.textSecondary, marginTop: 3,
     },
     chartPlot: {
@@ -814,7 +814,7 @@ const styles = StyleSheet.create({
     },
     chartCol: { flex: 1, alignItems: 'center' },
     chartOverflow: {
-        fontFamily: Fonts.medium, fontSize: 11, color: Palette.textMuted, marginBottom: 3,
+        ...BodyFont.medium, fontSize: 11, color: Palette.textMuted, marginBottom: 3,
     },
     chartStack: { alignItems: 'center', justifyContent: 'flex-end', gap: 3, minHeight: 40 },
     chartBlock: { width: 12, borderRadius: Radius.pill },
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
     },
     chartFootOn: { backgroundColor: Palette.primary },
     chartAxis: {
-        fontFamily: Fonts.medium, fontSize: 11, color: Palette.textMuted, marginTop: 5,
+        ...BodyFont.medium, fontSize: 11, color: Palette.textMuted, marginTop: 5,
     },
     chartAxisOn: { color: Palette.primary, fontFamily: Fonts.bold },
 
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
     },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 8, height: 8, borderRadius: Radius.pill },
-    legendText: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    legendText: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
 
     // Tabs
     tabs: {
@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
     },
     sectionTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
     sectionBlurb: {
-        fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary,
         lineHeight: 19, marginTop: 2,
     },
 
@@ -896,10 +896,10 @@ const styles = StyleSheet.create({
     },
     rowBody: { paddingBottom: Spacing.lg, paddingLeft: Spacing.md + 3 },
     rowDetail: {
-        fontFamily: Fonts.regular, fontSize: 15, color: Palette.text, lineHeight: 23,
+        ...BodyFont.regular, fontSize: 15, color: Palette.text, lineHeight: 23,
     },
     gapBody: { paddingVertical: Spacing.lg, gap: Spacing.sm },
-    genotype: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.textMuted, letterSpacing: 0.4 },
+    genotype: { ...BodyFont.medium, fontSize: 12, color: Palette.textMuted, letterSpacing: 0.4 },
 
     chip: { paddingHorizontal: Spacing.md, paddingVertical: 4, borderRadius: Radius.pill },
     chipText: { fontFamily: Fonts.semibold, fontSize: 12 },
@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.warningSurface, borderRadius: Radius.md,
         padding: Spacing.md, marginTop: Spacing.md,
     },
-    noteText: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.warning, flex: 1, lineHeight: 21 },
+    noteText: { ...BodyFont.regular, fontSize: 14, color: Palette.warning, flex: 1, lineHeight: 21 },
 
     link: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: Spacing.md },
     linkText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.primary },
@@ -925,7 +925,7 @@ const styles = StyleSheet.create({
     },
     consentTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text },
     consentBody: {
-        fontFamily: Fonts.regular, fontSize: 15, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 15, color: Palette.textSecondary,
         lineHeight: 22, marginTop: 5,
     },
     consentButton: {
@@ -935,7 +935,7 @@ const styles = StyleSheet.create({
     consentButtonText: { fontFamily: Fonts.semibold, fontSize: 16, color: Palette.white },
 
     footer: {
-        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted,
+        ...BodyFont.regular, fontSize: 12, color: Palette.textMuted,
         lineHeight: 19, textAlign: 'center',
         marginTop: Spacing.xxl, marginHorizontal: Spacing.xxl,
     },

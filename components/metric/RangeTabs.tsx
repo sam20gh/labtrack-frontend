@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Palette, Fonts } from '@/constants/theme';
+import { Palette, Fonts, BodyFont } from '@/constants/theme';
 
 export type MetricRange = '1d' | '1w' | '1m' | '1y' | 'all';
 
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 13,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: Palette.textSecondary,
     },
     labelActive: {

@@ -21,7 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import MessageBubble from '@/components/assistant/MessageBubble';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
 import InputDock from '@/components/assistant/InputDock';
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     },
     headerText: { flex: 1, gap: 1 },
     headerName: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
-    headerCaption: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    headerCaption: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
     headerButton: { padding: Spacing.xs },
 
     transcript: { padding: Spacing.xl, paddingBottom: Spacing.md, flexGrow: 1 },
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { fontSize: 19, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     emptyBody: {
-        fontSize: 13, lineHeight: 19, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, lineHeight: 19, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.lg,
     },
     starters: { alignSelf: 'stretch', gap: Spacing.sm, marginTop: Spacing.xxl },
@@ -300,18 +300,18 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border, borderRadius: Radius.lg,
         paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg,
     },
-    starterText: { flex: 1, fontSize: 13, fontFamily: Fonts.medium, color: Palette.text },
+    starterText: { flex: 1, fontSize: 13, ...BodyFont.medium, color: Palette.text },
 
     error: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         backgroundColor: Palette.dangerSurface, borderRadius: Radius.lg, padding: Spacing.md,
     },
-    errorText: { flex: 1, fontSize: 12, fontFamily: Fonts.medium, color: Palette.danger },
+    errorText: { flex: 1, fontSize: 12, ...BodyFont.medium, color: Palette.danger },
 
     unavailable: {
         padding: Spacing.lg, borderTopWidth: 1, borderTopColor: Palette.borderLight,
     },
     unavailableText: {
-        fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center',
+        fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center',
     },
 });

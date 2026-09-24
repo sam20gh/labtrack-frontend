@@ -15,7 +15,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import type { NutritionGuidance } from '@/types/api';
 
 interface Props {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
         ...Shadow.card,
     },
     empty: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    emptyText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 18 },
+    emptyText: { flex: 1, ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 18 },
     header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md },
     headerText: {
         fontFamily: Fonts.semibold,
@@ -145,9 +145,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     rowBody: { flex: 1 },
-    directive: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text, lineHeight: 20 },
+    directive: { ...BodyFont.semibold, fontSize: 14, color: Palette.text, lineHeight: 20 },
     rationale: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 12,
         color: Palette.textSecondary,
         lineHeight: 17,
@@ -162,5 +162,5 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Palette.borderSlate,
     },
-    chipText: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
+    chipText: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
 });

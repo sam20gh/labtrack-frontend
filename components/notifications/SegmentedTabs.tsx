@@ -25,7 +25,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Easing } from 'react-native';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 
 export type TabKey = 'unread' | 'read';
 
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
         paddingVertical: Spacing.md,
     },
-    label: { fontSize: 15, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    label: { fontSize: 15, color: Palette.textSecondary, ...BodyFont.medium },
     labelActive: { color: Palette.text, fontFamily: Fonts.bold },
     pill: {
         minWidth: 20, paddingHorizontal: 5, paddingVertical: 1,

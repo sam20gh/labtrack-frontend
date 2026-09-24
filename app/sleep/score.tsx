@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import {
     getSleepScore, formatMinutes, bandTint, type SleepScoreScreen as ScoreData,
@@ -233,9 +233,9 @@ const styles = StyleSheet.create({
 
     hero: { alignItems: 'center', gap: 2 },
     value: { fontSize: 56, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 64 },
-    outOf: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
+    outOf: { fontSize: 14, ...BodyFont.medium, color: Palette.text },
     band: { fontSize: 13, fontFamily: Fonts.semibold, marginTop: 2 },
-    bandMuted: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textMuted, marginTop: 2 },
+    bandMuted: { fontSize: 13, ...BodyFont.regular, color: Palette.textMuted, marginTop: 2 },
 
     gauge: { gap: 4 },
     gaugeTrack: {
@@ -247,19 +247,19 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.text, borderRadius: 2,
     },
     gaugeLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-    gaugeLabel: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    gaugeLabel: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 
     figures: { flexDirection: 'row', gap: Spacing.md },
     figure: { flex: 1, alignItems: 'center', gap: 2 },
     figureValue: { fontSize: 22, fontFamily: Fonts.bold, color: Palette.text },
-    figureLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    figureLabel: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 
     card: {
         padding: Spacing.lg, borderRadius: Radius.lg,
         backgroundColor: Palette.canvas, gap: 6,
     },
     cardTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    cardBody: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 19 },
+    cardBody: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 19 },
 
     sectionTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text, marginTop: Spacing.sm },
 
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
         ...Shadow.card,
         backgroundColor: Palette.background,
     },
-    bandRange: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
+    bandRange: { fontSize: 14, ...BodyFont.medium, color: Palette.text },
     bandChip: {
         paddingHorizontal: Spacing.md, paddingVertical: 4,
         borderRadius: Radius.sm, borderWidth: 1,
@@ -282,12 +282,12 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.surface, gap: Spacing.sm,
     },
     componentHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    componentLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
+    componentLabel: { flex: 1, fontSize: 14, ...BodyFont.medium, color: Palette.text },
     componentWeight: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.primary },
-    componentBody: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    componentBody: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
 
     footnote: {
-        fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 11, ...BodyFont.regular, color: Palette.textMuted,
         lineHeight: 17, marginTop: Spacing.md,
     },
 });

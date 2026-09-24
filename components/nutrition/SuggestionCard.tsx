@@ -22,7 +22,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Pressable, Linking } from 're
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { MEAL_TYPE_LABEL } from '@/lib/nutrition';
 import type { MealSuggestion, MealType } from '@/types/api';
 
@@ -209,12 +209,12 @@ const styles = StyleSheet.create({
         paddingBottom: Spacing.sm,
     },
     creditPress: { flexShrink: 1 },
-    creditText: { flexShrink: 1, fontFamily: Fonts.medium, fontSize: 10, color: Palette.white },
+    creditText: { flexShrink: 1, ...BodyFont.medium, fontSize: 10, color: Palette.white },
     creditLink: { fontFamily: Fonts.semibold, textDecorationLine: 'underline' },
 
     body: { padding: Spacing.md, gap: Spacing.xs },
     name: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.text },
-    why: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, lineHeight: 17 },
+    why: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, lineHeight: 17 },
     stats: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.xs },
     stat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
     statText: { fontFamily: Fonts.semibold, fontSize: 11, color: Palette.text },

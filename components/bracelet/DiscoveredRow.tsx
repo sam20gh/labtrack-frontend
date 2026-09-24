@@ -14,7 +14,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { JstyleVariant } from '@/modules/jstyle-ble';
 
 /**
@@ -126,5 +126,5 @@ const styles = StyleSheet.create({
     barOff: { backgroundColor: Palette.primaryPale },
     text: { flex: 1 },
     name: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
-    meta: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
+    meta: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
 });

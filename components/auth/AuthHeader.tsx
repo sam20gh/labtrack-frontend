@@ -10,7 +10,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import BrandMark from '@/components/BrandMark';
-import { Fonts, Palette } from '@/constants/theme';
+import { Fonts, Palette, BodyFont } from '@/constants/theme';
 
 const MARK_SIZE = 40;
 
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
         marginTop: 14,
         fontSize: 15,
         lineHeight: 22,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         textAlign: 'center',
     },

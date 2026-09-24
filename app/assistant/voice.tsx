@@ -37,7 +37,7 @@ import {
     SPEECH_RECORDING_OPTIONS, recordingUpload, beginSession, endSession,
     meteringToLevel, formatDuration, MAX_RECORDING_MS,
 } from '@/lib/voice';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 /** How many bars the waveform holds. At a 100ms cadence this is the last four seconds. */
 const BARS = 40;
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.primaryLight, backgroundColor: Palette.primarySurface,
         borderRadius: Radius.pill, paddingVertical: 6, paddingHorizontal: Spacing.md,
     },
-    badgeText: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.primaryDark },
+    badgeText: { fontSize: 12, ...BodyFont.medium, color: Palette.primaryDark },
 
     body: {
         flexGrow: 1, justifyContent: 'center',
@@ -361,10 +361,10 @@ const styles = StyleSheet.create({
     // size keeps a long question on the screen without it needing to be scrolled to be read.
     headlineTranscript: { fontSize: 21, lineHeight: 30, textAlign: 'left' },
     reviewNote: {
-        fontSize: 12, lineHeight: 17, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 12, lineHeight: 17, ...BodyFont.regular, color: Palette.textSecondary,
     },
     error: {
-        fontSize: 13, lineHeight: 19, fontFamily: Fonts.medium, color: Palette.danger,
+        fontSize: 13, lineHeight: 19, ...BodyFont.medium, color: Palette.danger,
         textAlign: 'center',
     },
 
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     },
     centreButtonRecording: { backgroundColor: Palette.danger },
     stopSquare: { width: 24, height: 24, borderRadius: 4, backgroundColor: Palette.white },
-    caption: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    caption: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
 
     sideButton: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
     sideButtonIdle: { backgroundColor: Palette.borderLight },

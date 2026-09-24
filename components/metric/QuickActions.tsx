@@ -14,7 +14,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing } from '@/constants/theme';
+import { Palette, Spacing, BodyFont } from '@/constants/theme';
 
 export interface QuickAction {
     key: string;
@@ -82,5 +82,5 @@ const styles = StyleSheet.create({
         borderColor: Palette.border,
     },
     pressed: { opacity: 0.75 },
-    label: { fontSize: 12.5, fontFamily: Fonts.medium, color: Palette.text },
+    label: { fontSize: 12.5, ...BodyFont.medium, color: Palette.text },
 });

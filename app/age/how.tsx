@@ -20,7 +20,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function AgeHowScreen() {
     const router = useRouter();
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text },
     body: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
-    lede: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.text, lineHeight: 21, marginBottom: Spacing.lg },
+    lede: { ...BodyFont.medium, fontSize: 14, color: Palette.text, lineHeight: 21, marginBottom: Spacing.lg },
 
     block: {
         backgroundColor: Palette.background, borderRadius: Radius.xl, padding: Spacing.lg,
@@ -201,12 +201,12 @@ const styles = StyleSheet.create({
     strengthText: { fontFamily: Fonts.semibold, fontSize: 10.5 },
     strengthTextStrong: { color: Palette.successDeep },
     strengthTextSoft: { color: Palette.textSecondary },
-    p: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 20, marginBottom: Spacing.sm },
+    p: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 20, marginBottom: Spacing.sm },
 
     limits: { marginTop: Spacing.lg, gap: Spacing.sm },
     limitsTitle: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.text, marginBottom: Spacing.xs },
     limitRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' },
-    limitText: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, lineHeight: 19, flex: 1 },
+    limitText: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, lineHeight: 19, flex: 1 },
 
-    source: { fontFamily: Fonts.regular, fontSize: 10.5, color: Palette.textMuted, lineHeight: 16, marginTop: Spacing.xl },
+    source: { ...BodyFont.regular, fontSize: 10.5, color: Palette.textMuted, lineHeight: 16, marginTop: Spacing.xl },
 });

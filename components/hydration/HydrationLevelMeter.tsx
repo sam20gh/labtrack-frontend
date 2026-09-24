@@ -21,7 +21,7 @@
 import React, { useId } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Rect, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { Palette, Fonts, Spacing } from '@/constants/theme';
+import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
 import { WaterDrop } from './WaterDrop';
 import type { HydrationLevel } from '@/lib/metrics';
 
@@ -109,6 +109,6 @@ const styles = StyleSheet.create({
     rung: { position: 'absolute', left: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, height: 22 },
     number: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.textMuted, width: 14 },
     numberActive: { color: Palette.primary },
-    label: { fontFamily: Fonts.medium, fontSize: 13.5, color: Palette.textSecondary },
+    label: { ...BodyFont.medium, fontSize: 13.5, color: Palette.textSecondary },
     labelActive: { fontFamily: Fonts.bold, color: Palette.text },
 });

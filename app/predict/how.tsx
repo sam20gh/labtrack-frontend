@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getStatus, getAccuracy, type Accuracy } from '@/lib/prediction';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const STEPS = [
     {
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
         textAlign: 'center', marginTop: Spacing.lg,
     },
     blurb: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, textAlign: 'center',
         marginTop: Spacing.md, marginBottom: Spacing.xl,
     },
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     stepNumberText: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.primary },
     stepTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text },
     stepBody: {
-        fontSize: 13, lineHeight: 19, fontFamily: Fonts.regular,
+        fontSize: 13, lineHeight: 19, ...BodyFont.regular,
         color: Palette.textSecondary, marginTop: 3,
     },
     scoreCard: {
@@ -166,15 +166,15 @@ const styles = StyleSheet.create({
     },
     scoreTitle: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
     scoreValue: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.text },
-    scoreBody: { fontSize: 13, lineHeight: 20, fontFamily: Fonts.regular, color: Palette.text },
+    scoreBody: { fontSize: 13, lineHeight: 20, ...BodyFont.regular, color: Palette.text },
     notice: {
         flexDirection: 'row', gap: Spacing.sm, alignSelf: 'stretch',
         backgroundColor: Palette.infoSurface, borderRadius: Radius.lg,
         padding: Spacing.md, marginTop: Spacing.md,
     },
-    noticeText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.text },
+    noticeText: { flex: 1, fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.text },
     footer: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular,
         color: Palette.textMuted, textAlign: 'center', marginTop: Spacing.xl,
     },
 });

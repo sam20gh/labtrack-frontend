@@ -38,7 +38,7 @@ import {
 import ScoreGauge from '@/components/score/ScoreGauge';
 import ScoreRadar from '@/components/home/ScoreRadar';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 
 /**
  * The six the radar plots, in axis order from twelve o'clock.
@@ -690,9 +690,9 @@ const styles = StyleSheet.create({
 
     gaugeWrap: { alignItems: 'center', paddingVertical: Spacing.md },
     updatedRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: Spacing.md },
-    updatedText: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },
+    updatedText: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
     headline: {
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         fontSize: 15,
         color: Palette.text,
         textAlign: 'center',
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
         ...Shadow.card,
     },
     cardTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    cardBody: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, lineHeight: 18 },
+    cardBody: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, lineHeight: 18 },
     rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     pct: { fontFamily: Fonts.semibold, fontSize: 13 },
 
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
     },
     bandBody: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 12.5,
         lineHeight: 19,
         color: Palette.textSecondary,
@@ -736,13 +736,13 @@ const styles = StyleSheet.create({
         paddingBottom: 10,
     },
     bandDot: { width: 8, height: 8, borderRadius: 4 },
-    bandRange: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textSecondary, width: 64 },
+    bandRange: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary, width: 64 },
     bandRangeActive: { color: Palette.text },
-    bandLabel: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textMuted, flex: 1 },
+    bandLabel: { ...BodyFont.regular, fontSize: 13, color: Palette.textMuted, flex: 1 },
     bandLabelActive: { fontFamily: Fonts.semibold, color: Palette.text },
 
     sectionTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text, marginTop: Spacing.sm },
-    sectionBody: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19, marginTop: -4 },
+    sectionBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19, marginTop: -4 },
 
     pillarRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.sm },
     pillarDivider: { borderBottomWidth: 1, borderBottomColor: Palette.borderLight },
@@ -761,30 +761,30 @@ const styles = StyleSheet.create({
     },
     pillarFill: { height: '100%', borderRadius: 3 },
     pillarFoot: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
-    pillarDetail: { flex: 1, fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary, lineHeight: 16 },
+    pillarDetail: { flex: 1, ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary, lineHeight: 16 },
     statusDot: { width: 7, height: 7, borderRadius: 4 },
     statusText: { fontFamily: Fonts.semibold, fontSize: 12.5 },
     sourceChip: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: Radius.pill },
-    sourceText: { fontFamily: Fonts.medium, fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.4 },
+    sourceText: { ...BodyFont.medium, fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.4 },
 
     trendValue: { fontFamily: Fonts.bold, fontSize: 24, color: Palette.text },
-    trendUnit: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.textMuted },
-    trendBand: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    trendUnit: { ...BodyFont.medium, fontSize: 14, color: Palette.textMuted },
+    trendBand: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
     changeChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
     changeText: { fontFamily: Fonts.semibold, fontSize: 13 },
     empty: {
-        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted,
+        ...BodyFont.regular, fontSize: 12, color: Palette.textMuted,
         textAlign: 'center', paddingVertical: Spacing.lg, lineHeight: 18,
     },
 
     rangeRow: { flexDirection: 'row', gap: 6, marginTop: Spacing.xs },
     rangeChip: { flex: 1, paddingVertical: 7, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Palette.borderLight },
     rangeChipActive: { backgroundColor: Palette.primary },
-    rangeText: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.textSecondary },
+    rangeText: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary },
     rangeTextActive: { color: Palette.white },
 
     moverRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
-    moverLabel: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.text, flex: 1 },
+    moverLabel: { ...BodyFont.medium, fontSize: 13, color: Palette.text, flex: 1 },
     moverDelta: { fontFamily: Fonts.semibold, fontSize: 13 },
 
     predictRow: {
@@ -803,12 +803,12 @@ const styles = StyleSheet.create({
     predictBody: {
         fontSize: 12,
         lineHeight: 18,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         marginTop: 2,
     },
     disclaimer: {
-        fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted,
+        ...BodyFont.regular, fontSize: 11, color: Palette.textMuted,
         lineHeight: 16, textAlign: 'center', marginTop: Spacing.sm,
     },
 
@@ -841,12 +841,12 @@ const styles = StyleSheet.create({
         textTransform: 'capitalize',
     },
     recTitle: { fontFamily: Fonts.semibold, fontSize: 15, lineHeight: 21, color: Palette.text },
-    recBody: { fontFamily: Fonts.regular, fontSize: 12, lineHeight: 18, color: Palette.textSecondary },
+    recBody: { ...BodyFont.regular, fontSize: 12, lineHeight: 18, color: Palette.textSecondary },
     recFoot: {
         flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2,
         borderTopWidth: 1, borderTopColor: Palette.borderLight, paddingTop: 8,
     },
-    recFootText: { flex: 1, fontFamily: Fonts.medium, fontSize: 12, color: Palette.primary },
+    recFootText: { flex: 1, ...BodyFont.medium, fontSize: 12, color: Palette.primary },
 
     // Explainer sheet
     backdrop: {
@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.bold, fontSize: 20, color: Palette.text, textAlign: 'center',
     },
     sheetBody: {
-        fontFamily: Fonts.regular, fontSize: 14, lineHeight: 21,
+        ...BodyFont.regular, fontSize: 14, lineHeight: 21,
         color: Palette.textSecondary, textAlign: 'center',
     },
     sheetPoints: { gap: Spacing.md, marginTop: Spacing.xs },
@@ -877,7 +877,7 @@ const styles = StyleSheet.create({
     },
     sheetPointTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
     sheetPointBody: {
-        fontFamily: Fonts.regular, fontSize: 12.5, lineHeight: 18,
+        ...BodyFont.regular, fontSize: 12.5, lineHeight: 18,
         color: Palette.textSecondary, marginTop: 2,
     },
     sheetButton: {

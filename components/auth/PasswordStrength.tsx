@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Fonts, Palette } from '@/constants/theme';
+import { Fonts, Palette, BodyFont } from '@/constants/theme';
 import type { PasswordStrength as Strength } from '@/lib/password';
 
 const SEGMENTS = 4;
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     caption: {
         marginTop: 8,
         fontSize: 13,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
     },
     captionValue: {

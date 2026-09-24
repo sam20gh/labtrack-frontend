@@ -24,7 +24,7 @@ import Constants from 'expo-constants';
 
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { SUPPORT_EMAIL, allFaqEntries } from '@/lib/help';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 export default function HelpCenterScreen() {
     const router = useRouter();
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     },
     cardText: { flex: 1, gap: 2 },
     cardTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    cardBlurb: { fontSize: 12, lineHeight: 17, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    cardBlurb: { fontSize: 12, lineHeight: 17, ...BodyFont.regular, color: Palette.textSecondary },
 
     metaPill: {
         paddingHorizontal: Spacing.sm, paddingVertical: 3,
@@ -156,11 +156,11 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.surface, borderRadius: Radius.xl, padding: Spacing.lg,
         marginTop: Spacing.sm,
     },
-    noteText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    noteText: { flex: 1, fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
 
     urgent: {
         flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start',
         backgroundColor: Palette.dangerSurface, borderRadius: Radius.xl, padding: Spacing.lg,
     },
-    urgentText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: Fonts.medium, color: Palette.danger },
+    urgentText: { flex: 1, fontSize: 12, lineHeight: 18, ...BodyFont.medium, color: Palette.danger },
 });

@@ -26,7 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
@@ -267,24 +267,24 @@ const styles = StyleSheet.create({
     },
     cardTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
     bigValue: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
-    cardNote: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
-    cardFootnote: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 16 },
+    cardNote: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
+    cardFootnote: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 16 },
 
     deltaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -Spacing.sm },
     deltaValue: { fontSize: 13, fontFamily: Fonts.semibold },
-    deltaLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    deltaLabel: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     deltaMuted: {
-        fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 12, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: -Spacing.sm,
     },
 
     guidanceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
-    guidanceText: { flex: 1, fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 19 },
+    guidanceText: { flex: 1, fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 19 },
 
     empty: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxxl },
     emptyTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     emptyBody: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', paddingHorizontal: Spacing.lg, lineHeight: 19,
     },
 });

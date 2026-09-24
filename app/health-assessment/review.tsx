@@ -28,7 +28,7 @@ import Toast from 'react-native-toast-message';
 
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import type { User } from '@/types/api';
 import { seedParamsFromUser, MOOD_ENUM_TO_ID } from './params';
 import {
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     statusTitle: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
-    statusBody: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    statusBody: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
     section: { gap: Spacing.sm },
     sectionTitle: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.textSecondary, textTransform: 'uppercase' },
     card: {
@@ -346,10 +346,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
     },
     rowDivider: { borderTopWidth: 1, borderTopColor: Palette.borderLight },
-    rowLabel: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    rowValue: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.text, marginTop: 2 },
-    rowValueEmpty: { color: Palette.textMuted, fontFamily: Fonts.regular },
-    footnote: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 18 },
+    rowLabel: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
+    rowValue: { fontSize: 15, ...BodyFont.medium, color: Palette.text, marginTop: 2 },
+    rowValueEmpty: { color: Palette.textMuted, ...BodyFont.regular },
+    footnote: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 18 },
     primaryButton: {
         flexDirection: 'row',
         justifyContent: 'center',

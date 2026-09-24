@@ -54,7 +54,7 @@ import Animated, {
     useSharedValue, useAnimatedProps, useAnimatedStyle,
     withRepeat, withTiming, withSpring, useReducedMotion, Easing, cancelAnimation,
 } from 'react-native-reanimated';
-import { Fonts, Palette } from '@/constants/theme';
+import { Fonts, Palette, BodyFont } from '@/constants/theme';
 import type { AgeBand } from '@/lib/age';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -440,5 +440,5 @@ const styles = StyleSheet.create({
     value: { fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     unit: { fontFamily: Fonts.semibold, letterSpacing: 1.3, color: Palette.textMuted, marginTop: 1 },
     caption: { fontFamily: Fonts.semibold, marginTop: 5, textAlign: 'center' },
-    empty: { fontFamily: Fonts.medium, color: Palette.textSecondary, textAlign: 'center', lineHeight: 18 },
+    empty: { ...BodyFont.medium, color: Palette.textSecondary, textAlign: 'center', lineHeight: 18 },
 });

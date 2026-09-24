@@ -9,7 +9,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import type { SleepAnalysis, SleepAnalysisTone } from '@/lib/sleep';
 
 const TONE: Record<SleepAnalysisTone, {
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     },
     stepText: { fontSize: 11, fontFamily: Fonts.bold, color: Palette.primary },
     title: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    detail: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 19 },
+    detail: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 19 },
     planTag: { fontSize: 10, fontFamily: Fonts.semibold, color: Palette.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
-    basis: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 16 },
+    basis: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 16 },
 });

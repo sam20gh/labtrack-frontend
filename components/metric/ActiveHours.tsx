@@ -15,7 +15,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { ActiveHoursInsight } from '@/lib/activity';
 
 /** "9 AM", "12 PM" — the clock the design's caption is written in. */
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
         marginTop: Spacing.sm,
         marginBottom: Spacing.sm,
     },
-    axisLabel: { fontSize: 10, fontFamily: Fonts.regular, color: Palette.textMuted },
+    axisLabel: { fontSize: 10, ...BodyFont.regular, color: Palette.textMuted },
     headline: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
-    copy: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    copy: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
 });

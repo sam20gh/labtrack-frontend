@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { logMeal, ALIGNMENT_META, MEAL_TYPE_LABEL, mealTypeForNow } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { AnalysisResult } from '@/lib/nutrition';
 import type { MealType } from '@/types/api';
 
@@ -266,7 +266,7 @@ export default function ReviewMealScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.canvas },
     centred: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.lg, padding: Spacing.xl },
-    emptyText: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textSecondary, textAlign: 'center' },
+    emptyText: { ...BodyFont.regular, fontSize: 14, color: Palette.textSecondary, textAlign: 'center' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md,
         padding: Spacing.md,
     },
-    noticeText: { flex: 1, fontFamily: Fonts.regular, fontSize: 12, color: Palette.text, lineHeight: 17 },
+    noticeText: { flex: 1, ...BodyFont.regular, fontSize: 12, color: Palette.text, lineHeight: 17 },
 
     card: {
         backgroundColor: Palette.background,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     cardTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text, marginBottom: Spacing.sm },
 
     fieldLabel: {
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         fontSize: 11,
         color: Palette.textMuted,
         textTransform: 'uppercase',
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.xs,
     },
     input: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 14,
         color: Palette.text,
         backgroundColor: Palette.canvas,
@@ -325,14 +325,14 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.sm,
     },
     chipActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
-    chipText: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.textSecondary },
+    chipText: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary },
     chipTextActive: { color: Palette.white },
 
     numberRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
     numberField: { flex: 1 },
     numberInput: { textAlign: 'center' },
     numberLabel: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 11,
         color: Palette.textMuted,
         textAlign: 'center',
@@ -340,10 +340,10 @@ const styles = StyleSheet.create({
     },
 
     itemRow: { paddingVertical: Spacing.sm },
-    itemName: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.text },
-    itemMeta: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
+    itemName: { ...BodyFont.medium, fontSize: 13, color: Palette.text },
+    itemMeta: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
     uncertainty: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 12,
         color: Palette.textSecondary,
         lineHeight: 18,
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     alignHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     alignLabel: { fontFamily: Fonts.bold, fontSize: 13 },
     alignBody: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 13,
         color: Palette.text,
         lineHeight: 19,
@@ -361,14 +361,14 @@ const styles = StyleSheet.create({
 
     swapName: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
     swapWhy: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 13,
         color: Palette.textSecondary,
         lineHeight: 19,
         marginTop: 2,
     },
     swapMacros: { flexDirection: 'row', gap: Spacing.lg, marginTop: Spacing.md },
-    swapMacro: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.text },
+    swapMacro: { ...BodyFont.medium, fontSize: 12, color: Palette.text },
 
     secondaryButton: {
         height: 44,

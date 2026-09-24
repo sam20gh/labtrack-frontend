@@ -25,7 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { TimeDial } from '@/components/sleep/TimeDial';
 import {
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
 
     hero: { alignItems: 'center', gap: 4 },
     heroValue: { fontSize: 38, fontFamily: Fonts.bold, color: Palette.text },
-    heroCaption: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    heroCaption: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
 
     times: { flexDirection: 'row', gap: Spacing.md },
     timeCard: {
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     },
     timeHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     dot: { width: 8, height: 8, borderRadius: 4 },
-    timeLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    timeLabel: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     timeValue: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
 
     recommend: {
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.primaryPale,
         backgroundColor: Palette.primarySurface,
     },
-    recommendLabel: { flex: 1, fontSize: 13, fontFamily: Fonts.medium, color: Palette.text },
+    recommendLabel: { flex: 1, fontSize: 13, ...BodyFont.medium, color: Palette.text },
     recommendValue: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.primary },
 
     why: {
@@ -248,8 +248,8 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.canvas, gap: 6,
     },
     whyTitle: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
-    whyBody: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
-    guidance: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 18 },
+    whyBody: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
+    guidance: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
 
     footer: {
         padding: Spacing.xl, paddingTop: Spacing.md,

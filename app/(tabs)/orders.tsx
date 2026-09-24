@@ -42,7 +42,7 @@ import * as Haptics from 'expo-haptics';
 import { api } from '@/lib/api';
 import { useBasket } from '@/lib/basket';
 import { galleryOf, metaFor, byTypeOrder, formatPrice, matchesQuery } from '@/lib/catalogue';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import { ErrorState, StaleNotice } from '@/components/errors';
 import type { Product } from '@/types/api';
 
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     headerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     headerText: { flex: 1 },
     eyebrow: {
-        fontFamily: Fonts.medium, fontSize: 11, letterSpacing: 1.4,
+        ...BodyFont.medium, fontSize: 11, letterSpacing: 1.4,
         color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase',
     },
     title: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.white, marginTop: 2 },
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     },
     searchInput: {
         flex: 1, paddingVertical: Spacing.md,
-        fontFamily: Fonts.regular, fontSize: 14, color: Palette.white,
+        ...BodyFont.regular, fontSize: 14, color: Palette.white,
     },
 
     // Category rail ---------------------------------------------------------
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
     chipActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
     chipText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.text },
     chipTextActive: { color: Palette.white },
-    chipCount: { fontFamily: Fonts.medium, fontSize: 11, color: Palette.textMuted },
+    chipCount: { ...BodyFont.medium, fontSize: 11, color: Palette.textMuted },
     chipCountActive: { color: 'rgba(255,255,255,0.75)' },
 
     // Scroll body -----------------------------------------------------------
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     sectionTitle: { flex: 1, fontFamily: Fonts.bold, fontSize: 17, color: Palette.text },
-    sectionNote: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.textMuted },
+    sectionNote: { ...BodyFont.medium, fontSize: 12, color: Palette.textMuted },
 
     // Featured --------------------------------------------------------------
     featureBlock: { marginTop: Spacing.sm, marginBottom: Spacing.xl },
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
     emptyBody: {
-        fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 19,
     },
     emptyAction: {

@@ -19,7 +19,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getSchedule, getCalendar, updateDose, today, addDays } from '@/lib/medications';
 import { DoseRow } from '@/components/medications/DoseRow';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { MedicationScheduleDay, MedicationCalendar, CalendarDay } from '@/types/api';
 
 type View_ = 'day' | 'month';
@@ -255,13 +255,13 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border, backgroundColor: Palette.white,
     },
     weekDaySelected: { backgroundColor: Palette.primarySurface, borderColor: Palette.primary },
-    weekDayName: { fontSize: 10, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    weekDayName: { fontSize: 10, color: Palette.textSecondary, ...BodyFont.regular },
     weekDayNum: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
     weekDayTextSelected: { color: Palette.primary },
     weekDot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
 
     content: { padding: Spacing.xl, paddingTop: Spacing.sm, gap: Spacing.sm, paddingBottom: Spacing.xxxl * 2 },
-    daySummary: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, marginBottom: Spacing.xs },
+    daySummary: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, marginBottom: Spacing.xs },
 
     monthStats: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
     monthStat: {
@@ -270,11 +270,11 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border, paddingVertical: Spacing.lg,
     },
     monthStatValue: { fontSize: 22, fontFamily: Fonts.bold },
-    monthStatLabel: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    monthStatLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
 
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'flex-start' },
     cell: { width: '12%', alignItems: 'center', gap: 3, paddingVertical: 4 },
-    cellDate: { fontSize: 10, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    cellDate: { fontSize: 10, color: Palette.textSecondary, ...BodyFont.regular },
     cellMark: {
         width: 20, height: 20, borderRadius: 10, borderWidth: 1.5,
         alignItems: 'center', justifyContent: 'center',
@@ -283,13 +283,13 @@ const styles = StyleSheet.create({
     legend: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: Spacing.lg },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 9, height: 9, borderRadius: 5 },
-    legendLabel: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
-    gridNote: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, lineHeight: 16, marginTop: Spacing.sm },
+    legendLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
+    gridNote: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 16, marginTop: Spacing.sm },
 
     empty: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xxxl * 2 },
     emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.semibold },
     emptyBody: {
-        fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular,
+        fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular,
         textAlign: 'center', lineHeight: 19, paddingHorizontal: Spacing.xl,
     },
 });

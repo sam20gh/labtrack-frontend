@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { getSaved, getContinue, routeFor, formatDuration, type ResourceCard } from '@/lib/resources';
 import { AutoCard } from '@/components/resources/ResourceCards';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function SavedResourcesScreen() {
     const router = useRouter();
@@ -141,19 +141,19 @@ const styles = StyleSheet.create({
     content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl * 2 },
 
     title: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
-    subtitle: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 4 },
+    subtitle: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 4 },
     sectionTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text, marginTop: Spacing.xxl, marginBottom: Spacing.md },
     stack: { gap: Spacing.md },
 
     progressWrap: { paddingHorizontal: Spacing.md, paddingTop: Spacing.sm, gap: 4 },
     progressTrack: { height: 4, borderRadius: 2, backgroundColor: Palette.border, overflow: 'hidden' },
     progressFill: { height: '100%', borderRadius: 2, backgroundColor: Palette.primary },
-    progressText: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    progressText: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
 
     empty: { alignItems: 'center', paddingTop: Spacing.xxxl, gap: Spacing.sm },
     emptyTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
     emptyBody: {
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 20, paddingHorizontal: Spacing.xl,
     },
     emptyAction: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary, marginTop: Spacing.sm },

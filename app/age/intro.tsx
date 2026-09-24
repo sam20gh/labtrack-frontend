@@ -21,7 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import AgeOrb from '@/components/age/AgeOrb';
 import { AGE_INTRO_KEY } from '@/lib/age';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function AgeIntroScreen() {
     const router = useRouter();
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     body: { flex: 1, alignItems: 'center', paddingHorizontal: Spacing.xl },
     title: { fontFamily: Fonts.bold, fontSize: 25, color: Palette.text, textAlign: 'center', marginTop: Spacing.md },
     subtitle: {
-        fontFamily: Fonts.regular, fontSize: 14, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 14, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 21, marginTop: Spacing.sm,
     },
     points: { width: '100%', marginTop: Spacing.xl, gap: Spacing.lg },
@@ -118,9 +118,9 @@ const styles = StyleSheet.create({
     },
     pointBody: { flex: 1 },
     pointTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    pointText: { fontFamily: Fonts.regular, fontSize: 12.5, color: Palette.textSecondary, lineHeight: 18, marginTop: 1 },
+    pointText: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, lineHeight: 18, marginTop: 1 },
     caveat: {
-        fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textMuted,
+        ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted,
         lineHeight: 17, marginTop: Spacing.xl, textAlign: 'center',
     },
     footer: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },

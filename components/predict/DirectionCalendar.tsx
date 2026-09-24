@@ -16,7 +16,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Radius } from '@/constants/theme';
+import { Palette, Fonts, Radius, BodyFont } from '@/constants/theme';
 import type { CalendarDay } from '@/lib/prediction';
 
 interface Props {
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
     row: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
     rowLabel: {
-        width: 56, fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary,
+        width: 56, fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary,
     },
     head: { flex: 1, textAlign: 'center', fontSize: 12, fontFamily: Fonts.semibold, color: Palette.textSecondary },
     cell: { flex: 1, alignItems: 'center' },
@@ -147,5 +147,5 @@ const styles = StyleSheet.create({
     },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 6, height: 6, borderRadius: 3 },
-    legendLabel: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    legendLabel: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
 });

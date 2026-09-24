@@ -29,7 +29,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
     recordBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 40, width: 40 },
     recordBar: { flex: 1, borderRadius: 2, overflow: 'hidden' },
     recordTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
-    recordBody: { fontSize: 12, fontFamily: Fonts.regular, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+    recordBody: { fontSize: 12, ...BodyFont.regular, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
 
     screen: { flex: 1, backgroundColor: Palette.background },
     content: { padding: Spacing.xl, paddingBottom: Spacing.xxxl * 2, gap: Spacing.xl },
@@ -541,14 +541,14 @@ const styles = StyleSheet.create({
 
     header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     headerTitle: { fontSize: 22, fontFamily: Fonts.bold, color: Palette.text },
-    headerDate: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    headerDate: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     headerAdd: {
         width: 36, height: 36, borderRadius: 18,
         alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primary,
     },
 
     staleNote: {
-        fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', marginTop: -Spacing.sm,
     },
 
@@ -560,12 +560,12 @@ const styles = StyleSheet.create({
     figureHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     figureDot: { width: 8, height: 8, borderRadius: 4 },
     figureValue: { flex: 1, fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
-    figureLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    figureLabel: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 
     section: { gap: Spacing.md },
     sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
-    sectionAction: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.primary },
+    sectionAction: { fontSize: 13, ...BodyFont.medium, color: Palette.primary },
 
     card: {
         padding: Spacing.lg, borderRadius: Radius.lg,
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
         gap: Spacing.md,
         ...Shadow.card,
     },
-    chartNote: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    chartNote: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 
     goalCard: {
         borderRadius: Radius.lg, overflow: 'hidden',
@@ -584,26 +584,26 @@ const styles = StyleSheet.create({
     goalGradient: { padding: Spacing.lg, gap: 2 },
     goalHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     goalValue: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text },
-    goalCaption: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    goalCaption: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     goalGrid: {
         flexDirection: 'row', gap: Spacing.lg,
         paddingHorizontal: Spacing.lg, paddingTop: Spacing.md,
     },
-    goalKey: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    goalKey: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     goalTime: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     goalHint: {
-        fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 11, ...BodyFont.regular, color: Palette.textMuted,
         padding: Spacing.lg, paddingTop: Spacing.md,
     },
 
     guidanceRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
-    guidanceDirective: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
-    guidanceRationale: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    guidanceDirective: { fontSize: 14, ...BodyFont.medium, color: Palette.text },
+    guidanceRationale: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
 
     empty: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xl },
     emptyTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     emptyBody: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', paddingHorizontal: Spacing.lg, lineHeight: 19,
     },
 
@@ -617,6 +617,6 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.white,
     },
     setupTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    setupBody: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 1 },
-    setupCta: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.primary },
+    setupBody: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 1 },
+    setupCta: { fontSize: 13, ...BodyFont.medium, color: Palette.primary },
 });

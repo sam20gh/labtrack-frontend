@@ -33,7 +33,7 @@ import { MealGallery } from '@/components/nutrition/MealGallery';
 import { MacroWeekChart } from '@/components/nutrition/MacroWeekChart';
 import { SuggestionCard } from '@/components/nutrition/SuggestionCard';
 import { SkeletonGroup, SkeletonBlock } from '@/components/nutrition/Skeleton';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import type {
     NutritionDay, NutritionGallery, NutritionInsight, NutritionRecommendations,
 } from '@/types/api';
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     // Fixed rather than flexed, so a four-digit target cannot squeeze the ring off-centre.
     flank: { width: 64 },
     flankValue: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.white },
-    flankLabel: { fontFamily: Fonts.regular, fontSize: 11, color: 'rgba(255,255,255,0.8)' },
+    flankLabel: { ...BodyFont.regular, fontSize: 11, color: 'rgba(255,255,255,0.8)' },
 
     setupPrompt: {
         flexDirection: 'row',
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     },
     setupTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
     setupBody: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 12,
         color: 'rgba(255,255,255,0.85)',
         lineHeight: 17,
@@ -529,15 +529,15 @@ const styles = StyleSheet.create({
         padding: Spacing.lg,
     },
     adherenceValue: { fontFamily: Fonts.bold, fontSize: 22, color: Palette.success },
-    adherenceOf: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.success },
-    adherenceLabel: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.text, marginTop: 2 },
+    adherenceOf: { ...BodyFont.regular, fontSize: 14, color: Palette.success },
+    adherenceLabel: { ...BodyFont.regular, fontSize: 13, color: Palette.text, marginTop: 2 },
 
     section: { gap: Spacing.md },
     sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     sectionTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
     sectionCaption: {
-        fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary,
         lineHeight: 17, marginTop: -Spacing.xs,
     },
     seeAll: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.borderSlate, padding: Spacing.lg,
     },
-    promptText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
+    promptText: { flex: 1, ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
 
     empty: {
         alignItems: 'center',
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
     },
     emptyTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    emptyBody: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center' },
+    emptyBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center' },
 
     fab: {
         position: 'absolute',

@@ -15,7 +15,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { Fonts, Palette, Spacing } from '@/constants/theme';
+import { Palette, Spacing, BodyFont } from '@/constants/theme';
 import { DROP_ML } from '@/lib/hydration';
 
 /** The export's droplet, 20.67 × 25.66. */
@@ -71,6 +71,6 @@ export function DropRow({ filled, total, caption = true }: {
 const styles = StyleSheet.create({
     wrap: { alignItems: 'center', gap: Spacing.sm },
     row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.sm },
-    caption: { fontFamily: Fonts.regular, fontSize: 11.5, color: Palette.textMuted },
+    caption: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted },
     approx: { color: WATER_BLUE },
 });

@@ -16,7 +16,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, G, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { GoalProgress } from '@/lib/activity';
 import { GoalRunnerArt, GOAL_RUNNER_ART } from '@/components/activity/art';
 
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     headText: { flex: 1, gap: 1 },
     headline: { fontSize: 27, fontFamily: Fonts.bold, color: Palette.text },
     headlineTarget: { fontSize: 19, fontFamily: Fonts.semibold, color: Palette.textMuted },
-    headlineLabel: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    headlineLabel: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     band: { fontSize: 12.5, fontFamily: Fonts.semibold, color: Palette.primary, marginTop: 4 },
 
     ringBox: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     targets: { flexDirection: 'row' },
     target: { flex: 1, gap: 2 },
     targetValue: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
-    targetLabel: { fontSize: 11.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    targetLabel: { fontSize: 11.5, ...BodyFont.regular, color: Palette.textSecondary },
 
     reached: {
         flexDirection: 'row',
@@ -186,6 +186,6 @@ const styles = StyleSheet.create({
     },
     reachedCopy: { flex: 1, gap: 2, paddingVertical: Spacing.md },
     reachedTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.primary },
-    reachedBody: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    reachedBody: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     reachedArt: { alignSelf: 'flex-end' },
 });

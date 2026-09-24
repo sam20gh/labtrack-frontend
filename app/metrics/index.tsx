@@ -31,7 +31,7 @@ import {
     type MetricCard, type MetricsOverview,
 } from '@/lib/metrics';
 import { presentMetric, useUnits } from '@/lib/units';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 
 export default function HealthMetricsScreen() {
     const router = useRouter();
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: Spacing.xl * 2, gap: Spacing.sm },
 
     title: { fontFamily: Fonts.bold, fontSize: 28, color: Palette.text },
-    subtitle: { fontFamily: Fonts.regular, fontSize: 14, color: Palette.textSecondary, marginBottom: Spacing.sm },
+    subtitle: { ...BodyFont.regular, fontSize: 14, color: Palette.textSecondary, marginBottom: Spacing.sm },
 
     insightBanner: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     cardLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
     cardLabel: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.text },
     cardTopRight: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-    cardWhen: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted },
+    cardWhen: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
     urgentChip: {
         flexDirection: 'row', alignItems: 'center', gap: 3,
         backgroundColor: '#DC2626', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.pill,
@@ -295,13 +295,13 @@ const styles = StyleSheet.create({
     cardBody: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     cardValue: { fontFamily: Fonts.bold, fontSize: 24, color: Palette.text },
     cardValueMuted: { fontFamily: Fonts.bold, fontSize: 24, color: Palette.textMuted },
-    cardUnit: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.textMuted },
-    cardTarget: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textMuted },
-    cardStatus: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2 },
-    fallbackNote: { fontFamily: Fonts.regular, fontSize: 10, color: Palette.textMuted },
+    cardUnit: { ...BodyFont.medium, fontSize: 13, color: Palette.textMuted },
+    cardTarget: { ...BodyFont.regular, fontSize: 13, color: Palette.textMuted },
+    cardStatus: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2 },
+    fallbackNote: { ...BodyFont.regular, fontSize: 10, color: Palette.textMuted },
 
     logButton: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
 
     privacy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: Spacing.lg, paddingHorizontal: Spacing.lg },
-    privacyText: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, textAlign: 'center', flexShrink: 1 },
+    privacyText: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, textAlign: 'center', flexShrink: 1 },
 });

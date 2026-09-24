@@ -30,7 +30,7 @@ import { View, Text, StyleSheet, PanResponder, type GestureResponderEvent } from
 import Svg, {
     Path, Line, Circle, Rect, G, Text as SvgText, Defs, LinearGradient, Stop,
 } from 'react-native-svg';
-import { Palette, Fonts } from '@/constants/theme';
+import { Palette, BodyFont } from '@/constants/theme';
 import type { SeriesPoint } from '@/lib/prediction';
 
 interface Props {
@@ -541,10 +541,10 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
         backgroundColor: Palette.borderLight, borderRadius: 12,
     },
-    emptyText: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    unit: { marginTop: 6, fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    emptyText: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
+    unit: { marginTop: 6, fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
     hint: {
-        marginTop: 6, fontSize: 11, fontFamily: Fonts.medium,
+        marginTop: 6, fontSize: 11, ...BodyFont.medium,
         color: Palette.textMuted, textAlign: 'center',
     },
 });

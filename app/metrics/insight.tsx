@@ -32,7 +32,7 @@ import {
     getOverview, METRIC_TINT, METRIC_ROUTE,
     type MetricCard, type MetricsOverview,
 } from '@/lib/metrics';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 
 const WINDOW_DAYS = 30;
 
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', marginTop: Spacing.md,
     },
     heroTitle: { fontFamily: Fonts.bold, fontSize: 24, color: '#FFFFFF', textAlign: 'center' },
-    heroBlurb: { fontFamily: Fonts.regular, fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 19 },
+    heroBlurb: { ...BodyFont.regular, fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 19 },
 
     card: {
         backgroundColor: Palette.background, borderRadius: Radius.lg, padding: Spacing.md,
@@ -237,13 +237,13 @@ const styles = StyleSheet.create({
     cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     cardTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
     value: { fontFamily: Fonts.bold, fontSize: 28, color: Palette.text },
-    unit: { fontFamily: Fonts.medium, fontSize: 14, color: Palette.textMuted },
-    status: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, marginBottom: Spacing.xs },
-    reading: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, lineHeight: 18, marginTop: Spacing.xs },
+    unit: { ...BodyFont.medium, fontSize: 14, color: Palette.textMuted },
+    status: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginBottom: Spacing.xs },
+    reading: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, lineHeight: 18, marginTop: Spacing.xs },
     suggestion: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
         borderTopWidth: 1, borderTopColor: Palette.borderLight, paddingTop: Spacing.sm, marginTop: Spacing.xs,
     },
     suggestionText: { fontFamily: Fonts.semibold, fontSize: 13 },
-    empty: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textMuted, textAlign: 'center', lineHeight: 19, paddingVertical: Spacing.lg },
+    empty: { ...BodyFont.regular, fontSize: 13, color: Palette.textMuted, textAlign: 'center', lineHeight: 19, paddingVertical: Spacing.lg },
 });

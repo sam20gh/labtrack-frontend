@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { getGallery, ALIGNMENT_META, MEAL_TYPE_LABEL } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
 import type { NutritionGalleryItem } from '@/types/api';
 
 const PAGE = 30;
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: Spacing.xxxl, gap: Spacing.xl },
 
     caption: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 12,
         lineHeight: 17,
         color: Palette.textSecondary,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     dayBlock: { gap: Spacing.md },
     dayHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
     dayTitle: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.text },
-    dayMeta: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted },
+    dayMeta: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
 
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
     gridImage: { width: '100%', height: '100%', backgroundColor: Palette.borderLight },
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
     emptyBody: {
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         fontSize: 13,
         lineHeight: 19,
         color: Palette.textSecondary,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     },
     typeChipText: { fontFamily: Fonts.semibold, fontSize: 11, color: Palette.primary },
     viewerName: { fontFamily: Fonts.bold, fontSize: 19, color: Palette.text },
-    viewerWhen: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    viewerWhen: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
     statRow: {
         flexDirection: 'row',
         marginTop: Spacing.md,
@@ -415,6 +415,6 @@ const styles = StyleSheet.create({
     },
     stat: { flex: 1, alignItems: 'center', gap: 2 },
     statValue: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
-    statUnit: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
-    statLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted },
+    statUnit: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
+    statLabel: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
 });

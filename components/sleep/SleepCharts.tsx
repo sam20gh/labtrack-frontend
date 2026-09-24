@@ -16,7 +16,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { STAGE_META, formatMinutes, type SleepStageKey } from '@/lib/sleep';
 
 export interface WeekdayBucket {
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     bar: { width: '100%', borderRadius: Radius.sm, backgroundColor: Palette.primaryPale },
     labels: { flexDirection: 'row' },
     labelColumn: { flex: 1, alignItems: 'center' },
-    barLabel: { fontSize: 11, fontFamily: Fonts.medium, color: Palette.textMuted, marginTop: 4 },
+    barLabel: { fontSize: 11, ...BodyFont.medium, color: Palette.textMuted, marginTop: 4 },
 
     avgLine: {
         position: 'absolute', left: 0, right: 0,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     rangeRow: { gap: 6 },
     rangeHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     dot: { width: 9, height: 9, borderRadius: 5 },
-    rangeLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
+    rangeLabel: { flex: 1, fontSize: 14, ...BodyFont.medium, color: Palette.text },
     rangeValue: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.textSecondary },
     rangeTrack: {
         height: 12, borderRadius: 6, marginLeft: 17,
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     },
 
     scaleNote: {
-        fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 11, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: Spacing.sm,
     },
 });

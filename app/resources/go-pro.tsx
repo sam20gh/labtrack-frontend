@@ -19,7 +19,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const BENEFITS = [
     { icon: 'document-text-outline', title: 'Every article in full', detail: 'No preview cut-off part way through a piece.' },
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center',
     },
     heroTitle: { fontSize: 28, fontFamily: Fonts.bold, color: Palette.white },
-    heroBody: { fontSize: 15, fontFamily: Fonts.regular, color: 'rgba(255,255,255,0.9)', lineHeight: 22 },
+    heroBody: { fontSize: 15, ...BodyFont.regular, color: 'rgba(255,255,255,0.9)', lineHeight: 22 },
 
     content: { padding: Spacing.xl, gap: Spacing.lg },
     benefit: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.lg },
@@ -115,14 +115,14 @@ const styles = StyleSheet.create({
     },
     benefitBody: { flex: 1 },
     benefitTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    benefitDetail: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2, lineHeight: 19 },
+    benefitDetail: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2, lineHeight: 19 },
 
     notice: {
         flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start',
         padding: Spacing.lg, marginTop: Spacing.md,
         borderRadius: Radius.lg, backgroundColor: Palette.infoSurface,
     },
-    noticeText: { flex: 1, fontSize: 13, fontFamily: Fonts.regular, color: Palette.text, lineHeight: 20 },
+    noticeText: { flex: 1, fontSize: 13, ...BodyFont.regular, color: Palette.text, lineHeight: 20 },
 
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,

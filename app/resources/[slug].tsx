@@ -36,7 +36,7 @@ import {
 } from '@/lib/resources';
 import { ArticleBody, GoProBanner, RatingCard } from '@/components/resources/ArticleBody';
 import { AutoCard, Chip, ProBadge } from '@/components/resources/ResourceCards';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 
 export default function ResourceDetailScreen() {
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     },
     chipRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md },
     title: { fontSize: 22, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 30 },
-    meta: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: Spacing.sm },
+    meta: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: Spacing.sm },
     authorRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.md },
     authorAvatar: { width: 26, height: 26, borderRadius: 13 },
     avatarFallback: { backgroundColor: Palette.primarySurface, alignItems: 'center', justifyContent: 'center' },
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1, borderBottomColor: Palette.borderLight,
     },
     action: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    actionText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    actionText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
 
     playBanner: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
@@ -497,11 +497,11 @@ const styles = StyleSheet.create({
     infoRowDivided: { borderTopWidth: 1, borderTopColor: Palette.borderLight },
     infoBody: { flex: 1 },
     infoTitle: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
-    infoDetail: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    infoDetail: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
 
     checkList: { gap: Spacing.md },
     checkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    checkText: { flex: 1, fontSize: 15, fontFamily: Fonts.regular, color: Palette.text },
+    checkText: { flex: 1, fontSize: 15, ...BodyFont.regular, color: Palette.text },
 
     topicCard: {
         borderRadius: Radius.xl, borderWidth: 1, borderColor: Palette.borderLight,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     topicRowDivided: { borderTopWidth: 1, borderTopColor: Palette.borderLight },
     topicBody: { flex: 1 },
     topicTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    topicDetail: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2, lineHeight: 19 },
+    topicDetail: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2, lineHeight: 19 },
     topicNumber: {
         width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: Palette.primaryLight,
         alignItems: 'center', justifyContent: 'center',
@@ -526,11 +526,11 @@ const styles = StyleSheet.create({
         borderTopWidth: 1, borderTopColor: Palette.borderLight,
         backgroundColor: Palette.background,
     },
-    checkoutLabel: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    checkoutLabel: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.sm },
     price: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text },
     priceWas: {
-        fontSize: 15, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 15, ...BodyFont.regular, color: Palette.textMuted,
         textDecorationLine: 'line-through',
     },
     checkoutButton: {

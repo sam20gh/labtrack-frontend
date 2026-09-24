@@ -10,7 +10,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Radius, Spacing, Shadow } from '@/constants/theme';
+import { Palette, Fonts, Radius, Spacing, Shadow, BodyFont } from '@/constants/theme';
 import {
     iconFor, toneColour, formatDate, relativeDay, outcomeOf, confidencePct,
     type Prediction, type PredictionSummary, type BetterWhen,
@@ -192,20 +192,20 @@ const styles = StyleSheet.create({
     valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 },
     value: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
     margin: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.textMuted },
-    unit: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    unit: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
 
     statRow: { flexDirection: 'row', marginTop: Spacing.md, gap: Spacing.lg },
     stat: { flex: 1, gap: 4 },
-    statLabel: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    statLabel: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
     statValue: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
 
     expanded: {
         marginTop: Spacing.md, paddingTop: Spacing.md,
         borderTopWidth: 1, borderTopColor: Palette.borderLight, gap: 8,
     },
-    rangeLine: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.medium, color: Palette.text },
-    basisLine: { fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    note: { fontSize: 13, lineHeight: 19, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    rangeLine: { fontSize: 13, lineHeight: 19, ...BodyFont.medium, color: Palette.text },
+    basisLine: { fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
+    note: { fontSize: 13, lineHeight: 19, ...BodyFont.regular, color: Palette.textSecondary },
     openRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
     openText: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
 
@@ -217,11 +217,11 @@ const styles = StyleSheet.create({
         ...Shadow.card,
     },
     pastMain: { flex: 1, gap: 2 },
-    pastDate: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    pastDate: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
     pastLabel: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    pastValue: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    pastValue: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     outcome: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
     outcomeDot: { width: 6, height: 6, borderRadius: 3 },
     outcomeText: { fontSize: 12, fontFamily: Fonts.semibold },
-    pending: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted, marginTop: 4 },
+    pending: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted, marginTop: 4 },
 });

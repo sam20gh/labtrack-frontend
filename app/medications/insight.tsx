@@ -20,7 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getInsight, WEEKDAY_NAMES } from '@/lib/medications';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { MedicationInsight } from '@/types/api';
 
 const RANGES = [7, 30, 90];
@@ -206,14 +206,14 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
     },
     rangeActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
-    rangeText: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    rangeText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
     rangeTextActive: { color: Palette.white, fontFamily: Fonts.semibold },
 
     content: { padding: Spacing.xl, paddingTop: 0, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
 
     headline: { alignItems: 'center', paddingVertical: Spacing.lg },
     headlineValue: { fontSize: 44, color: Palette.text, fontFamily: Fonts.bold },
-    headlineLabel: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    headlineLabel: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
 
     statRow: { flexDirection: 'row', gap: Spacing.sm },
     statCard: {
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border, paddingVertical: Spacing.lg,
     },
     statValue: { fontSize: 22, fontFamily: Fonts.bold },
-    statLabel: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    statLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
 
     card: {
         backgroundColor: Palette.white, borderRadius: Radius.lg,
@@ -235,23 +235,23 @@ const styles = StyleSheet.create({
     chartStack: { flex: 1, width: '100%', justifyContent: 'flex-end', gap: 2 },
     bar: { width: '100%', borderRadius: 3, minHeight: 3 },
     barEmpty: { width: '100%', height: 3, borderRadius: 3, backgroundColor: Palette.borderLight },
-    chartLabel: { fontSize: 10, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    chartLabel: { fontSize: 10, color: Palette.textSecondary, ...BodyFont.regular },
 
     legend: { flexDirection: 'row', gap: Spacing.md, justifyContent: 'center' },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 8, height: 8, borderRadius: 4 },
-    legendLabel: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    legendLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
 
     medRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     medName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
-    medPlain: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    medPlain: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
     track: { height: 5, borderRadius: 3, backgroundColor: Palette.borderLight, marginTop: 6, overflow: 'hidden' },
     trackFill: { height: '100%', borderRadius: 3, backgroundColor: Palette.primary },
     medScore: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold, width: 44, textAlign: 'right' },
 
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, padding: Spacing.xxxl },
     emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.semibold },
-    emptyBody: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular, textAlign: 'center', lineHeight: 19 },
+    emptyBody: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, textAlign: 'center', lineHeight: 19 },
 
-    footer: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, lineHeight: 17 },
+    footer: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 17 },
 });

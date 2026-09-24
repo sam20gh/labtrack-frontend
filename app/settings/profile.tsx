@@ -47,7 +47,7 @@ import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
 import { useUnits, displayWeight, toCanonicalWeight, unitLabel } from '@/lib/units';
 import { pickAvatar, AvatarError } from '@/lib/avatar';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { User } from '@/types/api';
 
 const GENDERS = ['Male', 'Female', 'Other'];
@@ -458,17 +458,17 @@ const styles = StyleSheet.create({
 
     field: { gap: 6 },
     fieldLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
-    fieldHint: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 16 },
+    fieldHint: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 16 },
 
     input: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         minHeight: 50, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
         borderWidth: 1, borderColor: Palette.border, borderRadius: Radius.xl,
         backgroundColor: Palette.background,
-        fontSize: 15, fontFamily: Fonts.regular, color: Palette.text,
+        fontSize: 15, ...BodyFont.regular, color: Palette.text,
     },
     inputLocked: { backgroundColor: Palette.surface },
-    inputText: { flex: 1, fontSize: 15, fontFamily: Fonts.regular, color: Palette.text },
+    inputText: { flex: 1, fontSize: 15, ...BodyFont.regular, color: Palette.text },
     inputTextLocked: { color: Palette.textSecondary },
     placeholder: { color: Palette.textMuted },
 
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.background,
     },
     chipActive: { backgroundColor: Palette.primarySurface, borderColor: Palette.primary },
-    chipText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    chipText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     chipTextActive: { color: Palette.primaryDark },
 
     pickerDone: { alignSelf: 'flex-end', marginRight: Spacing.xl },
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     saveText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
 
     footnote: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textMuted,
         textAlign: 'center', marginTop: Spacing.xs,
     },
 });

@@ -28,7 +28,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { SleepIllustration } from '@/components/sleep/SleepIllustration';
 import { TimeDial } from '@/components/sleep/TimeDial';
 import { updateSleepPlan, formatMinutes, formatClock } from '@/lib/sleep';
@@ -298,19 +298,19 @@ const styles = StyleSheet.create({
     progress: { flexDirection: 'row', gap: 6, flex: 1, justifyContent: 'center' },
     pip: { width: 20, height: 4, borderRadius: 2, backgroundColor: Palette.borderSlate },
     pipOn: { backgroundColor: Palette.primary },
-    skip: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    skip: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
 
     content: { padding: Spacing.xl, paddingBottom: Spacing.xxxl, gap: Spacing.xl },
 
     intro: { alignItems: 'center', gap: Spacing.lg },
     title: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     body: {
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 21,
     },
     bullets: { gap: Spacing.md, alignSelf: 'stretch', marginTop: Spacing.sm },
     bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
-    bulletText: { flex: 1, fontSize: 13, fontFamily: Fonts.regular, color: Palette.text, lineHeight: 19 },
+    bulletText: { flex: 1, fontSize: 13, ...BodyFont.regular, color: Palette.text, lineHeight: 19 },
 
     stepBlock: { gap: Spacing.lg },
     question: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 32 },
@@ -324,12 +324,12 @@ const styles = StyleSheet.create({
     wheelValue: { fontSize: 24, fontFamily: Fonts.medium, color: Palette.textMuted },
     wheelValueOn: { color: Palette.primary, fontFamily: Fonts.bold },
     reported: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, justifyContent: 'center' },
-    reportedText: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    reportedText: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
 
     windowRow: { flexDirection: 'row', gap: Spacing.md },
     windowCard: { flex: 1, padding: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Palette.surface, gap: 4 },
     windowHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    windowLabel: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    windowLabel: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
     windowValue: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
 
     depthValue: { fontSize: 34, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
@@ -338,9 +338,9 @@ const styles = StyleSheet.create({
     depthDot: { width: 16, height: 16, borderRadius: 8, backgroundColor: Palette.borderSlate },
     depthDotOn: { backgroundColor: Palette.primary },
     depthCaption: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center',
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center',
     },
-    footnote: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, lineHeight: 17 },
+    footnote: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 17 },
 
     summaryCard: {
         borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
@@ -348,9 +348,9 @@ const styles = StyleSheet.create({
     },
     summaryHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     summaryValue: { fontSize: 28, fontFamily: Fonts.bold, color: Palette.text },
-    summaryCaption: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    summaryCaption: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     summaryGrid: { flexDirection: 'row', gap: Spacing.lg, marginTop: Spacing.lg },
-    summaryKey: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    summaryKey: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     summaryTime: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.text },
 
     footer: {

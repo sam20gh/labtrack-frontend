@@ -65,7 +65,7 @@ import NotificationCardView from '@/components/notifications/NotificationCard';
 import SegmentedTabs, { type TabKey } from '@/components/notifications/SegmentedTabs';
 import CaughtUpIllustration from '@/components/notifications/CaughtUpIllustration';
 import NoMatchIllustration from '@/components/notifications/NoMatchIllustration';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const GUTTER = 16;
 const EMPTY_COUNTS: NotificationCounts = { unread: 0, read: 0, byCategory: {} };
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     headerRow: { flexDirection: 'row', alignItems: 'center' },
     headerTitleWrap: { flex: 1, alignItems: 'center' },
     headerTitle: { fontSize: 18, color: Palette.text, fontFamily: Fonts.bold },
-    headerSub: { fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.medium, marginTop: 1 },
+    headerSub: { fontSize: 12, color: Palette.textMuted, ...BodyFont.medium, marginTop: 1 },
     clearAll: { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', gap: 6 },
     clearAllText: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.semibold },
 
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
         borderColor: Palette.borderSlate, backgroundColor: Palette.background,
     },
     chipOn: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    chipText: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    chipText: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium },
     chipTextOn: { color: Palette.primaryDark, fontFamily: Fonts.semibold },
     chipCount: { fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.bold },
     chipCountOn: { color: Palette.primary },
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.borderLight,
     },
     emptyTitle: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center', marginTop: Spacing.md },
-    emptyBody: { fontSize: 15, lineHeight: 22, color: Palette.textSecondary, fontFamily: Fonts.regular, textAlign: 'center' },
+    emptyBody: { fontSize: 15, lineHeight: 22, color: Palette.textSecondary, ...BodyFont.regular, textAlign: 'center' },
 
     primaryButton: {
         marginTop: Spacing.md, paddingHorizontal: Spacing.xxl, paddingVertical: Spacing.md,

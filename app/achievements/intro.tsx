@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ACHIEVEMENTS_INTRO_KEY } from '@/lib/achievements';
 import { AchievementIllustration } from '@/components/achievements/AchievementIllustration';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function AchievementsIntroScreen() {
     const router = useRouter();
@@ -85,11 +85,11 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         marginTop: Spacing.md, fontSize: 14, lineHeight: 21,
-        fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center',
+        ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center',
     },
     points: { marginTop: Spacing.xxl, gap: Spacing.md, alignSelf: 'stretch' },
     point: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    pointText: { flex: 1, fontSize: 13, fontFamily: Fonts.medium, color: Palette.text },
+    pointText: { flex: 1, fontSize: 13, ...BodyFont.medium, color: Palette.text },
     footer: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg, gap: Spacing.md },
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     },
     ctaText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
     small: {
-        fontSize: 11, lineHeight: 16, fontFamily: Fonts.regular,
+        fontSize: 11, lineHeight: 16, ...BodyFont.regular,
         color: Palette.textMuted, textAlign: 'center',
     },
 });

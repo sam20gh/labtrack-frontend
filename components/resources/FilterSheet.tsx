@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import { listResources, type FilterOptions, type ResourceQuery } from '@/lib/resources';
 
 export type Filters = {
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md, borderWidth: 1, borderColor: Palette.border,
     },
     pillSelected: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    pillText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    pillText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     pillTextSelected: { color: Palette.primary, fontFamily: Fonts.semibold },
     footer: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,

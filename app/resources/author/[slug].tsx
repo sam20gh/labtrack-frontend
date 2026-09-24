@@ -31,7 +31,7 @@ import {
     type ResourceAuthorDetail, type ResourceCard,
 } from '@/lib/resources';
 import { AutoCard } from '@/components/resources/ResourceCards';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 
 const TABS = ['About', 'Courses', 'Videos'] as const;
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
 
     countRow: { flexDirection: 'row', gap: Spacing.xxl, marginTop: Spacing.md },
     countItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    countText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    countText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
 
     buttonRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg, width: '100%' },
     secondaryButton: {
@@ -431,11 +431,11 @@ const styles = StyleSheet.create({
     },
     tab: { flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center' },
     tabActive: { backgroundColor: Palette.background, ...Shadow.card },
-    tabText: { fontSize: 14, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    tabText: { fontSize: 14, ...BodyFont.medium, color: Palette.textSecondary },
     tabTextActive: { color: Palette.text, fontFamily: Fonts.bold },
 
     sectionTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text, marginTop: Spacing.xxl, marginBottom: Spacing.md },
-    bio: { fontSize: 15, fontFamily: Fonts.regular, color: Palette.text, lineHeight: 24 },
+    bio: { fontSize: 15, ...BodyFont.regular, color: Palette.text, lineHeight: 24 },
 
     card: {
         borderRadius: Radius.xl, borderWidth: 1, borderColor: Palette.borderLight,
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     divided: { borderTopWidth: 1, borderTopColor: Palette.borderLight },
     achievementRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.lg, padding: Spacing.lg },
     achievementTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    achievementDetail: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2, lineHeight: 19 },
+    achievementDetail: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2, lineHeight: 19 },
 
     ratingCard: {
         flexDirection: 'row', gap: Spacing.xl, padding: Spacing.lg,
@@ -454,17 +454,17 @@ const styles = StyleSheet.create({
     ratingLeft: { alignItems: 'center', justifyContent: 'center', minWidth: 92 },
     ratingBig: { fontSize: 38, fontFamily: Fonts.bold, color: Palette.text },
     ratingLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text, marginTop: 4 },
-    ratingCount: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2, textAlign: 'center' },
+    ratingCount: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2, textAlign: 'center' },
     ratingRight: { flex: 1, gap: 6, justifyContent: 'center' },
     histogramRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    histogramStar: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary, width: 10 },
+    histogramStar: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary, width: 10 },
     histogramTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: Palette.borderLight, overflow: 'hidden' },
     histogramFill: { height: '100%', borderRadius: 3, backgroundColor: Palette.primary },
-    histogramCount: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary, width: 34, textAlign: 'right' },
+    histogramCount: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary, width: 34, textAlign: 'right' },
 
     contactRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
     contactLabel: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text, width: 56 },
-    contactValue: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'right' },
+    contactValue: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'right' },
 
     socialCard: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xxl,
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
 
     stack: { gap: Spacing.md },
     emptyTab: {
-        fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', paddingVertical: Spacing.xxxl,
     },
 });

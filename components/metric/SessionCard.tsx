@@ -15,7 +15,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { formatDuration, formatDistance, formatPace, formatType, type ActivitySession } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
 
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     },
     heading: { flex: 1, gap: 2 },
     title: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
-    when: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    when: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 
     // Two columns, as the design sets them. A session with six figures wraps to three rows
     // rather than shrinking the type.
@@ -160,5 +160,5 @@ const styles = StyleSheet.create({
         paddingRight: Spacing.sm,
     },
     statValue: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
-    statUnit: { fontSize: 11.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    statUnit: { fontSize: 11.5, ...BodyFont.regular, color: Palette.textSecondary },
 });

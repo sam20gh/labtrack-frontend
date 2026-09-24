@@ -25,7 +25,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getStatus, identifyMedication } from '@/lib/medications';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 const CHECKLIST = [
     {
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     },
     title: { fontSize: 21, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center' },
     subtitle: {
-        fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular,
+        fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular,
         textAlign: 'center', marginBottom: Spacing.md,
     },
 
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     checkTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold },
-    checkBody: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 18, marginTop: 2 },
+    checkBody: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 18, marginTop: 2 },
 
     noteCard: {
         flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start',
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md,
         padding: Spacing.md,
     },
-    note: { flex: 1, fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 18 },
+    note: { flex: 1, fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 18 },
 
     unavailable: {
         flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start',
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md,
         padding: Spacing.md,
     },
-    unavailableText: { flex: 1, fontSize: 12, color: Palette.warning, fontFamily: Fonts.regular, lineHeight: 18 },
+    unavailableText: { flex: 1, fontSize: 12, color: Palette.warning, ...BodyFont.regular, lineHeight: 18 },
 
     primaryButton: {
         flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     secondaryButtonText: { fontSize: 15, color: Palette.primary, fontFamily: Fonts.semibold },
     buttonDisabled: { opacity: 0.45 },
     manual: {
-        fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.medium,
+        fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium,
         textAlign: 'center', marginTop: Spacing.sm, textDecorationLine: 'underline',
     },
 });

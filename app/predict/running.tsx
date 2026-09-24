@@ -21,7 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { ApiError } from '@/lib/api';
 import { predict, type MetricKey } from '@/lib/prediction';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const STAGES = [
     'Checking our database…',
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     },
     failTitle: { fontSize: 19, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     failBodyText: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, textAlign: 'center',
     },
     failCta: {

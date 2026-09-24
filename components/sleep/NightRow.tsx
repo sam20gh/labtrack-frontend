@@ -9,7 +9,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { formatMinutes, formatClock, dayLabel, bandTint, type SleepNight } from '@/lib/sleep';
 
 interface Props {
@@ -75,8 +75,8 @@ const styles = StyleSheet.create({
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     duration: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
     bandDot: { width: 7, height: 7, borderRadius: 4 },
-    times: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    day: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    times: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
+    day: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
 });
 
 export default NightRow;

@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import {
     getSession, updateSession, deleteSession,
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
 
     head: { alignItems: 'center', gap: 4, paddingVertical: Spacing.xl },
     title: { fontSize: 28, fontFamily: Fonts.bold, color: Palette.text },
-    subtitle: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    subtitle: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     scorePill: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -302,13 +302,13 @@ const styles = StyleSheet.create({
         borderBottomColor: Palette.borderLight,
     },
     rowLast: { borderBottomWidth: 0 },
-    rowLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    rowLabel: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary },
     rowValue: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
 
     efforts: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.lg },
     effortLabel: {
         fontSize: 13,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: Palette.textSecondary,
         textAlign: 'center',
         marginTop: Spacing.sm,
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
 
     notes: {
         fontSize: 14,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.text,
         lineHeight: 21,
         paddingVertical: Spacing.lg,
@@ -329,10 +329,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: Spacing.xxl,
     },
-    provenanceText: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    provenanceText: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
     locked: {
         fontSize: 12,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textMuted,
         textAlign: 'center',
         marginTop: Spacing.sm,

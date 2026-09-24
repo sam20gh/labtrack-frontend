@@ -30,7 +30,7 @@ import Toast from 'react-native-toast-message';
 
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { SUPPORT_EMAIL, FEEDBACK_TOPICS } from '@/lib/help';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 
 const MAX_LENGTH = 1000;
 
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.background,
     },
     chipActive: { backgroundColor: Palette.primarySurface, borderColor: Palette.primary },
-    chipText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    chipText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     chipTextActive: { color: Palette.primaryDark },
 
     textAreaWrap: {
@@ -188,9 +188,9 @@ const styles = StyleSheet.create({
     },
     textArea: {
         minHeight: 140, fontSize: 14, lineHeight: 20,
-        fontFamily: Fonts.regular, color: Palette.text,
+        ...BodyFont.regular, color: Palette.text,
     },
-    counter: { alignSelf: 'flex-end', fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    counter: { alignSelf: 'flex-end', fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
 
     send: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     sendTextDisabled: { color: Palette.textMuted },
 
     footnote: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: Spacing.xs,
     },
 });

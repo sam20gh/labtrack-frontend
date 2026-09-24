@@ -32,7 +32,7 @@ import { SYMPTOMS } from '@/lib/symptoms';
 import {
     checkTitle, isPressing, severityLabel, type SymptomCheck,
 } from '@/lib/symptomChecks';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 /** As many rows as the kit draws. The rest stay in the store as history. */
 const MAX_ROWS = 2;
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
         borderColor: Palette.borderStrong,
         backgroundColor: Palette.white,
     },
-    fieldPlaceholder: { flex: 1, fontSize: 14, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    fieldPlaceholder: { flex: 1, fontSize: 14, color: Palette.textSecondary, ...BodyFont.regular },
     filterButton: {
         width: 40,
         height: 40,
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     },
 
     commonRow: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.lg },
-    commonLabel: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular, marginRight: 13 },
+    commonLabel: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, marginRight: 13 },
     chipScroll: { flex: 1 },
     chipRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingRight: Spacing.lg },
     chip: {
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
         borderColor: Palette.borderStrong,
         backgroundColor: '#F9FAFB',
     },
-    chipText: { fontSize: 13, color: Palette.text, fontFamily: Fonts.regular },
+    chipText: { fontSize: 13, color: Palette.text, ...BodyFont.regular },
 
     divider: { height: 1, backgroundColor: Palette.border },
 
@@ -248,9 +248,9 @@ const styles = StyleSheet.create({
     badgeText: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.bold },
     badgeTextPressing: { color: Palette.meterWeak },
     rowTitle: { flex: 1, fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
-    rowMeta: { fontSize: 14, color: Palette.textSecondary, fontFamily: Fonts.regular, marginRight: Spacing.sm },
+    rowMeta: { fontSize: 14, color: Palette.textSecondary, ...BodyFont.regular, marginRight: Spacing.sm },
 
-    emptyText: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    emptyText: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, ...BodyFont.regular },
     browseLink: {
         height: 40,
         flexDirection: 'row',

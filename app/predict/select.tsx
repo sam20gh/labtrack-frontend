@@ -30,7 +30,7 @@ import {
 } from '@/lib/prediction';
 import { NotEnoughDataIllustration } from '@/components/predict/NotEnoughDataIllustration';
 import { HorizonTabs } from '@/components/predict/Chips';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function SelectMetricScreen() {
     const router = useRouter();
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
         color: Palette.text, textAlign: 'center', marginTop: Spacing.md,
     },
     subtitle: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, textAlign: 'center',
         marginTop: Spacing.sm, marginBottom: Spacing.xl,
     },
@@ -247,16 +247,16 @@ const styles = StyleSheet.create({
     rowMain: { flex: 1, gap: 2 },
     rowLabel: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
     dimText: { color: Palette.textSecondary },
-    rowReach: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    rowReach: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-    meta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    meta: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
 
     rowBody: {
         paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg,
         gap: Spacing.md, borderTopWidth: 1, borderTopColor: Palette.borderLight,
         paddingTop: Spacing.md,
     },
-    rowNote: { fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    rowNote: { fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
     rowCta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
         backgroundColor: Palette.primary, paddingVertical: 13, borderRadius: Radius.lg,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
         color: Palette.text, textAlign: 'center', marginTop: Spacing.md,
     },
     modalBody: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, textAlign: 'center',
     },
     modalCta: {

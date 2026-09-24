@@ -19,7 +19,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BadgeMedal } from './BadgeMedal';
 import { progressLabel, toneColour, type Achievement } from '@/lib/achievements';
-import { Palette, Spacing, Radius, Fonts, Shadow } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
 
 interface RowProps {
     achievement: Achievement;
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     rowTitle: { flex: 1, fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
     levelChip: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.sm },
     levelChipText: { fontSize: 10, fontFamily: Fonts.bold, letterSpacing: 0.4 },
-    rowHow: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    rowHow: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     track: {
         height: 8,
         borderRadius: 4,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     },
     fill: { height: 8, borderRadius: 4 },
     rowFoot: { flexDirection: 'row', justifyContent: 'space-between' },
-    rowValue: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    rowValue: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
     rowPct: { fontSize: 11, fontFamily: Fonts.semibold, color: Palette.text },
     maxed: { fontSize: 11, fontFamily: Fonts.semibold, marginTop: 6 },
 
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
         color: Palette.text,
         textAlign: 'center',
     },
-    tileState: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    tileState: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
     tileStateOn: { color: Palette.textSecondary },
 
     featured: { alignItems: 'center', gap: 6, flex: 1 },
@@ -222,5 +222,5 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     promptTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    promptBlurb: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    promptBlurb: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 });

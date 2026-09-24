@@ -6,7 +6,7 @@
  * turing kit uses, not something invented for auth.
  */
 import { StyleSheet } from 'react-native';
-import { Fonts, Palette, Radius } from '@/constants/theme';
+import { Fonts, Palette, Radius, BodyFont } from '@/constants/theme';
 
 export const GUTTER = 16;
 export const CONTROL_HEIGHT = 48;
@@ -74,7 +74,7 @@ export const authStyles = StyleSheet.create({
     },
     footerText: {
         fontSize: 14,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
     },
     footerLink: {

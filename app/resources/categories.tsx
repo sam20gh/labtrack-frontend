@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ApiError } from '@/lib/api';
 import { getCategories, type ResourceCategory } from '@/lib/resources';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 
 type Group = { name: string; categories: ResourceCategory[] };
 
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl * 2 },
 
     title: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
-    subtitle: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 4 },
+    subtitle: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 4 },
 
     group: { marginTop: Spacing.xxl },
     groupTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text, marginBottom: Spacing.md },
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     },
     tileIcon: { marginBottom: Spacing.xxl },
     tileName: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    tileCount: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 2 },
+    tileCount: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
 
     empty: { alignItems: 'center', paddingTop: Spacing.xxxl * 2, gap: Spacing.md },
     emptyTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },

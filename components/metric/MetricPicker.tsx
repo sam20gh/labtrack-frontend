@@ -12,7 +12,7 @@
  */
 import React from 'react';
 import { Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { ActivityMetricKey, ActivitySeriesPoint } from '@/lib/activity';
 
 export interface ChartMetric {
@@ -98,6 +98,6 @@ const styles = StyleSheet.create({
         borderColor: Palette.border,
         backgroundColor: Palette.white,
     },
-    label: { fontSize: 12.5, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    label: { fontSize: 12.5, ...BodyFont.medium, color: Palette.textSecondary },
     labelActive: { fontFamily: Fonts.semibold, color: Palette.white },
 });

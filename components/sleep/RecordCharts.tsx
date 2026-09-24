@@ -25,7 +25,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Palette, Fonts, Spacing } from '@/constants/theme';
+import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
 import {
     STAGE_META, NAP_META, UNSTAGED_META, formatMinutes, formatClock,
     type SleepRecordBar, type RecordBucket, type SleepRecord, type SleepStageKey,
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     yAxis: { width: Y_AXIS, position: 'relative' },
     yTick: {
         position: 'absolute', left: 0, fontSize: 10, lineHeight: 12,
-        fontFamily: Fonts.medium, color: Palette.textMuted,
+        ...BodyFont.medium, color: Palette.textMuted,
     },
     plot: { flex: 1, position: 'relative' },
     grid: {
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     xRow: { flexDirection: 'row', marginLeft: Y_AXIS, marginTop: 6 },
     xCell: { flex: 1, alignItems: 'center', overflow: 'visible' },
     xTick: {
-        fontSize: 10, fontFamily: Fonts.medium, color: Palette.textMuted,
+        fontSize: 10, ...BodyFont.medium, color: Palette.textMuted,
         width: 44, textAlign: 'center',
     },
     xTickActive: { color: Palette.text, fontFamily: Fonts.bold },
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     legend: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, rowGap: 6 },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     swatch: { width: 10, height: 10, borderRadius: 3 },
-    legendText: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    legendText: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
 
     ribbon: {
         height: 34, borderRadius: 10, backgroundColor: Palette.borderLight,
@@ -500,16 +500,16 @@ const styles = StyleSheet.create({
     },
     ribbonAxis: { height: 16, position: 'relative', marginTop: 4 },
     ribbonLabel: {
-        position: 'absolute', fontSize: 10, fontFamily: Fonts.medium, color: Palette.textMuted,
+        position: 'absolute', fontSize: 10, ...BodyFont.medium, color: Palette.textMuted,
         width: 30, marginLeft: -15, textAlign: 'center',
     },
 
     compBar: { flexDirection: 'row', height: 16, borderRadius: 8, overflow: 'hidden' },
     compRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    compLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.medium, color: Palette.text },
+    compLabel: { flex: 1, fontSize: 14, ...BodyFont.medium, color: Palette.text },
     compValue: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
     compShare: {
-        width: 40, textAlign: 'right', fontSize: 12, fontFamily: Fonts.medium,
+        width: 40, textAlign: 'right', fontSize: 12, ...BodyFont.medium,
         color: Palette.textSecondary,
     },
 

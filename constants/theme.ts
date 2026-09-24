@@ -1,3 +1,5 @@
+import { Platform, type TextStyle } from 'react-native';
+
 /**
  * Design tokens.
  *
@@ -195,13 +197,22 @@ export const Radius = {
 } as const;
 
 /**
- * Type families — Chakra Petch, the face the turing kit sets everything in.
+ * Display face — Chakra Petch, the turing kit's face. **Semibold and above only**: titles,
+ * card headings, buttons, badges, the score. Anything somebody *reads* is `BodyFont`.
+ *
+ * The kit sets everything in it, and that was the problem. A squared, HUD-like face is the
+ * brand at 26pt and a strain at 13pt over a paragraph — the interpretation, an article, a
+ * medication warning, the assistant's reply — read by people who are often worried and
+ * often older. It also has no tabular figures (no `tnum` feature: a "1" is 358 units wide
+ * and a "0" 628), so `fontVariant: ['tabular-nums']` does nothing in it.
  *
  * Keyed by weight rather than by role, because **Android ignores `fontWeight` on a custom
  * font**: `fontFamily: 'ChakraPetch_400Regular'` with `fontWeight: '700'` renders regular
  * on Android and synthetically-emboldened regular on iOS. The weight has to be chosen by
  * picking the family. So use `fontFamily: Fonts.bold` and *omit* `fontWeight` entirely —
  * pairing the two is what produces the mismatch.
+ *
+ * `regular` and `medium` stay registered for display sizes (≥18pt) and nothing else.
  *
  * The families must match the names registered by `useFonts` in `app/_layout.tsx`.
  */
@@ -210,6 +221,40 @@ export const Fonts = {
     medium: 'ChakraPetch_500Medium',
     semibold: 'ChakraPetch_600SemiBold',
     bold: 'ChakraPetch_700Bold',
+} as const;
+
+/**
+ * Reading face — the platform's own: SF Pro on iOS, Roboto on Android. Spread it into a
+ * style (`...BodyFont.regular`) in place of `fontFamily`; it is a style fragment, not a
+ * family name, because iOS can only reach the system face's weights through `fontWeight`.
+ *
+ * The opposite rule from `Fonts`: on the system face `fontWeight` works on both platforms,
+ * except that Android before API 28 has no 500, which is why `medium` names Roboto Medium
+ * by family there instead — and carries **no** `fontWeight`, because from API 28 an
+ * explicit weight is applied over the family and `'400'` would make it regular again.
+ *
+ * System rather than bundled on purpose. Nothing to load, the reader's own Dynamic Type
+ * and accessibility tuning apply, tabular figures work — and a bundled face would be a
+ * `package.json` change, which moves the runtime fingerprint and strands every installed
+ * build (the fourth trap in CLAUDE.md).
+ */
+export const BodyFont = {
+    regular: Platform.select<TextStyle>({
+        ios: { fontFamily: 'System', fontWeight: '400' },
+        default: { fontFamily: 'sans-serif', fontWeight: '400' },
+    }),
+    medium: Platform.select<TextStyle>({
+        ios: { fontFamily: 'System', fontWeight: '500' },
+        default: { fontFamily: 'sans-serif-medium' },
+    }),
+    /**
+     * Emphasis inside reading text — a sentence of advice that must stand out from its
+     * rationale without becoming a heading. Roboto ships no 600, so Android draws Medium.
+     */
+    semibold: Platform.select<TextStyle>({
+        ios: { fontFamily: 'System', fontWeight: '600' },
+        default: { fontFamily: 'sans-serif-medium' },
+    }),
 } as const;
 
 export const Typography = {

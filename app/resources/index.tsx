@@ -29,7 +29,7 @@ import { getHub, routeFor, type ResourceCard, type ResourceHub } from '@/lib/res
 import {
     FeaturedCard, ArticleCard, ShortCard, CourseRow, WorkshopRow,
 } from '@/components/resources/ResourceCards';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import { ErrorState, StaleNotice } from '@/components/errors';
 
 const SectionHeader = ({ icon, title, onSeeAll }: {
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
         marginHorizontal: Spacing.xl, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
         borderRadius: Radius.lg, backgroundColor: Palette.white,
     },
-    searchPlaceholder: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.textMuted },
+    searchPlaceholder: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.textMuted },
 
     categoryStrip: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg, gap: Spacing.md },
     categoryTile: {
@@ -286,5 +286,5 @@ const styles = StyleSheet.create({
 
     empty: { alignItems: 'center', paddingHorizontal: Spacing.xxxl, paddingTop: Spacing.xxxl * 2, gap: Spacing.md },
     emptyTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
-    emptyBody: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
+    emptyBody: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
 });

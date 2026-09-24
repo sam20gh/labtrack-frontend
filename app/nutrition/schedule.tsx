@@ -25,7 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
     getDay, getCalendar, deleteMeal, today, addDays, MEAL_TYPE_LABEL, MACRO_META,
 } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { NutritionDay, NutritionCalendar, MealLog } from '@/types/api';
 
 /** A fortnight either side, so the strip can be scrolled back through a fair run of days. */
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.background,
     },
     stripDayOn: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    stripName: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
+    stripName: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
     stripNum: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.text },
     stripTextOn: { color: Palette.primary },
     stripDot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
@@ -339,14 +339,14 @@ const styles = StyleSheet.create({
     },
     macroCol: { flex: 1 },
     macroText: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.text },
-    macroTarget: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted },
+    macroTarget: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
     macroTrack: { height: 4, borderRadius: Radius.pill, backgroundColor: Palette.borderLight, overflow: 'hidden', marginTop: Spacing.xs },
     macroFill: { height: '100%', borderRadius: Radius.pill },
 
     scroll: { paddingBottom: 120 },
     dayHead: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
     dayTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text },
-    daySub: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2 },
+    daySub: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 2 },
 
     rail: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
     railRow: { flexDirection: 'row', gap: Spacing.md },
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.background,
         paddingHorizontal: Spacing.sm, paddingVertical: 4,
     },
-    hourText: { fontFamily: Fonts.medium, fontSize: 11, color: Palette.textSecondary },
+    hourText: { ...BodyFont.medium, fontSize: 11, color: Palette.textSecondary },
     railLine: { flex: 1, width: 1, backgroundColor: Palette.border, marginVertical: Spacing.xs, minHeight: Spacing.xl },
     railBody: { flex: 1, paddingBottom: Spacing.md, gap: Spacing.sm },
 
@@ -371,9 +371,9 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.primarySurface, alignItems: 'center', justifyContent: 'center',
     },
     mealName: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
-    mealSlot: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
+    mealSlot: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
     mealMacros: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.xs },
-    mealMacro: { fontFamily: Fonts.medium, fontSize: 11, color: Palette.textSecondary },
+    mealMacro: { ...BodyFont.medium, fontSize: 11, color: Palette.textSecondary },
     delete: {
         width: 38, height: 38, borderRadius: 19,
         backgroundColor: Palette.danger, alignItems: 'center', justifyContent: 'center',
@@ -381,8 +381,8 @@ const styles = StyleSheet.create({
 
     empty: { alignItems: 'center', paddingHorizontal: Spacing.xxxl, marginTop: Spacing.xxxl, gap: Spacing.sm },
     emptyTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text, marginTop: Spacing.sm },
-    emptyBody: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
-    emptyMeta: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted, marginTop: Spacing.sm },
+    emptyBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
+    emptyMeta: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted, marginTop: Spacing.sm },
 
     fab: {
         position: 'absolute', right: Spacing.xl, bottom: Spacing.xxxl,

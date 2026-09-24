@@ -14,7 +14,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts, FlagColors } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, FlagColors, BodyFont } from '@/constants/theme';
 import type { AssistantWidget as Widget, WidgetKind, WidgetStat, WidgetRow, Flag } from '@/lib/assistant';
 
 /** Icon per card kind. Purely decorative — the title carries the meaning. */
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     },
     headerText: { flex: 1, gap: 2 },
     title: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
-    subtitle: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary, lineHeight: 17 },
+    subtitle: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 17 },
 
     statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
     stat: {
@@ -153,24 +153,24 @@ const styles = StyleSheet.create({
         gap: 2,
     },
     statPlain: { backgroundColor: Palette.surface },
-    statLabel: { fontSize: 11, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    statLabel: { fontSize: 11, ...BodyFont.medium, color: Palette.textSecondary },
     statValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
     statValue: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
-    statUnit: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    statUnit: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
 
     rows: { gap: Spacing.sm },
     row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     rowRail: { width: 3, alignSelf: 'stretch', minHeight: 28, borderRadius: 2 },
     rowBody: { flex: 1, gap: 1 },
     rowTitle: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
-    rowSubtitle: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    rowMeta: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    rowSubtitle: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
+    rowMeta: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
 
     progressBlock: { gap: Spacing.sm },
     progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-    progressLabel: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    progressLabel: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
     progressValue: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
-    progressMax: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    progressMax: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
     progressTrack: {
         height: 8,
         borderRadius: Radius.pill,

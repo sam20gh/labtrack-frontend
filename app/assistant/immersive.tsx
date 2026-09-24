@@ -33,7 +33,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ApiError } from '@/lib/api';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import AssistantWidgetCard from '@/components/assistant/AssistantWidget';
 import InputDock from '@/components/assistant/InputDock';
 import {
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
         fontSize: 21, lineHeight: 29, fontFamily: Fonts.semibold, color: Palette.white,
         marginTop: Spacing.lg,
     },
-    asked: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.primaryLight },
+    asked: { fontSize: 12, ...BodyFont.regular, color: Palette.primaryLight },
     // 16:10 rather than square: a photograph of a rash or a printed result is almost never
     // square, and cropping one to fit is cropping away the thing being asked about.
     askedImage: {
@@ -364,16 +364,16 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         backgroundColor: Palette.danger, borderRadius: Radius.lg, padding: Spacing.md,
     },
-    escalateText: { flex: 1, fontSize: 12, lineHeight: 17, fontFamily: Fonts.medium, color: Palette.white },
+    escalateText: { flex: 1, fontSize: 12, lineHeight: 17, ...BodyFont.medium, color: Palette.white },
 
     starters: { gap: Spacing.sm },
     starter: {
         borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', borderRadius: Radius.pill,
         paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg,
     },
-    starterText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.white },
+    starterText: { fontSize: 13, ...BodyFont.medium, color: Palette.white },
 
-    error: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.primaryLight },
+    error: { fontSize: 13, ...BodyFont.medium, color: Palette.primaryLight },
 
     // The composer is the shared component, so it arrives light. Rounding and clipping it
     // here keeps one input implementation rather than a near-duplicate for the dark screen.

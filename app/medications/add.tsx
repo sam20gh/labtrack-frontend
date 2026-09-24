@@ -22,7 +22,7 @@ import { createMedication, today, FREQUENCY_LABEL, FORM_LABEL, WEEKDAYS, formatT
 import { PillGlyph } from '@/components/medications/PillGlyph';
 import { ensureRemindersReady } from '@/lib/notifications';
 import { warnRemindersUnavailable } from '@/lib/medicationReminders';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { MedicationFrequency, MedicationForm, MedicationShape } from '@/types/api';
 
 /** The design's swatch row. */
@@ -479,11 +479,11 @@ const styles = StyleSheet.create({
 
     preview: { alignItems: 'center', gap: Spacing.sm },
     previewName: { fontSize: 18, color: Palette.text, fontFamily: Fonts.bold, textTransform: 'capitalize' },
-    previewMeta: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    previewMeta: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
 
     section: { gap: Spacing.sm },
     sectionTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
-    sectionSubtitle: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: -4 },
+    sectionSubtitle: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, marginTop: -4 },
     sectionBody: {
         gap: Spacing.lg, marginTop: Spacing.xs,
         backgroundColor: Palette.white, borderRadius: Radius.lg,
@@ -492,12 +492,12 @@ const styles = StyleSheet.create({
 
     field: { gap: 6 },
     row: { flexDirection: 'row', gap: Spacing.md },
-    label: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.medium },
-    hint: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, lineHeight: 15 },
+    label: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
+    hint: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 15 },
     input: {
         borderWidth: 1, borderColor: Palette.border, borderRadius: Radius.md,
         paddingHorizontal: Spacing.md, paddingVertical: 11,
-        fontSize: 14, color: Palette.text, fontFamily: Fonts.regular,
+        fontSize: 14, color: Palette.text, ...BodyFont.regular,
         backgroundColor: Palette.white,
     },
     textArea: { minHeight: 72, textAlignVertical: 'top' },
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.white,
     },
     chipSelected: { backgroundColor: Palette.primary, borderColor: Palette.primary },
-    chipText: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    chipText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
     chipTextSelected: { color: Palette.white, fontFamily: Fonts.semibold },
 
     dayStrip: { flexDirection: 'row', gap: 6, justifyContent: 'space-between' },
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     daySelected: { backgroundColor: Palette.primarySurface, borderColor: Palette.primary },
-    dayText: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    dayText: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium },
     dayTextSelected: { color: Palette.primary, fontFamily: Fonts.bold },
 
     timeList: { gap: 6 },
@@ -529,8 +529,8 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border, borderRadius: Radius.md,
         paddingHorizontal: Spacing.md,
     },
-    timeInput: { width: 64, paddingVertical: 11, fontSize: 14, color: Palette.text, fontFamily: Fonts.regular },
-    timePretty: { flex: 1, textAlign: 'right', fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.regular },
+    timeInput: { width: 64, paddingVertical: 11, fontSize: 14, color: Palette.text, ...BodyFont.regular },
+    timePretty: { flex: 1, textAlign: 'right', fontSize: 12, color: Palette.textMuted, ...BodyFont.regular },
 
     swatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: 'transparent' },
     swatchSelected: { borderColor: Palette.text },
@@ -543,13 +543,13 @@ const styles = StyleSheet.create({
     shapeCellSelected: { borderColor: Palette.primary },
 
     toggleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    toggleLabel: { fontSize: 14, color: Palette.text, fontFamily: Fonts.medium },
+    toggleLabel: { fontSize: 14, color: Palette.text, ...BodyFont.medium },
 
     noteCard: {
         flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start',
         backgroundColor: Palette.surface, borderRadius: Radius.md, padding: Spacing.md,
     },
-    note: { flex: 1, fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 18 },
+    note: { flex: 1, fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 18 },
 
     saveButton: {
         flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
@@ -557,5 +557,5 @@ const styles = StyleSheet.create({
     },
     saveButtonBusy: { opacity: 0.7 },
     saveButtonText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.semibold },
-    footer: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, lineHeight: 17 },
+    footer: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 17 },
 });

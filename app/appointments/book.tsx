@@ -29,7 +29,7 @@ import {
     createAppointment, rescheduleAppointment, formatDayLong, initialsOf,
     type AppointmentMode, type BookableDay,
 } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import type { Appointment, Professional } from '@/types/api';
 
 export default function BookAppointmentScreen() {
@@ -453,15 +453,15 @@ const styles = StyleSheet.create({
     },
     doctorInitials: { fontSize: 16, color: Palette.primary, fontFamily: Fonts.bold },
     doctorName: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
-    doctorSpeciality: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular, marginTop: 2 },
+    doctorSpeciality: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 2 },
     ratePill: { flexDirection: 'row', alignItems: 'baseline' },
     rateText: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
-    rateUnit: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular },
+    rateUnit: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular },
 
     section: { marginTop: Spacing.xxl, paddingHorizontal: GUTTER, gap: Spacing.md },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     sectionTitle: { flex: 1, fontSize: 15, color: Palette.text, fontFamily: Fonts.bold },
-    sectionTrailing: { fontSize: 12, color: Palette.textMuted, fontFamily: Fonts.medium },
+    sectionTrailing: { fontSize: 12, color: Palette.textMuted, ...BodyFont.medium },
 
     modeRow: { flexDirection: 'row', gap: Spacing.sm },
     modeCard: {
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     modeCardActive: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
     modeLabel: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
     modeLabelActive: { color: Palette.primary },
-    modeHint: { fontSize: 10, color: Palette.textMuted, fontFamily: Fonts.regular },
+    modeHint: { fontSize: 10, color: Palette.textMuted, ...BodyFont.regular },
 
     dayStrip: { gap: Spacing.sm, paddingRight: GUTTER },
     dayCell: {
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     },
     dayCellActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
     dayCellClosed: { backgroundColor: Palette.borderLight, borderColor: Palette.borderLight, opacity: 0.55 },
-    dayWeekday: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    dayWeekday: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
     dayNumber: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
     dayTextActive: { color: Palette.white },
     dayDot: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: 'transparent' },
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     dayDotOnActive: { backgroundColor: Palette.white },
 
     noteRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    noteText: { flex: 1, fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    noteText: { flex: 1, fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
 
     slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
     slot: {
@@ -511,15 +511,15 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md, backgroundColor: Palette.white,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    noSlotsText: { fontSize: 13, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    noSlotsText: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
 
     reasonInput: {
         minHeight: 88, padding: Spacing.md,
         borderRadius: Radius.md, backgroundColor: Palette.white,
         borderWidth: 1, borderColor: Palette.borderSlate,
-        fontSize: 14, lineHeight: 20, color: Palette.text, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 20, color: Palette.text, ...BodyFont.regular,
     },
-    reasonHint: { fontSize: 12, lineHeight: 17, color: Palette.textMuted, fontFamily: Fonts.regular },
+    reasonHint: { fontSize: 12, lineHeight: 17, color: Palette.textMuted, ...BodyFont.regular },
 
     footer: {
         paddingHorizontal: GUTTER, paddingTop: Spacing.md, paddingBottom: Spacing.xl,
@@ -528,12 +528,12 @@ const styles = StyleSheet.create({
     },
     footerSummary: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
     footerLabel: { flex: 1, fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
-    footerMeta: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    footerMeta: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
         height: 48, borderRadius: Radius.md, backgroundColor: Palette.primary,
     },
     ctaDisabled: { backgroundColor: Palette.textMuted, opacity: 0.6 },
     ctaText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.bold },
-    footerNote: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, textAlign: 'center' },
+    footerNote: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, textAlign: 'center' },
 });

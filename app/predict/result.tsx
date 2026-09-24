@@ -40,7 +40,7 @@ import {
 } from '@/lib/prediction';
 import { ForecastChart, type ScrubPoint } from '@/components/predict/ForecastChart';
 import { ConfidenceChip, PredictionDisclaimer } from '@/components/predict/Chips';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 export default function PredictionResultScreen() {
     const router = useRouter();
@@ -228,11 +228,11 @@ const styles = StyleSheet.create({
         marginTop: Spacing.sm, paddingTop: Spacing.sm,
         borderTopWidth: 1, borderTopColor: Palette.borderLight,
     },
-    scrubDay: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textSecondary },
-    scrubKind: { fontFamily: Fonts.regular, color: Palette.textMuted },
+    scrubDay: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
+    scrubKind: { ...BodyFont.regular, color: Palette.textMuted },
     scrubValue: { fontSize: 20, fontFamily: Fonts.bold },
-    scrubUnit: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
-    scrubRange: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    scrubUnit: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
+    scrubRange: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
 
     chipRow: { marginTop: Spacing.xl },
     band: {
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     },
     rangeMargin: { color: Palette.textMuted },
     body: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, textAlign: 'center', marginTop: Spacing.md,
     },
 
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.dangerSurface, borderRadius: Radius.lg,
         padding: Spacing.md, marginTop: Spacing.lg,
     },
-    crisisText: { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: Fonts.medium, color: Palette.danger },
+    crisisText: { flex: 1, fontSize: 13, lineHeight: 19, ...BodyFont.medium, color: Palette.danger },
 
     primaryCta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,

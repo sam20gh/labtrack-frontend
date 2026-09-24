@@ -32,7 +32,7 @@ import {
 } from '@/lib/resources';
 import { AutoCard } from '@/components/resources/ResourceCards';
 import FilterSheet, { EMPTY_FILTERS, countActive, toQuery, type Filters } from '@/components/resources/FilterSheet';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 const PAGE_SIZE = 12;
 
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl * 2 },
 
     title: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
-    subtitle: { fontSize: 14, fontFamily: Fonts.regular, color: Palette.textSecondary, marginTop: 4 },
+    subtitle: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 4 },
 
     searchRow: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.lg, borderWidth: 1, borderColor: Palette.border,
         backgroundColor: Palette.background,
     },
-    searchInput: { flex: 1, fontSize: 14, fontFamily: Fonts.regular, color: Palette.text, padding: 0 },
+    searchInput: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text, padding: 0 },
     filterDot: {
         position: 'absolute', top: -2, right: -2,
         width: 8, height: 8, borderRadius: 4, backgroundColor: Palette.primary,
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.background,
     },
     tagChipActive: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
-    tagText: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    tagText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     tagTextActive: { color: Palette.primary },
 
     countRow: {
@@ -312,6 +312,6 @@ const styles = StyleSheet.create({
     loadMoreText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
     endNote: {
         textAlign: 'center', marginTop: Spacing.xl,
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textMuted,
     },
 });

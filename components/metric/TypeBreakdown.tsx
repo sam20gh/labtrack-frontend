@@ -14,7 +14,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { formatType, type ActivityBreakdownRow } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
 
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     count: { fontSize: 13.5, fontFamily: Fonts.bold, color: Palette.text, minWidth: 34, textAlign: 'right' },
     note: {
         fontSize: 12.5,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         lineHeight: 18,
         marginTop: Spacing.xs,

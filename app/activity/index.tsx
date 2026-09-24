@@ -39,7 +39,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { Avatar } from '@/components/Avatar';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    heroDate: { fontSize: 15, fontFamily: Fonts.medium, color: Palette.text },
+    heroDate: { fontSize: 15, ...BodyFont.medium, color: Palette.text },
     heroAvatar: { borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' },
     greeting: {
         flexDirection: 'row',
@@ -950,12 +950,12 @@ const styles = StyleSheet.create({
     },
     greetingText: { flex: 1, gap: 1 },
     greetingTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.text },
-    greetingBody: { fontSize: 12.5, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    greetingBody: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary },
     score: { fontSize: 54, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 62 },
     scoreLabel: { fontSize: 20, fontFamily: Fonts.semibold, color: Palette.text },
     scoreCaption: {
         fontSize: 13,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textSecondary,
         marginTop: 4,
         textAlign: 'center',
@@ -966,7 +966,7 @@ const styles = StyleSheet.create({
     /** A block that continues the one above it rather than starting a new subject. */
     sectionClose: { marginTop: Spacing.md },
     syncing: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.md },
-    syncingText: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted },
+    syncingText: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
     sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -989,10 +989,10 @@ const styles = StyleSheet.create({
     },
     average: { flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: 4 },
     averageValue: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
-    averageLabel: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textSecondary, textAlign: 'center' },
+    averageLabel: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center' },
     averageNote: {
         fontSize: 11.5,
-        fontFamily: Fonts.regular,
+        ...BodyFont.regular,
         color: Palette.textMuted,
         marginTop: Spacing.sm,
     },

@@ -30,7 +30,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { JstyleVariant } from '@/modules/jstyle-ble';
 import * as transport from '@/lib/health/jstyle/transport';
 import { VARIANT_LABEL } from '@/lib/health/jstyle/reader';
@@ -474,12 +474,12 @@ const styles = StyleSheet.create({
         textAlign: 'center', marginTop: Spacing.xs,
     },
     deviceSub: {
-        fontFamily: Fonts.regular, fontSize: 15, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 15, color: Palette.textSecondary,
         textAlign: 'center', marginBottom: Spacing.xs,
     },
-    timestamp: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textMuted },
+    timestamp: { ...BodyFont.regular, fontSize: 13, color: Palette.textMuted },
     note: {
-        fontFamily: Fonts.medium, fontSize: 13, color: Palette.primary,
+        ...BodyFont.medium, fontSize: 13, color: Palette.primary,
         textAlign: 'center', marginTop: 2,
     },
 
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
         padding: Spacing.md, marginTop: Spacing.sm, width: '100%',
     },
     noticeText: {
-        flex: 1, fontFamily: Fonts.regular, fontSize: 14,
+        flex: 1, ...BodyFont.regular, fontSize: 14,
         color: Palette.text, lineHeight: 20,
     },
 
@@ -511,14 +511,14 @@ const styles = StyleSheet.create({
 
     results: { width: '100%', gap: Spacing.sm, marginTop: Spacing.lg },
     resultsHead: {
-        fontFamily: Fonts.medium, fontSize: 13, color: Palette.textMuted,
+        ...BodyFont.medium, fontSize: 13, color: Palette.textMuted,
         marginBottom: 2,
     },
 
     tips: { width: '100%', gap: Spacing.sm, marginTop: Spacing.xl },
     tip: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
     tipText: {
-        flex: 1, fontFamily: Fonts.regular, fontSize: 13,
+        flex: 1, ...BodyFont.regular, fontSize: 13,
         color: Palette.textMuted, lineHeight: 19,
     },
 });

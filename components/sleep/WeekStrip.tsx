@@ -14,7 +14,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { Palette, Fonts } from '@/constants/theme';
+import { Palette, Fonts, BodyFont } from '@/constants/theme';
 import { nightHasData, type SleepSeriesPoint } from '@/lib/sleep';
 
 const SIZE = 34;
@@ -103,7 +103,7 @@ export function WeekStrip({ series, today, selected, onSelect }: Props) {
 const styles = StyleSheet.create({
     strip: { flexDirection: 'row', justifyContent: 'space-between', gap: 2 },
     column: { alignItems: 'center', gap: 6, flex: 1 },
-    letter: { fontSize: 12, fontFamily: Fonts.medium, color: Palette.textMuted },
+    letter: { fontSize: 12, ...BodyFont.medium, color: Palette.textMuted },
     letterToday: { color: Palette.primary },
     letterSelected: { fontFamily: Fonts.bold, color: Palette.primary },
     ring: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },

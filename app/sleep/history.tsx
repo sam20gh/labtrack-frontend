@@ -21,7 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import { NightRow } from '@/components/sleep/NightRow';
 import { BedIllustration } from '@/components/sleep/BedIllustration';
@@ -307,24 +307,24 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
     titleBlock: { paddingHorizontal: Spacing.xl, gap: 2 },
     title: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
-    subtitle: { fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    subtitle: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     controls: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg,
     },
-    controlsLabel: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.text },
+    controlsLabel: { fontSize: 13, ...BodyFont.medium, color: Palette.text },
     filterButton: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    filterLabel: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.primary },
+    filterLabel: { fontSize: 13, ...BodyFont.medium, color: Palette.primary },
 
     content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl * 2, gap: Spacing.xl },
     group: { gap: Spacing.sm },
     groupTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text, marginBottom: 2 },
-    hint: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted, textAlign: 'center' },
+    hint: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, textAlign: 'center' },
 
     empty: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxxl },
     emptyTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     emptyBody: {
-        fontSize: 13, fontFamily: Fonts.regular, color: Palette.textSecondary,
+        fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', paddingHorizontal: Spacing.xl, lineHeight: 19,
     },
 
@@ -337,14 +337,14 @@ const styles = StyleSheet.create({
     sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     sheetTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     fieldLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text, marginTop: Spacing.sm },
-    fieldHint: { fontSize: 11, fontFamily: Fonts.regular, color: Palette.textMuted },
+    fieldHint: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
     chip: {
         paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm,
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.borderSlate,
     },
     chipActive: { backgroundColor: Palette.primarySurface, borderColor: Palette.primary },
-    chipLabel: { fontSize: 13, fontFamily: Fonts.medium, color: Palette.textSecondary },
+    chipLabel: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     chipLabelActive: { color: Palette.primary },
     apply: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,

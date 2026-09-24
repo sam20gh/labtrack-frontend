@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ApiError } from '@/lib/api';
 import { getAccuracy, iconFor, tintFor, type Accuracy } from '@/lib/prediction';
-import { Palette, Spacing, Radius, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 
 type Row = { label: string; total: number } & Partial<Accuracy>;
 
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     content: { padding: Spacing.lg, paddingBottom: Spacing.xxxl },
     title: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text },
     subtitle: {
-        fontSize: 14, lineHeight: 21, fontFamily: Fonts.regular,
+        fontSize: 14, lineHeight: 21, ...BodyFont.regular,
         color: Palette.textSecondary, marginTop: Spacing.xs,
     },
     headline: {
@@ -154,9 +154,9 @@ const styles = StyleSheet.create({
     },
     headlineValue: { fontSize: 40, fontFamily: Fonts.bold, color: Palette.text },
     headlineMuted: { fontSize: 40, fontFamily: Fonts.bold, color: Palette.textMuted },
-    headlineLabel: { fontSize: 14, lineHeight: 21, fontFamily: Fonts.medium, color: Palette.text },
+    headlineLabel: { fontSize: 14, lineHeight: 21, ...BodyFont.medium, color: Palette.text },
     headlineSub: {
-        fontSize: 12, lineHeight: 18, fontFamily: Fonts.regular,
+        fontSize: 12, lineHeight: 18, ...BodyFont.regular,
         color: Palette.textSecondary, marginTop: Spacing.xs,
     },
     section: {
@@ -169,16 +169,16 @@ const styles = StyleSheet.create({
         padding: Spacing.lg, marginBottom: Spacing.sm,
     },
     rowLabel: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-    rowMeta: { fontSize: 12, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    rowMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     rowValue: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
     explainer: {
         backgroundColor: Palette.canvas, borderRadius: Radius.lg,
         padding: Spacing.lg, marginTop: Spacing.lg, gap: 4,
     },
     explainerTitle: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.text },
-    explainerBody: { fontSize: 12, lineHeight: 19, fontFamily: Fonts.regular, color: Palette.textSecondary },
+    explainerBody: { fontSize: 12, lineHeight: 19, ...BodyFont.regular, color: Palette.textSecondary },
     footer: {
-        fontSize: 12, fontFamily: Fonts.regular, color: Palette.textMuted,
+        fontSize: 12, ...BodyFont.regular, color: Palette.textMuted,
         textAlign: 'center', marginTop: Spacing.xl,
     },
 });

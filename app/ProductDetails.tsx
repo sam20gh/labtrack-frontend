@@ -46,7 +46,7 @@ import { api, ApiError } from '@/lib/api';
 import { useBasket } from '@/lib/basket';
 import { ORDER_STAGES, ORDER_STATUS_META } from '@/lib/orders';
 import { galleryOf, metaFor, formatPrice } from '@/lib/catalogue';
-import { Palette, Spacing, Radius, Shadow, Fonts } from '@/constants/theme';
+import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import { ErrorState } from '@/components/errors';
 import type { Product } from '@/types/api';
 
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     },
     thumbActive: { borderColor: Palette.white, borderWidth: 3 },
     placeholder: { alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
-    placeholderText: { fontFamily: Fonts.medium, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+    placeholderText: { ...BodyFont.medium, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
 
     // Sheet -----------------------------------------------------------------
     sheet: {
@@ -546,13 +546,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md, paddingVertical: 5, borderRadius: Radius.pill,
     },
     tagText: { fontFamily: Fonts.semibold, fontSize: 12 },
-    sku: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },
+    sku: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
     name: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.text, lineHeight: 33, marginTop: Spacing.md },
     priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.sm, marginTop: Spacing.sm },
     price: { fontFamily: Fonts.bold, fontSize: 28, color: Palette.primary },
-    priceNote: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },
+    priceNote: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
     description: {
-        fontFamily: Fonts.regular, fontSize: 15, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 15, color: Palette.textSecondary,
         lineHeight: 24, marginTop: Spacing.lg,
     },
     divider: { height: 1, backgroundColor: Palette.borderLight, marginVertical: Spacing.xl },
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     stepBody: { flex: 1, paddingBottom: Spacing.lg },
     stepLabel: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
     stepDescription: {
-        fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary,
         lineHeight: 19, marginTop: 2,
     },
     note: {
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
         padding: Spacing.lg, marginTop: Spacing.sm,
     },
     noteText: {
-        flex: 1, fontFamily: Fonts.regular, fontSize: 13,
+        flex: 1, ...BodyFont.regular, fontSize: 13,
         color: Palette.primaryDeep, lineHeight: 19,
     },
 
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1, borderTopColor: Palette.borderLight,
         ...Shadow.card,
     },
-    buyBarLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted },
+    buyBarLabel: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
     buyBarPrice: { fontFamily: Fonts.bold, fontSize: 20, color: Palette.text },
     buyButton: {
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -643,6 +643,6 @@ const styles = StyleSheet.create({
     },
     viewerCounter: {
         position: 'absolute', alignSelf: 'center',
-        fontFamily: Fonts.medium, fontSize: 13, color: 'rgba(255,255,255,0.85)',
+        ...BodyFont.medium, fontSize: 13, color: 'rgba(255,255,255,0.85)',
     },
 });

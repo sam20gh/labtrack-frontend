@@ -28,7 +28,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getMeal, deleteMeal, ALIGNMENT_META, MEAL_TYPE_LABEL, MACRO_META } from '@/lib/nutrition';
 import { SkeletonGroup, SkeletonBlock, SkeletonCard } from '@/components/nutrition/Skeleton';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { NutritionMealDetail } from '@/types/api';
 
 const dateLine = (iso: string) => {
@@ -450,9 +450,9 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.lg,
     },
     calories: { fontFamily: Fonts.bold, fontSize: 34, color: Palette.text },
-    name: { fontFamily: Fonts.medium, fontSize: 17, color: Palette.text, marginTop: Spacing.xs, textAlign: 'center' },
+    name: { ...BodyFont.medium, fontSize: 17, color: Palette.text, marginTop: Spacing.xs, textAlign: 'center' },
     whenRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.sm },
-    when: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary },
+    when: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
     dot: { color: Palette.textMuted, marginHorizontal: Spacing.xs },
     slotBadge: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     },
     slotBadgeText: { fontFamily: Fonts.semibold, fontSize: 12 },
     rationale: {
-        fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary,
+        ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 20, marginTop: Spacing.md,
     },
 
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     statInitialText: { fontFamily: Fonts.semibold, fontSize: 11, color: Palette.textSecondary },
     statName: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
     statValue: { fontFamily: Fonts.bold, fontSize: 20, color: Palette.text },
-    statUnit: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted },
+    statUnit: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
 
     galleryTile: { width: 88, height: 88, borderRadius: Radius.md, backgroundColor: Palette.borderLight },
     dots: { flexDirection: 'row', gap: Spacing.xs, justifyContent: 'center', marginTop: Spacing.md },
@@ -494,29 +494,29 @@ const styles = StyleSheet.create({
     pageDotOn: { backgroundColor: Palette.primary },
 
     breakdownTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
-    breakdownBody: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19, marginTop: Spacing.xs },
+    breakdownBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19, marginTop: Spacing.xs },
     stack: { flexDirection: 'row', borderRadius: Radius.sm, overflow: 'hidden', marginTop: Spacing.lg },
-    stackCaption: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.sm },
+    stackCaption: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.sm },
     legendRow: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Palette.border, marginTop: Spacing.sm,
     },
     legendDot: { width: 8, height: 8, borderRadius: 4 },
-    legendLabel: { flex: 1, fontFamily: Fonts.medium, fontSize: 13, color: Palette.text },
+    legendLabel: { flex: 1, ...BodyFont.medium, fontSize: 13, color: Palette.text },
     legendValue: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.text },
-    legendPct: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textMuted },
+    legendPct: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
 
     goalRow: { marginBottom: Spacing.lg },
     goalHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-    goalLabel: { fontFamily: Fonts.medium, fontSize: 13, color: Palette.text },
+    goalLabel: { ...BodyFont.medium, fontSize: 13, color: Palette.text },
     goalPct: { fontFamily: Fonts.bold, fontSize: 13, color: Palette.text },
     goalTrack: { height: 8, borderRadius: Radius.pill, backgroundColor: Palette.borderLight, overflow: 'hidden' },
     goalFill: { height: '100%', borderRadius: Radius.pill },
-    goalMeta: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.xs },
+    goalMeta: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, marginTop: Spacing.xs },
 
     dayRow: { flexDirection: 'row', justifyContent: 'space-between' },
     dayValue: { fontFamily: Fonts.bold, fontSize: 20, color: Palette.text },
-    dayLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary, maxWidth: 130 },
+    dayLabel: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary, maxWidth: 130 },
     linkRow: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
         marginTop: Spacing.lg, paddingTop: Spacing.md,
@@ -525,12 +525,12 @@ const styles = StyleSheet.create({
     link: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
 
     guidanceLabel: { fontFamily: Fonts.bold, fontSize: 11, color: Palette.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
-    guidanceDirective: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text, marginTop: Spacing.xs, lineHeight: 20 },
-    guidanceWhy: { fontFamily: Fonts.regular, fontSize: 12, color: Palette.textSecondary, marginTop: Spacing.xs, lineHeight: 18 },
+    guidanceDirective: { ...BodyFont.semibold, fontSize: 14, color: Palette.text, marginTop: Spacing.xs, lineHeight: 20 },
+    guidanceWhy: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: Spacing.xs, lineHeight: 18 },
 
     swapCard: { backgroundColor: Palette.primarySurface, borderColor: Palette.primaryLight },
     swapName: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.text },
-    swapWhy: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, marginTop: Spacing.xs, lineHeight: 19 },
+    swapWhy: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginTop: Spacing.xs, lineHeight: 19 },
     swapMacros: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.primaryDark, marginTop: Spacing.sm },
 
     actions: { paddingHorizontal: Spacing.lg, marginTop: Spacing.xxl, gap: Spacing.md },

@@ -10,7 +10,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { ALIGNMENT_META, MEAL_TYPE_LABEL } from '@/lib/nutrition';
 import type { MealLog } from '@/types/api';
 
@@ -88,10 +88,10 @@ const styles = StyleSheet.create({
     thumbPlaceholder: { alignItems: 'center', justifyContent: 'center' },
     body: { flex: 1 },
     metaRow: { flexDirection: 'row', justifyContent: 'space-between' },
-    meta: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textMuted },
+    meta: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
     name: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text, marginTop: 1 },
     macroRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.xs },
-    macro: { fontFamily: Fonts.regular, fontSize: 11, color: Palette.textSecondary },
+    macro: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
     macroValue: { fontFamily: Fonts.bold, fontSize: 12, color: Palette.text },
     badge: {
         flexDirection: 'row',

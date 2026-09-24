@@ -27,7 +27,7 @@ import { PillGlyph } from '@/components/medications/PillGlyph';
 import { ensureRemindersReady } from '@/lib/notifications';
 import { warnRemindersUnavailable } from '@/lib/medicationReminders';
 import { FindingCard } from '@/components/medications/FindingCard';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { TrackedMedication, MedicationCatalogueEntry, InteractionFinding, MedicationInsight } from '@/types/api';
 
 type Tab = 'overview' | 'insight';
@@ -373,19 +373,19 @@ const styles = StyleSheet.create({
     headerTitle: { flex: 1, fontSize: 17, color: Palette.text, fontFamily: Fonts.semibold, textAlign: 'center', textTransform: 'capitalize' },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
     emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.semibold },
-    link: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.medium },
+    link: { fontSize: 13, color: Palette.primary, ...BodyFont.medium },
 
     hero: { flexDirection: 'row', gap: Spacing.lg, alignItems: 'center', paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },
     heroName: { fontSize: 20, color: Palette.text, fontFamily: Fonts.bold, textTransform: 'capitalize' },
-    heroPlain: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.medium, marginTop: 1 },
+    heroPlain: { fontSize: 13, color: Palette.primary, ...BodyFont.medium, marginTop: 1 },
     heroChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: Spacing.sm },
     heroChip: { backgroundColor: Palette.borderLight, paddingHorizontal: 9, paddingVertical: 3, borderRadius: Radius.sm },
-    heroChipText: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    heroChipText: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
 
     tabs: { flexDirection: 'row', paddingHorizontal: Spacing.xl, gap: Spacing.xl, borderBottomWidth: 1, borderBottomColor: Palette.border },
     tab: { paddingVertical: Spacing.md, borderBottomWidth: 2, borderBottomColor: 'transparent' },
     tabActive: { borderBottomColor: Palette.primary },
-    tabText: { fontSize: 14, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    tabText: { fontSize: 14, color: Palette.textSecondary, ...BodyFont.medium },
     tabTextActive: { color: Palette.primary, fontFamily: Fonts.semibold },
 
     content: { padding: Spacing.xl, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
@@ -394,9 +394,9 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg, gap: Spacing.sm,
     },
     cardTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold, marginBottom: Spacing.xs },
-    body: { fontSize: 13, color: Palette.text, fontFamily: Fonts.regular, lineHeight: 20 },
-    muted: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.regular, lineHeight: 18 },
-    subLabel: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    body: { fontSize: 13, color: Palette.text, ...BodyFont.regular, lineHeight: 20 },
+    muted: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 18 },
+    subLabel: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
 
     detailRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
 
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 9, paddingVertical: 5,
     },
     tagSerious: { backgroundColor: Palette.dangerSurface },
-    tagText: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    tagText: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
 
     section: { gap: Spacing.sm },
     sectionTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
@@ -424,13 +424,13 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border,
     },
     smallButtonActive: { borderColor: Palette.primary },
-    smallButtonText: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.medium },
+    smallButtonText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
     smallButtonTextActive: { color: Palette.primary },
 
     statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
     stat: { flex: 1, minWidth: '40%', gap: 2 },
     statValue: { fontSize: 22, fontFamily: Fonts.bold },
-    statLabel: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.regular },
+    statLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
 
-    footer: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.regular, lineHeight: 17 },
+    footer: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 17 },
 });

@@ -19,7 +19,7 @@ import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import type { CalendarDay } from '@/lib/activity';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
         flex: 1,
         textAlign: 'center',
         fontSize: 11,
-        fontFamily: Fonts.medium,
+        ...BodyFont.medium,
         color: Palette.textMuted,
     },
 
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
         borderRadius: RING / 2,
     },
     ringBoxSelected: { backgroundColor: Palette.primary },
-    date: { fontSize: 12.5, fontFamily: Fonts.medium, color: Palette.text },
+    date: { fontSize: 12.5, ...BodyFont.medium, color: Palette.text },
     dateSelected: { fontFamily: Fonts.semibold, color: Palette.white },
     quiet: { color: Palette.textSecondary },
     future: { color: Palette.border },

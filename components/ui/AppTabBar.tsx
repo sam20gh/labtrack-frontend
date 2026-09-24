@@ -22,7 +22,7 @@ import * as Haptics from 'expo-haptics';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { QuickActionsSheet } from '@/components/QuickActionsSheet';
 import { openQuickAction, type QuickAction } from '@/lib/quickActions';
-import { Palette, Fonts, Spacing } from '@/constants/theme';
+import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
 
 /** Route names in bar order. The action button goes between index 1 and 2. */
 const TAB_ORDER = ['index', 'assistant', 'orders', 'results'] as const;
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     pill: { ...StyleSheet.absoluteFillObject, borderRadius: PILL_H / 2 },
     iconIdle: { opacity: 0.7 },
     // textSecondary, not textMuted: #9CA3AF on white is 2.5:1, under AA for 10pt text.
-    label: { fontFamily: Fonts.medium, fontSize: 10, color: Palette.textSecondary },
+    label: { ...BodyFont.medium, fontSize: 10, color: Palette.textSecondary },
 
     buttonSlot: {
         width: BUTTON + Spacing.lg,

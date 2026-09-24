@@ -12,7 +12,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { Palette, Fonts } from '@/constants/theme';
+import { Palette, Fonts, BodyFont } from '@/constants/theme';
 
 interface Props {
     consumed: number;
@@ -148,6 +148,6 @@ const styles = StyleSheet.create({
     // here are the 180pt defaults, kept so the styles read at a glance.
     centre: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
     value: { fontFamily: Fonts.bold, fontSize: 38, color: Palette.text },
-    of: { fontFamily: Fonts.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
-    caption: { fontFamily: Fonts.medium, fontSize: 12, color: Palette.primary, marginTop: 6 },
+    of: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
+    caption: { ...BodyFont.medium, fontSize: 12, color: Palette.primary, marginTop: 6 },
 });
