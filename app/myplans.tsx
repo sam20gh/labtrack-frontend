@@ -27,6 +27,7 @@ import { getPlan, dismissPlanItem, STATUS_META, TYPE_ICON } from '@/lib/plan';
 import { hasBeenAsked, registerForPushNotifications } from '@/lib/notifications';
 import type { PlanItem, GroupedPlanItems, Product } from '@/types/api';
 
+import { Palette } from '@/constants/theme';
 const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
     dueText: { fontSize: 12, color: '#9CA3AF' },
     description: { fontSize: 13, color: '#6B7280', lineHeight: 19, marginTop: 10 },
     linked: { fontSize: 12, color: '#6B7280', marginTop: 8 },
-    linkedPrice: { color: '#7C3AED', fontWeight: '700' },
+    linkedPrice: { color: Palette.textSecondary, fontWeight: '700' },
     unavailable: { fontSize: 12, color: '#9CA3AF', marginTop: 10, fontStyle: 'italic' },
     trackLink: {
         flexDirection: 'row',

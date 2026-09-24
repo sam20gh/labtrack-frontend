@@ -92,7 +92,7 @@ export default function MetricsInsightScreen() {
                         <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
                     </TouchableOpacity>
                     <View style={styles.heroIcon}>
-                        <Ionicons name="bulb-outline" size={22} color={Palette.primary} />
+                        <Ionicons name="bulb-outline" size={22} color={Palette.textSecondary} />
                     </View>
                     <Text style={styles.heroTitle}>Health Metrics Insight</Text>
                     <Text style={styles.heroBlurb}>

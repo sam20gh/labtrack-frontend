@@ -207,7 +207,7 @@ export default function AchievementDetailScreen() {
                     <View style={styles.milestone}>
                         <View style={styles.milestoneHead}>
                             <View style={styles.milestoneTitle}>
-                                <Ionicons name="ribbon-outline" size={16} color={Palette.primary} />
+                                <Ionicons name="ribbon-outline" size={16} color={Palette.textSecondary} />
                                 <Text style={styles.milestoneLevel}>Level {data.level + 1}</Text>
                             </View>
                             <Text style={styles.milestoneNext}>Next Milestone</Text>

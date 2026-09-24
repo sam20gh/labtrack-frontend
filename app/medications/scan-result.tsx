@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
 
     name: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold, textTransform: 'capitalize', marginTop: Spacing.sm },
     brand: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
-    plain: { fontSize: 13, color: Palette.primary, ...BodyFont.medium, marginTop: 2 },
+    plain: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium, marginTop: 2 },
 
     factRow: { flexDirection: 'row', gap: Spacing.xxl, marginTop: Spacing.md },
     fact: { gap: 2 },

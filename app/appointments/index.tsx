@@ -373,7 +373,7 @@ const AgendaRow = ({ appointment, last, onReschedule, onCancel }: {
 const EmptyDay = ({ isToday, onFind }: { isToday: boolean; onFind: () => void }) => (
     <View style={styles.empty}>
         <View style={styles.emptyMark}>
-            <Ionicons name="calendar-clear-outline" size={26} color={Palette.primary} />
+            <Ionicons name="calendar-clear-outline" size={26} color={Palette.textSecondary} />
         </View>
         <Text style={styles.emptyTitle}>
             {isToday ? 'Nothing booked today' : 'Nothing booked this day'}
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     apptAvatarFallback: {
         alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primarySurface,
     },
-    apptInitials: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
+    apptInitials: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold },
     apptName: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold },
     apptSpeciality: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     statusPill: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm },
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     emptyMark: {
         width: 52, height: 52, borderRadius: Radius.pill,
         alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.primarySurface, marginBottom: Spacing.xs,
+        backgroundColor: Palette.borderLight, marginBottom: Spacing.xs,
     },
     emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     emptyBody: {
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     },
     sheetMark: {
         width: 52, height: 52, borderRadius: Radius.pill,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.borderLight,
     },
     sheetMarkDanger: { backgroundColor: Palette.dangerSurface },
     sheetTitle: { fontSize: 18, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center' },

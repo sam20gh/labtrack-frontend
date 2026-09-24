@@ -316,7 +316,7 @@ export default function HydrationScreen() {
                     accessibilityRole="button"
                 >
                     <View style={styles.askIcon}>
-                        <Ionicons name="sparkles" size={18} color={Palette.primary} />
+                        <Ionicons name="sparkles" size={18} color={Palette.textSecondary} />
                     </View>
                     <View style={styles.flex}>
                         <Text style={styles.askTitle}>Ask Predyqt AI about your hydration</Text>
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     },
     askIcon: {
         width: 38, height: 38, borderRadius: 19,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     askTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },

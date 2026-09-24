@@ -594,7 +594,7 @@ export default function DnaReportScreen() {
                             <View key={group.category} style={styles.section}>
                                 <View style={styles.sectionHead}>
                                     <View style={styles.sectionIcon}>
-                                        <Ionicons name={group.icon as any} size={17} color={Palette.primary} />
+                                        <Ionicons name={group.icon as any} size={17} color={Palette.textSecondary} />
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.sectionTitle}>{group.title}</Text>
@@ -631,7 +631,7 @@ export default function DnaReportScreen() {
                                 <Ionicons
                                     name={file.consent?.riskResultsOptIn ? 'eye-outline' : 'lock-closed-outline'}
                                     size={18}
-                                    color={Palette.primary}
+                                    color={Palette.textSecondary}
                                 />
                             </View>
                             <Text style={styles.consentTitle}>
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
     },
     sectionIcon: {
         width: 32, height: 32, borderRadius: Radius.md, marginTop: 1,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.borderLight,
     },
     sectionTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
     sectionBlurb: {

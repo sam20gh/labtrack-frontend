@@ -1168,7 +1168,7 @@ export default function HomeScreen() {
                                                 activeOpacity={0.8}
                                             >
                                                 <View style={styles.setupIcon}>
-                                                    <Ionicons name={item.icon} size={18} color={Palette.primary} />
+                                                    <Ionicons name={item.icon} size={18} color={Palette.textSecondary} />
                                                 </View>
                                                 <View style={styles.flex}>
                                                     <Text style={styles.rowTitle}>{item.title}</Text>
@@ -2234,7 +2234,7 @@ const AskCard = React.memo(({ conversation, onOpen }: {
                 disabled={unavailable}
             >
                 <View style={styles.botIcon}>
-                    <Ionicons name="sparkles" size={18} color={Palette.primary} />
+                    <Ionicons name="sparkles" size={18} color={Palette.textSecondary} />
                 </View>
                 <View style={styles.bubble}>
                     <Text style={styles.bubbleText} numberOfLines={last ? 3 : undefined}>
@@ -2355,7 +2355,7 @@ const AnalysisCard = React.memo(({
         <View style={styles.analysisCard}>
             <View style={styles.analysisHeader}>
                 <View style={styles.analysisIcon}>
-                    <Ionicons name="sparkles" size={18} color={Palette.primary} />
+                    <Ionicons name="sparkles" size={18} color={Palette.textSecondary} />
                 </View>
                 <View style={styles.flex}>
                     <Text style={styles.analysisTest} numberOfLines={1}>{headTitle}</Text>
@@ -2455,7 +2455,7 @@ const AnalysisCard = React.memo(({
                             {!!plain.next_step && (
                                 <View style={styles.nextStep}>
                                     <View style={styles.changesHeader}>
-                                        <Ionicons name="arrow-forward-circle-outline" size={15} color={Palette.primary} />
+                                        <Ionicons name="arrow-forward-circle-outline" size={15} color={Palette.textSecondary} />
                                         <Text style={styles.changesLabel}>Your next step</Text>
                                     </View>
                                     <Text style={styles.nextStepText}>{plain.next_step}</Text>
@@ -2479,7 +2479,7 @@ const AnalysisCard = React.memo(({
                     {hasMeaningfulChanges(interpretation) && (!plain || expanded) && (
                         <View style={styles.changesNote}>
                             <View style={styles.changesHeader}>
-                                <Ionicons name="git-compare-outline" size={15} color={Palette.primary} />
+                                <Ionicons name="git-compare-outline" size={15} color={Palette.textSecondary} />
                                 <Text style={styles.changesLabel}>What changed</Text>
                             </View>
                             <Text style={styles.detailBody} numberOfLines={expanded ? undefined : 3}>
@@ -2688,7 +2688,7 @@ const SignedOut = ({ products, router, topInset }: {
                 {BENEFITS.map((b) => (
                     <View key={b.title} style={styles.benefitCard}>
                         <View style={styles.benefitIcon}>
-                            <Ionicons name={b.icon} size={20} color={Palette.primary} />
+                            <Ionicons name={b.icon} size={20} color={Palette.textSecondary} />
                         </View>
                         <Text style={styles.benefitTitle}>{b.title}</Text>
                         <Text style={styles.benefitBody}>{b.body}</Text>
@@ -2866,7 +2866,7 @@ const styles = StyleSheet.create({
     // Get more from Predyqt -----------------------------------------------
     setupRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     setupIcon: {
-        width: 38, height: 38, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,
+        width: 38, height: 38, borderRadius: Radius.md, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
 
@@ -2963,7 +2963,7 @@ const styles = StyleSheet.create({
     // Assistant ------------------------------------------------------------
     bubbleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
     botIcon: {
-        width: 40, height: 40, borderRadius: 20, backgroundColor: Palette.primarySurface,
+        width: 40, height: 40, borderRadius: 20, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     bubble: {
@@ -2983,16 +2983,16 @@ const styles = StyleSheet.create({
     },
     analysisHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     analysisIcon: {
-        width: 32, height: 32, borderRadius: Radius.md, backgroundColor: Palette.primarySurface,
+        width: 32, height: 32, borderRadius: Radius.md, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     analysisTest: { fontSize: 17, color: Palette.text, fontFamily: Fonts.semibold },
     analysisMeta: { fontSize: 14, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 2 },
     aiBadge: {
         paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radius.sm,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
     },
-    aiBadgeText: { fontSize: 12, color: Palette.primary, fontFamily: Fonts.bold, letterSpacing: 0.5 },
+    aiBadgeText: { fontSize: 12, color: Palette.text, fontFamily: Fonts.bold, letterSpacing: 0.5 },
     analysisSummary: { fontSize: 16, lineHeight: 24, color: Palette.text, ...BodyFont.regular },
 
     /**
@@ -3028,7 +3028,7 @@ const styles = StyleSheet.create({
     },
     detailName: { fontSize: 16, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
     detailBody: { fontSize: 15, lineHeight: 22, color: Palette.textSecondary, ...BodyFont.regular },
-    detailAction: { fontSize: 15, lineHeight: 22, color: Palette.primary, ...BodyFont.medium },
+    detailAction: { fontSize: 15, lineHeight: 22, color: Palette.textSecondary, ...BodyFont.medium },
     riskRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
     riskPill: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.sm },
     riskText: { fontSize: 12, fontFamily: Fonts.bold },
@@ -3067,7 +3067,7 @@ const styles = StyleSheet.create({
     changesHeader: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     changesLabel: {
         fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase',
-        color: Palette.primary, fontFamily: Fonts.bold,
+        color: Palette.text, fontFamily: Fonts.bold,
     },
     labNote: {
         gap: 3, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Palette.surface,
@@ -3113,7 +3113,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border, gap: Spacing.sm,
     },
     benefitIcon: {
-        width: 48, height: 48, borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
+        width: 48, height: 48, borderRadius: Radius.lg, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     benefitTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold },

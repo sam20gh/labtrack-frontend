@@ -21,6 +21,7 @@ import {
 } from '@/lib/clinician';
 import type { Professional } from '@/types/api';
 
+import { Palette } from '@/constants/theme';
 const age = (dob?: string) => {
     if (!dob) return null;
     const d = new Date(dob);
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
     signInBody: { flex: 1, paddingHorizontal: 24, justifyContent: 'center' },
     iconCircle: {
-        width: 60, height: 60, borderRadius: 16, backgroundColor: '#F3E8FF',
+        width: 60, height: 60, borderRadius: 16, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center', marginBottom: 20,
     },
     title: { fontSize: 24, fontWeight: '700', color: '#1F2937', marginBottom: 8 },

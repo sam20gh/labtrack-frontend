@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     },
     topBarSpacer: { width: 24 },
     badge: {
-        borderWidth: 1, borderColor: Palette.primaryLight, backgroundColor: Palette.primarySurface,
+        borderWidth: 1, borderColor: Palette.primaryLight, backgroundColor: Palette.borderLight,
         borderRadius: Radius.pill, paddingVertical: 6, paddingHorizontal: Spacing.md,
     },
     badgeText: { fontSize: 12, ...BodyFont.medium, color: Palette.primaryDark },

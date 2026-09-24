@@ -151,7 +151,7 @@ export default function LogMealScreen() {
                         <View style={styles.optionIcon}>
                             {busy === 'photo'
                                 ? <ActivityIndicator size="small" color={Palette.primary} />
-                                : <Ionicons name="camera-outline" size={20} color={Palette.primary} />}
+                                : <Ionicons name="camera-outline" size={20} color={Palette.textSecondary} />}
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.optionTitle}>Take a photo</Text>
@@ -170,7 +170,7 @@ export default function LogMealScreen() {
                         disabled={aiAvailable === false || busy !== null}
                     >
                         <View style={styles.optionIcon}>
-                            <Ionicons name="images-outline" size={20} color={Palette.primary} />
+                            <Ionicons name="images-outline" size={20} color={Palette.textSecondary} />
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.optionTitle}>Choose a photo</Text>
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: Radius.md,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center',
         justifyContent: 'center',
     },

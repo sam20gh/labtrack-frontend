@@ -122,7 +122,7 @@ export default function ScanScreen() {
 
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.illustration}>
-                    <Ionicons name="scan-outline" size={44} color={Palette.primary} />
+                    <Ionicons name="scan-outline" size={44} color={Palette.textSecondary} />
                 </View>
 
                 <Text style={styles.title}>Before you scan</Text>
@@ -134,7 +134,7 @@ export default function ScanScreen() {
                     {CHECKLIST.map((item) => (
                         <View key={item.title} style={styles.checkRow}>
                             <View style={styles.checkIcon}>
-                                <Ionicons name={item.icon as any} size={17} color={Palette.primary} />
+                                <Ionicons name={item.icon as any} size={17} color={Palette.textSecondary} />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.checkTitle}>{item.title}</Text>
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     checkRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
     checkIcon: {
         width: 34, height: 34, borderRadius: 17,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     checkTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold },

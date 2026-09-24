@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { getIngestionStatus, parseReportDocument } from '@/lib/reports';
 
+import { Palette } from '@/constants/theme';
 export default function AddResultScreen() {
     const router = useRouter();
     const [automaticParsing, setAutomaticParsing] = useState<boolean | null>(null);
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
     },
     optionDisabled: { opacity: 0.5 },
     optionIcon: {
-        width: 44, height: 44, borderRadius: 12, backgroundColor: '#F3E8FF',
+        width: 44, height: 44, borderRadius: 12, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     optionText: { flex: 1 },

@@ -216,7 +216,7 @@ export default function NutritionHistoryScreen() {
                                             <Ionicons
                                                 name={SLOT_ICON[meal.mealType] as any}
                                                 size={18}
-                                                color={Palette.primary}
+                                                color={Palette.textSecondary}
                                             />
                                         </View>
                                         <View style={{ flex: 1 }}>
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     rowHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     rowIcon: {
         width: 38, height: 38, borderRadius: Radius.md,
-        backgroundColor: Palette.primarySurface, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: Palette.borderLight, alignItems: 'center', justifyContent: 'center',
     },
     rowName: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
     rowMeta: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },

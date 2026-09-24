@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     yours: {
         fontSize: 10,
         fontFamily: Fonts.semibold,
-        color: Palette.primary,
+        color: Palette.text,
         backgroundColor: Palette.primarySurface,
         paddingHorizontal: 6,
         paddingVertical: 2,

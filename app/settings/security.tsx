@@ -160,7 +160,7 @@ export default function SecuritySettingsScreen() {
                     <View style={styles.group}>
                         <View style={styles.row}>
                             <View style={styles.rowIcon}>
-                                <Ionicons name="log-in-outline" size={18} color={Palette.primary} />
+                                <Ionicons name="log-in-outline" size={18} color={Palette.textSecondary} />
                             </View>
                             <View style={styles.rowText}>
                                 <Text style={styles.rowTitle}>Remember login</Text>
@@ -181,7 +181,7 @@ export default function SecuritySettingsScreen() {
                             accessibilityRole="button"
                         >
                             <View style={styles.rowIcon}>
-                                <Ionicons name="lock-closed-outline" size={18} color={Palette.primary} />
+                                <Ionicons name="lock-closed-outline" size={18} color={Palette.textSecondary} />
                             </View>
                             <View style={styles.rowText}>
                                 <Text style={styles.rowTitle}>Change password</Text>
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     rowPressed: { backgroundColor: Palette.borderLight },
     rowIcon: {
         width: 34, height: 34, borderRadius: Radius.md,
-        backgroundColor: Palette.primarySurface, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: Palette.borderLight, alignItems: 'center', justifyContent: 'center',
     },
     rowIconDanger: { backgroundColor: Palette.dangerSurface },
     rowIconMuted: { backgroundColor: Palette.borderLight },

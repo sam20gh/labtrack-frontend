@@ -33,8 +33,27 @@ export const Palette = {
      */
     primaryDeep: '#2E1065',
     indigo: '#4F46E5',
-    /** Hero gradient, top-left to bottom-right, as drawn in the kit's home header. */
-    heroGradient: ['#7C3AED', '#6D28D9', '#4F46E5'] as [string, string, string],
+    /**
+     * Hero *surfaces* — every gradient header and hero card. Deep and single-hue, top-left to
+     * bottom-right: violet-900 to violet-950.
+     *
+     * The kit draws these as bright violet into indigo, which is `actionGradient` below, and
+     * across fifteen screens that made the loudest colour in the app the background of the
+     * most important news on each: "3 markers outside your range" printed on something that
+     * looks like a promotion. Deep, it reads as a plinth rather than a shout — the argument
+     * `TrophyCase` makes for its dark card — and the bright purple is left meaning *act here*.
+     * Every colour drawn on a hero gets more legible, not less: white goes from 5.7:1 to
+     * ≥10.9:1, and the amber, green and rose the rings use clear 4:1.
+     *
+     * Only something *darker* than this can be lost on it. A purple button on a hero now
+     * reads as a button, where on the old gradient it was the same colour as its background.
+     */
+    heroGradient: ['#4C1D95', '#3D177D', '#2E1065'] as [string, string, string],
+    /**
+     * The kit's bright gradient, for the one control that *is* the brand's action: the raised
+     * button in the tab bar. Not for surfaces — see `heroGradient`.
+     */
+    actionGradient: ['#7C3AED', '#6D28D9', '#4F46E5'] as [string, string, string],
 
     // Clinical status. These are semantic, not decorative: a person reads them to
     // understand a result, so they must stay distinguishable and consistent everywhere.

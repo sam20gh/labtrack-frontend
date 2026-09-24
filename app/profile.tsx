@@ -397,7 +397,7 @@ export default function ProfileScreen() {
                         the score's own band, which is the status this product actually has. */}
                     {!!score?.bandLabel && (
                         <View style={styles.bandPill}>
-                            <Ionicons name="sparkles" size={12} color={Palette.primary} />
+                            <Ionicons name="sparkles" size={12} color={Palette.textSecondary} />
                             <Text style={styles.bandPillText}>{score.bandLabel}</Text>
                         </View>
                     )}
@@ -550,7 +550,7 @@ export default function ProfileScreen() {
 
                     <View style={styles.footer}>
                         <View style={styles.footerMark}>
-                            <Ionicons name="add" size={18} color={Palette.primary} />
+                            <Ionicons name="add" size={18} color={Palette.textSecondary} />
                         </View>
                         <Text style={styles.footerVersion}>
                             Predyqt v{Constants.expoConfig?.version ?? '1.0.0'}
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
     promoLinkText: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
     promoGlyph: {
         width: 56, height: 56, borderRadius: Radius.lg,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
 
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
     rowPressed: { backgroundColor: Palette.surface },
     rowIcon: {
         width: 34, height: 34, borderRadius: Radius.md,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     rowIconDanger: { backgroundColor: Palette.dangerSurface },
@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
     footer: { alignItems: 'center', gap: 4, paddingTop: Spacing.sm },
     footerMark: {
         width: 34, height: 34, borderRadius: 17,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: Spacing.xs,
     },

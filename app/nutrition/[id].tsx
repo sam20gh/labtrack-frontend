@@ -175,7 +175,7 @@ export default function NutritionDetailsScreen() {
                         <Image source={{ uri: meal.imageUrl }} style={styles.heroImage} />
                     ) : (
                         <View style={styles.heroIcon}>
-                            <Ionicons name="restaurant-outline" size={30} color={Palette.primary} />
+                            <Ionicons name="restaurant-outline" size={30} color={Palette.textSecondary} />
                         </View>
                     )}
 
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     heroImage: { width: 120, height: 120, borderRadius: Radius.xl, marginBottom: Spacing.lg },
     heroIcon: {
         width: 64, height: 64, borderRadius: Radius.xl,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: Spacing.lg,
     },
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     },
     link: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
 
-    guidanceLabel: { fontFamily: Fonts.bold, fontSize: 11, color: Palette.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
+    guidanceLabel: { fontFamily: Fonts.bold, fontSize: 11, color: Palette.text, textTransform: 'uppercase', letterSpacing: 0.5 },
     guidanceDirective: { ...BodyFont.semibold, fontSize: 14, color: Palette.text, marginTop: Spacing.xs, lineHeight: 20 },
     guidanceWhy: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: Spacing.xs, lineHeight: 18 },
 

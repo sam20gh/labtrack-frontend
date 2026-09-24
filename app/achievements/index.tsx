@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
         padding: Spacing.md, marginBottom: Spacing.sm, ...Shadow.card,
     },
     boardRowYou: { borderWidth: 1, borderColor: Palette.primaryPale },
-    boardRank: { width: 22, fontSize: 13, fontFamily: Fonts.bold, color: Palette.primary },
+    boardRank: { width: 22, fontSize: 13, fontFamily: Fonts.bold, color: Palette.text },
     boardName: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     boardMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
 

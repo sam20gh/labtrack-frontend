@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     headline: { fontSize: 27, fontFamily: Fonts.bold, color: Palette.text },
     headlineTarget: { fontSize: 19, fontFamily: Fonts.semibold, color: Palette.textMuted },
     headlineLabel: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
-    band: { fontSize: 12.5, fontFamily: Fonts.semibold, color: Palette.primary, marginTop: 4 },
+    band: { fontSize: 12.5, fontFamily: Fonts.semibold, color: Palette.text, marginTop: 4 },
 
     ringBox: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
 
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
         minHeight: 76,
     },
     reachedCopy: { flex: 1, gap: 2, paddingVertical: Spacing.md },
-    reachedTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.primary },
+    reachedTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text },
     reachedBody: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     reachedArt: { alignSelf: 'flex-end' },
 });

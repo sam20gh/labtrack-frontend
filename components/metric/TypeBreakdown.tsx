@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md,
         minWidth: 96,
     },
-    pillLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary, flexShrink: 1 },
+    pillLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text, flexShrink: 1 },
     leader: {
         height: 1,
         borderBottomWidth: 1,

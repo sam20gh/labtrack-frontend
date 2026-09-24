@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
         width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: Palette.primaryLight,
         alignItems: 'center', justifyContent: 'center',
     },
-    topicNumberText: { fontSize: 12, fontFamily: Fonts.bold, color: Palette.primary },
+    topicNumberText: { fontSize: 12, fontFamily: Fonts.bold, color: Palette.text },
 
     relatedRail: { gap: Spacing.md, paddingVertical: 4 },
 

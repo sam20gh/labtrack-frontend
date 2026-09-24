@@ -237,7 +237,7 @@ export default function SleepSetupScreen() {
                         <Text style={styles.question}>Here is your recommended night</Text>
                         <View style={styles.summaryCard}>
                             <View style={styles.summaryHead}>
-                                <Ionicons name="sparkles" size={18} color={Palette.primary} />
+                                <Ionicons name="sparkles" size={18} color={Palette.textSecondary} />
                                 <Text style={styles.summaryValue}>{formatMinutes(span)}</Text>
                             </View>
                             <Text style={styles.summaryCaption}>Your sleep goal</Text>

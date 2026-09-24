@@ -38,7 +38,7 @@ export function NightRow({ night, onPress, showSource = false, showDay = true }:
             accessibilityLabel={`${dayLabel(night.day)}, ${formatMinutes(night.asleepMin)} asleep`}
         >
             <View style={styles.mark}>
-                <Ionicons name="moon" size={16} color={Palette.primary} />
+                <Ionicons name="moon" size={16} color={Palette.textSecondary} />
             </View>
 
             <View style={styles.body}>
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     mark: {
         width: 34, height: 34, borderRadius: 17,
         alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
     },
     body: { flex: 1, gap: 2 },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },

@@ -91,7 +91,7 @@ export default function AssistantWidgetCard({ widget }: { widget: Widget }) {
         <View style={styles.card}>
             <View style={styles.header}>
                 <View style={styles.iconBadge}>
-                    <Ionicons name={ICONS[widget.kind] ?? 'sparkles-outline'} size={16} color={Palette.primary} />
+                    <Ionicons name={ICONS[widget.kind] ?? 'sparkles-outline'} size={16} color={Palette.textSecondary} />
                 </View>
                 <View style={styles.headerText}>
                     <Text style={styles.title} numberOfLines={2}>{widget.title}</Text>
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: Radius.md,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center',
         justifyContent: 'center',
     },

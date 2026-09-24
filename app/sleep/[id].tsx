@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     hero: { alignItems: 'center', gap: 6 },
     heroMark: {
         width: 48, height: 48, borderRadius: 24,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primarySurface,
+        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.borderLight,
     },
     heroValue: { fontSize: 34, fontFamily: Fonts.bold, color: Palette.text },
     heroBand: { fontSize: 13, fontFamily: Fonts.semibold },

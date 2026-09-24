@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     byline: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
     bylineAvatar: { width: 20, height: 20, borderRadius: 10, marginRight: 6 },
     avatarFallback: { backgroundColor: Palette.primarySurface, alignItems: 'center', justifyContent: 'center' },
-    avatarInitial: { fontSize: 10, fontFamily: Fonts.bold, color: Palette.primary },
+    avatarInitial: { fontSize: 10, fontFamily: Fonts.bold, color: Palette.text },
     bylineName: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary, flexShrink: 1 },
     bylineDot: { fontSize: 12, color: Palette.textMuted, marginHorizontal: 5 },
     bylineMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },

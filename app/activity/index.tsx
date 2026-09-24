@@ -500,12 +500,13 @@ export default function ActivityDashboard() {
                   Frame 7's header: a vertical wash from the accent to the page, not a
                   rounded purple card. The gradient's last stop is the page background, so
                   the range tabs below sit on white with no seam — which is why the text in
-                  here is `Palette.text` rather than white. The two round buttons keep the
-                  only elements over the saturated top on a white ground; dark glyphs
-                  directly on that purple sit at about 3:1.
+                  here is `Palette.text` rather than white. The wash starts at
+                  `primarySurface`, not at the saturated accent the kit draws: dark text over
+                  that purple sat at about 3:1, and a full-bleed band of the brand colour is
+                  the kind of surface `heroGradient` in constants/theme.ts explains retiring.
                 */}
                 <LinearGradient
-                    colors={[Palette.primary, Palette.primaryLight, Palette.background]}
+                    colors={[Palette.primarySurface, Palette.primarySurface, Palette.background]}
                     locations={[0, 0.45, 1]}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}

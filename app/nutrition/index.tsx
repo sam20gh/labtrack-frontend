@@ -275,7 +275,7 @@ export default function NutritionScreen() {
                         <View style={styles.section}>
                             <View style={styles.sectionHead}>
                                 <View style={styles.sectionTitleRow}>
-                                    <Ionicons name="sparkles-outline" size={16} color={Palette.primary} />
+                                    <Ionicons name="sparkles-outline" size={16} color={Palette.textSecondary} />
                                     <Text style={styles.sectionTitle}>AI Recommendations</Text>
                                 </View>
                                 <ActivityIndicator size="small" color={Palette.primary} />
@@ -312,7 +312,7 @@ export default function NutritionScreen() {
                         <View style={styles.section}>
                             <View style={styles.sectionHead}>
                                 <View style={styles.sectionTitleRow}>
-                                    <Ionicons name="sparkles-outline" size={16} color={Palette.primary} />
+                                    <Ionicons name="sparkles-outline" size={16} color={Palette.textSecondary} />
                                     <Text style={styles.sectionTitle}>AI Recommendations</Text>
                                 </View>
                                 <TouchableOpacity onPress={() => router.push('/nutrition/recommendations')} hitSlop={8}>
@@ -357,7 +357,7 @@ export default function NutritionScreen() {
                     <View style={styles.section}>
                         <View style={styles.sectionHead}>
                             <View style={styles.sectionTitleRow}>
-                                <Ionicons name="bar-chart-outline" size={16} color={Palette.primary} />
+                                <Ionicons name="bar-chart-outline" size={16} color={Palette.textSecondary} />
                                 <Text style={styles.sectionTitle}>Your Week in Macros</Text>
                             </View>
                             <TouchableOpacity onPress={() => router.push('/nutrition/insight')} hitSlop={8}>

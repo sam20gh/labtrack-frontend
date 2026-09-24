@@ -61,7 +61,7 @@ export default function ReadsList({ variant }: { variant: JstyleVariant }) {
             <View style={styles.grid}>
                 {available.map((family) => (
                     <View key={family.label} style={styles.pill}>
-                        <Ionicons name={family.icon} size={15} color={Palette.primary} />
+                        <Ionicons name={family.icon} size={15} color={Palette.textSecondary} />
                         <Text style={styles.label}>{family.label}</Text>
                     </View>
                 ))}

@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
         paddingVertical: 3,
         backgroundColor: Palette.primarySurface,
     },
-    typeChipText: { fontFamily: Fonts.semibold, fontSize: 11, color: Palette.primary },
+    typeChipText: { fontFamily: Fonts.semibold, fontSize: 11, color: Palette.text },
     viewerName: { fontFamily: Fonts.bold, fontSize: 19, color: Palette.text },
     viewerWhen: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
     statRow: {

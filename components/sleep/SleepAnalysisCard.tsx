@@ -108,9 +108,9 @@ const styles = StyleSheet.create({
         width: 22, height: 22, borderRadius: 11, marginTop: 1,
         alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primarySurface,
     },
-    stepText: { fontSize: 11, fontFamily: Fonts.bold, color: Palette.primary },
+    stepText: { fontSize: 11, fontFamily: Fonts.bold, color: Palette.text },
     title: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     detail: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 19 },
-    planTag: { fontSize: 10, fontFamily: Fonts.semibold, color: Palette.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
+    planTag: { fontSize: 10, fontFamily: Fonts.semibold, color: Palette.text, textTransform: 'uppercase', letterSpacing: 0.5 },
     basis: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 16 },
 });

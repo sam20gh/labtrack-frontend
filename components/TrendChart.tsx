@@ -15,6 +15,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
 import type { BiomarkerFlag } from '@/types/api';
 
+import { Palette } from '@/constants/theme';
 export interface TrendPoint {
     value: number;
     measuredAt: string;
@@ -205,6 +206,6 @@ const styles = StyleSheet.create({
     legend: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' },
     legendSwatch: { width: 14, height: 10, borderRadius: 2, backgroundColor: 'rgba(16,185,129,0.25)' },
     legendText: { fontSize: 11, color: '#6B7280' },
-    geneBadge: { backgroundColor: '#F3E8FF', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-    geneBadgeText: { fontSize: 10, color: '#7C3AED', fontWeight: '700' },
+    geneBadge: { backgroundColor: Palette.borderLight, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+    geneBadgeText: { fontSize: 10, color: Palette.textSecondary, fontWeight: '700' },
 });

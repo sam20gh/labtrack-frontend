@@ -66,7 +66,7 @@ export function SectionHeader({ title, icon, onSeeAll, style }: {
     return (
         <View style={[styles.section, style]}>
             <View style={styles.sectionLeft}>
-                {icon && <Ionicons name={icon} size={17} color={Palette.primary} />}
+                {icon && <Ionicons name={icon} size={17} color={Palette.textSecondary} />}
                 <Text style={styles.sectionTitle}>{title}</Text>
             </View>
             {onSeeAll && (

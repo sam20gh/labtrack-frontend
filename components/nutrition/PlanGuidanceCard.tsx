@@ -69,7 +69,7 @@ export function PlanGuidanceCard({ guidance, onPressItem, emptyHint }: Props) {
     return (
         <View style={styles.card}>
             <View style={styles.header}>
-                <Ionicons name="sparkles-outline" size={15} color={Palette.primary} />
+                <Ionicons name="sparkles-outline" size={15} color={Palette.textSecondary} />
                 <Text style={styles.headerText}>From your health plan</Text>
             </View>
 
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     headerText: {
         fontFamily: Fonts.semibold,
         fontSize: 12,
-        color: Palette.primary,
+        color: Palette.text,
         letterSpacing: 0.4,
         textTransform: 'uppercase',
     },

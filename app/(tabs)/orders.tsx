@@ -405,7 +405,7 @@ export default function OrdersScreen() {
                 {visible.length === 0 ? (
                     <View style={styles.empty}>
                         <View style={styles.emptyIcon}>
-                            <Ionicons name="search-outline" size={26} color={Palette.primary} />
+                            <Ionicons name="search-outline" size={26} color={Palette.textSecondary} />
                         </View>
                         <Text style={styles.emptyTitle}>Nothing matches that</Text>
                         <Text style={styles.emptyBody}>
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     // Empty -----------------------------------------------------------------
     empty: { alignItems: 'center', paddingHorizontal: Spacing.xxxl, paddingVertical: 56, gap: Spacing.sm },
     emptyIcon: {
-        width: 56, height: 56, borderRadius: 28, backgroundColor: Palette.primarySurface,
+        width: 56, height: 56, borderRadius: 28, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs,
     },
     emptyTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },

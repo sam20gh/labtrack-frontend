@@ -412,7 +412,7 @@ export default function ResultsScreen() {
                 {!biomarkers.length && !error ? (
                     <View style={styles.empty}>
                         <View style={styles.emptyIcon}>
-                            <Ionicons name="analytics-outline" size={34} color={Palette.primary} />
+                            <Ionicons name="analytics-outline" size={34} color={Palette.textSecondary} />
                         </View>
                         <Text style={styles.emptyTitle}>No results yet</Text>
                         <Text style={styles.emptyBody}>
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     // Empty
     empty: { alignItems: 'center', paddingVertical: 44, paddingHorizontal: GUTTER, gap: Spacing.md },
     emptyIcon: {
-        width: 64, height: 64, borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
+        width: 64, height: 64, borderRadius: Radius.pill, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     emptyTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },

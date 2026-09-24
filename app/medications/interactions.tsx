@@ -206,7 +206,7 @@ export default function InteractionsScreen() {
                                         <View style={styles.timingCard}>
                                             {check.timingAdvice.map((t, i) => (
                                                 <View key={i} style={styles.timingRow}>
-                                                    <Ionicons name="time-outline" size={15} color={Palette.primary} />
+                                                    <Ionicons name="time-outline" size={15} color={Palette.textSecondary} />
                                                     <View style={{ flex: 1 }}>
                                                         <Text style={styles.timingMed}>{t.medication}</Text>
                                                         <Text style={styles.timingAdvice}>{t.advice}</Text>
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     },
     questionRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
     questionNumber: {
-        fontSize: 12, color: Palette.primary, fontFamily: Fonts.bold,
+        fontSize: 12, color: Palette.text, fontFamily: Fonts.bold,
         width: 18, textAlign: 'center',
     },
     question: { flex: 1, fontSize: 13, color: Palette.text, ...BodyFont.medium, lineHeight: 19 },

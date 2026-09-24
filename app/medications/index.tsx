@@ -123,7 +123,7 @@ export default function MedicationsScreen() {
                 <Header router={router} />
                 <View style={styles.empty}>
                     <View style={styles.emptyIcon}>
-                        <Ionicons name="medkit-outline" size={38} color={Palette.primary} />
+                        <Ionicons name="medkit-outline" size={38} color={Palette.textSecondary} />
                     </View>
                     <Text style={styles.emptyTitle}>Track medications that matter</Text>
                     <Text style={styles.emptyBody}>
@@ -377,7 +377,7 @@ const Stat = ({ value, label }: { value: number | null | undefined; label: strin
 const QuickAction = ({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) => (
     <TouchableOpacity style={styles.action} onPress={onPress} activeOpacity={0.75}>
         <View style={styles.actionIcon}>
-            <Ionicons name={icon as any} size={20} color={Palette.primary} />
+            <Ionicons name={icon as any} size={20} color={Palette.textSecondary} />
         </View>
         <Text style={styles.actionLabel}>{label}</Text>
     </TouchableOpacity>
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     action: { alignItems: 'center', gap: 6, flex: 1 },
     actionIcon: {
         width: 46, height: 46, borderRadius: 23,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     actionLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl, gap: Spacing.md },
     emptyIcon: {
         width: 80, height: 80, borderRadius: 40,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: Spacing.sm,
     },

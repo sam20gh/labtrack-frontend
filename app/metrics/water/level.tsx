@@ -154,7 +154,7 @@ export default function HydrationLevelScreen() {
                     */}
                     {(today?.basis ?? []).map((line) => (
                         <View key={line} style={styles.basisRow}>
-                            <Ionicons name="ellipse" size={6} color={Palette.primary} />
+                            <Ionicons name="ellipse" size={6} color={Palette.textSecondary} />
                             <Text style={styles.basisText}>{line}</Text>
                         </View>
                     ))}
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl * 2, gap: Spacing.xl },
 
     top: { alignItems: 'center', gap: 4 },
-    eyebrow: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.primary, letterSpacing: 1.2 },
+    eyebrow: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.text, letterSpacing: 1.2 },
     title: { fontFamily: Fonts.bold, fontSize: 28, color: Palette.text },
     subtitle: {
         ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary,

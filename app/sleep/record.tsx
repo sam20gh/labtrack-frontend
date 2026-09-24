@@ -419,7 +419,7 @@ export default function SleepRecordScreen() {
             {/* ------------------------------------------------------ night-sky hero */}
             <Animated.View style={[styles.hero, heroHeight ? { height: heroHeight } : null]}>
                 <LinearGradient
-                    colors={[Palette.primaryDeep, Palette.primaryDark, Palette.primary]}
+                    colors={Palette.heroGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}

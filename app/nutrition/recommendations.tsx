@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     },
     sheetHero: { borderRadius: Radius.lg, overflow: 'hidden', marginBottom: Spacing.lg },
     sheetSlot: {
-        fontFamily: Fonts.bold, fontSize: 11, color: Palette.primary,
+        fontFamily: Fonts.bold, fontSize: 11, color: Palette.text,
         textTransform: 'uppercase', letterSpacing: 0.6,
     },
     sheetTitle: { fontFamily: Fonts.bold, fontSize: 21, color: Palette.text, marginTop: Spacing.xs },

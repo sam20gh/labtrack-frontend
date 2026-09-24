@@ -416,7 +416,7 @@ const Section = ({ title, icon, trailing, children }: {
 }) => (
     <View style={styles.section}>
         <View style={styles.sectionHeader}>
-            <Ionicons name={icon as any} size={17} color={Palette.primary} />
+            <Ionicons name={icon as any} size={17} color={Palette.textSecondary} />
             <Text style={styles.sectionTitle}>{title}</Text>
             {!!trailing && <Text style={styles.sectionTrailing}>{trailing}</Text>}
         </View>
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     doctorAvatarFallback: {
         alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primarySurface,
     },
-    doctorInitials: { fontSize: 16, color: Palette.primary, fontFamily: Fonts.bold },
+    doctorInitials: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     doctorName: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     doctorSpeciality: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 2 },
     ratePill: { flexDirection: 'row', alignItems: 'baseline' },

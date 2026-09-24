@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
         width: 26, height: 26, borderRadius: 13, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
-    stepNumberText: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.primary },
+    stepNumberText: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.text },
     stepTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text },
     stepBody: {
         fontSize: 13, lineHeight: 19, ...BodyFont.regular,
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch', backgroundColor: Palette.primarySurface,
         borderRadius: Radius.lg, padding: Spacing.xl, marginTop: Spacing.lg, gap: 4,
     },
-    scoreTitle: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
+    scoreTitle: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
     scoreValue: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.text },
     scoreBody: { fontSize: 13, lineHeight: 20, ...BodyFont.regular, color: Palette.text },
     notice: {

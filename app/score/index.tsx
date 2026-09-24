@@ -460,7 +460,7 @@ export default function ScoreBreakdownScreen() {
                     <>
                         <View style={styles.sectionRow}>
                             <View style={styles.sectionHeading}>
-                                <Ionicons name="sparkles" size={17} color={Palette.primary} />
+                                <Ionicons name="sparkles" size={17} color={Palette.textSecondary} />
                                 <Text style={styles.sectionTitle}>AI recommendations</Text>
                             </View>
                             <TouchableOpacity onPress={() => router.push('/myplans')} hitSlop={8}>
@@ -566,7 +566,7 @@ const ScoreExplainer = ({ visible, onClose }: { visible: boolean; onClose: () =>
         <Pressable style={styles.backdrop} onPress={onClose}>
             <Pressable style={styles.sheet} onPress={() => {}}>
                 <View style={styles.sheetMark}>
-                    <Ionicons name="sparkles" size={26} color={Palette.primary} />
+                    <Ionicons name="sparkles" size={26} color={Palette.textSecondary} />
                 </View>
 
                 <Text style={styles.sheetTitle}>What is the Predyqt score?</Text>
@@ -607,7 +607,7 @@ const SheetPoint = ({ icon, title, body }: {
 }) => (
     <View style={styles.sheetPoint}>
         <View style={styles.sheetPointIcon}>
-            <Ionicons name={icon} size={16} color={Palette.primary} />
+            <Ionicons name={icon} size={16} color={Palette.textSecondary} />
         </View>
         <View style={styles.flex}>
             <Text style={styles.sheetPointTitle}>{title}</Text>
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     },
     sheetMark: {
         width: 54, height: 54, borderRadius: Radius.lg, alignSelf: 'center',
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     sheetTitle: {
@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
     sheetPoints: { gap: Spacing.md, marginTop: Spacing.xs },
     sheetPoint: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
     sheetPointIcon: {
-        width: 30, height: 30, borderRadius: 15, backgroundColor: Palette.primarySurface,
+        width: 30, height: 30, borderRadius: 15, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
     sheetPointTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },

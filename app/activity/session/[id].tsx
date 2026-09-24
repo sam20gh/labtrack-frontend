@@ -181,7 +181,7 @@ export default function ActivityDetail() {
                     </Text>
                     {session.scoreDelta > 0 && (
                         <View style={styles.scorePill}>
-                            <Ionicons name="add" size={13} color={Palette.primary} />
+                            <Ionicons name="add" size={13} color={Palette.textSecondary} />
                             <Text style={styles.scorePillText}>{session.scoreDelta} score</Text>
                         </View>
                     )}
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.pill,
         marginTop: Spacing.sm,
     },
-    scorePillText: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.primary },
+    scorePillText: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.text },
 
     sectionTitle: {
         fontSize: 15,

@@ -261,7 +261,7 @@ export default function NutritionScheduleScreen() {
                                                         <Ionicons
                                                             name={SLOT_ICON[meal.mealType] as any}
                                                             size={18}
-                                                            color={Palette.primary}
+                                                            color={Palette.textSecondary}
                                                         />
                                                     </View>
                                                     <View style={{ flex: 1 }}>
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     },
     mealIcon: {
         width: 36, height: 36, borderRadius: Radius.md,
-        backgroundColor: Palette.primarySurface, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: Palette.borderLight, alignItems: 'center', justifyContent: 'center',
     },
     mealName: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
     mealSlot: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },

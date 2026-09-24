@@ -21,6 +21,7 @@ import { createOrder } from '@/lib/orders';
 import { getPaymentStatus, createPaymentIntent, confirmPayment, formatMoney } from '@/lib/payments';
 import { ApiError } from '@/lib/api';
 
+import { Palette } from '@/constants/theme';
 export default function BasketScreen() {
     const router = useRouter();
     const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
     },
     lineBody: { flex: 1 },
     lineName: { fontSize: 14, fontWeight: '600', color: '#1F2937', lineHeight: 19 },
-    fromPlan: { fontSize: 11, color: '#7C3AED', marginTop: 4 },
+    fromPlan: { fontSize: 11, color: Palette.textSecondary, marginTop: 4 },
     linePrice: { fontSize: 14, fontWeight: '700', color: '#1F2937', marginTop: 4 },
     qty: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     qtyButton: {

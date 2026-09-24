@@ -195,7 +195,7 @@ export default function AssistantScreen() {
                     {messages.length === 0 ? (
                         <View style={styles.empty}>
                             <View style={styles.emptyBadge}>
-                                <Ionicons name="sparkles" size={26} color={Palette.primary} />
+                                <Ionicons name="sparkles" size={26} color={Palette.textSecondary} />
                             </View>
                             <Text style={styles.emptyTitle}>Ask me anything about your health</Text>
                             <Text style={styles.emptyBody}>
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     empty: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: Spacing.xxxl },
     emptyBadge: {
         width: 62, height: 62, borderRadius: 31,
-        backgroundColor: Palette.primarySurface,
+        backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: Spacing.xl,
     },

@@ -393,7 +393,7 @@ export default function ProductDetails() {
                     </View>
 
                     <View style={styles.note}>
-                        <Ionicons name="shield-checkmark-outline" size={17} color={Palette.primary} />
+                        <Ionicons name="shield-checkmark-outline" size={17} color={Palette.textSecondary} />
                         <Text style={styles.noteText}>
                             Results land in your record and are read alongside everything else Predyqt
                             knows about you, so the analysis is about you rather than about the number.
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     sku: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
     name: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.text, lineHeight: 33, marginTop: Spacing.md },
     priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.sm, marginTop: Spacing.sm },
-    price: { fontFamily: Fonts.bold, fontSize: 28, color: Palette.primary },
+    price: { fontFamily: Fonts.bold, fontSize: 28, color: Palette.text },
     priceNote: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
     description: {
         ...BodyFont.regular, fontSize: 15, color: Palette.textSecondary,
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
         width: 26, height: 26, borderRadius: 13, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
-    stepDotText: { fontFamily: Fonts.bold, fontSize: 12, color: Palette.primary },
+    stepDotText: { fontFamily: Fonts.bold, fontSize: 12, color: Palette.text },
     stepLine: { flex: 1, width: 2, backgroundColor: Palette.borderLight, marginVertical: 2 },
     stepBody: { flex: 1, paddingBottom: Spacing.lg },
     stepLabel: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },

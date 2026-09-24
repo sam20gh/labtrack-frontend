@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     avatarFallback: {
         alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primarySurface,
     },
-    avatarText: { fontSize: 24, color: Palette.primary, fontFamily: Fonts.bold },
+    avatarText: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold },
     name: { fontSize: 20, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center' },
     speciality: {
         fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium, textAlign: 'center',
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md, paddingVertical: 5,
         borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
     },
-    tagText: { fontSize: 12, color: Palette.primary, fontFamily: Fonts.semibold },
+    tagText: { fontSize: 12, color: Palette.text, fontFamily: Fonts.semibold },
 
     locationRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
 

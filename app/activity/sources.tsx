@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: Radius.pill,
     },
-    chipText: { fontSize: 11.5, ...BodyFont.medium, color: Palette.primary },
+    chipText: { fontSize: 11.5, ...BodyFont.medium, color: Palette.textSecondary },
 
     devices: { gap: 2 },
     devicesLabel: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.text },

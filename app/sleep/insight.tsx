@@ -110,7 +110,7 @@ export default function SleepInsightScreen() {
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
             <LinearGradient
-                colors={[Palette.primary, Palette.primaryDark]}
+                colors={Palette.heroGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.hero}
@@ -232,7 +232,7 @@ export default function SleepInsightScreen() {
                                     <Text style={styles.cardTitle}>What your plan says</Text>
                                     {data.guidance.map((g, i) => (
                                         <View key={`${g.key}-${i}`} style={styles.guidanceRow}>
-                                            <Ionicons name="leaf-outline" size={15} color={Palette.primary} />
+                                            <Ionicons name="leaf-outline" size={15} color={Palette.textSecondary} />
                                             <Text style={styles.guidanceText}>{g.directive}</Text>
                                         </View>
                                     ))}

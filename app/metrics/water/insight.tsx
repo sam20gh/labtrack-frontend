@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     vesselLabel: { ...BodyFont.medium, fontSize: 12, color: Palette.textMuted },
 
     levelCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
-    ringLabel: { fontFamily: Fonts.bold, fontSize: 22, color: Palette.primary },
+    ringLabel: { fontFamily: Fonts.bold, fontSize: 22, color: Palette.text },
     levelTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
     levelBlurb: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: 3, lineHeight: 18 },
     learn: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: Spacing.sm },

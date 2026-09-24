@@ -149,5 +149,5 @@ const styles = StyleSheet.create({
     centre: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
     value: { fontFamily: Fonts.bold, fontSize: 38, color: Palette.text },
     of: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
-    caption: { ...BodyFont.medium, fontSize: 12, color: Palette.primary, marginTop: 6 },
+    caption: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary, marginTop: 6 },
 });

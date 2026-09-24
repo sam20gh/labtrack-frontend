@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
         padding: Spacing.lg, borderRadius: Radius.lg,
         backgroundColor: Palette.primarySurface, gap: 4, alignItems: 'center',
     },
-    summaryValue: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.primary },
+    summaryValue: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
     summaryLabel: {
         fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', lineHeight: 18,

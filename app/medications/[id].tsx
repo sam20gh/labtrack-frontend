@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
 
     hero: { flexDirection: 'row', gap: Spacing.lg, alignItems: 'center', paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },
     heroName: { fontSize: 20, color: Palette.text, fontFamily: Fonts.bold, textTransform: 'capitalize' },
-    heroPlain: { fontSize: 13, color: Palette.primary, ...BodyFont.medium, marginTop: 1 },
+    heroPlain: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium, marginTop: 1 },
     heroChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: Spacing.sm },
     heroChip: { backgroundColor: Palette.borderLight, paddingHorizontal: 9, paddingVertical: 3, borderRadius: Radius.sm },
     heroChipText: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },

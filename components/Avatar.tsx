@@ -70,7 +70,7 @@ export const Avatar = ({
                     {initials}
                 </Text>
             ) : (
-                <Ionicons name="person" size={Math.round(size * 0.45)} color={Palette.primary} />
+                <Ionicons name="person" size={Math.round(size * 0.45)} color={Palette.textSecondary} />
             )}
         </View>
     );
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    initials: { fontFamily: Fonts.bold, color: Palette.primary, includeFontPadding: false },
+    initials: { fontFamily: Fonts.bold, color: Palette.text, includeFontPadding: false },
 });
 
 export default Avatar;

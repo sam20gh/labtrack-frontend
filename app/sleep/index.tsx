@@ -299,7 +299,7 @@ export default function SleepDashboard() {
                     accessibilityLabel="Open your sleep record"
                 >
                     <LinearGradient
-                        colors={[Palette.primaryDeep, Palette.primary]}
+                        colors={Palette.heroGradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.recordCard}
@@ -448,7 +448,7 @@ export default function SleepDashboard() {
                         <View style={styles.card}>
                             {overview.guidance.map((g, i) => (
                                 <View key={`${g.key}-${i}`} style={styles.guidanceRow}>
-                                    <Ionicons name="leaf-outline" size={16} color={Palette.primary} />
+                                    <Ionicons name="leaf-outline" size={16} color={Palette.textSecondary} />
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.guidanceDirective}>{g.directive}</Text>
                                         {g.rationale ? (

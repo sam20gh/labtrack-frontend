@@ -238,7 +238,7 @@ export default function PredictHubScreen() {
                         ))
                     ) : (
                         <View style={styles.empty}>
-                            <Ionicons name="sparkles-outline" size={28} color={Palette.primary} />
+                            <Ionicons name="sparkles-outline" size={28} color={Palette.textSecondary} />
                             <Text style={styles.emptyTitle}>Nothing predicted yet</Text>
                             <Text style={styles.emptyBody}>
                                 {ready.length

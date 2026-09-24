@@ -197,7 +197,7 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
                         accessibilityState={{ expanded: sheetOpen }}
                     >
                         <LinearGradient
-                            colors={Palette.heroGradient}
+                            colors={Palette.actionGradient}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.buttonFill}

@@ -392,7 +392,7 @@ const Unpaired = ({
 
         {blocked ? (
             <View style={styles.notice}>
-                <Ionicons name="information-circle" size={20} color={Palette.primary} />
+                <Ionicons name="information-circle" size={20} color={Palette.textSecondary} />
                 <Text style={styles.noticeText}>{blocked}</Text>
             </View>
         ) : null}
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     },
     timestamp: { ...BodyFont.regular, fontSize: 13, color: Palette.textMuted },
     note: {
-        ...BodyFont.medium, fontSize: 13, color: Palette.primary,
+        ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary,
         textAlign: 'center', marginTop: 2,
     },
 

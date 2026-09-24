@@ -121,7 +121,7 @@ export default function ScorePredictionScreen() {
                 ) : insight ? (
                     <>
                         <View style={styles.hero}>
-                            <Ionicons name="medkit" size={30} color={Palette.primary} />
+                            <Ionicons name="medkit" size={30} color={Palette.textSecondary} />
                             <Text style={styles.heroValue}>{insight.display.range}</Text>
                             <Text style={styles.heroUnit}>pts</Text>
                         </View>
