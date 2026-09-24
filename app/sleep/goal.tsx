@@ -19,13 +19,12 @@
  * and tapping it puts the dial back on it.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { TimeDial } from '@/components/sleep/TimeDial';
 import {
@@ -38,6 +37,8 @@ import { ApiError } from '@/lib/api';
 const DEFAULT_WAKE = 7 * 60;
 
 export default function SleepGoalScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [data, setData] = useState<SleepPlanResponse | null>(null);
@@ -158,7 +159,7 @@ export default function SleepGoalScreen() {
                     </View>
                     <View style={styles.timeCard}>
                         <View style={styles.timeHead}>
-                            <View style={[styles.dot, { backgroundColor: Palette.primary }]} />
+                            <View style={[styles.dot, { backgroundColor: Palette.primaryFill }]} />
                             <Text style={styles.timeLabel}>Wake up</Text>
                         </View>
                         <Text style={styles.timeValue}>{formatClock(wakeMin)}</Text>
@@ -210,7 +211,7 @@ export default function SleepGoalScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     },
     save: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        paddingVertical: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Palette.primary,
+        paddingVertical: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Palette.primaryFill,
     },
     saveLabel: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

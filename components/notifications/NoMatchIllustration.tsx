@@ -22,9 +22,11 @@
  */
 import React from 'react';
 import Svg, { Path } from 'react-native-svg';
-import { Palette } from '@/constants/theme';
+
+import { usePalette } from '@/hooks/useTheme';
 
 export default function NoMatchIllustration({ width = 236 }: { width?: number }) {
+    const Palette = usePalette();
     return (
         <Svg
             width={width}

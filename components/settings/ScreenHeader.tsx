@@ -11,10 +11,11 @@
  * glyph off the 20pt gutter the titles align to.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export const ScreenHeader = ({
     title, subtitle, action,
@@ -25,6 +26,8 @@ export const ScreenHeader = ({
     action?: React.ReactNode;
 }) => {
     const router = useRouter();
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <View style={styles.wrap}>
             <View style={styles.navRow}>
@@ -45,7 +48,7 @@ export const ScreenHeader = ({
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm },
     navRow: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -60,6 +63,6 @@ const styles = StyleSheet.create({
         fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         marginTop: 6, lineHeight: 20,
     },
-});
+}));
 
 export default ScreenHeader;

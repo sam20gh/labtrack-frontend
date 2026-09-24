@@ -15,6 +15,7 @@ import { api, apiFetch } from './api';
 import { getAccessToken } from './auth';
 import { API_URL } from '@/constants/config';
 import type { Biomarker, BiomarkerFlag, TestResult } from '@/types/api';
+import { schemed, tone } from '@/constants/theme';
 
 export interface IngestionStatus {
     automaticParsing: boolean;
@@ -129,11 +130,11 @@ export const confirmReport = (payload: {
 }) => apiFetch<ConfirmResult>('/reports/confirm', { method: 'POST', body: payload });
 
 /** Human-facing labels and colours for a flag. */
-export const FLAG_META: Record<BiomarkerFlag, { label: string; color: string }> = {
-    critical_low: { label: 'Critically low', color: '#DC2626' },
-    low: { label: 'Low', color: '#F59E0B' },
-    normal: { label: 'Normal', color: '#10B981' },
-    high: { label: 'High', color: '#F59E0B' },
-    critical_high: { label: 'Critically high', color: '#DC2626' },
-    unknown: { label: 'Not evaluated', color: '#9CA3AF' },
-};
+export const FLAG_META: Record<BiomarkerFlag, { label: string; color: string }> = schemed((Palette, scheme) => ({
+    critical_low: { label: 'Critically low', color: Palette.danger },
+    low: { label: 'Low', color: tone('#F59E0B', scheme) },
+    normal: { label: 'Normal', color: tone('#10B981', scheme) },
+    high: { label: 'High', color: tone('#F59E0B', scheme) },
+    critical_high: { label: 'Critically high', color: Palette.danger },
+    unknown: { label: 'Not evaluated', color: Palette.textMuted },
+}));

@@ -13,13 +13,14 @@
  * reading a boolean and starts reading a subscription. Nothing else changes.
  */
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const BENEFITS = [
     { icon: 'document-text-outline', title: 'Every article in full', detail: 'No preview cut-off part way through a piece.' },
@@ -29,6 +30,8 @@ const BENEFITS = [
 ];
 
 export default function GoProScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     return (
@@ -37,12 +40,12 @@ export default function GoProScreen() {
                 <SafeAreaView edges={['top']}>
                     <View style={styles.header}>
                         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-                            <Ionicons name="close" size={24} color={Palette.white} />
+                            <Ionicons name="close" size={24} color={Palettes.light.white} />
                         </TouchableOpacity>
                     </View>
                     <View style={styles.hero}>
                         <View style={styles.heroBadge}>
-                            <Ionicons name="lock-open-outline" size={26} color={Palette.white} />
+                            <Ionicons name="lock-open-outline" size={26} color={Palettes.light.white} />
                         </View>
                         <Text style={styles.heroTitle}>Predyqt Pro</Text>
                         <Text style={styles.heroBody}>
@@ -96,7 +99,7 @@ export default function GoProScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     header: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.md },
     hero: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl, paddingTop: Spacing.lg, gap: Spacing.md },
@@ -104,7 +107,7 @@ const styles = StyleSheet.create({
         width: 52, height: 52, borderRadius: 26,
         backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center',
     },
-    heroTitle: { fontSize: 28, fontFamily: Fonts.bold, color: Palette.white },
+    heroTitle: { fontSize: 28, fontFamily: Fonts.bold, color: Palettes.light.white },
     heroBody: { fontSize: 15, ...BodyFont.regular, color: 'rgba(255,255,255,0.9)', lineHeight: 22 },
 
     content: { padding: Spacing.xl, gap: Spacing.lg },
@@ -126,10 +129,10 @@ const styles = StyleSheet.create({
 
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        paddingVertical: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Palette.primary,
+        paddingVertical: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Palette.primaryFill,
         marginTop: Spacing.md,
     },
     ctaText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
     ghost: { alignItems: 'center', paddingVertical: Spacing.md },
     ghostText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.textSecondary },
-});
+}));

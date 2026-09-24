@@ -13,9 +13,10 @@
  * drawing both printed the same advice twice in a row.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { NutritionGuidance } from '@/types/api';
 
 interface Props {
@@ -54,6 +55,8 @@ function rowsOf(guidance: NutritionGuidance[]): NutritionGuidance[] {
 }
 
 export function PlanGuidanceCard({ guidance, onPressItem, emptyHint }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!guidance.length) {
         return (
             <View style={[styles.card, styles.empty]}>
@@ -110,7 +113,7 @@ export function PlanGuidanceCard({ guidance, onPressItem, emptyHint }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         backgroundColor: Palette.background,
         borderRadius: Radius.lg,
@@ -163,4 +166,4 @@ const styles = StyleSheet.create({
         borderColor: Palette.borderSlate,
     },
     chipText: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
-});
+}));

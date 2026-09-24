@@ -7,16 +7,7 @@
  * API needs, so there is nothing to do here after they return `ok`.
  */
 import React, { useState } from 'react';
-import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,10 +18,13 @@ import AuthField from '@/components/auth/AuthField';
 import AuthHeader from '@/components/auth/AuthHeader';
 import GoogleMark from '@/components/auth/GoogleMark';
 import { authStyles } from '@/components/auth/styles';
-import { Fonts, Palette, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { signInWithEmail, signInWithGoogle, STORAGE_KEYS } from '@/lib/auth';
 
 const LoginScreen = () => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [form, setForm] = useState({ email: '', password: '' });
     const [loading, setLoading] = useState(false);
@@ -211,7 +205,7 @@ const LoginScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     bannerSlot: {
         marginBottom: 16,
     },
@@ -245,7 +239,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     checkboxOn: {
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         borderColor: Palette.primary,
     },
     checkboxLabel: {
@@ -260,7 +254,7 @@ const styles = StyleSheet.create({
         textDecorationLine: 'underline',
     },
     buttonBusy: {
-        backgroundColor: Palette.primaryDark,
+        backgroundColor: Palette.primaryDarkFill,
     },
     googleButton: {
         flexDirection: 'row',
@@ -276,6 +270,6 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semibold,
         color: Palette.white,
     },
-});
+}));
 
 export default LoginScreen;

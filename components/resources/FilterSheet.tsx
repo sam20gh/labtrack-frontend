@@ -11,12 +11,11 @@
  * added on the website appears in the sheet without an app release.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, Modal, ScrollView, TouchableOpacity, ActivityIndicator, Pressable,
-} from 'react-native';
+import { View, Text, Modal, ScrollView, TouchableOpacity, ActivityIndicator, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { listResources, type FilterOptions, type ResourceQuery } from '@/lib/resources';
 
 export type Filters = {
@@ -46,22 +45,26 @@ export const countActive = (filters: Filters) =>
 
 const Pill = ({ label, selected, icon, onPress }: {
     label: string; selected: boolean; icon?: string; onPress: () => void;
-}) => (
-    <TouchableOpacity
-        style={[styles.pill, selected && styles.pillSelected]}
-        onPress={onPress}
-        activeOpacity={0.8}
-    >
-        {!!icon && (
-            <Ionicons
-                name={icon as any}
-                size={14}
-                color={selected ? Palette.primary : Palette.textSecondary}
-            />
-        )}
-        <Text style={[styles.pillText, selected && styles.pillTextSelected]}>{label}</Text>
-    </TouchableOpacity>
-);
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity
+            style={[styles.pill, selected && styles.pillSelected]}
+            onPress={onPress}
+            activeOpacity={0.8}
+        >
+            {!!icon && (
+                <Ionicons
+                    name={icon as any}
+                    size={14}
+                    color={selected ? Palette.primary : Palette.textSecondary}
+                />
+            )}
+            <Text style={[styles.pillText, selected && styles.pillTextSelected]}>{label}</Text>
+        </TouchableOpacity>
+    );
+};
 
 export default function FilterSheet({ visible, options, value, baseQuery, onApply, onClose }: {
     visible: boolean;
@@ -72,6 +75,8 @@ export default function FilterSheet({ visible, options, value, baseQuery, onAppl
     onApply: (filters: Filters) => void;
     onClose: () => void;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const [draft, setDraft] = useState<Filters>(value);
     const [count, setCount] = useState<number | null>(null);
     const [counting, setCounting] = useState(false);
@@ -199,7 +204,7 @@ export default function FilterSheet({ visible, options, value, baseQuery, onAppl
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     backdrop: { flex: 1, backgroundColor: 'rgba(17,24,39,0.45)' },
     sheet: {
         backgroundColor: Palette.background,
@@ -239,7 +244,7 @@ const styles = StyleSheet.create({
     resetText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.textSecondary },
     apply: {
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        paddingVertical: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Palette.primary,
+        paddingVertical: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Palette.primaryFill,
     },
     applyText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
-});
+}));

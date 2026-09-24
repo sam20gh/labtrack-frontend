@@ -15,6 +15,7 @@
  */
 import { api, apiFetch } from './api';
 import type { Appointment, Professional, Id } from '@/types/api';
+import { schemed, tone } from '@/constants/theme';
 
 // ---------------------------------------------------------------------------
 // Wire calls
@@ -90,13 +91,13 @@ export const MODE_ICON: Record<AppointmentMode, string> = {
 export const STATUS_META: Record<
     Appointment['status'],
     { label: string; color: string; bg: string }
-> = {
-    requested: { label: 'Awaiting confirmation', color: '#B45309', bg: '#FFFBEB' },
-    confirmed: { label: 'Confirmed', color: '#059669', bg: '#ECFDF5' },
-    completed: { label: 'Completed', color: '#6B7280', bg: '#F9FAFB' },
-    cancelled: { label: 'Cancelled', color: '#DC2626', bg: '#FEF2F2' },
-    no_show: { label: 'Missed', color: '#DC2626', bg: '#FEF2F2' },
-};
+> = schemed((Palette, scheme) => ({
+    requested: { label: 'Awaiting confirmation', color: Palette.warning, bg: Palette.warningSurface },
+    confirmed: { label: 'Confirmed', color: Palette.success, bg: Palette.successSurface },
+    completed: { label: 'Completed', color: Palette.textSecondary, bg: tone('#F9FAFB', scheme) },
+    cancelled: { label: 'Cancelled', color: Palette.danger, bg: Palette.dangerSurface },
+    no_show: { label: 'Missed', color: Palette.danger, bg: Palette.dangerSurface },
+}));
 
 /** Statuses that still occupy a slot in the diary and can be acted on. */
 export const LIVE_STATUSES: Appointment['status'][] = ['requested', 'confirmed'];

@@ -12,9 +12,7 @@
  *    the catalogue at all.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity, ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -23,11 +21,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { getAchievements, type AchievementHub } from '@/lib/achievements';
 import { AchievementTile } from '@/components/achievements/AchievementCards';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const ALL = '__all__';
 
 export default function AllAchievementsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [hub, setHub] = useState<AchievementHub | null>(null);
     const [loading, setLoading] = useState(true);
@@ -114,18 +115,21 @@ export default function AllAchievementsScreen() {
     );
 }
 
-const Chip = ({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) => (
-    <Pressable
-        style={[styles.chip, on && styles.chipOn]}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityState={{ selected: on }}
-    >
-        <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
-    </Pressable>
-);
+const Chip = ({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) => {
+    const styles = useStyles();
+    return (
+        <Pressable
+            style={[styles.chip, on && styles.chipOn]}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+        >
+            <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
+        </Pressable>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
@@ -141,9 +145,9 @@ const styles = StyleSheet.create({
         borderRadius: Radius.pill, backgroundColor: Palette.surface,
         borderWidth: 1, borderColor: Palette.border,
     },
-    chipOn: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    chipOn: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     chipText: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
     chipTextOn: { color: Palette.white, fontFamily: Fonts.semibold },
     grid: { flexDirection: 'row', flexWrap: 'wrap' },
     cell: { width: '33.33%' },
-});
+}));

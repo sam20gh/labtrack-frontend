@@ -11,9 +11,7 @@
  * measured value on or after it. An unresolved prediction is unresolved, never a miss.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -21,11 +19,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ApiError } from '@/lib/api';
 import { getAccuracy, iconFor, tintFor, type Accuracy } from '@/lib/prediction';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 type Row = { label: string; total: number } & Partial<Accuracy>;
 
 export default function PredictionAccuracyScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [overall, setOverall] = useState<Accuracy | null>(null);
@@ -138,7 +139,7 @@ export default function PredictionAccuracyScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
@@ -181,4 +182,4 @@ const styles = StyleSheet.create({
         fontSize: 12, ...BodyFont.regular, color: Palette.textMuted,
         textAlign: 'center', marginTop: Spacing.xl,
     },
-});
+}));

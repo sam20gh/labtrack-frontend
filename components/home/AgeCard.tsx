@@ -14,12 +14,13 @@
  * component is honest on its own terms.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import AgeOrb from '@/components/age/AgeOrb';
 import { deltaLabel, tintForBand, type PredyqtAge } from '@/lib/age';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 interface Props {
     age: PredyqtAge | null;
@@ -27,6 +28,8 @@ interface Props {
 }
 
 export default function AgeCard({ age, onPress }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!age?.ok || age.value === undefined) return null;
 
     const tint = tintForBand(age.band);
@@ -77,9 +80,12 @@ export default function AgeCard({ age, onPress }: Props) {
 }
 
 /** Holds the card's slot while it loads, so the sections below do not jump. */
-export const AgeCardSkeleton = () => <View style={styles.skeleton} />;
+export const AgeCardSkeleton = () => {
+    const styles = useStyles();
+    return <View style={styles.skeleton} />;
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         backgroundColor: Palette.background, borderRadius: Radius.xl,
@@ -93,4 +99,4 @@ const styles = StyleSheet.create({
     cta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: Spacing.md },
     ctaText: { fontFamily: Fonts.semibold, fontSize: 12.5, color: Palette.primary },
     skeleton: { height: 164, borderRadius: Radius.xl, backgroundColor: Palette.borderLight },
-});
+}));

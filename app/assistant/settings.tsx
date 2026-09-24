@@ -17,7 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import {
     getConversation, clearConversation, savePreferences,
     type AssistantMode, type Conversation,
@@ -29,6 +30,8 @@ const MODE_LABEL: Record<AssistantMode, string> = {
 };
 
 export default function AssistantSettings() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [conversation, setConversation] = useState<Conversation | null>(null);
     const [loading, setLoading] = useState(true);
@@ -179,7 +182,7 @@ export default function AssistantSettings() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
@@ -227,4 +230,4 @@ const styles = StyleSheet.create({
     destructiveText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.danger },
 
     error: { fontSize: 13, ...BodyFont.medium, color: Palette.danger },
-});
+}));

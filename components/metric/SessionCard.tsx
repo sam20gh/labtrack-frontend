@@ -13,9 +13,10 @@
  * Health Connect reader every synced workout had only a duration and this card looked broken.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont, activePalette } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { formatDuration, formatDistance, formatPace, formatType, type ActivitySession } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
 
@@ -36,28 +37,28 @@ export const statsFor = (session: ActivitySession): Stat[] => {
     const stats: Stat[] = [];
 
     const distance = formatDistance(session.distanceM);
-    if (distance) stats.push({ icon: 'location-outline', tint: Palette.text, ...split(distance) });
+    if (distance) stats.push({ icon: 'location-outline', tint: activePalette().text, ...split(distance) });
 
     if (session.scoreDelta > 0) {
-        stats.push({ icon: 'add-circle-outline', tint: Palette.primary, value: `+${session.scoreDelta}`, unit: 'score' });
+        stats.push({ icon: 'add-circle-outline', tint: activePalette().primary, value: `+${session.scoreDelta}`, unit: 'score' });
     }
 
     if (Number.isFinite(session.activeKcal as number)) {
-        stats.push({ icon: 'flame-outline', tint: Palette.amber, value: String(Math.round(session.activeKcal as number)), unit: 'kcal' });
+        stats.push({ icon: 'flame-outline', tint: activePalette().amber, value: String(Math.round(session.activeKcal as number)), unit: 'kcal' });
     }
 
     // `formatDuration` gives "30m" or "1h 20m". Only the first splits cleanly into a figure
     // and a unit; an hours-and-minutes string is one value and is left whole.
     const minutes = Math.round(session.durationSec / 60);
     stats.push(minutes < 60
-        ? { icon: 'time-outline', tint: Palette.danger, value: String(minutes), unit: 'min' }
-        : { icon: 'time-outline', tint: Palette.danger, value: formatDuration(session.durationSec), unit: '' });
+        ? { icon: 'time-outline', tint: activePalette().danger, value: String(minutes), unit: 'min' }
+        : { icon: 'time-outline', tint: activePalette().danger, value: formatDuration(session.durationSec), unit: '' });
 
     const pace = formatPace(session.distanceM, session.durationSec);
-    if (pace) stats.push({ icon: 'speedometer-outline', tint: Palette.indigo, ...split(pace) });
+    if (pace) stats.push({ icon: 'speedometer-outline', tint: activePalette().indigo, ...split(pace) });
 
     if (Number.isFinite(session.avgBpm as number)) {
-        stats.push({ icon: 'heart-outline', tint: Palette.danger, value: String(Math.round(session.avgBpm as number)), unit: 'bpm' });
+        stats.push({ icon: 'heart-outline', tint: activePalette().danger, value: String(Math.round(session.avgBpm as number)), unit: 'bpm' });
     }
 
     return stats;
@@ -69,6 +70,8 @@ interface Props {
 }
 
 export function SessionCard({ session, onPress }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const when = new Date(session.startedAt);
     const time = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const dateLabel = when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -121,9 +124,9 @@ export function SessionCard({ session, onPress }: Props) {
 /** The icon tile's side, which the stats grid indents by so it lines up under the title. */
 const ICON = 40;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderWidth: 1,
         borderColor: Palette.border,
         borderRadius: Radius.lg,
@@ -161,4 +164,4 @@ const styles = StyleSheet.create({
     },
     statValue: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
     statUnit: { fontSize: 11.5, ...BodyFont.regular, color: Palette.textSecondary },
-});
+}));

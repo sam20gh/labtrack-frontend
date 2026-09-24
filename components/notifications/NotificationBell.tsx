@@ -24,13 +24,16 @@
  *    are indistinguishable on purpose: neither is worth a mark.
  */
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getUnreadCount } from '@/lib/notificationCentre';
-import { Palette, Radius, Fonts } from '@/constants/theme';
+import { Radius, Fonts, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function NotificationBell({ onDark = true }: { onDark?: boolean }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [unread, setUnread] = useState<number | null>(null);
     const live = useRef(true);
@@ -59,7 +62,7 @@ export default function NotificationBell({ onDark = true }: { onDark?: boolean }
             <Ionicons
                 name={showBadge ? 'notifications' : 'notifications-outline'}
                 size={20}
-                color={onDark ? Palette.primaryDark : Palette.text}
+                color={onDark ? Palettes.light.primaryDark : Palette.text}
             />
             {showBadge && (
                 <View style={styles.badge}>
@@ -70,9 +73,10 @@ export default function NotificationBell({ onDark = true }: { onDark?: boolean }
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     button: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-    onDark: { backgroundColor: Palette.white },
+    // On the deep hero, which is the same violet in both schemes, so the control is too.
+    onDark: { backgroundColor: Palettes.light.background },
     onLight: { backgroundColor: Palette.borderLight },
     badge: {
         position: 'absolute', top: 1, right: 0,
@@ -87,4 +91,4 @@ const styles = StyleSheet.create({
     // 10pt, because the ring eats two of the eighteen and a 11pt digit clips its own
     // descender-less baseline on Android at the default font scale.
     badgeText: { fontSize: 10, lineHeight: 13, color: Palette.white, fontFamily: Fonts.bold },
-});
+}));

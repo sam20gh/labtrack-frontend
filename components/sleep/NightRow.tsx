@@ -7,9 +7,10 @@
  * labelled "Suboptimal" is a scroll of judgements about somebody's week.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { formatMinutes, formatClock, dayLabel, bandTint, type SleepNight } from '@/lib/sleep';
 
 interface Props {
@@ -29,6 +30,8 @@ interface Props {
 }
 
 export function NightRow({ night, onPress, showSource = false, showDay = true }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <Pressable
             style={styles.row}
@@ -60,7 +63,7 @@ export function NightRow({ night, onPress, showSource = false, showDay = true }:
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     row: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg,
@@ -77,6 +80,6 @@ const styles = StyleSheet.create({
     bandDot: { width: 7, height: 7, borderRadius: 4 },
     times: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     day: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
-});
+}));
 
 export default NightRow;

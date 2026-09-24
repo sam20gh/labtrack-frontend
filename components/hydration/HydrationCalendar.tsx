@@ -19,9 +19,10 @@
  * figure would restage every day in it whenever somebody weighed themselves.
  */
 import React, { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { dayStatus, type DayStatus } from '@/lib/hydration';
 import type { SeriesPoint } from '@/lib/metrics';
 
@@ -43,6 +44,8 @@ const monthTitle = (month: string) => {
 };
 
 function Mark({ status }: { status: DayStatus }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (status === 'met') {
         return (
             <View style={[styles.mark, styles.markMet]}>
@@ -71,6 +74,8 @@ interface Props {
 }
 
 export function HydrationCalendar({ month, series, today, onChangeMonth, onSelect }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const byDay = useMemo(() => new Map(series.map((p) => [p.day, p])), [series]);
 
     const [year, mon] = month.split('-').map(Number);
@@ -159,7 +164,7 @@ const LABELS: Record<DayStatus, string> = {
 
 const MARK = 22;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: { gap: Spacing.md },
     head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     title: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
@@ -185,8 +190,8 @@ const styles = StyleSheet.create({
     dateFuture: { color: Palette.textMuted },
 
     mark: { width: MARK, height: MARK, borderRadius: MARK / 2, alignItems: 'center', justifyContent: 'center' },
-    markMet: { backgroundColor: '#22C55E' },
-    markShort: { backgroundColor: '#EF4444' },
+    markMet: { backgroundColor: tone('#22C55E') },
+    markShort: { backgroundColor: tone('#EF4444') },
     markEmpty: { borderWidth: 1.5, borderColor: Palette.textSecondary },
     markFuture: { borderColor: Palette.border },
-});
+}));

@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { paramString } from './params';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 interface GenderOption {
     id: string;
@@ -26,6 +21,8 @@ const genderOptions: GenderOption[] = [
 ];
 
 export default function GenderScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [selectedGender, setSelectedGender] = useState<string | null>(paramString(params.gender) ?? null);
@@ -75,7 +72,7 @@ export default function GenderScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -104,7 +101,7 @@ export default function GenderScreen() {
                                 <Ionicons
                                     name={option.icon}
                                     size={20}
-                                    color={isSelected ? '#7C3AED' : '#6B7280'}
+                                    color={isSelected ? activePalette().primary : activePalette().textSecondary}
                                 />
                                 <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
                                     {option.label}
@@ -125,7 +122,7 @@ export default function GenderScreen() {
                             <TextInput
                                 style={styles.customInput}
                                 placeholder="Describe your gender identity (optional)"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={Palette.textMuted}
                                 value={customDescription}
                                 onChangeText={setCustomDescription}
                                 maxLength={30}
@@ -150,12 +147,12 @@ export default function GenderScreen() {
                     <Ionicons
                         name="arrow-forward"
                         size={20}
-                        color={selectedGender ? '#fff' : '#9CA3AF'}
+                        color={selectedGender ? '#fff' : activePalette().textMuted}
                     />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.preferNotButton} onPress={handlePreferNotToSay}>
-                    <Ionicons name="close" size={16} color="#7C3AED" />
+                    <Ionicons name="close" size={16} color={Palette.primary} />
                     <Text style={styles.preferNotText}>Prefer not to say</Text>
                 </TouchableOpacity>
             </View>
@@ -163,15 +160,15 @@ export default function GenderScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -187,17 +184,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -208,14 +205,14 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 14,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         textAlign: 'center',
         marginBottom: 32,
     },
@@ -228,22 +225,22 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 16,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     optionItemSelected: {
-        borderColor: '#7C3AED',
-        backgroundColor: '#FAF5FF',
+        borderColor: Palette.primary,
+        backgroundColor: tone('#FAF5FF'),
     },
     optionLabel: {
         flex: 1,
         fontSize: 15,
-        color: '#4B5563',
+        color: tone('#4B5563'),
         marginLeft: 12,
     },
     optionLabelSelected: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontWeight: '500',
     },
     radio: {
@@ -251,44 +248,44 @@ const styles = StyleSheet.create({
         height: 22,
         borderRadius: 11,
         borderWidth: 2,
-        borderColor: '#D1D5DB',
+        borderColor: tone('#D1D5DB'),
         alignItems: 'center',
         justifyContent: 'center',
     },
     radioSelected: {
-        borderColor: '#7C3AED',
+        borderColor: Palette.primary,
     },
     radioInner: {
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
     },
     customContainer: {
-        backgroundColor: '#FAF5FF',
+        backgroundColor: tone('#FAF5FF'),
         borderRadius: 12,
         padding: 16,
         marginTop: 4,
     },
     customLabel: {
         fontSize: 13,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         marginBottom: 12,
         lineHeight: 18,
     },
     customInput: {
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 8,
         padding: 12,
         fontSize: 14,
-        color: '#1F2937',
-        backgroundColor: '#fff',
+        color: Palette.text,
+        backgroundColor: Palette.background,
         minHeight: 60,
     },
     charCount: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: Palette.textMuted,
         textAlign: 'right',
         marginTop: 4,
     },
@@ -298,7 +295,7 @@ const styles = StyleSheet.create({
         paddingTop: 16,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -307,16 +304,16 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     continueButtonDisabled: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
     continueButtonTextDisabled: {
-        color: '#9CA3AF',
+        color: Palette.textMuted,
     },
     preferNotButton: {
         flexDirection: 'row',
@@ -324,13 +321,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 14,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
     },
     preferNotText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 15,
         fontWeight: '500',
         marginLeft: 8,
     },
-});
+}));

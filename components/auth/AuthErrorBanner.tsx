@@ -8,9 +8,10 @@
  * reading it, and it clears itself on the next keystroke.
  */
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Fonts, Palette, Radius } from '@/constants/theme';
+import { Fonts, Radius } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 interface Props {
     message: string;
@@ -18,6 +19,8 @@ interface Props {
 }
 
 export default function AuthErrorBanner({ message, onDismiss }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <View style={styles.banner} accessibilityLiveRegion="polite" accessibilityRole="alert">
             <Ionicons name="warning-outline" size={20} color={Palette.danger} />
@@ -34,7 +37,7 @@ export default function AuthErrorBanner({ message, onDismiss }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     banner: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -52,4 +55,4 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semibold,
         color: Palette.text,
     },
-});
+}));

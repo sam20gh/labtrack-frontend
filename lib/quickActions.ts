@@ -29,7 +29,7 @@ import type { Router } from 'expo-router';
 import { openResourcesHub } from './resources';
 import { openPredictions } from './prediction';
 import { openAchievements } from './achievements';
-import { Palette } from '@/constants/theme';
+import { schemed } from '@/constants/theme';
 
 export interface QuickAction {
     id: string;
@@ -58,7 +58,7 @@ export interface QuickAction {
     surface: string;
 }
 
-const T = {
+const T = schemed((Palette) => ({
     teal: { tint: Palette.teal, surface: Palette.tealSurface },
     violet: { tint: Palette.primary, surface: Palette.primaryTint },
     pink: { tint: Palette.pink, surface: Palette.pinkSurface },
@@ -68,7 +68,7 @@ const T = {
     sky: { tint: Palette.sky, surface: Palette.skySurface },
     flame: { tint: Palette.flameDeep, surface: Palette.orangeSurface },
     gold: { tint: Palette.amber, surface: Palette.warningSurface },
-} as const;
+} as const));
 
 export const QUICK_ACTIONS: QuickAction[] = [
     { id: 'add-result', icon: 'add-circle-outline', label: 'Add result', route: '/add-result', ...T.teal },

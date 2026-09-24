@@ -17,15 +17,14 @@
  * difference between one attempt and four.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getStatus, identifyMedication } from '@/lib/medications';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const CHECKLIST = [
     {
@@ -46,6 +45,8 @@ const CHECKLIST = [
 ];
 
 export default function ScanScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [available, setAvailable] = useState<boolean | null>(null);
     const [busy, setBusy] = useState(false);
@@ -202,7 +203,7 @@ export default function ScanScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -224,7 +225,7 @@ const styles = StyleSheet.create({
     },
 
     checklist: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
         padding: Spacing.lg,
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
 
     primaryButton: {
         flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.primary, borderRadius: Radius.md, paddingVertical: 15,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.md, paddingVertical: 15,
         marginTop: Spacing.sm,
     },
     primaryButtonText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.semibold },
@@ -271,4 +272,4 @@ const styles = StyleSheet.create({
         fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium,
         textAlign: 'center', marginTop: Spacing.sm, textDecorationLine: 'underline',
     },
-});
+}));

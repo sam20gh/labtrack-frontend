@@ -24,7 +24,7 @@
  * identity provider is already the authority on.
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Switch, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -35,7 +35,8 @@ import Toast from 'react-native-toast-message';
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { supabase } from '@/constants/supabase';
 import { STORAGE_KEYS, sendPasswordResetEmail, signOut } from '@/lib/auth';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** The three the kit draws that this build cannot honour, with what each one is waiting on. */
 const UNAVAILABLE = [
@@ -60,6 +61,8 @@ const UNAVAILABLE = [
 ] as const;
 
 export default function SecuritySettingsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [keepSignedIn, setKeepSignedIn] = useState(false);
     const [email, setEmail] = useState<string | null>(null);
@@ -245,7 +248,7 @@ export default function SecuritySettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     center: { alignItems: 'center', justifyContent: 'center' },
     scroll: { paddingBottom: 48 },
@@ -283,4 +286,4 @@ const styles = StyleSheet.create({
         fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: Spacing.xs,
     },
-});
+}));

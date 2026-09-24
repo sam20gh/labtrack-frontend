@@ -9,8 +9,9 @@
  * miniature.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { View, Text } from 'react-native';
+import { Fonts, Spacing, Radius } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import { MACRO_META } from '@/lib/nutrition';
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function MacroChips({ values, targets, compact }: Props) {
+    const styles = useStyles();
     return (
         <View style={styles.row}>
             {MACRO_META.map((m) => {
@@ -52,7 +54,7 @@ export function MacroChips({ values, targets, compact }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     row: { flexDirection: 'row', gap: Spacing.md },
     item: { flex: 1 },
     head: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
@@ -75,4 +77,4 @@ const styles = StyleSheet.create({
         marginTop: Spacing.xs,
     },
     fill: { height: '100%', borderRadius: Radius.pill },
-});
+}));

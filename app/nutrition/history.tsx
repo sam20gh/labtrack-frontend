@@ -15,17 +15,15 @@
  * nothing that day, which is a claim about them rather than about the record.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity,
-    TextInput, Modal, Alert, Pressable,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDay, getCalendar, today, addDays, MEAL_TYPE_LABEL } from '@/lib/nutrition';
 import { MacroChips } from '@/components/nutrition/MacroChips';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { MealLog, MealType, NutritionTargets } from '@/types/api';
 
 /** How far back the list reaches. The filter sheet narrows within this, never beyond it. */
@@ -53,6 +51,8 @@ const dayHeading = (day: string) => {
 };
 
 export default function NutritionHistoryScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [range, setRange] = useState<number>(30);
     const [meals, setMeals] = useState<MealLog[]>([]);
@@ -281,6 +281,8 @@ function FilterSheet({
     setMaxCalories: (n: number | null) => void;
     matches: number;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const toggleSlot = (slot: MealType) =>
         setSlots(slots.includes(slot) ? slots.filter((s) => s !== slot) : [...slots, slot]);
 
@@ -364,7 +366,7 @@ function FilterSheet({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -391,7 +393,7 @@ const styles = StyleSheet.create({
     filterBadge: {
         position: 'absolute', top: -4, right: -4,
         minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4,
-        backgroundColor: Palette.primary, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: Palette.primaryFill, alignItems: 'center', justifyContent: 'center',
     },
     filterBadgeText: { fontFamily: Fonts.bold, fontSize: 9, color: Palette.white },
 
@@ -450,9 +452,9 @@ const styles = StyleSheet.create({
     chipTextOn: { fontFamily: Fonts.semibold, color: Palette.primary },
     apply: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, borderRadius: Radius.lg, paddingVertical: Spacing.lg,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.lg, paddingVertical: Spacing.lg,
     },
     applyText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
     clear: { alignItems: 'center', paddingVertical: Spacing.md },
     clearText: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary },
-});
+}));

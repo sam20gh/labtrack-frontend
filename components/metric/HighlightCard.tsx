@@ -12,9 +12,10 @@
  * backs.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const FLAMES = 5;
 
@@ -29,6 +30,8 @@ interface Props {
 }
 
 export function HighlightCard({ kcal, days, score, band }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     // Five bands of twenty. A score of 1 still lights one flame: it is not nothing.
     const lit = Number.isFinite(score as number)
         ? Math.min(FLAMES, Math.ceil((score as number) / (100 / FLAMES)))
@@ -67,7 +70,7 @@ export function HighlightCard({ kcal, days, score, band }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         borderWidth: 1,
         borderColor: Palette.border,
@@ -85,4 +88,4 @@ const styles = StyleSheet.create({
     value: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.text },
     unit: { fontSize: 18, fontFamily: Fonts.semibold, color: Palette.text },
     caption: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary },
-});
+}));

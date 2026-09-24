@@ -11,6 +11,13 @@ import { describeError, describeState } from '@/lib/appState';
 import { ApiError } from '@/lib/api';
 
 jest.mock('@/lib/auth', () => ({ getAccessToken: jest.fn(async () => null) }));
+// StateView reads the live palette, and the appearance preference behind it is stored in
+// AsyncStorage, which has no native module under Jest. Rendered outside a ThemeProvider it
+// draws in the light scheme, which is what these assertions were written against.
+jest.mock('@react-native-async-storage/async-storage', () =>
+    // A jest.mock factory is hoisted above imports, so it has to require.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
 describe('StateView', () => {
     it('draws the kit\'s badge, title and body for a state', () => {

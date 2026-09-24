@@ -6,17 +6,17 @@
  * password via `updateUser`.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, TextInput, StyleSheet, TouchableOpacity,
-    ActivityIndicator, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { supabase } from '@/constants/supabase';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function ResetPassword() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
 
@@ -78,7 +78,7 @@ export default function ResetPassword() {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.center}>
-                    <Ionicons name="time-outline" size={48} color="#DC2626" />
+                    <Ionicons name="time-outline" size={48} color={Palette.danger} />
                     <Text style={styles.title}>Link expired</Text>
                     <Text style={styles.body}>{error}</Text>
                     <TouchableOpacity style={styles.button} onPress={() => router.replace('/forgot-password')}>
@@ -93,7 +93,7 @@ export default function ResetPassword() {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.center}>
-                    <ActivityIndicator size="large" color="#7C3AED" />
+                    <ActivityIndicator size="large" color={Palette.primary} />
                     <Text style={styles.body}>Verifying your link…</Text>
                 </View>
             </SafeAreaView>
@@ -108,33 +108,33 @@ export default function ResetPassword() {
             >
                 <View style={styles.content}>
                     <View style={styles.iconCircle}>
-                        <Ionicons name="lock-closed-outline" size={32} color="#7C3AED" />
+                        <Ionicons name="lock-closed-outline" size={32} color={Palette.primary} />
                     </View>
                     <Text style={styles.title}>Set a new password</Text>
                     <Text style={styles.body}>Choose a password you haven't used before.</Text>
 
                     <View style={styles.inputRow}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" />
+                        <Ionicons name="lock-closed-outline" size={20} color={Palette.textMuted} />
                         <TextInput
                             style={styles.input}
                             placeholder="New password"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={Palette.textMuted}
                             secureTextEntry={!showPassword}
                             value={password}
                             onChangeText={setPassword}
                             autoCapitalize="none"
                         />
                         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                            <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9CA3AF" />
+                            <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Palette.textMuted} />
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.inputRow}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" />
+                        <Ionicons name="lock-closed-outline" size={20} color={Palette.textMuted} />
                         <TextInput
                             style={styles.input}
                             placeholder="Confirm new password"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={Palette.textMuted}
                             secureTextEntry={!showPassword}
                             value={confirm}
                             onChangeText={setConfirm}
@@ -148,7 +148,7 @@ export default function ResetPassword() {
                         disabled={saving}
                     >
                         {saving
-                            ? <ActivityIndicator color="#fff" />
+                            ? <ActivityIndicator color={Palette.white} />
                             : <Text style={styles.buttonText}>Update password</Text>}
                     </TouchableOpacity>
                 </View>
@@ -157,28 +157,28 @@ export default function ResetPassword() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
     content: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
     iconCircle: {
-        width: 64, height: 64, borderRadius: 16, backgroundColor: '#F3E8FF',
+        width: 64, height: 64, borderRadius: 16, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center', marginBottom: 24,
     },
-    title: { fontSize: 24, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
-    body: { fontSize: 15, color: '#6B7280', lineHeight: 22, marginBottom: 28 },
+    title: { fontSize: 24, fontWeight: '700', color: Palette.text, marginBottom: 8 },
+    body: { fontSize: 15, color: Palette.textSecondary, lineHeight: 22, marginBottom: 28 },
     inputRow: {
         flexDirection: 'row', alignItems: 'center', gap: 10,
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12,
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 12,
         paddingHorizontal: 14, paddingVertical: 4, marginBottom: 16,
     },
-    input: { flex: 1, paddingVertical: 14, fontSize: 15, color: '#1F2937' },
+    input: { flex: 1, paddingVertical: 14, fontSize: 15, color: Palette.text },
     button: {
-        backgroundColor: '#7C3AED', paddingVertical: 16, paddingHorizontal: 40,
+        backgroundColor: Palette.primaryFill, paddingVertical: 16, paddingHorizontal: 40,
         borderRadius: 12, alignItems: 'center', marginTop: 12,
     },
     fullWidth: { width: '100%' },
     buttonDisabled: { opacity: 0.6 },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-});
+    buttonText: { color: Palette.white, fontSize: 16, fontWeight: '600' },
+}));

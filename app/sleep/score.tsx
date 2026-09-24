@@ -14,13 +14,12 @@
  * "duration is 60% of this" is more use than a restatement of the band name.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import {
     getSleepScore, formatMinutes, bandTint, type SleepScoreScreen as ScoreData,
@@ -47,6 +46,8 @@ const COMPONENT_COPY: Record<string, { label: string; body: string }> = {
 };
 
 export default function SleepScoreScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [data, setData] = useState<ScoreData | null>(null);
@@ -221,7 +222,7 @@ export default function SleepScoreScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -290,4 +291,4 @@ const styles = StyleSheet.create({
         fontSize: 11, ...BodyFont.regular, color: Palette.textMuted,
         lineHeight: 17, marginTop: Spacing.md,
     },
-});
+}));

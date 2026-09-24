@@ -13,6 +13,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Router } from 'expo-router';
 import { api } from './api';
+import { schemed } from '@/constants/theme';
 
 /** Minutes west of UTC, as `Date.getTimezoneOffset()` reports it. */
 const tzOffset = () => new Date().getTimezoneOffset();
@@ -229,11 +230,11 @@ export const deltaLabel = (
  * your own age is the unremarkable case, and colouring it green would make the absence of a
  * finding look like an achievement.
  */
-export const BAND_TINT: Record<AgeBand, string> = {
-    younger: '#0F766E',
-    on_track: '#6B7280',
-    older: '#B45309',
-};
+export const BAND_TINT: Record<AgeBand, string> = schemed((Palette) => ({
+    younger: Palette.teal,
+    on_track: Palette.textSecondary,
+    older: Palette.warning,
+}));
 
 export const tintForBand = (band: AgeBand | null | undefined) =>
     (band ? BAND_TINT[band] : BAND_TINT.on_track);

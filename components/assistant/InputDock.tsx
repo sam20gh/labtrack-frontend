@@ -14,14 +14,12 @@
  * of them.
  */
 import React, { useState } from 'react';
-import {
-    View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Platform,
-    Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Palette, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { ImageUpload } from '@/lib/assistant';
 
 type Props = {
@@ -57,6 +55,8 @@ export default function InputDock({
     voiceDisabledReason = null,
     allowImages = false,
 }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const [text, setText] = useState('');
     const [image, setImage] = useState<ImageUpload | null>(null);
 
@@ -188,7 +188,7 @@ export default function InputDock({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     dock: {
         paddingHorizontal: Spacing.lg,
         paddingTop: Spacing.md,
@@ -239,9 +239,9 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         alignItems: 'center',
         justifyContent: 'center',
     },
     sendDisabled: { backgroundColor: Palette.textMuted },
-});
+}));

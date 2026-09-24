@@ -22,15 +22,14 @@
  * screen pretending to be a manager.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { JstyleVariant } from '@/modules/jstyle-ble';
 import * as transport from '@/lib/health/jstyle/transport';
 import { VARIANT_LABEL } from '@/lib/health/jstyle/reader';
@@ -59,6 +58,8 @@ const tap = (style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Li
 };
 
 export default function BraceletScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [paired, setPairedState] = useState<PairedBracelet | null>(null);
@@ -319,53 +320,57 @@ const Paired = ({
     note: string | null;
     onSync: () => void;
     onForget: () => void;
-}) => (
-    <View style={styles.panel}>
-        <Text style={styles.deviceName}>{device.label}</Text>
-        {/*
-          * Only when it adds something. `PairedBracelet.label` falls back to the model
-          * name when the bracelet advertises none of its own, and most of them do not — so
-          * printing both unconditionally renders "J-Style V8" twice, one line apart.
-          */}
-        {device.label !== VARIANT_LABEL[device.variant] ? (
-            <Text style={styles.deviceSub}>{VARIANT_LABEL[device.variant]}</Text>
-        ) : null}
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.panel}>
+            <Text style={styles.deviceName}>{device.label}</Text>
+            {/*
+              * Only when it adds something. `PairedBracelet.label` falls back to the model
+              * name when the bracelet advertises none of its own, and most of them do not — so
+              * printing both unconditionally renders "J-Style V8" twice, one line apart.
+              */}
+            {device.label !== VARIANT_LABEL[device.variant] ? (
+                <Text style={styles.deviceSub}>{VARIANT_LABEL[device.variant]}</Text>
+            ) : null}
 
-        <StatusChips battery={device.lastBattery} connected busy={syncing} />
+            <StatusChips battery={device.lastBattery} connected busy={syncing} />
 
-        <Text style={styles.timestamp}>{relative(device.lastSyncAt)}</Text>
+            <Text style={styles.timestamp}>{relative(device.lastSyncAt)}</Text>
 
-        {note ? <Text style={styles.note}>{note}</Text> : null}
+            {note ? <Text style={styles.note}>{note}</Text> : null}
 
-        <Pressable
-            onPress={onSync}
-            disabled={syncing}
-            accessibilityRole="button"
-            style={({ pressed }) => [
-                styles.primary,
-                pressed && styles.primaryPressed,
-                syncing && styles.disabled,
-            ]}
-        >
-            {syncing
-                ? <ActivityIndicator color="#FFFFFF" />
-                : <Ionicons name="sync" size={18} color="#FFFFFF" />}
-            <Text style={styles.primaryLabel}>{syncing ? 'Syncing…' : 'Sync now'}</Text>
-        </Pressable>
+            <Pressable
+                onPress={onSync}
+                disabled={syncing}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                    styles.primary,
+                    pressed && styles.primaryPressed,
+                    syncing && styles.disabled,
+                ]}
+            >
+                {syncing
+                    ? <ActivityIndicator color={Palette.white} />
+                    : <Ionicons name="sync" size={18} color={Palette.white} />}
+                <Text style={styles.primaryLabel}>{syncing ? 'Syncing…' : 'Sync now'}</Text>
+            </Pressable>
 
-        {/*
-          * Destructive as a text link rather than a second filled button, exactly as the
-          * kit draws it. Two full-width buttons of equal weight make forgetting the device
-          * as prominent as using it.
-          */}
-        <Pressable onPress={onForget} accessibilityRole="button" style={styles.destructive}>
-            <Text style={styles.destructiveLabel}>Forget this bracelet</Text>
-            <Ionicons name="trash-outline" size={16} color={Palette.danger} />
-        </Pressable>
+            {/*
+              * Destructive as a text link rather than a second filled button, exactly as the
+              * kit draws it. Two full-width buttons of equal weight make forgetting the device
+              * as prominent as using it.
+              */}
+            <Pressable onPress={onForget} accessibilityRole="button" style={styles.destructive}>
+                <Text style={styles.destructiveLabel}>Forget this bracelet</Text>
+                <Ionicons name="trash-outline" size={16} color={Palette.danger} />
+            </Pressable>
 
-        <ReadsList variant={device.variant} />
-    </View>
-);
+            <ReadsList variant={device.variant} />
+        </View>
+    );
+};
 
 // ── unpaired ────────────────────────────────────────────────────────────────
 
@@ -379,84 +384,92 @@ const Unpaired = ({
     onScan: () => void;
     onStop: () => void;
     onPick: (device: transport.DiscoveredBracelet) => void;
-}) => (
-    <View style={styles.panel}>
-        <Text style={styles.deviceName}>
-            {scanning ? 'Listening…' : 'No bracelet paired'}
-        </Text>
-        <Text style={styles.deviceSub}>
-            {scanning
-                ? 'Keep it close and awake'
-                : 'Sync steps, sleep, heart rate and more, automatically'}
-        </Text>
-
-        {blocked ? (
-            <View style={styles.notice}>
-                <Ionicons name="information-circle" size={20} color={Palette.textSecondary} />
-                <Text style={styles.noticeText}>{blocked}</Text>
-            </View>
-        ) : null}
-
-        <Pressable
-            onPress={scanning ? onStop : onScan}
-            disabled={Boolean(blocked) || Boolean(connecting)}
-            accessibilityRole="button"
-            style={({ pressed }) => [
-                styles.primary,
-                pressed && styles.primaryPressed,
-                (blocked || connecting) && styles.disabled,
-            ]}
-        >
-            <Ionicons
-                name={scanning ? 'stop-circle-outline' : 'bluetooth'}
-                size={18}
-                color="#FFFFFF"
-            />
-            <Text style={styles.primaryLabel}>
-                {scanning ? 'Stop searching' : 'Find my bracelet'}
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.panel}>
+            <Text style={styles.deviceName}>
+                {scanning ? 'Listening…' : 'No bracelet paired'}
             </Text>
-        </Pressable>
+            <Text style={styles.deviceSub}>
+                {scanning
+                    ? 'Keep it close and awake'
+                    : 'Sync steps, sleep, heart rate and more, automatically'}
+            </Text>
 
-        {found.length ? (
-            <View style={styles.results}>
-                <Text style={styles.resultsHead}>
-                    {found.length} found · nearest first
-                </Text>
-                {found.map((device) => (
-                    <DiscoveredRow
-                        key={device.id}
-                        name={device.name}
-                        rssi={device.rssi}
-                        variant={device.variant}
-                        variantLabel={device.variant ? VARIANT_LABEL[device.variant] : null}
-                        busy={connecting === device.id}
-                        onPress={() => onPick(device)}
-                    />
-                ))}
-            </View>
-        ) : null}
+            {blocked ? (
+                <View style={styles.notice}>
+                    <Ionicons name="information-circle" size={20} color={Palette.textSecondary} />
+                    <Text style={styles.noticeText}>{blocked}</Text>
+                </View>
+            ) : null}
 
-        {!scanning && !found.length && !blocked ? (
-            <View style={styles.tips}>
-                <Tip icon="battery-charging-outline" text="Make sure it is charged and awake." />
-                <Tip
-                    icon="phone-portrait-outline"
-                    text="Close the maker's own app — a bracelet talks to one phone at a time."
+            <Pressable
+                onPress={scanning ? onStop : onScan}
+                disabled={Boolean(blocked) || Boolean(connecting)}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                    styles.primary,
+                    pressed && styles.primaryPressed,
+                    (blocked || connecting) && styles.disabled,
+                ]}
+            >
+                <Ionicons
+                    name={scanning ? 'stop-circle-outline' : 'bluetooth'}
+                    size={18}
+                    color={Palette.white}
                 />
-                <Tip icon="resize-outline" text="Hold it within arm's reach of your phone." />
-            </View>
-        ) : null}
-    </View>
-);
+                <Text style={styles.primaryLabel}>
+                    {scanning ? 'Stop searching' : 'Find my bracelet'}
+                </Text>
+            </Pressable>
 
-const Tip = ({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) => (
-    <View style={styles.tip}>
-        <Ionicons name={icon} size={16} color={Palette.textMuted} />
-        <Text style={styles.tipText}>{text}</Text>
-    </View>
-);
+            {found.length ? (
+                <View style={styles.results}>
+                    <Text style={styles.resultsHead}>
+                        {found.length} found · nearest first
+                    </Text>
+                    {found.map((device) => (
+                        <DiscoveredRow
+                            key={device.id}
+                            name={device.name}
+                            rssi={device.rssi}
+                            variant={device.variant}
+                            variantLabel={device.variant ? VARIANT_LABEL[device.variant] : null}
+                            busy={connecting === device.id}
+                            onPress={() => onPick(device)}
+                        />
+                    ))}
+                </View>
+            ) : null}
 
-const styles = StyleSheet.create({
+            {!scanning && !found.length && !blocked ? (
+                <View style={styles.tips}>
+                    <Tip icon="battery-charging-outline" text="Make sure it is charged and awake." />
+                    <Tip
+                        icon="phone-portrait-outline"
+                        text="Close the maker's own app — a bracelet talks to one phone at a time."
+                    />
+                    <Tip icon="resize-outline" text="Hold it within arm's reach of your phone." />
+                </View>
+            ) : null}
+        </View>
+    );
+};
+
+const Tip = ({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.tip}>
+            <Ionicons name={icon} size={16} color={Palette.textMuted} />
+            <Text style={styles.tipText}>{text}</Text>
+        </View>
+    );
+};
+
+const useStyles = makeStyles((Palette) => ({
     safe: { flex: 1, backgroundColor: Palette.canvas },
     bar: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -495,13 +508,13 @@ const styles = StyleSheet.create({
 
     primary: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: Spacing.sm, backgroundColor: Palette.primary,
+        gap: Spacing.sm, backgroundColor: Palette.primaryFill,
         borderRadius: Radius.lg, paddingVertical: 16,
         width: '100%', marginTop: Spacing.md,
     },
-    primaryPressed: { backgroundColor: Palette.primaryDark },
+    primaryPressed: { backgroundColor: Palette.primaryDarkFill },
     disabled: { opacity: 0.5 },
-    primaryLabel: { fontFamily: Fonts.semibold, fontSize: 16, color: '#FFFFFF' },
+    primaryLabel: { fontFamily: Fonts.semibold, fontSize: 16, color: Palette.white },
 
     destructive: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -521,4 +534,4 @@ const styles = StyleSheet.create({
         flex: 1, ...BodyFont.regular, fontSize: 13,
         color: Palette.textMuted, lineHeight: 19,
     },
-});
+}));

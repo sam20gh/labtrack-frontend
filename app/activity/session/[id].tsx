@@ -11,13 +11,12 @@
  * with a dead button here — the app has removed two of those already.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import {
     getSession, updateSession, deleteSession,
@@ -28,6 +27,8 @@ import { ApiError } from '@/lib/api';
 const EFFORT_LABELS = ['', 'Very light', 'Light', 'Moderate', 'High effort', 'Maximum'];
 
 export default function ActivityDetail() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
 
@@ -258,7 +259,7 @@ export default function ActivityDetail() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     bar: {
         flexDirection: 'row',
@@ -340,4 +341,4 @@ const styles = StyleSheet.create({
     },
 
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
-});
+}));

@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-} from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { paramString } from './params';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 const bloodTypes = ['A', 'B', 'AB', 'O'];
 const rhFactors = ['+', '-'];
 
 export default function BloodTypeScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     // Stored as one string ("AB+"); the screen picks the group and the factor separately.
@@ -59,7 +58,7 @@ export default function BloodTypeScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -110,13 +109,13 @@ export default function BloodTypeScreen() {
                         style={[styles.rhButton, selectedRh === '+' && styles.rhButtonSelected]}
                         onPress={() => setSelectedRh('+')}
                     >
-                        <Ionicons name="add" size={24} color={selectedRh === '+' ? '#fff' : '#1F2937'} />
+                        <Ionicons name="add" size={24} color={selectedRh === '+' ? '#fff' : activePalette().text} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.rhButton, selectedRh === '-' && styles.rhButtonSelected]}
                         onPress={() => setSelectedRh('-')}
                     >
-                        <Ionicons name="remove" size={24} color={selectedRh === '-' ? '#fff' : '#1F2937'} />
+                        <Ionicons name="remove" size={24} color={selectedRh === '-' ? '#fff' : activePalette().text} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -134,7 +133,7 @@ export default function BloodTypeScreen() {
                     <Ionicons
                         name="arrow-forward"
                         size={20}
-                        color={selectedType ? '#fff' : '#9CA3AF'}
+                        color={selectedType ? '#fff' : activePalette().textMuted}
                     />
                 </TouchableOpacity>
             </View>
@@ -142,15 +141,15 @@ export default function BloodTypeScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -166,17 +165,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -188,7 +187,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 40,
@@ -203,22 +202,22 @@ const styles = StyleSheet.create({
         height: 44,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     bloodTypeButtonSelected: {
-        borderColor: '#1F2937',
-        backgroundColor: '#F9FAFB',
+        borderColor: Palette.text,
+        backgroundColor: tone('#F9FAFB'),
     },
     bloodTypeText: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         fontWeight: '500',
     },
     bloodTypeTextSelected: {
-        color: '#1F2937',
+        color: Palette.text,
         fontWeight: '600',
     },
     displayContainer: {
@@ -229,7 +228,7 @@ const styles = StyleSheet.create({
     displayText: {
         fontSize: 120,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         lineHeight: 130,
     },
     rhBadge: {
@@ -242,15 +241,15 @@ const styles = StyleSheet.create({
         marginLeft: -8,
     },
     rhBadgePositive: {
-        backgroundColor: '#EF4444',
+        backgroundColor: tone('#EF4444'),
     },
     rhBadgeNegative: {
-        backgroundColor: '#3B82F6',
+        backgroundColor: tone('#3B82F6'),
     },
     rhBadgeText: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#fff',
+        color: Palette.white,
     },
     rhContainer: {
         flexDirection: 'row',
@@ -261,21 +260,21 @@ const styles = StyleSheet.create({
         height: 44,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     rhButtonSelected: {
-        borderColor: '#7C3AED',
-        backgroundColor: '#7C3AED',
+        borderColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
     },
     bottomContainer: {
         paddingHorizontal: 24,
         paddingBottom: 40,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -283,15 +282,15 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     continueButtonDisabled: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
     continueButtonTextDisabled: {
-        color: '#9CA3AF',
+        color: Palette.textMuted,
     },
-});
+}));

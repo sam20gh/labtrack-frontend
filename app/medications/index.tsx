@@ -11,10 +11,7 @@
  * dose is the first thing anyone would notice.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, Alert, Linking,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -28,12 +25,15 @@ import {
 import { ensureRemindersReady, reminderState, type ReminderState } from '@/lib/notifications';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { PillGlyph } from '@/components/medications/PillGlyph';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont, tone, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type {
     TrackedMedication, MedicationScheduleDay, MedicationCheckResponse,
 } from '@/types/api';
 
 export default function MedicationsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [medications, setMedications] = useState<TrackedMedication[]>([]);
     const [day, setDay] = useState<MedicationScheduleDay | null>(null);
@@ -249,7 +249,7 @@ export default function MedicationsScreen() {
                         onPress={enableReminders}
                         activeOpacity={0.85}
                     >
-                        <Ionicons name="notifications-off-outline" size={19} color="#B45309" />
+                        <Ionicons name="notifications-off-outline" size={19} color={Palette.warning} />
                         <View style={styles.reminderBody}>
                             <Text style={styles.reminderTitle}>Dose reminders are not arriving</Text>
                             <Text style={styles.reminderDetail}>
@@ -261,7 +261,7 @@ export default function MedicationsScreen() {
                             </Text>
                         </View>
                         {reminders !== 'unsupported' ? (
-                            <Ionicons name="chevron-forward" size={18} color="#B45309" />
+                            <Ionicons name="chevron-forward" size={18} color={Palette.warning} />
                         ) : null}
                     </TouchableOpacity>
                 ) : null}
@@ -351,52 +351,66 @@ export default function MedicationsScreen() {
     );
 }
 
-const Header = ({ router }: { router: ReturnType<typeof useRouter> }) => (
-    <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={24} color={Palette.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Medications</Text>
-        <TouchableOpacity onPress={() => router.push('/medications/insight')} hitSlop={8}>
-            <Ionicons name="stats-chart-outline" size={20} color={Palette.textSecondary} />
-        </TouchableOpacity>
-    </View>
-);
+const Header = ({ router }: { router: ReturnType<typeof useRouter> }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
+                <Ionicons name="chevron-back" size={24} color={Palette.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Medications</Text>
+            <TouchableOpacity onPress={() => router.push('/medications/insight')} hitSlop={8}>
+                <Ionicons name="stats-chart-outline" size={20} color={Palette.textSecondary} />
+            </TouchableOpacity>
+        </View>
+    );
+};
 
 /** A percentage that reads as "not yet" rather than as zero when nothing has come due. */
-const Stat = ({ value, label }: { value: number | null | undefined; label: string }) => (
-    <View style={styles.stat}>
-        <Text style={styles.statValue}>
-            {value === null || value === undefined ? '—' : value}
-            {value !== null && value !== undefined ? <Text style={styles.statPercent}>%</Text> : null}
-        </Text>
-        <Text style={styles.statLabel}>{label}</Text>
-    </View>
-);
-
-const QuickAction = ({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) => (
-    <TouchableOpacity style={styles.action} onPress={onPress} activeOpacity={0.75}>
-        <View style={styles.actionIcon}>
-            <Ionicons name={icon as any} size={20} color={Palette.textSecondary} />
+const Stat = ({ value, label }: { value: number | null | undefined; label: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.stat}>
+            <Text style={styles.statValue}>
+                {value === null || value === undefined ? '—' : value}
+                {value !== null && value !== undefined ? <Text style={styles.statPercent}>%</Text> : null}
+            </Text>
+            <Text style={styles.statLabel}>{label}</Text>
         </View>
-        <Text style={styles.actionLabel}>{label}</Text>
-    </TouchableOpacity>
-);
+    );
+};
+
+const QuickAction = ({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={styles.action} onPress={onPress} activeOpacity={0.75}>
+            <View style={styles.actionIcon}>
+                <Ionicons name={icon as any} size={20} color={Palette.textSecondary} />
+            </View>
+            <Text style={styles.actionLabel}>{label}</Text>
+        </TouchableOpacity>
+    );
+};
 
 const SectionHeader = ({ title, action, onAction }: {
     title: string; action?: string; onAction?: () => void;
-}) => (
-    <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {action && onAction ? (
-            <TouchableOpacity onPress={onAction} hitSlop={8}>
-                <Text style={styles.sectionAction}>{action}</Text>
-            </TouchableOpacity>
-        ) : null}
-    </View>
-);
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {action && onAction ? (
+                <TouchableOpacity onPress={onAction} hitSlop={8}>
+                    <Text style={styles.sectionAction}>{action}</Text>
+                </TouchableOpacity>
+            ) : null}
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row',
@@ -409,7 +423,7 @@ const styles = StyleSheet.create({
     content: { padding: Spacing.xl, paddingTop: Spacing.sm, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
 
     hero: { borderRadius: Radius.lg, padding: Spacing.xl, gap: Spacing.lg },
-    heroLabel: { fontSize: 15, color: Palette.white, ...BodyFont.medium },
+    heroLabel: { fontSize: 15, color: Palettes.light.white, ...BodyFont.medium },
     heroNote: { fontSize: 11, color: 'rgba(255,255,255,0.75)', ...BodyFont.regular },
     statRow: { flexDirection: 'row', justifyContent: 'space-between' },
     stat: { flex: 1 },
@@ -421,21 +435,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.sm,
-        backgroundColor: '#FEF3C7',
+        backgroundColor: tone('#FEF3C7'),
         borderWidth: 1,
-        borderColor: '#FDE68A',
+        borderColor: tone('#FDE68A'),
         borderRadius: Radius.lg,
         padding: Spacing.md,
         marginBottom: Spacing.md,
     },
     reminderBody: { flex: 1 },
-    reminderTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: '#92400E' },
-    reminderDetail: { ...BodyFont.regular, fontSize: 12, color: '#B45309', marginTop: 2, lineHeight: 17 },
+    reminderTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: tone('#92400E') },
+    reminderDetail: { ...BodyFont.regular, fontSize: 12, color: Palette.warning, marginTop: 2, lineHeight: 17 },
     checkCard: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.md,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1,
         borderColor: Palette.border,
@@ -445,7 +459,7 @@ const styles = StyleSheet.create({
     checkIcon: {
         width: 38, height: 38, borderRadius: 19,
         alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
     },
     checkBody: { flex: 1, gap: 2 },
     checkTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
@@ -471,7 +485,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.md,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1,
         borderColor: Palette.border,
@@ -492,7 +506,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: Spacing.md,
         alignItems: 'center',
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1,
         borderColor: Palette.border,
@@ -522,7 +536,7 @@ const styles = StyleSheet.create({
     },
     primaryButton: {
         flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         borderRadius: Radius.md,
         paddingVertical: 15,
         alignSelf: 'stretch',
@@ -536,4 +550,4 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch',
     },
     secondaryButtonText: { fontSize: 15, color: Palette.primary, fontFamily: Fonts.semibold },
-});
+}));

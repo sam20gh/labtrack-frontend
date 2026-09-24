@@ -9,6 +9,7 @@
  * an honest "being reviewed" row, not enough to read the result early.
  */
 import { api } from './api';
+import { schemed } from '@/constants/theme';
 
 export type Tier = 'release' | 'clinician' | 'opt_in' | 'suppressed';
 export type Tone = 'typical' | 'reduced' | 'increased' | 'carrier' | 'attention';
@@ -125,13 +126,13 @@ export const CATEGORY_META: Record<Category, { title: string; blurb: string; ico
     },
 };
 
-export const TONE_META: Record<Tone, { label: string; color: string; bg: string }> = {
-    typical: { label: 'Typical', color: '#059669', bg: '#ECFDF5' },
-    reduced: { label: 'Reduced', color: '#B45309', bg: '#FFFBEB' },
-    increased: { label: 'Increased', color: '#B45309', bg: '#FFFBEB' },
-    carrier: { label: 'Carrier', color: '#1D4ED8', bg: '#EFF6FF' },
-    attention: { label: 'Worth discussing', color: '#DC2626', bg: '#FEF2F2' },
-};
+export const TONE_META: Record<Tone, { label: string; color: string; bg: string }> = schemed((Palette) => ({
+    typical: { label: 'Typical', color: Palette.success, bg: Palette.successSurface },
+    reduced: { label: 'Reduced', color: Palette.warning, bg: Palette.warningSurface },
+    increased: { label: 'Increased', color: Palette.warning, bg: Palette.warningSurface },
+    carrier: { label: 'Carrier', color: Palette.info, bg: Palette.infoSurface },
+    attention: { label: 'Worth discussing', color: Palette.danger, bg: Palette.dangerSurface },
+}));
 
 export const groupByCategory = (findings: Finding[]) => {
     const groups = new Map<Category, Finding[]>();

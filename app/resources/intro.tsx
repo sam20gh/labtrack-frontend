@@ -10,16 +10,19 @@
  * pieces in it is the kind of small lie that costs trust in everything around it.
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getCategories, RESOURCES_INTRO_KEY } from '@/lib/resources';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function ResourcesIntroScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [total, setTotal] = useState<number | null>(null);
     const [categoryCount, setCategoryCount] = useState(0);
@@ -84,7 +87,7 @@ export default function ResourcesIntroScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     topBar: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
     body: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xxl, gap: Spacing.lg },
@@ -95,7 +98,7 @@ const styles = StyleSheet.create({
     },
     playPip: {
         position: 'absolute', right: 8, bottom: 12,
-        width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.primary,
+        width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
     },
 
@@ -111,7 +114,7 @@ const styles = StyleSheet.create({
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
         marginHorizontal: Spacing.xl, marginBottom: Spacing.xl,
-        paddingVertical: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Palette.primary,
+        paddingVertical: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Palette.primaryFill,
     },
     ctaText: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
-});
+}));

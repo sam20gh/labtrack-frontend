@@ -23,7 +23,7 @@
  * over nothing is a section that reads as broken rather than as new.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 
@@ -32,7 +32,8 @@ import { SYMPTOMS } from '@/lib/symptoms';
 import {
     checkTitle, isPressing, severityLabel, type SymptomCheck,
 } from '@/lib/symptomChecks';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont, activePalette, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** As many rows as the kit draws. The rest stay in the store as history. */
 const MAX_ROWS = 2;
@@ -42,14 +43,17 @@ const MAX_ROWS = 2;
  * an icon-set name: the kit's is three centred bars, and every close relative in Ionicons
  * and MaterialIcons is left-aligned. `viewBox` is the export's own 24pt box around it.
  */
-const FilterGlyph = () => (
-    <Svg width={24} height={24} viewBox="311 213 24 24" fill="none">
-        <Path
-            d="M320.75 229.547H325.25C325.436 229.547 325.615 229.621 325.747 229.753C325.879 229.885 325.953 230.064 325.953 230.25C325.953 230.436 325.879 230.615 325.747 230.747C325.615 230.879 325.436 230.953 325.25 230.953H320.75C320.564 230.953 320.385 230.879 320.253 230.747C320.121 230.615 320.047 230.436 320.047 230.25C320.047 230.064 320.121 229.885 320.253 229.753C320.385 229.621 320.564 229.547 320.75 229.547ZM317.75 224.297H328.25C328.436 224.297 328.615 224.371 328.747 224.503C328.879 224.635 328.953 224.814 328.953 225C328.953 225.186 328.879 225.365 328.747 225.497C328.615 225.629 328.436 225.703 328.25 225.703H317.75C317.564 225.703 317.385 225.629 317.253 225.497C317.121 225.365 317.047 225.186 317.047 225C317.047 224.814 317.121 224.635 317.253 224.503C317.385 224.371 317.564 224.297 317.75 224.297ZM314.75 219.047H331.25C331.436 219.047 331.615 219.121 331.747 219.253C331.879 219.385 331.953 219.564 331.953 219.75C331.953 219.936 331.879 220.115 331.747 220.247C331.615 220.379 331.436 220.453 331.25 220.453H314.75C314.564 220.453 314.385 220.379 314.253 220.247C314.121 220.115 314.047 219.936 314.047 219.75C314.047 219.564 314.121 219.385 314.253 219.253C314.385 219.121 314.564 219.047 314.75 219.047Z"
-            fill={Palette.white}
-        />
-    </Svg>
-);
+const FilterGlyph = () => {
+    const Palette = usePalette();
+    return (
+        <Svg width={24} height={24} viewBox="311 213 24 24" fill="none">
+            <Path
+                d="M320.75 229.547H325.25C325.436 229.547 325.615 229.621 325.747 229.753C325.879 229.885 325.953 230.064 325.953 230.25C325.953 230.436 325.879 230.615 325.747 230.747C325.615 230.879 325.436 230.953 325.25 230.953H320.75C320.564 230.953 320.385 230.879 320.253 230.747C320.121 230.615 320.047 230.436 320.047 230.25C320.047 230.064 320.121 229.885 320.253 229.753C320.385 229.621 320.564 229.547 320.75 229.547ZM317.75 224.297H328.25C328.436 224.297 328.615 224.371 328.747 224.503C328.879 224.635 328.953 224.814 328.953 225C328.953 225.186 328.879 225.365 328.747 225.497C328.615 225.629 328.436 225.703 328.25 225.703H317.75C317.564 225.703 317.385 225.629 317.253 225.497C317.121 225.365 317.047 225.186 317.047 225C317.047 224.814 317.121 224.635 317.253 224.503C317.385 224.371 317.564 224.297 317.75 224.297ZM314.75 219.047H331.25C331.436 219.047 331.615 219.121 331.747 219.253C331.879 219.385 331.953 219.564 331.953 219.75C331.953 219.936 331.879 220.115 331.747 220.247C331.615 220.379 331.436 220.453 331.25 220.453H314.75C314.564 220.453 314.385 220.379 314.253 220.247C314.121 220.115 314.047 219.936 314.047 219.75C314.047 219.564 314.121 219.385 314.253 219.253C314.385 219.121 314.564 219.047 314.75 219.047Z"
+                fill={Palette.white}
+            />
+        </Svg>
+    );
+};
 
 const SymptomCheckerCard = ({ checks, commonIds, onSearch, onBrowse, onSymptom, onOpenCheck }: {
     checks: SymptomCheck[];
@@ -60,6 +64,8 @@ const SymptomCheckerCard = ({ checks, commonIds, onSearch, onBrowse, onSymptom, 
     onSymptom: (id: string) => void;
     onOpenCheck: (check: SymptomCheck) => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const common = commonIds
         .map((id) => SYMPTOMS.find((s) => s.id === id))
         .filter((s): s is NonNullable<typeof s> => Boolean(s));
@@ -170,10 +176,10 @@ const SymptomCheckerCard = ({ checks, commonIds, onSearch, onBrowse, onSymptom, 
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     // Card — `rect x=16 y=50 w=343 h=384 rx=8`, over a 1pt #E5E7EB outline.
     card: {
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
         borderRadius: 8,
         borderWidth: 1,
         borderColor: Palette.border,
@@ -197,7 +203,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.sm,
         borderWidth: 1,
         borderColor: Palette.borderStrong,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     fieldPlaceholder: { flex: 1, fontSize: 14, color: Palette.textSecondary, ...BodyFont.regular },
     filterButton: {
@@ -206,7 +212,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
     },
 
     commonRow: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.lg },
@@ -223,7 +229,7 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         borderWidth: 1,
         borderColor: Palette.borderStrong,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
     },
     chipText: { fontSize: 13, color: Palette.text, ...BodyFont.regular },
 
@@ -243,8 +249,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginRight: 13,
     },
-    badgeCalm: { backgroundColor: '#F5F3FF', borderColor: Palette.primaryPale },
-    badgePressing: { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' },
+    badgeCalm: { backgroundColor: Palette.primaryTint, borderColor: Palette.primaryPale },
+    badgePressing: { backgroundColor: activePalette().alertSurface, borderColor: activePalette().alertBorder },
     badgeText: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.bold },
     badgeTextPressing: { color: Palette.meterWeak },
     rowTitle: { flex: 1, fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
@@ -258,6 +264,6 @@ const styles = StyleSheet.create({
         gap: Spacing.xs,
     },
     browseText: { fontSize: 15, color: Palette.primary, fontFamily: Fonts.semibold },
-});
+}));
 
 export default SymptomCheckerCard;

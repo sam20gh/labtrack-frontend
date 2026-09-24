@@ -44,11 +44,7 @@
  *    swiped away is special-category data with nothing asking for it.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, SectionList, ScrollView, TouchableOpacity, ActivityIndicator,
-    RefreshControl, Animated, Easing, Platform, UIManager, LayoutAnimation,
-    PanResponder, type PanResponderGestureState, type GestureResponderEvent,
-} from 'react-native';
+import { View, Text, SectionList, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, Easing, Platform, UIManager, LayoutAnimation, PanResponder, type PanResponderGestureState, type GestureResponderEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,7 +61,8 @@ import NotificationCardView from '@/components/notifications/NotificationCard';
 import SegmentedTabs, { type TabKey } from '@/components/notifications/SegmentedTabs';
 import CaughtUpIllustration from '@/components/notifications/CaughtUpIllustration';
 import NoMatchIllustration from '@/components/notifications/NoMatchIllustration';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const GUTTER = 16;
 const EMPTY_COUNTS: NotificationCounts = { unread: 0, read: 0, byCategory: {} };
@@ -77,6 +74,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function NotificationCentre() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [tab, setTab] = useState<TabKey>('unread');
@@ -324,39 +323,43 @@ const Header = ({ unread, canClear, onBack, onSettings, onClear }: {
     onBack: () => void;
     onSettings: () => void;
     onClear: () => void;
-}) => (
-    <View style={styles.header}>
-        <View style={styles.headerRow}>
-            <TouchableOpacity onPress={onBack} hitSlop={12} accessibilityLabel="Go back">
-                <Ionicons name="chevron-back" size={26} color={Palette.text} />
-            </TouchableOpacity>
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.header}>
+            <View style={styles.headerRow}>
+                <TouchableOpacity onPress={onBack} hitSlop={12} accessibilityLabel="Go back">
+                    <Ionicons name="chevron-back" size={26} color={Palette.text} />
+                </TouchableOpacity>
 
-            <View style={styles.headerTitleWrap}>
-                <Text style={styles.headerTitle}>Notifications</Text>
-                {/*
-                    The subtitle is a fact, not a count repeated from the tab: "3 waiting for
-                    you" answers why the screen was opened, where "3" beside "Notifications"
-                    just restates the pill eight points below it. The same call the home
-                    screen's score card makes about printing its band twice.
-                */}
-                <Text style={styles.headerSub}>
-                    {unread === 0 ? 'Nothing waiting' : `${unread} waiting for you`}
-                </Text>
+                <View style={styles.headerTitleWrap}>
+                    <Text style={styles.headerTitle}>Notifications</Text>
+                    {/*
+                        The subtitle is a fact, not a count repeated from the tab: "3 waiting for
+                        you" answers why the screen was opened, where "3" beside "Notifications"
+                        just restates the pill eight points below it. The same call the home
+                        screen's score card makes about printing its band twice.
+                    */}
+                    <Text style={styles.headerSub}>
+                        {unread === 0 ? 'Nothing waiting' : `${unread} waiting for you`}
+                    </Text>
+                </View>
+
+                <TouchableOpacity onPress={onSettings} hitSlop={12} accessibilityLabel="Notification settings">
+                    <Ionicons name="settings-outline" size={22} color={Palette.text} />
+                </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={onSettings} hitSlop={12} accessibilityLabel="Notification settings">
-                <Ionicons name="settings-outline" size={22} color={Palette.text} />
-            </TouchableOpacity>
+            {canClear && (
+                <TouchableOpacity style={styles.clearAll} onPress={onClear} hitSlop={8}>
+                    <Ionicons name="checkmark-done-outline" size={15} color={Palette.primary} />
+                    <Text style={styles.clearAllText}>Mark all as read</Text>
+                </TouchableOpacity>
+            )}
         </View>
-
-        {canClear && (
-            <TouchableOpacity style={styles.clearAll} onPress={onClear} hitSlop={8}>
-                <Ionicons name="checkmark-done-outline" size={15} color={Palette.primary} />
-                <Text style={styles.clearAllText}>Mark all as read</Text>
-            </TouchableOpacity>
-        )}
-    </View>
-);
+    );
+};
 
 /* ------------------------------------------------------------------ *
  * The category rail
@@ -377,31 +380,34 @@ const CategoryRail = ({ chips, active, onSelect }: {
     chips: { key: NotificationCategory; label: string; total: number; unread: number }[];
     active: NotificationCategory | null;
     onSelect: (key: NotificationCategory) => void;
-}) => (
-    <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.rail}
-        style={styles.railWrap}
-    >
-        {chips.map((chip) => {
-            const on = active === chip.key;
-            return (
-                <TouchableOpacity
-                    key={chip.key}
-                    style={[styles.chip, on && styles.chipOn]}
-                    onPress={() => onSelect(chip.key)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    accessibilityLabel={`${chip.label}, ${chip.total}${on ? ', selected' : ''}`}
-                >
-                    <Text style={[styles.chipText, on && styles.chipTextOn]}>{chip.label}</Text>
-                    <Text style={[styles.chipCount, on && styles.chipCountOn]}>{chip.total}</Text>
-                </TouchableOpacity>
-            );
-        })}
-    </ScrollView>
-);
+}) => {
+    const styles = useStyles();
+    return (
+        <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.rail}
+            style={styles.railWrap}
+        >
+            {chips.map((chip) => {
+                const on = active === chip.key;
+                return (
+                    <TouchableOpacity
+                        key={chip.key}
+                        style={[styles.chip, on && styles.chipOn]}
+                        onPress={() => onSelect(chip.key)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: on }}
+                        accessibilityLabel={`${chip.label}, ${chip.total}${on ? ', selected' : ''}`}
+                    >
+                        <Text style={[styles.chipText, on && styles.chipTextOn]}>{chip.label}</Text>
+                        <Text style={[styles.chipCount, on && styles.chipCountOn]}>{chip.total}</Text>
+                    </TouchableOpacity>
+                );
+            })}
+        </ScrollView>
+    );
+};
 
 /* ------------------------------------------------------------------ *
  * Empty states
@@ -426,6 +432,8 @@ const FeedEmpty = ({ tab, filtered, onClearFilter }: {
     filtered: boolean;
     onClearFilter: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (filtered) {
         return (
             <View style={styles.empty}>
@@ -486,6 +494,8 @@ const FeedEmpty = ({ tab, filtered, onClearFilter }: {
  * under a half-slid card makes the next one appear already moved.
  */
 const SwipeableRow = ({ children, onDismiss }: { children: React.ReactNode; onDismiss: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const dx = useRef(new Animated.Value(0)).current;
 
     const responder = useMemo(() => PanResponder.create({
@@ -526,7 +536,7 @@ const SwipeableRow = ({ children, onDismiss }: { children: React.ReactNode; onDi
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxl, gap: Spacing.md },
 
@@ -571,7 +581,7 @@ const styles = StyleSheet.create({
 
     primaryButton: {
         marginTop: Spacing.md, paddingHorizontal: Spacing.xxl, paddingVertical: Spacing.md,
-        borderRadius: Radius.sm, backgroundColor: Palette.primary,
+        borderRadius: Radius.sm, backgroundColor: Palette.primaryFill,
     },
     primaryButtonText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.semibold },
     secondaryButton: {
@@ -586,4 +596,4 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: 6,
     },
     swipeBehindText: { fontSize: 13, color: Palette.alert, fontFamily: Fonts.semibold },
-});
+}));

@@ -10,19 +10,20 @@
  * value, not a reading that silently changes on save.
  */
 import React, { useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView,
-    ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { confirmReport, type ParseResult, type ParsedMeasurement } from '@/lib/reports';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 type EditableRow = ParsedMeasurement & { include: boolean; editedValue: string };
 
 export default function ReviewScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [saving, setSaving] = useState(false);
@@ -122,7 +123,7 @@ export default function ReviewScreen() {
             >
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={24} color={Palette.text} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Check your results</Text>
                     <View style={styles.backButton} />
@@ -137,7 +138,7 @@ export default function ReviewScreen() {
 
                     {stillNeedsReview > 0 && (
                         <View style={styles.warning}>
-                            <Ionicons name="alert-circle-outline" size={18} color="#92400E" />
+                            <Ionicons name="alert-circle-outline" size={18} color={tone('#92400E')} />
                             <Text style={styles.warningText}>
                                 {stillNeedsReview} {stillNeedsReview === 1 ? 'value needs' : 'values need'} your
                                 confirmation. These are stored without a range check until you verify them.
@@ -147,7 +148,7 @@ export default function ReviewScreen() {
 
                     {parsed.report.unreadableRegions?.length > 0 && (
                         <View style={styles.notice}>
-                            <Ionicons name="eye-off-outline" size={18} color="#6B7280" />
+                            <Ionicons name="eye-off-outline" size={18} color={Palette.textSecondary} />
                             <Text style={styles.noticeText}>
                                 Some parts could not be read: {parsed.report.unreadableRegions.join('; ')}
                             </Text>
@@ -166,7 +167,7 @@ export default function ReviewScreen() {
                                 <Ionicons
                                     name={row.include ? 'checkbox' : 'square-outline'}
                                     size={22}
-                                    color={row.include ? '#7C3AED' : '#D1D5DB'}
+                                    color={row.include ? activePalette().primary : tone('#D1D5DB')}
                                 />
                             </TouchableOpacity>
 
@@ -209,7 +210,7 @@ export default function ReviewScreen() {
                         disabled={saving}
                     >
                         {saving
-                            ? <ActivityIndicator color="#fff" />
+                            ? <ActivityIndicator color={Palette.white} />
                             : <Text style={styles.primaryButtonText}>Save {included.length} results</Text>}
                     </TouchableOpacity>
                 </View>
@@ -218,8 +219,8 @@ export default function ReviewScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
     header: {
@@ -227,45 +228,45 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16, paddingVertical: 12,
     },
     backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-    headerTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
+    headerTitle: { fontSize: 17, fontWeight: '600', color: Palette.text },
     scroll: { paddingHorizontal: 20, paddingBottom: 24 },
-    lead: { fontSize: 14, color: '#6B7280', lineHeight: 21, marginBottom: 16 },
-    title: { fontSize: 20, fontWeight: '700', color: '#1F2937', marginBottom: 20 },
+    lead: { fontSize: 14, color: Palette.textSecondary, lineHeight: 21, marginBottom: 16 },
+    title: { fontSize: 20, fontWeight: '700', color: Palette.text, marginBottom: 20 },
     warning: {
         flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-        backgroundColor: '#FEF3C7', borderRadius: 12, padding: 14, marginBottom: 12,
+        backgroundColor: tone('#FEF3C7'), borderRadius: 12, padding: 14, marginBottom: 12,
     },
-    warningText: { flex: 1, fontSize: 13, color: '#92400E', lineHeight: 19 },
+    warningText: { flex: 1, fontSize: 13, color: tone('#92400E'), lineHeight: 19 },
     notice: {
         flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-        backgroundColor: '#F3F4F6', borderRadius: 12, padding: 14, marginBottom: 12,
+        backgroundColor: Palette.borderLight, borderRadius: 12, padding: 14, marginBottom: 12,
     },
-    noticeText: { flex: 1, fontSize: 13, color: '#6B7280', lineHeight: 19 },
+    noticeText: { flex: 1, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
     row: {
         flexDirection: 'row', gap: 12, alignItems: 'flex-start',
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 14,
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 14,
         padding: 14, marginBottom: 10,
     },
-    rowFlagged: { borderColor: '#FCD34D', backgroundColor: '#FFFBEB' },
+    rowFlagged: { borderColor: tone('#FCD34D'), backgroundColor: Palette.warningSurface },
     rowExcluded: { opacity: 0.45 },
     checkbox: { paddingTop: 2 },
     rowBody: { flex: 1 },
     rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-    rowName: { fontSize: 15, fontWeight: '600', color: '#1F2937' },
-    badge: { backgroundColor: '#FCD34D', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-    badgeText: { fontSize: 10, fontWeight: '700', color: '#78350F' },
+    rowName: { fontSize: 15, fontWeight: '600', color: Palette.text },
+    badge: { backgroundColor: tone('#FCD34D'), borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+    badgeText: { fontSize: 10, fontWeight: '700', color: tone('#78350F') },
     valueRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     valueInput: {
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8,
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 8,
         paddingHorizontal: 12, paddingVertical: 8, fontSize: 16,
-        color: '#1F2937', minWidth: 110, backgroundColor: '#fff',
+        color: Palette.text, minWidth: 110, backgroundColor: Palette.background,
     },
-    unit: { fontSize: 14, color: '#6B7280' },
-    note: { fontSize: 12, color: '#9CA3AF', marginTop: 6 },
-    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    unit: { fontSize: 14, color: Palette.textSecondary },
+    note: { fontSize: 12, color: Palette.textMuted, marginTop: 6 },
+    footer: { padding: 20, borderTopWidth: 1, borderTopColor: Palette.borderLight },
     primaryButton: {
-        backgroundColor: '#7C3AED', paddingVertical: 16, borderRadius: 12, alignItems: 'center',
+        backgroundColor: Palette.primaryFill, paddingVertical: 16, borderRadius: 12, alignItems: 'center',
     },
     buttonDisabled: { opacity: 0.6 },
-    primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-});
+    primaryButtonText: { color: Palette.white, fontSize: 16, fontWeight: '600' },
+}));

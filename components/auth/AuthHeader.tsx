@@ -8,9 +8,10 @@
  * kit's export that centre square reads `#EDE4FD`, which is the glow, not a fill.
  */
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import BrandMark from '@/components/BrandMark';
-import { Fonts, Palette, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const MARK_SIZE = 40;
 
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export default function AuthHeader({ tagline }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <View style={styles.wrap}>
             <View style={styles.markSlot}>
@@ -32,7 +35,7 @@ export default function AuthHeader({ tagline }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: {
         alignItems: 'center',
     },
@@ -65,4 +68,4 @@ const styles = StyleSheet.create({
         color: Palette.textSecondary,
         textAlign: 'center',
     },
-});
+}));

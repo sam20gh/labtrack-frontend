@@ -10,9 +10,7 @@
  * `getContinue` in the resource controller.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -21,9 +19,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { getSaved, getContinue, routeFor, formatDuration, type ResourceCard } from '@/lib/resources';
 import { AutoCard } from '@/components/resources/ResourceCards';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function SavedResourcesScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [saved, setSaved] = useState<ResourceCard[]>([]);
     const [inProgress, setInProgress] = useState<ResourceCard[]>([]);
@@ -134,7 +135,7 @@ export default function SavedResourcesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
 
     progressWrap: { paddingHorizontal: Spacing.md, paddingTop: Spacing.sm, gap: 4 },
     progressTrack: { height: 4, borderRadius: 2, backgroundColor: Palette.border, overflow: 'hidden' },
-    progressFill: { height: '100%', borderRadius: 2, backgroundColor: Palette.primary },
+    progressFill: { height: '100%', borderRadius: 2, backgroundColor: Palette.primaryFill },
     progressText: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
 
     empty: { alignItems: 'center', paddingTop: Spacing.xxxl, gap: Spacing.sm },
@@ -157,4 +158,4 @@ const styles = StyleSheet.create({
         textAlign: 'center', lineHeight: 20, paddingHorizontal: Spacing.xl,
     },
     emptyAction: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary, marginTop: Spacing.sm },
-});
+}));

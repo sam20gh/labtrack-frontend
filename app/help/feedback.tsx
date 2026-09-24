@@ -18,10 +18,7 @@
  * this needs is which build it came from, and nobody knows their build number.
  */
 import React, { useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TextInput, Pressable,
-    Linking, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,11 +27,14 @@ import Toast from 'react-native-toast-message';
 
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { SUPPORT_EMAIL, FEEDBACK_TOPICS } from '@/lib/help';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const MAX_LENGTH = 1000;
 
 export default function FeedbackScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [topics, setTopics] = useState<string[]>([]);
     const [message, setMessage] = useState('');
@@ -163,7 +163,7 @@ export default function FeedbackScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     scroll: { paddingBottom: 48 },
@@ -194,10 +194,10 @@ const styles = StyleSheet.create({
 
     send: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, borderRadius: Radius.xl,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.xl,
         paddingVertical: 16, marginTop: Spacing.sm,
     },
-    sendPressed: { backgroundColor: Palette.primaryDark },
+    sendPressed: { backgroundColor: Palette.primaryDarkFill },
     sendDisabled: { backgroundColor: Palette.borderLight },
     sendText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
     sendTextDisabled: { color: Palette.textMuted },
@@ -206,4 +206,4 @@ const styles = StyleSheet.create({
         fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: Spacing.xs,
     },
-});
+}));

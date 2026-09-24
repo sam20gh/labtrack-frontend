@@ -18,9 +18,10 @@
  * nothing reported rather than drawing a wall of dashes.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont, activePalette } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { formatDistance, type DayMetrics } from '@/lib/activity';
 
 interface Tile {
@@ -45,36 +46,36 @@ export const tilesFor = (metrics: DayMetrics | null): Tile[] => {
     const tiles: Tile[] = [];
 
     if (num(a.steps)) {
-        tiles.push({ key: 'steps', icon: 'footsteps-outline', tint: Palette.primary, label: 'Steps', value: grouped(a.steps) });
+        tiles.push({ key: 'steps', icon: 'footsteps-outline', tint: activePalette().primary, label: 'Steps', value: grouped(a.steps) });
     }
 
     const distance = formatDistance(a.distanceM);
     if (distance) {
-        tiles.push({ key: 'distance', icon: 'navigate-outline', tint: Palette.indigo, label: 'Distance', value: distance });
+        tiles.push({ key: 'distance', icon: 'navigate-outline', tint: activePalette().indigo, label: 'Distance', value: distance });
     }
 
     if (num(a.activeKcal)) {
-        tiles.push({ key: 'active', icon: 'flame-outline', tint: Palette.amber, label: 'Active burn', value: grouped(a.activeKcal), unit: 'kcal' });
+        tiles.push({ key: 'active', icon: 'flame-outline', tint: activePalette().amber, label: 'Active burn', value: grouped(a.activeKcal), unit: 'kcal' });
     }
 
     if (num(a.restingKcal)) {
-        tiles.push({ key: 'resting', icon: 'bed-outline', tint: Palette.textSecondary, label: 'Resting burn', value: grouped(a.restingKcal), unit: 'kcal' });
+        tiles.push({ key: 'resting', icon: 'bed-outline', tint: activePalette().textSecondary, label: 'Resting burn', value: grouped(a.restingKcal), unit: 'kcal' });
     }
 
     if (num(a.exerciseMin) && a.exerciseMin > 0) {
-        tiles.push({ key: 'exercise', icon: 'stopwatch-outline', tint: Palette.success, label: 'Active minutes', value: String(Math.round(a.exerciseMin)), unit: 'min' });
+        tiles.push({ key: 'exercise', icon: 'stopwatch-outline', tint: activePalette().success, label: 'Active minutes', value: String(Math.round(a.exerciseMin)), unit: 'min' });
     }
 
     if (num(a.floors) && a.floors > 0) {
-        tiles.push({ key: 'floors', icon: 'trending-up-outline', tint: Palette.success, label: 'Floors', value: grouped(a.floors) });
+        tiles.push({ key: 'floors', icon: 'trending-up-outline', tint: activePalette().success, label: 'Floors', value: grouped(a.floors) });
     }
 
     if (num(h.restingBpm)) {
-        tiles.push({ key: 'resting-hr', icon: 'heart-outline', tint: Palette.danger, label: 'Resting heart rate', value: String(Math.round(h.restingBpm)), unit: 'bpm' });
+        tiles.push({ key: 'resting-hr', icon: 'heart-outline', tint: activePalette().danger, label: 'Resting heart rate', value: String(Math.round(h.restingBpm)), unit: 'bpm' });
     }
 
     if (num(h.avgBpm)) {
-        tiles.push({ key: 'avg-hr', icon: 'pulse-outline', tint: Palette.danger, label: 'Average heart rate', value: String(Math.round(h.avgBpm)), unit: 'bpm' });
+        tiles.push({ key: 'avg-hr', icon: 'pulse-outline', tint: activePalette().danger, label: 'Average heart rate', value: String(Math.round(h.avgBpm)), unit: 'bpm' });
     }
 
     // One tile, because a low and a high on their own read as two unrelated numbers where
@@ -83,7 +84,7 @@ export const tilesFor = (metrics: DayMetrics | null): Tile[] => {
         tiles.push({
             key: 'hr-range',
             icon: 'analytics-outline',
-            tint: Palette.danger,
+            tint: activePalette().danger,
             label: 'Heart rate range',
             value: `${Math.round(h.minBpm)}–${Math.round(h.maxBpm)}`,
             unit: 'bpm',
@@ -91,7 +92,7 @@ export const tilesFor = (metrics: DayMetrics | null): Tile[] => {
     }
 
     if (num(h.hrvMs)) {
-        tiles.push({ key: 'hrv', icon: 'git-compare-outline', tint: Palette.info, label: 'Heart rate variability', value: String(Math.round(h.hrvMs)), unit: 'ms' });
+        tiles.push({ key: 'hrv', icon: 'git-compare-outline', tint: activePalette().info, label: 'Heart rate variability', value: String(Math.round(h.hrvMs)), unit: 'ms' });
     }
 
     /**
@@ -102,7 +103,7 @@ export const tilesFor = (metrics: DayMetrics | null): Tile[] => {
      * It appears on the days a watch estimated one — which is every few runs, not every day.
      */
     if (num(h.vo2Max)) {
-        tiles.push({ key: 'vo2', icon: 'fitness-outline', tint: Palette.success, label: 'VO₂ max', value: (h.vo2Max as number).toFixed(1), unit: 'ml/kg/min' });
+        tiles.push({ key: 'vo2', icon: 'fitness-outline', tint: activePalette().success, label: 'VO₂ max', value: (h.vo2Max as number).toFixed(1), unit: 'ml/kg/min' });
     }
 
     /**
@@ -121,25 +122,25 @@ export const tilesFor = (metrics: DayMetrics | null): Tile[] => {
         tiles.push({
             key: 'sleep',
             icon: 'moon-outline',
-            tint: Palette.indigo,
+            tint: activePalette().indigo,
             label: 'Time asleep',
             value: hours > 0 ? `${hours}h ${mins}m` : `${mins}m`,
         });
     }
 
     if (num(sl.deepMin) && (sl.deepMin as number) > 0) {
-        tiles.push({ key: 'deep', icon: 'cloudy-night-outline', tint: Palette.indigo, label: 'Deep sleep', value: String(Math.round(sl.deepMin as number)), unit: 'min' });
+        tiles.push({ key: 'deep', icon: 'cloudy-night-outline', tint: activePalette().indigo, label: 'Deep sleep', value: String(Math.round(sl.deepMin as number)), unit: 'min' });
     }
 
     if (num(sl.efficiency)) {
-        tiles.push({ key: 'sleep-eff', icon: 'bed-outline', tint: Palette.indigo, label: 'Sleep efficiency', value: String(Math.round(sl.efficiency)), unit: '%' });
+        tiles.push({ key: 'sleep-eff', icon: 'bed-outline', tint: activePalette().indigo, label: 'Sleep efficiency', value: String(Math.round(sl.efficiency)), unit: '%' });
     }
 
     // The scale, when there is one. `weightKg` is the day's latest reading, not a mean —
     // see `models/DailyMetrics.js`.
     const body = metrics.body;
     if (body && num(body.weightKg)) {
-        tiles.push({ key: 'weight', icon: 'body-outline', tint: Palette.textSecondary, label: 'Weight', value: (body.weightKg as number).toFixed(1), unit: 'kg' });
+        tiles.push({ key: 'weight', icon: 'body-outline', tint: activePalette().textSecondary, label: 'Weight', value: (body.weightKg as number).toFixed(1), unit: 'kg' });
     }
 
     return tiles;
@@ -152,6 +153,8 @@ interface Props {
 }
 
 export function DayStats({ metrics, emptyNote }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const tiles = tilesFor(metrics);
 
     if (tiles.length === 0) {
@@ -182,7 +185,7 @@ export function DayStats({ metrics, emptyNote }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     // One bordered card holding the grid, matching the way the design's insight and goal
     // cards are set — a page of individually-shaded tiles reads as a control panel.
     card: {
@@ -214,4 +217,4 @@ const styles = StyleSheet.create({
         padding: Spacing.lg,
     },
     emptyText: { flex: 1, fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
-});
+}));

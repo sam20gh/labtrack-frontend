@@ -1,19 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Animated,
-    Alert,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 type RecordingState = 'idle' | 'ready' | 'recording' | 'completed';
 
 export default function VoiceAnalysisScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [recordingState, setRecordingState] = useState<RecordingState>('idle');
@@ -172,7 +169,7 @@ export default function VoiceAnalysisScreen() {
                                             styles.waveBar,
                                             {
                                                 transform: [{ scaleY: anim }],
-                                                backgroundColor: index % 2 === 0 ? '#7C3AED' : '#A78BFA',
+                                                backgroundColor: index % 2 === 0 ? activePalette().primaryFill : activePalette().primaryLight,
                                             },
                                         ]}
                                     />
@@ -181,7 +178,7 @@ export default function VoiceAnalysisScreen() {
                         ) : recordingState === 'completed' ? (
                             <View style={styles.completedContainer}>
                                 <View style={styles.completedIcon}>
-                                    <Ionicons name="checkmark-circle" size={60} color="#10B981" />
+                                    <Ionicons name="checkmark-circle" size={60} color={tone('#10B981')} />
                                 </View>
                                 <Text style={styles.completedText}>Recording saved!</Text>
                                 <Text style={styles.durationText}>{formatDuration(recordingDuration)}</Text>
@@ -189,7 +186,7 @@ export default function VoiceAnalysisScreen() {
                         ) : (
                             <View style={styles.idleContainer}>
                                 <View style={styles.micIconContainer}>
-                                    <Ionicons name="mic" size={50} color="#7C3AED" />
+                                    <Ionicons name="mic" size={50} color={Palette.primary} />
                                 </View>
                                 <Text style={styles.idleText}>
                                     {recordingState === 'ready' ? 'Getting ready...' : 'Tap to start recording'}
@@ -215,7 +212,7 @@ export default function VoiceAnalysisScreen() {
                             onPress={handleStartRecording}
                             disabled={recordingState === 'ready'}
                         >
-                            <Ionicons name="mic" size={32} color="#fff" />
+                            <Ionicons name="mic" size={32} color={Palette.white} />
                         </TouchableOpacity>
                     ) : recordingState === 'recording' ? (
                         <TouchableOpacity
@@ -230,7 +227,7 @@ export default function VoiceAnalysisScreen() {
                                 style={styles.deleteButton}
                                 onPress={handleDeleteRecording}
                             >
-                                <Ionicons name="trash-outline" size={24} color="#EF4444" />
+                                <Ionicons name="trash-outline" size={24} color={tone('#EF4444')} />
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.reRecordButton}
@@ -240,7 +237,7 @@ export default function VoiceAnalysisScreen() {
                                     setHasRecording(false);
                                 }}
                             >
-                                <Ionicons name="refresh" size={24} color="#7C3AED" />
+                                <Ionicons name="refresh" size={24} color={Palette.primary} />
                                 <Text style={styles.reRecordText}>Re-record</Text>
                             </TouchableOpacity>
                         </View>
@@ -251,15 +248,15 @@ export default function VoiceAnalysisScreen() {
                 <View style={styles.instructionsContainer}>
                     <Text style={styles.instructionsTitle}>Tips for a good recording:</Text>
                     <View style={styles.instructionItem}>
-                        <Ionicons name="volume-high" size={18} color="#6B7280" />
+                        <Ionicons name="volume-high" size={18} color={Palette.textSecondary} />
                         <Text style={styles.instructionText}>Speak clearly and at a normal pace</Text>
                     </View>
                     <View style={styles.instructionItem}>
-                        <Ionicons name="location" size={18} color="#6B7280" />
+                        <Ionicons name="location" size={18} color={Palette.textSecondary} />
                         <Text style={styles.instructionText}>Find a quiet environment</Text>
                     </View>
                     <View style={styles.instructionItem}>
-                        <Ionicons name="time" size={18} color="#6B7280" />
+                        <Ionicons name="time" size={18} color={Palette.textSecondary} />
                         <Text style={styles.instructionText}>Keep it under 2 minutes</Text>
                     </View>
                 </View>
@@ -280,15 +277,15 @@ export default function VoiceAnalysisScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#7C3AED',
+        color: Palette.primary,
         textAlign: 'center',
         paddingTop: 8,
         marginBottom: 8,
@@ -308,17 +305,17 @@ const styles = StyleSheet.create({
     },
     progressBar: {
         height: 8,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 4,
     },
     progressFill: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 4,
     },
     skipText: {
         fontSize: 16,
-        color: '#7C3AED',
+        color: Palette.primary,
         fontWeight: '500',
     },
     content: {
@@ -329,12 +326,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         lineHeight: 24,
         marginBottom: 32,
     },
@@ -345,7 +342,7 @@ const styles = StyleSheet.create({
     waveformContainer: {
         width: '100%',
         height: 150,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
         borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
@@ -369,14 +366,14 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: '#EDE9FE',
+        backgroundColor: tone('#EDE9FE'),
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 12,
     },
     idleText: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
     },
     completedContainer: {
         alignItems: 'center',
@@ -387,12 +384,12 @@ const styles = StyleSheet.create({
     completedText: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#10B981',
+        color: tone('#10B981'),
         marginBottom: 4,
     },
     durationText: {
         fontSize: 14,
-        color: '#6B7280',
+        color: Palette.textSecondary,
     },
     timerContainer: {
         flexDirection: 'row',
@@ -403,12 +400,12 @@ const styles = StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: '#EF4444',
+        backgroundColor: tone('#EF4444'),
     },
     timerText: {
         fontSize: 24,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         fontVariant: ['tabular-nums'],
     },
     controlsContainer: {
@@ -419,10 +416,10 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#7C3AED',
+        shadowColor: Palette.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -435,10 +432,10 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#EF4444',
+        backgroundColor: tone('#EF4444'),
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#EF4444',
+        shadowColor: tone('#EF4444'),
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -448,7 +445,7 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 4,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     completedControls: {
         flexDirection: 'row',
@@ -459,7 +456,7 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 25,
-        backgroundColor: '#FEE2E2',
+        backgroundColor: tone('#FEE2E2'),
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -468,24 +465,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         paddingHorizontal: 20,
-        backgroundColor: '#EDE9FE',
+        backgroundColor: tone('#EDE9FE'),
         borderRadius: 25,
         gap: 8,
     },
     reRecordText: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#7C3AED',
+        color: Palette.primary,
     },
     instructionsContainer: {
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
         borderRadius: 16,
         padding: 16,
     },
     instructionsTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         marginBottom: 12,
     },
     instructionItem: {
@@ -496,24 +493,24 @@ const styles = StyleSheet.create({
     },
     instructionText: {
         fontSize: 14,
-        color: '#6B7280',
+        color: Palette.textSecondary,
     },
     bottomContainer: {
         paddingHorizontal: 24,
         paddingBottom: 20,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 30,
         paddingVertical: 16,
         alignItems: 'center',
     },
     continueButtonDisabled: {
-        backgroundColor: '#A78BFA',
+        backgroundColor: Palette.primaryLight,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 18,
         fontWeight: '600',
     },
-});
+}));

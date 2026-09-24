@@ -6,10 +6,7 @@
  * take money and does not would be worse than one that is honest about the gap.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-    ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,8 +18,12 @@ import { createOrder } from '@/lib/orders';
 import { getPaymentStatus, createPaymentIntent, confirmPayment, formatMoney } from '@/lib/payments';
 import { ApiError } from '@/lib/api';
 
-import { Palette } from '@/constants/theme';
+
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 export default function BasketScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { initPaymentSheet, presentPaymentSheet } = useStripe();
     const { lines, estimatedTotal, setQuantity, remove, clear, count } = useBasket();
@@ -129,13 +130,13 @@ export default function BasketScreen() {
             <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={24} color={Palette.text} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Basket</Text>
                     <View style={styles.backButton} />
                 </View>
                 <View style={styles.empty}>
-                    <Ionicons name="bag-outline" size={48} color="#D1D5DB" />
+                    <Ionicons name="bag-outline" size={48} color={tone('#D1D5DB')} />
                     <Text style={styles.emptyTitle}>Your basket is empty</Text>
                     <Text style={styles.emptyBody}>Browse tests and scans, or order straight from your health plan.</Text>
                     <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)/orders')}>
@@ -151,14 +152,14 @@ export default function BasketScreen() {
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={24} color={Palette.text} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Basket</Text>
                     <TouchableOpacity onPress={() => Alert.alert('Empty basket?', 'This removes everything.', [
                         { text: 'Cancel', style: 'cancel' },
                         { text: 'Empty', style: 'destructive', onPress: () => clear() },
                     ])} style={styles.backButton}>
-                        <Ionicons name="trash-outline" size={20} color="#9CA3AF" />
+                        <Ionicons name="trash-outline" size={20} color={Palette.textMuted} />
                     </TouchableOpacity>
                 </View>
 
@@ -167,13 +168,13 @@ export default function BasketScreen() {
                         <View key={line.productId} style={styles.line}>
                             {line.image
                                 ? <Image source={{ uri: line.image }} style={styles.thumb} />
-                                : <View style={styles.thumbFallback}><Ionicons name="flask-outline" size={18} color="#7C3AED" /></View>}
+                                : <View style={styles.thumbFallback}><Ionicons name="flask-outline" size={18} color={Palette.primary} /></View>}
 
                             <View style={styles.lineBody}>
                                 <Text style={styles.lineName} numberOfLines={2}>{line.name}</Text>
                                 {line.planItemId ? (
                                     <Text style={styles.fromPlan}>
-                                        <Ionicons name="calendar-outline" size={11} color="#7C3AED" /> From your health plan
+                                        <Ionicons name="calendar-outline" size={11} color={Palette.primary} /> From your health plan
                                     </Text>
                                 ) : null}
                                 <Text style={styles.linePrice}>£{(line.price * line.quantity).toFixed(2)}</Text>
@@ -181,11 +182,11 @@ export default function BasketScreen() {
 
                             <View style={styles.qty}>
                                 <TouchableOpacity onPress={() => setQuantity(line.productId, line.quantity - 1)} style={styles.qtyButton}>
-                                    <Ionicons name="remove" size={16} color="#6B7280" />
+                                    <Ionicons name="remove" size={16} color={Palette.textSecondary} />
                                 </TouchableOpacity>
                                 <Text style={styles.qtyValue}>{line.quantity}</Text>
                                 <TouchableOpacity onPress={() => setQuantity(line.productId, line.quantity + 1)} style={styles.qtyButton}>
-                                    <Ionicons name="add" size={16} color="#6B7280" />
+                                    <Ionicons name="add" size={16} color={Palette.textSecondary} />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -203,7 +204,7 @@ export default function BasketScreen() {
                             key={key}
                             style={styles.input}
                             placeholder={placeholder}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={Palette.textMuted}
                             value={(address as any)[key]}
                             onChangeText={(t) => setAddress((a) => ({ ...a, [key]: t }))}
                         />
@@ -211,7 +212,7 @@ export default function BasketScreen() {
 
                     {payment && !payment.available && (
                         <View style={styles.notice}>
-                            <Ionicons name="information-circle-outline" size={18} color="#92400E" />
+                            <Ionicons name="information-circle-outline" size={18} color={tone('#92400E')} />
                             <Text style={styles.noticeText}>
                                 Card payment is unavailable right now. Your order will be placed unpaid and
                                 our team will contact you to arrange payment before the kit is dispatched.
@@ -221,7 +222,7 @@ export default function BasketScreen() {
 
                     {payment?.testMode && (
                         <View style={styles.testNotice}>
-                            <Ionicons name="construct-outline" size={18} color="#1D4ED8" />
+                            <Ionicons name="construct-outline" size={18} color={Palette.info} />
                             <Text style={styles.testNoticeText}>
                                 Test mode — use card 4242 4242 4242 4242, any future expiry and any CVC.
                                 No real money moves.
@@ -241,7 +242,7 @@ export default function BasketScreen() {
                         disabled={!addressComplete || placing}
                     >
                         {placing
-                            ? <ActivityIndicator color="#fff" />
+                            ? <ActivityIndicator color={Palette.white} />
                             : <Text style={styles.primaryButtonText}>
                                 {payment?.available ? `Pay ${formatMoney(estimatedTotal)}` : 'Place order'}
                             </Text>}
@@ -252,61 +253,61 @@ export default function BasketScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: 16, paddingVertical: 12,
     },
     backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-    headerTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
+    headerTitle: { fontSize: 17, fontWeight: '600', color: Palette.text },
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 10 },
-    emptyTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937', marginTop: 8 },
-    emptyBody: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 21, marginBottom: 12 },
+    emptyTitle: { fontSize: 17, fontWeight: '600', color: Palette.text, marginTop: 8 },
+    emptyBody: { fontSize: 14, color: Palette.textMuted, textAlign: 'center', lineHeight: 21, marginBottom: 12 },
     scroll: { paddingHorizontal: 20, paddingBottom: 24 },
     line: {
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 14, padding: 12, marginBottom: 10,
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 14, padding: 12, marginBottom: 10,
     },
-    thumb: { width: 44, height: 44, borderRadius: 10, backgroundColor: '#F3F4F6' },
+    thumb: { width: 44, height: 44, borderRadius: 10, backgroundColor: Palette.borderLight },
     thumbFallback: {
-        width: 44, height: 44, borderRadius: 10, backgroundColor: '#F3E8FF',
+        width: 44, height: 44, borderRadius: 10, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
     lineBody: { flex: 1 },
-    lineName: { fontSize: 14, fontWeight: '600', color: '#1F2937', lineHeight: 19 },
+    lineName: { fontSize: 14, fontWeight: '600', color: Palette.text, lineHeight: 19 },
     fromPlan: { fontSize: 11, color: Palette.textSecondary, marginTop: 4 },
-    linePrice: { fontSize: 14, fontWeight: '700', color: '#1F2937', marginTop: 4 },
+    linePrice: { fontSize: 14, fontWeight: '700', color: Palette.text, marginTop: 4 },
     qty: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     qtyButton: {
-        width: 28, height: 28, borderRadius: 8, backgroundColor: '#F3F4F6',
+        width: 28, height: 28, borderRadius: 8, backgroundColor: Palette.borderLight,
         alignItems: 'center', justifyContent: 'center',
     },
-    qtyValue: { fontSize: 14, fontWeight: '600', color: '#1F2937', minWidth: 18, textAlign: 'center' },
-    sectionLabel: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 22, marginBottom: 10 },
+    qtyValue: { fontSize: 14, fontWeight: '600', color: Palette.text, minWidth: 18, textAlign: 'center' },
+    sectionLabel: { fontSize: 15, fontWeight: '700', color: Palette.text, marginTop: 22, marginBottom: 10 },
     input: {
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10,
-        paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#1F2937', marginBottom: 10,
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 10,
+        paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: Palette.text, marginBottom: 10,
     },
     notice: {
         flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-        backgroundColor: '#FEF3C7', borderRadius: 12, padding: 14, marginTop: 12,
+        backgroundColor: tone('#FEF3C7'), borderRadius: 12, padding: 14, marginTop: 12,
     },
-    noticeText: { flex: 1, fontSize: 12, color: '#92400E', lineHeight: 18 },
+    noticeText: { flex: 1, fontSize: 12, color: tone('#92400E'), lineHeight: 18 },
     testNotice: {
         flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-        backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14, marginTop: 12,
+        backgroundColor: Palette.infoSurface, borderRadius: 12, padding: 14, marginTop: 12,
     },
-    testNoticeText: { flex: 1, fontSize: 12, color: '#1D4ED8', lineHeight: 18 },
-    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    testNoticeText: { flex: 1, fontSize: 12, color: Palette.info, lineHeight: 18 },
+    footer: { padding: 20, borderTopWidth: 1, borderTopColor: Palette.borderLight },
     totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-    totalLabel: { fontSize: 15, color: '#6B7280' },
-    totalValue: { fontSize: 22, fontWeight: '700', color: '#1F2937' },
+    totalLabel: { fontSize: 15, color: Palette.textSecondary },
+    totalValue: { fontSize: 22, fontWeight: '700', color: Palette.text },
     primaryButton: {
-        backgroundColor: '#7C3AED', paddingVertical: 16, paddingHorizontal: 32,
+        backgroundColor: Palette.primaryFill, paddingVertical: 16, paddingHorizontal: 32,
         borderRadius: 12, alignItems: 'center',
     },
     buttonDisabled: { opacity: 0.5 },
-    primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-});
+    primaryButtonText: { color: Palette.white, fontSize: 16, fontWeight: '600' },
+}));

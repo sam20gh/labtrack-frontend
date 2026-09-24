@@ -11,10 +11,11 @@
  * in somebody's hand from their flatmate's in the next room, so it gets the slot.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { JstyleVariant } from '@/modules/jstyle-ble';
 
 /**
@@ -52,6 +53,8 @@ interface Props {
 export default function DiscoveredRow({
     name, rssi, variant, variantLabel, busy, onPress,
 }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const strength = bars(rssi);
 
     return (
@@ -103,7 +106,7 @@ export default function DiscoveredRow({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -122,9 +125,9 @@ const styles = StyleSheet.create({
         gap: 3, paddingBottom: 13,
     },
     bar: { width: 4, borderRadius: 2 },
-    barOn: { backgroundColor: Palette.primary },
+    barOn: { backgroundColor: Palette.primaryFill },
     barOff: { backgroundColor: Palette.primaryPale },
     text: { flex: 1 },
     name: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
     meta: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
-});
+}));

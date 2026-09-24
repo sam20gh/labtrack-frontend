@@ -15,8 +15,9 @@
  * the argument `MetricAreaChart` already records.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { View, Text } from 'react-native';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import { STAGE_META, formatMinutes, type SleepStageKey } from '@/lib/sleep';
 
 export interface WeekdayBucket {
@@ -41,6 +42,7 @@ export function WeekdayBars({
     averageMin: number | null;
     height?: number;
 }) {
+    const styles = useStyles();
     const measured = days.filter((d) => Number.isFinite(d.avgMin as number));
     if (!measured.length) return null;
 
@@ -118,6 +120,7 @@ export interface StageRange {
  * every row until the chart says only "it varies".
  */
 export function StageRangeRows({ ranges }: { ranges: StageRange[] }) {
+    const styles = useStyles();
     const measured = ranges.filter((r) => Number.isFinite(r.avgMin as number));
     if (!measured.length) return null;
 
@@ -174,7 +177,7 @@ export function StageRangeRows({ ranges }: { ranges: StageRange[] }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     plot: { position: 'relative', justifyContent: 'flex-end' },
     bars: { flexDirection: 'row', alignItems: 'flex-end', height: '100%' },
     barColumn: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
@@ -218,4 +221,4 @@ const styles = StyleSheet.create({
         fontSize: 11, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: Spacing.sm,
     },
-});
+}));

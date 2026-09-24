@@ -10,18 +10,21 @@
  * exactly the window we wait before routing, so it never sits full while nothing happens.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, StatusBar } from 'react-native';
+import { View, Text, Animated, Easing, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSignedIn } from '@/lib/auth';
 import BrandMark from '@/components/BrandMark';
-import { Fonts, Palette, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** How long the mark is held on screen before we route. The bar is timed to match. */
 const DWELL_MS = 2500;
 
 export default function SplashScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const fadeValue = useRef(new Animated.Value(0)).current;
     const scaleValue = useRef(new Animated.Value(0.82)).current;
@@ -91,7 +94,7 @@ export default function SplashScreen() {
 
     return (
         <LinearGradient
-            colors={['#8B5CF6', Palette.primary, Palette.primaryDark]}
+            colors={Palettes.light.actionGradient} // the brand, identical in both schemes
             style={styles.container}
             start={{ x: 0.1, y: 0 }}
             end={{ x: 0.9, y: 1 }}
@@ -119,7 +122,7 @@ export default function SplashScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
     },
@@ -160,7 +163,7 @@ const styles = StyleSheet.create({
     fill: {
         height: '100%',
         borderRadius: 3,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     percent: {
         marginTop: 14,
@@ -169,4 +172,4 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.85)',
         letterSpacing: 0.5,
     },
-});
+}));

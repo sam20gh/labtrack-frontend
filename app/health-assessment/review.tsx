@@ -17,9 +17,7 @@
  * the middle therefore means "change this, then confirm the rest", not "change only this".
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, type Href } from 'expo-router';
@@ -28,7 +26,8 @@ import Toast from 'react-native-toast-message';
 
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { User } from '@/types/api';
 import { seedParamsFromUser, MOOD_ENUM_TO_ID } from './params';
 import {
@@ -53,6 +52,8 @@ const formatDate = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : undefined;
 
 export default function HealthProfileReviewScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
@@ -296,7 +297,7 @@ export default function HealthProfileReviewScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     center: { justifyContent: 'center', alignItems: 'center' },
     flex: { flex: 1 },
@@ -324,7 +325,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: Radius.pill,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
         gap: Spacing.sm,
         paddingVertical: Spacing.lg,
         borderRadius: Radius.pill,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
     },
     primaryButtonText: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import {  } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,8 +9,10 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/ThemedText';
+import { makeStyles } from '@/hooks/useTheme';
 
 export function HelloWave() {
+  const styles = useStyles();
   const rotationAnimation = useSharedValue(0);
 
   useEffect(() => {
@@ -31,10 +33,10 @@ export function HelloWave() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
   text: {
     fontSize: 28,
     lineHeight: 32,
     marginTop: -6,
   },
-});
+}));

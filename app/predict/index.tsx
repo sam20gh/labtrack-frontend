@@ -24,10 +24,7 @@
  *    hides its own scorecard is one nobody should trust.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable,
-    ActivityIndicator, RefreshControl, useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Pressable, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -43,7 +40,8 @@ import { BandChart } from '@/components/predict/BandChart';
 import { MetricPredictionCard, PastPredictionRow } from '@/components/predict/PredictionCards';
 import { PredictionDisclaimer } from '@/components/predict/Chips';
 import { Avatar } from '@/components/Avatar';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, Shadow, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** "Dr. Doug Mathers" → "DM". Falls back to one letter rather than to an empty circle. */
 const initialsOf = (name: string) =>
@@ -51,6 +49,8 @@ const initialsOf = (name: string) =>
         .map((part) => part[0]?.toUpperCase() ?? '').join('') || name[0]?.toUpperCase() || '?';
 
 export default function PredictHubScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -113,7 +113,7 @@ export default function PredictHubScreen() {
                     <SafeAreaView edges={['top']}>
                         <View style={styles.heroTop}>
                             <TouchableOpacity onPress={() => router.back()} hitSlop={12} accessibilityLabel="Back">
-                                <Ionicons name="chevron-back" size={22} color={Palette.white} />
+                                <Ionicons name="chevron-back" size={22} color={Palettes.light.white} />
                             </TouchableOpacity>
                             <Text style={styles.heroTitle}>Predictions</Text>
                             <TouchableOpacity
@@ -121,7 +121,7 @@ export default function PredictHubScreen() {
                                 hitSlop={12}
                                 accessibilityLabel="How do we predict?"
                             >
-                                <Ionicons name="help-circle-outline" size={22} color={Palette.white} />
+                                <Ionicons name="help-circle-outline" size={22} color={Palettes.light.white} />
                             </TouchableOpacity>
                         </View>
 
@@ -159,7 +159,7 @@ export default function PredictHubScreen() {
                             accessibilityRole="button"
                         >
                             <Text style={styles.ctaText}>Predict My Health</Text>
-                            <Ionicons name="search" size={18} color={Palette.white} />
+                            <Ionicons name="search" size={18} color={Palettes.light.white} />
                         </TouchableOpacity>
                     </SafeAreaView>
                 </LinearGradient>
@@ -315,7 +315,7 @@ export default function PredictHubScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     content: { paddingBottom: Spacing.xxxl },
@@ -325,20 +325,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingTop: Spacing.sm, paddingBottom: Spacing.lg,
     },
-    heroTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
+    heroTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palettes.light.white },
 
     statRow: { flexDirection: 'row', gap: Spacing.xxl, marginBottom: Spacing.lg },
     statBlock: { flex: 1 },
-    statValue: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.white },
+    statValue: { fontSize: 26, fontFamily: Fonts.bold, color: Palettes.light.white },
     statValueMuted: { fontSize: 26, fontFamily: Fonts.bold, color: 'rgba(255,255,255,0.55)' },
     statLabel: { fontSize: 12, ...BodyFont.regular, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
 
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, paddingVertical: 15, borderRadius: Radius.lg,
+        backgroundColor: Palettes.light.primaryFill, paddingVertical: 15, borderRadius: Radius.lg,
         ...Shadow.card,
     },
-    ctaText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
+    ctaText: { fontSize: 15, fontFamily: Fonts.bold, color: Palettes.light.white },
 
     body: { padding: Spacing.lg, gap: 0 },
 
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     sectionAction: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
 
     scoreCard: {
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg,
     },
     scoreHead: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: Spacing.md },
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
 
     empty: {
         alignItems: 'center', gap: Spacing.sm, padding: Spacing.xl,
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
     },
     emptyTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
         color: Palette.textSecondary, textAlign: 'center',
     },
     emptyCta: {
-        marginTop: Spacing.sm, backgroundColor: Palette.primary,
+        marginTop: Spacing.sm, backgroundColor: Palette.primaryFill,
         paddingHorizontal: Spacing.xl, paddingVertical: 11, borderRadius: Radius.lg,
     },
     emptyCtaText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.white },
@@ -391,10 +391,10 @@ const styles = StyleSheet.create({
     rail: { gap: Spacing.md, paddingRight: Spacing.lg },
     pro: {
         width: 140, alignItems: 'center', gap: 4, padding: Spacing.md,
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
     },
     proName: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text, marginTop: 6 },
     proSpec: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     proRate: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.primary, marginTop: 2 },
-});
+}));

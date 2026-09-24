@@ -15,14 +15,16 @@
  */
 import { Stack, useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import {  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import StateView from '@/components/errors/StateView';
-import { Palette } from '@/constants/theme';
+
+import { makeStyles } from '@/hooks/useTheme';
 import { describeState } from '@/lib/appState';
 
 export default function NotFoundScreen() {
+    const styles = useStyles();
     const router = useRouter();
 
     return (
@@ -50,6 +52,6 @@ export default function NotFoundScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
-});
+}));

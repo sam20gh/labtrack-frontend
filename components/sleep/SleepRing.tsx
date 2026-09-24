@@ -23,7 +23,8 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { bandTint, type SleepBand } from '@/lib/sleep';
 
 interface Props {
@@ -45,6 +46,8 @@ export function SleepRing({
     score, band, size = 260, onExplain,
     onLeftAction, onRightAction, leftIcon = 'moon', rightIcon = 'eye-outline',
 }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const radius = (size - STROKE) / 2;
     const circumference = 2 * Math.PI * radius;
     const has = Number.isFinite(score as number);
@@ -113,7 +116,7 @@ export function SleepRing({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center' },
     centre: { alignItems: 'center', gap: 2 },
     value: { fontSize: 44, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 52 },
@@ -124,13 +127,13 @@ const styles = StyleSheet.create({
         position: 'absolute',
         width: 36, height: 36, borderRadius: 18,
         alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.primaryPale,
     },
     chipDark: { backgroundColor: Palette.text, borderColor: Palette.text },
     // Sat on the ring itself, at the ten-o'clock and four-o'clock positions the design uses.
     chipLeft: { left: -6, top: '42%' },
     chipRight: { right: -6, top: '58%' },
-});
+}));
 
 export default SleepRing;

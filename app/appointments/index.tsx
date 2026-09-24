@@ -11,10 +11,7 @@
  * professional's side. Cancel is destructive-coloured; reschedule is not.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, Modal, Pressable,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -29,13 +26,16 @@ import {
     professionalOf, professionalIdOf, nameOf, initialsOf, isLive, isImminent, splitByTime,
     DEFAULT_DURATION, type AppointmentMode,
 } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { Appointment } from '@/types/api';
 
 /** Days shown in the strip, starting today. */
 const STRIP_DAYS = 14;
 
 export default function AppointmentsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -258,6 +258,8 @@ export default function AppointmentsScreen() {
 const ImminentBanner = ({ appointment, onReschedule }: {
     appointment: Appointment; onReschedule: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const professional = professionalOf(appointment);
     const mode = (appointment.mode ?? 'video') as AppointmentMode;
     const at = new Date(appointment.scheduledFor);
@@ -293,6 +295,8 @@ const ImminentBanner = ({ appointment, onReschedule }: {
 const AgendaRow = ({ appointment, last, onReschedule, onCancel }: {
     appointment: Appointment; last: boolean; onReschedule: () => void; onCancel: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const professional = professionalOf(appointment);
     const at = new Date(appointment.scheduledFor);
     const meta = STATUS_META[appointment.status] ?? STATUS_META.requested;
@@ -370,24 +374,28 @@ const AgendaRow = ({ appointment, last, onReschedule, onCancel }: {
 };
 
 /** Frame 15: an empty day is an invitation, not an error. */
-const EmptyDay = ({ isToday, onFind }: { isToday: boolean; onFind: () => void }) => (
-    <View style={styles.empty}>
-        <View style={styles.emptyMark}>
-            <Ionicons name="calendar-clear-outline" size={26} color={Palette.textSecondary} />
+const EmptyDay = ({ isToday, onFind }: { isToday: boolean; onFind: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.empty}>
+            <View style={styles.emptyMark}>
+                <Ionicons name="calendar-clear-outline" size={26} color={Palette.textSecondary} />
+            </View>
+            <Text style={styles.emptyTitle}>
+                {isToday ? 'Nothing booked today' : 'Nothing booked this day'}
+            </Text>
+            <Text style={styles.emptyBody}>
+                Consultations you request appear here, with the time you asked for and whether the
+                specialist has confirmed it.
+            </Text>
+            <TouchableOpacity style={styles.emptyCta} onPress={onFind} activeOpacity={0.85}>
+                <Ionicons name="search" size={16} color={Palette.white} />
+                <Text style={styles.emptyCtaText}>Find a specialist</Text>
+            </TouchableOpacity>
         </View>
-        <Text style={styles.emptyTitle}>
-            {isToday ? 'Nothing booked today' : 'Nothing booked this day'}
-        </Text>
-        <Text style={styles.emptyBody}>
-            Consultations you request appear here, with the time you asked for and whether the
-            specialist has confirmed it.
-        </Text>
-        <TouchableOpacity style={styles.emptyCta} onPress={onFind} activeOpacity={0.85}>
-            <Ionicons name="search" size={16} color={Palette.white} />
-            <Text style={styles.emptyCtaText}>Find a specialist</Text>
-        </TouchableOpacity>
-    </View>
-);
+    );
+};
 
 /** Frames 16 and 18 — a sheet rather than a system alert, so the copy fits. */
 const ConfirmSheet = ({
@@ -397,48 +405,52 @@ const ConfirmSheet = ({
     confirmLabel: string; cancelLabel: string;
     destructive?: boolean; busy?: boolean;
     onConfirm: () => void; onDismiss: () => void;
-}) => (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
-        <Pressable style={styles.backdrop} onPress={busy ? undefined : onDismiss}>
-            <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-                <View style={[styles.sheetMark, destructive && styles.sheetMarkDanger]}>
-                    <Ionicons
-                        name={destructive ? 'alert-circle-outline' : 'help-circle-outline'}
-                        size={26}
-                        color={destructive ? Palette.danger : Palette.primary}
-                    />
-                </View>
-                <Text style={styles.sheetTitle}>{title}</Text>
-                <Text style={styles.sheetBody}>{body}</Text>
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
+            <Pressable style={styles.backdrop} onPress={busy ? undefined : onDismiss}>
+                <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+                    <View style={[styles.sheetMark, destructive && styles.sheetMarkDanger]}>
+                        <Ionicons
+                            name={destructive ? 'alert-circle-outline' : 'help-circle-outline'}
+                            size={26}
+                            color={destructive ? Palette.danger : Palette.primary}
+                        />
+                    </View>
+                    <Text style={styles.sheetTitle}>{title}</Text>
+                    <Text style={styles.sheetBody}>{body}</Text>
 
-                <TouchableOpacity
-                    style={[styles.sheetPrimary, destructive && styles.sheetPrimaryDanger]}
-                    onPress={onConfirm}
-                    disabled={busy}
-                    activeOpacity={0.85}
-                >
-                    {busy
-                        ? <ActivityIndicator color={Palette.white} />
-                        : <Text style={styles.sheetPrimaryText}>{confirmLabel}</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.sheetSecondary}
-                    onPress={onDismiss}
-                    disabled={busy}
-                    activeOpacity={0.8}
-                >
-                    <Text style={styles.sheetSecondaryText}>{cancelLabel}</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.sheetPrimary, destructive && styles.sheetPrimaryDanger]}
+                        onPress={onConfirm}
+                        disabled={busy}
+                        activeOpacity={0.85}
+                    >
+                        {busy
+                            ? <ActivityIndicator color={Palette.white} />
+                            : <Text style={styles.sheetPrimaryText}>{confirmLabel}</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.sheetSecondary}
+                        onPress={onDismiss}
+                        disabled={busy}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.sheetSecondaryText}>{cancelLabel}</Text>
+                    </TouchableOpacity>
+                </Pressable>
             </Pressable>
-        </Pressable>
-    </Modal>
-);
+        </Modal>
+    );
+};
 
 const GUTTER = Spacing.lg;
 /** Width of the time rail. Fixed so every card's left edge lines up down the day. */
 const RAIL = 62;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     flex: { flex: 1 },
     center: { alignItems: 'center', justifyContent: 'center' },
@@ -463,7 +475,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.sm, paddingVertical: 3,
         borderRadius: Radius.pill, backgroundColor: 'rgba(255,255,255,0.15)',
     },
-    liveDot: { width: 6, height: 6, borderRadius: Radius.pill, backgroundColor: '#4ADE80' },
+    liveDot: { width: 6, height: 6, borderRadius: Radius.pill, backgroundColor: tone('#4ADE80') },
     liveText: { fontSize: 10, letterSpacing: 1, color: Palette.white, fontFamily: Fonts.bold },
     imminentTime: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: Fonts.semibold },
     imminentTitle: { fontSize: 18, lineHeight: 24, color: Palette.white, fontFamily: Fonts.bold },
@@ -471,23 +483,23 @@ const styles = StyleSheet.create({
     imminentAction: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
         marginTop: Spacing.md, height: 42,
-        borderRadius: Radius.md, backgroundColor: Palette.white,
+        borderRadius: Radius.md, backgroundColor: Palette.background,
     },
     imminentActionText: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
 
     dayStrip: { gap: Spacing.sm, paddingHorizontal: GUTTER },
     dayCell: {
         width: 48, height: 70, alignItems: 'center', justifyContent: 'center', gap: 2,
-        borderRadius: Radius.md, backgroundColor: Palette.white,
+        borderRadius: Radius.md, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    dayCellActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    dayCellActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     dayWeekday: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
     dayNumber: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
     dayTextActive: { color: Palette.white },
     dayDot: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: 'transparent' },
-    dayDotFilled: { backgroundColor: Palette.success },
-    dayDotOnActive: { backgroundColor: Palette.white },
+    dayDotFilled: { backgroundColor: Palette.successFill },
+    dayDotOnActive: { backgroundColor: Palette.background },
 
     dayHeading: {
         marginTop: Spacing.xl, marginBottom: Spacing.md, paddingHorizontal: GUTTER,
@@ -500,7 +512,7 @@ const styles = StyleSheet.create({
     railTime: { fontSize: 12, color: Palette.text, fontFamily: Fonts.bold },
     railDot: {
         width: 9, height: 9, borderRadius: Radius.pill, marginTop: 6, marginLeft: 2,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
     },
     railLine: {
         position: 'absolute', top: 32, bottom: -Spacing.md, left: 6,
@@ -509,7 +521,7 @@ const styles = StyleSheet.create({
 
     apptCard: {
         flex: 1, marginBottom: Spacing.md, padding: Spacing.md, gap: Spacing.sm,
-        borderRadius: Radius.lg, backgroundColor: Palette.white,
+        borderRadius: Radius.lg, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate, ...Shadow.card,
     },
     apptHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
@@ -547,7 +559,7 @@ const styles = StyleSheet.create({
     empty: {
         alignItems: 'center', gap: Spacing.sm,
         marginHorizontal: GUTTER, padding: Spacing.xxl,
-        borderRadius: Radius.lg, backgroundColor: Palette.white,
+        borderRadius: Radius.lg, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
     emptyMark: {
@@ -563,14 +575,14 @@ const styles = StyleSheet.create({
     emptyCta: {
         flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm,
         paddingHorizontal: Spacing.xl, height: 42,
-        borderRadius: Radius.md, backgroundColor: Palette.primary,
+        borderRadius: Radius.md, backgroundColor: Palette.primaryFill,
     },
     emptyCtaText: { fontSize: 14, color: Palette.white, fontFamily: Fonts.semibold },
 
     fab: {
         position: 'absolute', right: GUTTER, bottom: Spacing.xxl,
         width: 52, height: 52, borderRadius: Radius.pill,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primary,
+        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primaryFill,
         shadowColor: Palette.primaryDeep, shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
     },
@@ -582,7 +594,7 @@ const styles = StyleSheet.create({
     sheet: {
         alignItems: 'center', gap: Spacing.sm,
         padding: Spacing.xl, paddingBottom: Spacing.xxl,
-        borderRadius: Radius.xl, backgroundColor: Palette.white,
+        borderRadius: Radius.xl, backgroundColor: Palette.background,
     },
     sheetMark: {
         width: 52, height: 52, borderRadius: Radius.pill,
@@ -597,10 +609,10 @@ const styles = StyleSheet.create({
     sheetPrimary: {
         alignSelf: 'stretch', height: 48, marginTop: Spacing.md,
         alignItems: 'center', justifyContent: 'center',
-        borderRadius: Radius.md, backgroundColor: Palette.primary,
+        borderRadius: Radius.md, backgroundColor: Palette.primaryFill,
     },
-    sheetPrimaryDanger: { backgroundColor: Palette.danger },
+    sheetPrimaryDanger: { backgroundColor: Palette.dangerFill },
     sheetPrimaryText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.bold },
     sheetSecondary: { alignSelf: 'stretch', height: 44, alignItems: 'center', justifyContent: 'center' },
     sheetSecondaryText: { fontSize: 14, color: Palette.textSecondary, fontFamily: Fonts.semibold },
-});
+}));

@@ -25,10 +25,7 @@
  *   which is why this screen will not send until those have been accepted.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-    ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,10 +41,13 @@ import {
 import { recordCheck } from '@/lib/symptomChecks';
 import BodyAreaSheet from '@/components/symptoms/BodyAreaSheet';
 import DetailSheet from '@/components/symptoms/DetailSheet';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { User } from '@/types/api';
 
 export default function SymptomsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{ symptom?: string; browse?: string }>();
     const inputRef = useRef<TextInput>(null);
@@ -372,7 +372,7 @@ export default function SymptomsScreen() {
 
 const GUTTER = Spacing.xxl;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
 
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         height: 54, paddingHorizontal: Spacing.lg,
         borderRadius: Radius.xl, borderWidth: 1, borderColor: Palette.border,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     searchFocused: { borderColor: Palette.primary, borderWidth: 1.5 },
     searchInput: {
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     dropdown: {
         marginTop: Spacing.sm,
         borderRadius: Radius.xl, borderWidth: 1, borderColor: Palette.border,
-        backgroundColor: Palette.white, padding: Spacing.sm,
+        backgroundColor: Palette.background, padding: Spacing.sm,
         ...Shadow.card,
     },
     suggestion: {
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg,
         borderRadius: Radius.md, borderWidth: 1, borderColor: Palette.border,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     chipText: { fontSize: 14, ...BodyFont.regular, color: Palette.text },
 
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
 
     footer: {
         paddingHorizontal: GUTTER, paddingTop: Spacing.lg, paddingBottom: Spacing.lg,
-        borderTopWidth: 1, borderTopColor: Palette.borderLight, backgroundColor: Palette.white,
+        borderTopWidth: 1, borderTopColor: Palette.borderLight, backgroundColor: Palette.background,
     },
     scoreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
     scoreLabel: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.amber },
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
         height: 6, borderRadius: Radius.pill, backgroundColor: Palette.borderLight,
         marginTop: Spacing.md, overflow: 'hidden',
     },
-    fill: { height: 6, minWidth: 8, borderRadius: Radius.pill, backgroundColor: Palette.primary },
+    fill: { height: 6, minWidth: 8, borderRadius: Radius.pill, backgroundColor: Palette.primaryFill },
     scoreCaption: {
         fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', marginTop: Spacing.md,
@@ -471,8 +471,8 @@ const styles = StyleSheet.create({
     },
     roundDisabled: { opacity: 0.5 },
     fab: {
-        width: 68, height: 68, borderRadius: Radius.pill, backgroundColor: Palette.primary,
+        width: 68, height: 68, borderRadius: Radius.pill, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
     },
     fabIdle: { backgroundColor: Palette.primarySurface },
-});
+}));

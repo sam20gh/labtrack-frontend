@@ -23,9 +23,7 @@
  *      times a second; posting each one would be hundreds of writes per listen.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -37,10 +35,13 @@ import {
     getResource, saveProgress, toggleLike, formatDuration,
     PROGRESS_INTERVAL_MS, type ResourceDetail,
 } from '@/lib/resources';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 
 export default function AudioPlayerScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { slug } = useLocalSearchParams<{ slug: string }>();
 
@@ -337,9 +338,9 @@ export default function AudioPlayerScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     light: { flex: 1, backgroundColor: Palette.background },
-    dark: { flex: 1, backgroundColor: Palette.primary },
+    dark: { flex: 1, backgroundColor: Palette.primaryFill },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
     iconSpacer: { width: 24 },
 
@@ -361,8 +362,8 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
         alignSelf: 'center', marginTop: Spacing.xxxl * 2,
     },
-    bigButtonOnDark: { backgroundColor: Palette.white },
-    bigButtonOnLight: { backgroundColor: Palette.primary },
+    bigButtonOnDark: { backgroundColor: Palette.background },
+    bigButtonOnLight: { backgroundColor: Palette.primaryFill },
 
     waveform: {
         flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
 
     track: { flex: 1, height: 4, borderRadius: 2, backgroundColor: Palette.border, overflow: 'hidden' },
     playerTrack: { flex: 0, width: '100%' },
-    trackFill: { height: '100%', borderRadius: 2, backgroundColor: Palette.primary },
+    trackFill: { height: '100%', borderRadius: 2, backgroundColor: Palette.primaryFill },
     timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm, marginBottom: Spacing.xl },
     timeSmall: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
 
@@ -410,7 +411,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     playButtonPurple: {
-        width: 64, height: 64, borderRadius: 32, backgroundColor: Palette.primary,
+        width: 64, height: 64, borderRadius: 32, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
     },
-});
+}));

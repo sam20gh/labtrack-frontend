@@ -7,10 +7,11 @@
  * bubble so much as a block, while the person's messages are short and read better hugged.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import AssistantWidgetCard from './AssistantWidget';
 import { messageTime, type AssistantMessage } from '@/lib/assistant';
 
@@ -21,6 +22,8 @@ type Props = {
 };
 
 export default function MessageBubble({ message, onSuggestion }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const mine = message.role === 'user';
 
     if (mine) {
@@ -119,7 +122,7 @@ export default function MessageBubble({ message, onSuggestion }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     mineWrap: { alignItems: 'flex-end', marginBottom: Spacing.lg, gap: 4 },
     mineImage: {
         width: '72%',
@@ -136,7 +139,7 @@ const styles = StyleSheet.create({
     mineMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 4 },
     mineBubble: {
         maxWidth: '82%',
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         borderRadius: Radius.xl,
         borderBottomRightRadius: Radius.sm,
         paddingVertical: Spacing.md,
@@ -151,7 +154,7 @@ const styles = StyleSheet.create({
         width: 22,
         height: 22,
         borderRadius: 11,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -187,4 +190,4 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md,
     },
     chipText: { fontSize: 12, ...BodyFont.medium, color: Palette.primaryDark },
-});
+}));

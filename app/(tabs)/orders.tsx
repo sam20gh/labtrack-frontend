@@ -42,7 +42,8 @@ import * as Haptics from 'expo-haptics';
 import { api } from '@/lib/api';
 import { useBasket } from '@/lib/basket';
 import { galleryOf, metaFor, byTypeOrder, formatPrice, matchesQuery } from '@/lib/catalogue';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState, StaleNotice } from '@/components/errors';
 import type { Product } from '@/types/api';
 
@@ -72,6 +73,8 @@ const tap = () => {
  * from the grid that the product page has more to show.
  */
 const PhotoCount = ({ count }: { count: number }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (count < 2) return null;
     return (
         <View style={styles.photoCount}>
@@ -84,25 +87,29 @@ const PhotoCount = ({ count }: { count: number }) => {
 /** The add control. Green tick once the line exists, so the grid shows what is already in. */
 const AddButton = ({
     inBasket, onPress, size = 38,
-}: { inBasket: boolean; onPress: () => void; size?: number }) => (
-    <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel={inBasket ? 'In your basket' : 'Add to basket'}
-        hitSlop={8}
-        style={[
-            styles.add,
-            { width: size, height: size, borderRadius: size / 2 },
-            inBasket && styles.addDone,
-        ]}
-        onPress={onPress}
-    >
-        <Ionicons
-            name={inBasket ? 'checkmark' : 'add'}
-            size={size * 0.55}
-            color={inBasket ? Palette.success : Palette.white}
-        />
-    </TouchableOpacity>
-);
+}: { inBasket: boolean; onPress: () => void; size?: number }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={inBasket ? 'In your basket' : 'Add to basket'}
+            hitSlop={8}
+            style={[
+                styles.add,
+                { width: size, height: size, borderRadius: size / 2 },
+                inBasket && styles.addDone,
+            ]}
+            onPress={onPress}
+        >
+            <Ionicons
+                name={inBasket ? 'checkmark' : 'add'}
+                size={size * 0.55}
+                color={inBasket ? Palette.success : Palette.white}
+            />
+        </TouchableOpacity>
+    );
+};
 
 /** A grid tile — picture on top, then the name, then price against the add control. */
 const ProductTile = ({
@@ -110,6 +117,7 @@ const ProductTile = ({
 }: {
     product: Product; width: number; onOpen: () => void; onAdd: () => void; inBasket: boolean;
 }) => {
+    const styles = useStyles();
     const meta = metaFor(product.type);
     const images = galleryOf(product);
     const cover = images[0];
@@ -145,6 +153,8 @@ const ProductTile = ({
 const FeatureCard = ({
     product, onOpen, onAdd, inBasket,
 }: { product: Product; onOpen: () => void; onAdd: () => void; inBasket: boolean }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const meta = metaFor(product.type);
     const images = galleryOf(product);
 
@@ -181,6 +191,8 @@ const FeatureCard = ({
 // ---------------------------------------------------------------------------
 
 export default function OrdersScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const { add, has, count, estimatedTotal } = useBasket();
@@ -282,7 +294,7 @@ export default function OrdersScreen() {
                         accessibilityLabel={`Basket, ${count} ${count === 1 ? 'item' : 'items'}`}
                         onPress={() => router.push('/basket')}
                     >
-                        <Ionicons name="bag-handle-outline" size={21} color={Palette.white} />
+                        <Ionicons name="bag-handle-outline" size={21} color={Palettes.light.white} />
                         {count > 0 && (
                             <View style={styles.basketBadge}>
                                 <Text style={styles.basketBadgeText}>{count}</Text>
@@ -468,7 +480,7 @@ export default function OrdersScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
@@ -486,7 +498,7 @@ const styles = StyleSheet.create({
         ...BodyFont.medium, fontSize: 11, letterSpacing: 1.4,
         color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase',
     },
-    title: { fontFamily: Fonts.bold, fontSize: 26, color: Palette.white, marginTop: 2 },
+    title: { fontFamily: Fonts.bold, fontSize: 26, color: Palettes.light.white, marginTop: 2 },
     basketButton: {
         width: 44, height: 44, borderRadius: Radius.xl,
         backgroundColor: 'rgba(255,255,255,0.18)',
@@ -494,10 +506,10 @@ const styles = StyleSheet.create({
     },
     basketBadge: {
         position: 'absolute', top: -3, right: -3, minWidth: 20, height: 20, borderRadius: 10,
-        backgroundColor: Palette.white, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: Palettes.light.background, alignItems: 'center', justifyContent: 'center',
         paddingHorizontal: 5,
     },
-    basketBadgeText: { fontFamily: Fonts.bold, fontSize: 11, color: Palette.primaryDark },
+    basketBadgeText: { fontFamily: Fonts.bold, fontSize: 11, color: Palettes.light.primaryDark },
     searchBar: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         backgroundColor: 'rgba(255,255,255,0.16)',
@@ -508,7 +520,7 @@ const styles = StyleSheet.create({
     },
     searchInput: {
         flex: 1, paddingVertical: Spacing.md,
-        ...BodyFont.regular, fontSize: 14, color: Palette.white,
+        ...BodyFont.regular, fontSize: 14, color: Palettes.light.white,
     },
 
     // Category rail ---------------------------------------------------------
@@ -536,9 +548,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
         borderRadius: Radius.pill,
         borderWidth: 1, borderColor: Palette.borderSlate,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
-    chipActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    chipActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     chipText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.text },
     chipTextActive: { color: Palette.white },
     chipCount: { ...BodyFont.medium, fontSize: 11, color: Palette.textMuted },
@@ -590,7 +602,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: GUTTER, gap: COLUMN_GAP,
     },
     tile: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: 18,
         padding: Spacing.sm,
         ...Shadow.card,
@@ -622,7 +634,7 @@ const styles = StyleSheet.create({
     tilePrice: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.primary },
 
     add: {
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
     },
     addDone: { backgroundColor: Palette.successSurface },
@@ -648,7 +660,7 @@ const styles = StyleSheet.create({
     basketBar: {
         position: 'absolute', left: GUTTER, right: GUTTER, bottom: Spacing.xl,
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         paddingVertical: Spacing.lg, paddingHorizontal: Spacing.lg,
         borderRadius: 18,
         shadowColor: Palette.primaryDeep,
@@ -665,4 +677,4 @@ const styles = StyleSheet.create({
     basketBarCountText: { fontFamily: Fonts.bold, fontSize: 12, color: Palette.white },
     basketBarText: { flex: 1, fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
     basketBarTotal: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.white },
-});
+}));

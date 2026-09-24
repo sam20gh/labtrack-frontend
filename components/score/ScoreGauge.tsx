@@ -18,10 +18,11 @@
  * needle pinned to the floor states the first while meaning the second.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Fonts, Palette, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont, activePalette, tone, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { ScoreBand } from '@/lib/score';
 
 interface Props {
@@ -40,11 +41,11 @@ interface Props {
 const SWEEP = 270;
 const START = 135;
 
-const BAND_COLOR: Record<ScoreBand, string> = {
-    attention: '#FB7185',
-    suboptimal: '#FBBF24',
-    healthy: '#7C3AED',
-};
+const BAND_COLOR: Record<ScoreBand, string> = schemed((_, scheme) => ({
+    attention: tone('#FB7185', scheme),
+    suboptimal: tone('#FBBF24', scheme),
+    healthy: activePalette().primary,
+}));
 
 const polar = (cx: number, cy: number, r: number, deg: number) => {
     const rad = ((deg - 90) * Math.PI) / 180;
@@ -62,13 +63,15 @@ const arc = (cx: number, cy: number, r: number, from: number, to: number) => {
 const angleFor = (score: number) => START + (Math.min(100, Math.max(0, score)) / 100) * SWEEP;
 
 export default function ScoreGauge({ value, band, size = 220, bands, caption, onInfo }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const cx = size / 2;
     const cy = size / 2;
     const stroke = Math.round(size * 0.075);
     const r = size / 2 - stroke;
 
     const knob = value === null ? null : polar(cx, cy, r, angleFor(value));
-    const active = band ? BAND_COLOR[band] : '#CBD5E1';
+    const active = band ? BAND_COLOR[band] : activePalette().borderStrong;
 
     return (
         <View style={{ width: size, height: size }}>
@@ -91,7 +94,7 @@ export default function ScoreGauge({ value, band, size = 220, bands, caption, on
                 {/* The empty track, drawn under everything so a gap in the bands still reads. */}
                 <Path
                     d={arc(cx, cy, r, START, START + SWEEP)}
-                    stroke="#EEF0F5"
+                    stroke={tone('#EEF0F5')}
                     strokeWidth={stroke}
                     strokeLinecap="round"
                     fill="none"
@@ -116,7 +119,7 @@ export default function ScoreGauge({ value, band, size = 220, bands, caption, on
 
                 {knob && (
                     <G>
-                        <Circle cx={knob.x} cy={knob.y} r={stroke * 0.72} fill="#FFFFFF" />
+                        <Circle cx={knob.x} cy={knob.y} r={stroke * 0.72} fill={Palette.white} />
                         <Circle
                             cx={knob.x}
                             cy={knob.y}
@@ -158,7 +161,7 @@ export default function ScoreGauge({ value, band, size = 220, bands, caption, on
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     centre: {
         position: 'absolute',
         alignItems: 'center',
@@ -185,4 +188,4 @@ const styles = StyleSheet.create({
         color: Palette.textMuted,
     },
     endTop: { textAlign: 'center' },
-});
+}));

@@ -6,27 +6,30 @@
  * short night is not one. The same line `Palette.alert` draws for error screens.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { SleepAnalysis, SleepAnalysisTone } from '@/lib/sleep';
 
-const TONE: Record<SleepAnalysisTone, {
+const TONE = schemed<Record<SleepAnalysisTone, {
     icon: React.ComponentProps<typeof Ionicons>['name']; tint: string; surface: string;
-}> = {
+}>>((Palette) => ({
     positive: { icon: 'checkmark-circle', tint: Palette.success, surface: Palette.successSurface },
     neutral: { icon: 'ellipse', tint: Palette.primary, surface: Palette.primarySurface },
     attention: { icon: 'alert-circle', tint: Palette.amber, surface: Palette.warningSurface },
-};
+}));
 
-const HEADLINE_TINT: Record<SleepAnalysis['tone'], string> = {
+const HEADLINE_TINT = schemed<Record<SleepAnalysis['tone'], string>>((Palette) => ({
     positive: Palette.success,
     mixed: Palette.primary,
     attention: Palette.amber,
-};
+}));
 
 export function SleepAnalysisCard({ analysis }: { analysis: SleepAnalysis }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     return (
@@ -91,7 +94,7 @@ export function SleepAnalysisCard({ analysis }: { analysis: SleepAnalysis }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         padding: Spacing.lg, borderRadius: Radius.lg,
         backgroundColor: Palette.background,
@@ -113,4 +116,4 @@ const styles = StyleSheet.create({
     detail: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 19 },
     planTag: { fontSize: 10, fontFamily: Fonts.semibold, color: Palette.text, textTransform: 'uppercase', letterSpacing: 0.5 },
     basis: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted, lineHeight: 16 },
-});
+}));

@@ -14,10 +14,7 @@
  * important thing on the screen and must never be able to take the day down with it.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator,
-    TouchableOpacity, RefreshControl, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -33,7 +30,9 @@ import { MealGallery } from '@/components/nutrition/MealGallery';
 import { MacroWeekChart } from '@/components/nutrition/MacroWeekChart';
 import { SuggestionCard } from '@/components/nutrition/SuggestionCard';
 import { SkeletonGroup, SkeletonBlock } from '@/components/nutrition/Skeleton';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { HeroStatusBar } from '@/components/ui/HeroStatusBar';
 import type {
     NutritionDay, NutritionGallery, NutritionInsight, NutritionRecommendations,
 } from '@/types/api';
@@ -48,6 +47,8 @@ const INSIGHT_WINDOW = 7;
 const SUGGESTION_PREVIEW = 4;
 
 export default function NutritionScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [data, setData] = useState<NutritionDay | null>(null);
@@ -149,6 +150,8 @@ export default function NutritionScreen() {
 
     return (
         <View style={styles.container}>
+            {/* The hero's deep violet runs under the status bar. */}
+            <HeroStatusBar />
             <ScrollView
                 contentContainerStyle={styles.scroll}
                 refreshControl={
@@ -183,15 +186,15 @@ export default function NutritionScreen() {
                 >
                     <View style={styles.header}>
                         <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-                            <Ionicons name="chevron-back" size={24} color={Palette.white} />
+                            <Ionicons name="chevron-back" size={24} color={Palettes.light.white} />
                         </TouchableOpacity>
                         <Text style={styles.title}>Nutrition</Text>
                         <View style={styles.headerActions}>
                             <TouchableOpacity onPress={() => router.push('/nutrition/schedule')} hitSlop={8}>
-                                <Ionicons name="calendar-outline" size={20} color={Palette.white} />
+                                <Ionicons name="calendar-outline" size={20} color={Palettes.light.white} />
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => router.push('/nutrition/setup')} hitSlop={8}>
-                                <Ionicons name="options-outline" size={20} color={Palette.white} />
+                                <Ionicons name="options-outline" size={20} color={Palettes.light.white} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -202,7 +205,7 @@ export default function NutritionScreen() {
                     */}
                     {!hasTarget ? (
                         <TouchableOpacity style={styles.setupPrompt} onPress={() => router.push('/nutrition/setup')}>
-                            <Ionicons name="flag-outline" size={22} color={Palette.white} />
+                            <Ionicons name="flag-outline" size={22} color={Palettes.light.white} />
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.setupTitle}>Set up your nutrition goal</Text>
                                 <Text style={styles.setupBody}>
@@ -458,7 +461,7 @@ export default function NutritionScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     scroll: { paddingBottom: 110 },
 
@@ -476,7 +479,7 @@ const styles = StyleSheet.create({
         gap: Spacing.md,
         paddingVertical: Spacing.md,
     },
-    title: { flex: 1, fontFamily: Fonts.bold, fontSize: 20, color: Palette.white },
+    title: { flex: 1, fontFamily: Fonts.bold, fontSize: 20, color: Palettes.light.white },
     headerActions: { flexDirection: 'row', gap: Spacing.lg },
 
     ringRow: {
@@ -487,7 +490,7 @@ const styles = StyleSheet.create({
     },
     // Fixed rather than flexed, so a four-digit target cannot squeeze the ring off-centre.
     flank: { width: 64 },
-    flankValue: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.white },
+    flankValue: { fontFamily: Fonts.bold, fontSize: 18, color: Palettes.light.white },
     flankLabel: { ...BodyFont.regular, fontSize: 11, color: 'rgba(255,255,255,0.8)' },
 
     setupPrompt: {
@@ -499,7 +502,7 @@ const styles = StyleSheet.create({
         padding: Spacing.lg,
         marginTop: Spacing.sm,
     },
-    setupTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
+    setupTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palettes.light.white },
     setupBody: {
         ...BodyFont.regular,
         fontSize: 12,
@@ -584,7 +587,7 @@ const styles = StyleSheet.create({
         bottom: Spacing.xxl,
         height: 52,
         borderRadius: Radius.lg,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -592,4 +595,4 @@ const styles = StyleSheet.create({
         ...Shadow.card,
     },
     fabText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
-});
+}));

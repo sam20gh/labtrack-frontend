@@ -13,10 +13,7 @@
  * would drop the plan-item link and the price snapshot the original carries.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-    ActivityIndicator, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -29,10 +26,13 @@ import {
     createAppointment, rescheduleAppointment, formatDayLong, initialsOf,
     type AppointmentMode, type BookableDay,
 } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { Appointment, Professional } from '@/types/api';
 
 export default function BookAppointmentScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{
         professionalId?: string;
@@ -385,48 +385,55 @@ export default function BookAppointmentScreen() {
     );
 }
 
-const DoctorSummary = ({ professional }: { professional: Professional }) => (
-    <View style={styles.doctorCard}>
-        {professional.profile_image ? (
-            <Image source={{ uri: professional.profile_image }} style={styles.doctorAvatar} />
-        ) : (
-            <View style={[styles.doctorAvatar, styles.doctorAvatarFallback]}>
-                <Text style={styles.doctorInitials}>{initialsOf(professional)}</Text>
+const DoctorSummary = ({ professional }: { professional: Professional }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.doctorCard}>
+            {professional.profile_image ? (
+                <Image source={{ uri: professional.profile_image }} style={styles.doctorAvatar} />
+            ) : (
+                <View style={[styles.doctorAvatar, styles.doctorAvatarFallback]}>
+                    <Text style={styles.doctorInitials}>{initialsOf(professional)}</Text>
+                </View>
+            )}
+            <View style={styles.flex}>
+                <Text style={styles.doctorName} numberOfLines={1}>
+                    Dr {professional.firstname} {professional.lastname}
+                </Text>
+                <Text style={styles.doctorSpeciality} numberOfLines={1}>
+                    {(professional.speciality ?? []).join(' · ') || 'Specialist'}
+                </Text>
             </View>
-        )}
-        <View style={styles.flex}>
-            <Text style={styles.doctorName} numberOfLines={1}>
-                Dr {professional.firstname} {professional.lastname}
-            </Text>
-            <Text style={styles.doctorSpeciality} numberOfLines={1}>
-                {(professional.speciality ?? []).join(' · ') || 'Specialist'}
-            </Text>
+            {professional.hourly_rate != null && (
+                <View style={styles.ratePill}>
+                    <Text style={styles.rateText}>£{professional.hourly_rate}</Text>
+                    <Text style={styles.rateUnit}>/hr</Text>
+                </View>
+            )}
         </View>
-        {professional.hourly_rate != null && (
-            <View style={styles.ratePill}>
-                <Text style={styles.rateText}>£{professional.hourly_rate}</Text>
-                <Text style={styles.rateUnit}>/hr</Text>
-            </View>
-        )}
-    </View>
-);
+    );
+};
 
 const Section = ({ title, icon, trailing, children }: {
     title: string; icon: string; trailing?: string; children: React.ReactNode;
-}) => (
-    <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-            <Ionicons name={icon as any} size={17} color={Palette.textSecondary} />
-            <Text style={styles.sectionTitle}>{title}</Text>
-            {!!trailing && <Text style={styles.sectionTrailing}>{trailing}</Text>}
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+                <Ionicons name={icon as any} size={17} color={Palette.textSecondary} />
+                <Text style={styles.sectionTitle}>{title}</Text>
+                {!!trailing && <Text style={styles.sectionTrailing}>{trailing}</Text>}
+            </View>
+            {children}
         </View>
-        {children}
-    </View>
-);
+    );
+};
 
 const GUTTER = Spacing.lg;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     flex: { flex: 1 },
     center: { alignItems: 'center', justifyContent: 'center' },
@@ -444,7 +451,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         marginHorizontal: GUTTER, marginTop: Spacing.sm,
         padding: Spacing.lg, borderRadius: Radius.lg,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.borderSlate,
+        backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.borderSlate,
         ...Shadow.card,
     },
     doctorAvatar: { width: 48, height: 48, borderRadius: Radius.pill, backgroundColor: Palette.surface },
@@ -467,7 +474,7 @@ const styles = StyleSheet.create({
     modeCard: {
         flex: 1, alignItems: 'center', gap: 4,
         paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
-        borderRadius: Radius.md, backgroundColor: Palette.white,
+        borderRadius: Radius.md, backgroundColor: Palette.background,
         borderWidth: 1.5, borderColor: Palette.borderSlate,
     },
     modeCardActive: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
@@ -478,17 +485,17 @@ const styles = StyleSheet.create({
     dayStrip: { gap: Spacing.sm, paddingRight: GUTTER },
     dayCell: {
         width: 52, height: 74, alignItems: 'center', justifyContent: 'center', gap: 2,
-        borderRadius: Radius.md, backgroundColor: Palette.white,
+        borderRadius: Radius.md, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    dayCellActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    dayCellActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     dayCellClosed: { backgroundColor: Palette.borderLight, borderColor: Palette.borderLight, opacity: 0.55 },
     dayWeekday: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
     dayNumber: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
     dayTextActive: { color: Palette.white },
     dayDot: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: 'transparent' },
-    dayDotBooked: { backgroundColor: Palette.success },
-    dayDotOnActive: { backgroundColor: Palette.white },
+    dayDotBooked: { backgroundColor: Palette.successFill },
+    dayDotOnActive: { backgroundColor: Palette.background },
 
     noteRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     noteText: { flex: 1, fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
@@ -497,10 +504,10 @@ const styles = StyleSheet.create({
     slot: {
         minWidth: 78, alignItems: 'center',
         paddingVertical: 11, paddingHorizontal: Spacing.md,
-        borderRadius: Radius.md, backgroundColor: Palette.white,
+        borderRadius: Radius.md, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    slotActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    slotActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     slotDisabled: { backgroundColor: Palette.borderLight, borderColor: Palette.borderLight },
     slotText: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
     slotTextActive: { color: Palette.white },
@@ -508,14 +515,14 @@ const styles = StyleSheet.create({
 
     noSlots: {
         alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xl,
-        borderRadius: Radius.md, backgroundColor: Palette.white,
+        borderRadius: Radius.md, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
     noSlotsText: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular },
 
     reasonInput: {
         minHeight: 88, padding: Spacing.md,
-        borderRadius: Radius.md, backgroundColor: Palette.white,
+        borderRadius: Radius.md, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
         fontSize: 14, lineHeight: 20, color: Palette.text, ...BodyFont.regular,
     },
@@ -523,7 +530,7 @@ const styles = StyleSheet.create({
 
     footer: {
         paddingHorizontal: GUTTER, paddingTop: Spacing.md, paddingBottom: Spacing.xl,
-        gap: Spacing.sm, backgroundColor: Palette.white,
+        gap: Spacing.sm, backgroundColor: Palette.background,
         borderTopWidth: 1, borderTopColor: Palette.borderSlate,
     },
     footerSummary: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
@@ -531,9 +538,9 @@ const styles = StyleSheet.create({
     footerMeta: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        height: 48, borderRadius: Radius.md, backgroundColor: Palette.primary,
+        height: 48, borderRadius: Radius.md, backgroundColor: Palette.primaryFill,
     },
     ctaDisabled: { backgroundColor: Palette.textMuted, opacity: 0.6 },
     ctaText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.bold },
     footerNote: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, textAlign: 'center' },
-});
+}));

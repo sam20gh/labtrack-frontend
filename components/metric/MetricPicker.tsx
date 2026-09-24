@@ -11,8 +11,9 @@
  * against the series before any of this renders.
  */
 import React from 'react';
-import { Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Text, Pressable, ScrollView } from 'react-native';
+import { Fonts, Spacing, Radius, BodyFont, schemed, tone } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import type { ActivityMetricKey, ActivitySeriesPoint } from '@/lib/activity';
 
 export interface ChartMetric {
@@ -26,10 +27,10 @@ export interface ChartMetric {
     scale?: (v: number) => number;
 }
 
-export const CHART_METRICS: ChartMetric[] = [
+export const CHART_METRICS: ChartMetric[] = schemed((Palette, scheme) => ([
     { key: 'exerciseMin', label: 'Active minutes', unit: 'min', color: Palette.primary, fill: Palette.primarySurface },
     { key: 'steps', label: 'Steps', unit: '', color: Palette.indigo, fill: Palette.primarySurface },
-    { key: 'activeKcal', label: 'Calories', unit: 'kcal', color: Palette.amber, fill: '#FEF3C7' },
+    { key: 'activeKcal', label: 'Calories', unit: 'kcal', color: Palette.amber, fill: tone('#FEF3C7', scheme) },
     {
         key: 'distanceM',
         label: 'Distance',
@@ -42,7 +43,7 @@ export const CHART_METRICS: ChartMetric[] = [
     { key: 'avgBpm', label: 'Average HR', unit: 'bpm', color: Palette.danger, fill: Palette.dangerSurface },
     { key: 'floors', label: 'Floors', unit: '', color: Palette.info, fill: Palette.infoSurface },
     { key: 'hrvMs', label: 'HRV', unit: 'ms', color: Palette.info, fill: Palette.infoSurface },
-];
+]));
 
 /**
  * The metrics this series can actually draw.
@@ -63,6 +64,7 @@ interface Props {
 }
 
 export function MetricPicker({ metrics, value, onChange }: Props) {
+    const styles = useStyles();
     return (
         <ScrollView
             horizontal
@@ -88,7 +90,7 @@ export function MetricPicker({ metrics, value, onChange }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     row: { gap: Spacing.sm, paddingRight: Spacing.xl },
     chip: {
         paddingHorizontal: Spacing.lg,
@@ -96,8 +98,8 @@ const styles = StyleSheet.create({
         borderRadius: Radius.pill,
         borderWidth: 1,
         borderColor: Palette.border,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     label: { fontSize: 12.5, ...BodyFont.medium, color: Palette.textSecondary },
     labelActive: { fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

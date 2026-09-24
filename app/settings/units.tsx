@@ -19,16 +19,19 @@
  * person from "fixing" the conversion at the API boundary.
  */
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { UNIT_OPTIONS, setUnit, useUnits, type UnitKey } from '@/lib/units';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function UnitsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const prefs = useUnits();
 
     /**
@@ -104,7 +107,7 @@ export default function UnitsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     scroll: { paddingBottom: 48 },
     body: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xxl, gap: Spacing.lg },
@@ -145,4 +148,4 @@ const styles = StyleSheet.create({
         fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textMuted,
         marginTop: Spacing.sm,
     },
-});
+}));

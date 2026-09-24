@@ -19,16 +19,17 @@
  * and a chip reading "—%" is the same lie in punctuation.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Fonts, Spacing } from '@/constants/theme';
+import { Fonts, Spacing, activePalette } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** Amber under 30%, rose under 15%. Matches the platform ring on `DeviceStage`. */
 const batteryTone = (pct: number): string => {
-    if (pct < 15) return Palette.danger;
-    if (pct < 30) return Palette.amber;
-    return Palette.success;
+    if (pct < 15) return activePalette().danger;
+    if (pct < 30) return activePalette().amber;
+    return activePalette().success;
 };
 
 const batteryIcon = (pct: number): keyof typeof Ionicons.glyphMap => {
@@ -45,6 +46,8 @@ interface Props {
 }
 
 export default function StatusChips({ battery, connected, busy }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <View style={styles.row}>
             {typeof battery === 'number' ? (
@@ -82,11 +85,11 @@ export default function StatusChips({ battery, connected, busy }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     chip: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     // `fontFamily` without `fontWeight`: Android cannot synthesise a weight from a custom
     // face, so the pair renders regular on Android and a fake bold on iOS.
     label: { fontFamily: Fonts.semibold, fontSize: 14 },
     dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: Palette.textMuted },
-});
+}));

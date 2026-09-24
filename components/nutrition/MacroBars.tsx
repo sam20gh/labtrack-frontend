@@ -7,8 +7,9 @@
  * row the guidance is decoration.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { View, Text } from 'react-native';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 interface Macro {
     key: 'protein' | 'carbs' | 'fat';
@@ -24,6 +25,8 @@ interface Props {
 }
 
 export function MacroBars({ totals, targets }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const macros: Macro[] = [
         { key: 'protein', label: 'protein', consumed: totals.protein, target: targets?.protein, color: Palette.primary },
         { key: 'carbs', label: 'carbs', consumed: totals.carbs, target: targets?.carbs, color: Palette.indigo },
@@ -51,7 +54,7 @@ export function MacroBars({ totals, targets }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     row: { flexDirection: 'row', gap: Spacing.md },
     macro: { flex: 1 },
     track: {
@@ -65,4 +68,4 @@ const styles = StyleSheet.create({
     value: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
     target: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
     label: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary },
-});
+}));

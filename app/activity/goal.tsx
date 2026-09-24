@@ -12,13 +12,12 @@
  * way to tell an override from a coincidence.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, ScrollView, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { PlanGuidanceCard } from '@/components/metric/PlanGuidanceCard';
 import { getPlan, savePlan, type ActivityPlan } from '@/lib/activity';
@@ -34,6 +33,8 @@ const FIELDS: { key: Field; label: string; unit: string; hint: string }[] = [
 ];
 
 export default function ActivityGoalScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [plan, setPlan] = useState<ActivityPlan | null>(null);
@@ -195,7 +196,7 @@ export default function ActivityGoalScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     bar: {
         flexDirection: 'row',
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
         borderTopColor: Palette.borderLight,
     },
     cta: {
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         borderRadius: Radius.lg,
         paddingVertical: Spacing.lg,
         alignItems: 'center',
@@ -263,4 +264,4 @@ const styles = StyleSheet.create({
     ctaText: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
 
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
-});
+}));

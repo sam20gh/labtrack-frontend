@@ -6,19 +6,22 @@
  * `success` pair — see the note on those tokens in `constants/theme.ts`.
  */
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Fonts, Palette, BodyFont } from '@/constants/theme';
+import { Text, View } from 'react-native';
+import { Fonts, BodyFont, activePalette } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { PasswordStrength as Strength } from '@/lib/password';
 
 const SEGMENTS = 4;
 
 function colorFor(level: number): string {
-    if (level <= 1) return Palette.meterWeak;
-    if (level === 2) return Palette.amber;
-    return Palette.meterStrong;
+    if (level <= 1) return activePalette().meterWeak;
+    if (level === 2) return activePalette().amber;
+    return activePalette().meterStrong;
 }
 
 export default function PasswordStrength({ strength }: { strength: Strength }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (strength.level === 0) return null;
     const filled = colorFor(strength.level);
 
@@ -45,7 +48,7 @@ export default function PasswordStrength({ strength }: { strength: Strength }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: {
         marginTop: 8,
     },
@@ -67,4 +70,4 @@ const styles = StyleSheet.create({
     captionValue: {
         fontFamily: Fonts.semibold,
     },
-});
+}));

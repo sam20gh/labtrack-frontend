@@ -33,7 +33,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SlideVisual from '@/components/onboarding/SlideVisuals';
 import WelcomeIllustration from '@/components/onboarding/WelcomeIllustration';
-import { Fonts, Palette, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -112,6 +113,8 @@ const slides: OnboardingSlide[] = [
 const FEATURE_COUNT = slides.length - 1;
 
 export default function OnboardingScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [currentIndex, setCurrentIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
@@ -191,7 +194,7 @@ export default function OnboardingScreen() {
 
                 <View style={styles.stage}>
                     <LinearGradient
-                        colors={[Palette.white, Palette.white, '#E7DBFA']}
+                        colors={[Palette.white, Palette.white, tone('#E7DBFA')]}
                         locations={[0, 0.5, 1]}
                         style={StyleSheet.absoluteFill}
                     />
@@ -277,15 +280,15 @@ export default function OnboardingScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     slide: {
         width,
         height,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
 
     // shared copy
@@ -324,7 +327,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 10,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         marginHorizontal: 16,
         marginTop: 26,
         height: 50,
@@ -360,7 +363,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     progressWrap: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     progress: {
         flexDirection: 'row',
@@ -376,7 +379,7 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.borderLight,
     },
     progressSegmentFilled: {
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
     },
     stage: {
         flex: 1,
@@ -391,14 +394,14 @@ const styles = StyleSheet.create({
         bottom: -60,
         borderRadius: 46,
         borderWidth: 3,
-        borderColor: '#EDEFF3',
-        backgroundColor: '#FBFBFD',
+        borderColor: tone('#EDEFF3'),
+        backgroundColor: tone('#FBFBFD'),
         padding: 6,
     },
     phoneScreen: {
         flex: 1,
         borderRadius: 40,
-        backgroundColor: '#F5F6F9',
+        backgroundColor: tone('#F5F6F9'),
         alignItems: 'center',
         paddingTop: 14,
     },
@@ -406,9 +409,9 @@ const styles = StyleSheet.create({
         width: 92,
         height: 26,
         borderRadius: 13,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderWidth: 1,
-        borderColor: '#E8EAEF',
+        borderColor: tone('#E8EAEF'),
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-end',
@@ -418,14 +421,14 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: '#C7CBD3',
+        backgroundColor: tone('#C7CBD3'),
     },
     cardLayer: {
         paddingHorizontal: 18,
         justifyContent: 'center',
     },
     sheet: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
         paddingTop: 28,
@@ -452,7 +455,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         paddingHorizontal: 26,
         height: 52,
         borderRadius: 26,
@@ -483,4 +486,4 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semibold,
         color: Palette.primary,
     },
-});
+}));

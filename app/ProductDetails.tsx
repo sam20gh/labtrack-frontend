@@ -30,11 +30,7 @@
  * decision.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
-    Modal, StatusBar, useWindowDimensions, Platform, type NativeSyntheticEvent,
-    type NativeScrollEvent,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Modal, StatusBar, useWindowDimensions, Platform, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -46,7 +42,8 @@ import { api, ApiError } from '@/lib/api';
 import { useBasket } from '@/lib/basket';
 import { ORDER_STAGES, ORDER_STATUS_META } from '@/lib/orders';
 import { galleryOf, metaFor, formatPrice } from '@/lib/catalogue';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import type { Product } from '@/types/api';
 
@@ -68,6 +65,8 @@ const tap = () => {
 const Viewer = ({
     images, start, name, onClose,
 }: { images: string[]; start: number; name: string; onClose: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const { width, height } = useWindowDimensions();
     const insets = useSafeAreaInsets();
     const [index, setIndex] = useState(start);
@@ -141,6 +140,8 @@ const Hero = ({
     images: string[]; name: string; height: number;
     index: number; onIndex: (i: number) => void; onOpen: (i: number) => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const { width } = useWindowDimensions();
     const pager = useRef<ScrollView>(null);
 
@@ -215,6 +216,8 @@ const Hero = ({
 
 /** Drawn in place of the hero when the catalogue entry has no picture at all. */
 const HeroPlaceholder = ({ type, height }: { type?: string; height: number }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const meta = metaFor(type);
     return (
         <LinearGradient colors={Palette.heroGradient} style={[styles.placeholder, { height }]}>
@@ -229,6 +232,8 @@ const HeroPlaceholder = ({ type, height }: { type?: string; height: number }) =>
 // ---------------------------------------------------------------------------
 
 export default function ProductDetails() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { height: screenHeight } = useWindowDimensions();
@@ -499,7 +504,7 @@ export default function ProductDetails() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xxl },
 
@@ -607,7 +612,7 @@ const styles = StyleSheet.create({
     },
     floatingBadge: {
         position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9,
-        paddingHorizontal: 4, backgroundColor: Palette.white,
+        paddingHorizontal: 4, backgroundColor: Palette.background,
         alignItems: 'center', justifyContent: 'center',
     },
     floatingBadgeText: { fontFamily: Fonts.bold, fontSize: 10, color: Palette.primaryDark },
@@ -625,7 +630,7 @@ const styles = StyleSheet.create({
     buyBarPrice: { fontFamily: Fonts.bold, fontSize: 20, color: Palette.text },
     buyButton: {
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: Spacing.sm, backgroundColor: Palette.primary,
+        gap: Spacing.sm, backgroundColor: Palette.primaryFill,
         paddingVertical: Spacing.lg, borderRadius: 16,
     },
     buyButtonDone: { backgroundColor: Palette.primarySurface },
@@ -645,4 +650,4 @@ const styles = StyleSheet.create({
         position: 'absolute', alignSelf: 'center',
         ...BodyFont.medium, fontSize: 13, color: 'rgba(255,255,255,0.85)',
     },
-});
+}));

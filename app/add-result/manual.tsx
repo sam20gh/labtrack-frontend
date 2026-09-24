@@ -7,15 +7,14 @@
  * text analyte would store a value that never gets evaluated.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView,
-    ActivityIndicator, KeyboardAvoidingView, Platform, Modal,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { confirmReport, getBiomarkerCatalogue, type CatalogueEntry } from '@/lib/reports';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 interface Entry {
     catalogue: CatalogueEntry | null;
@@ -26,6 +25,8 @@ interface Entry {
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function ManualEntryScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [catalogue, setCatalogue] = useState<CatalogueEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -92,7 +93,7 @@ export default function ManualEntryScreen() {
     if (loading) {
         return (
             <SafeAreaView style={styles.container}>
-                <View style={styles.center}><ActivityIndicator size="large" color="#7C3AED" /></View>
+                <View style={styles.center}><ActivityIndicator size="large" color={Palette.primary} /></View>
             </SafeAreaView>
         );
     }
@@ -102,7 +103,7 @@ export default function ManualEntryScreen() {
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={24} color={Palette.text} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Enter results</Text>
                     <View style={styles.backButton} />
@@ -113,7 +114,7 @@ export default function ManualEntryScreen() {
                     <TextInput
                         style={styles.input}
                         placeholder="e.g. Quest Diagnostics"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={Palette.textMuted}
                         value={labName}
                         onChangeText={setLabName}
                     />
@@ -122,7 +123,7 @@ export default function ManualEntryScreen() {
                     <TextInput
                         style={styles.input}
                         placeholder="YYYY-MM-DD"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={Palette.textMuted}
                         value={collectionDate}
                         onChangeText={setCollectionDate}
                         autoCapitalize="none"
@@ -136,14 +137,14 @@ export default function ManualEntryScreen() {
                                 <Text style={entry.catalogue ? styles.pickerValue : styles.pickerPlaceholder}>
                                     {entry.catalogue?.displayName ?? 'Choose a biomarker'}
                                 </Text>
-                                <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
+                                <Ionicons name="chevron-down" size={18} color={Palette.textMuted} />
                             </TouchableOpacity>
 
                             <View style={styles.entryRow}>
                                 <TextInput
                                     style={[styles.input, styles.valueInput]}
                                     placeholder="Value"
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={Palette.textMuted}
                                     value={entry.value}
                                     onChangeText={(t) => update(index, { value: t })}
                                     keyboardType="decimal-pad"
@@ -151,14 +152,14 @@ export default function ManualEntryScreen() {
                                 <TextInput
                                     style={[styles.input, styles.unitInput]}
                                     placeholder={entry.catalogue?.unit ?? 'Unit'}
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={Palette.textMuted}
                                     value={entry.unit}
                                     onChangeText={(t) => update(index, { unit: t })}
                                     autoCapitalize="none"
                                 />
                                 {entries.length > 1 && (
                                     <TouchableOpacity onPress={() => removeRow(index)} style={styles.remove}>
-                                        <Ionicons name="close-circle" size={22} color="#D1D5DB" />
+                                        <Ionicons name="close-circle" size={22} color={tone('#D1D5DB')} />
                                     </TouchableOpacity>
                                 )}
                             </View>
@@ -172,7 +173,7 @@ export default function ManualEntryScreen() {
                     ))}
 
                     <TouchableOpacity style={styles.addRow} onPress={addRow}>
-                        <Ionicons name="add-circle-outline" size={20} color="#7C3AED" />
+                        <Ionicons name="add-circle-outline" size={20} color={Palette.primary} />
                         <Text style={styles.addRowText}>Add another result</Text>
                     </TouchableOpacity>
                 </ScrollView>
@@ -184,7 +185,7 @@ export default function ManualEntryScreen() {
                         disabled={saving || !complete.length}
                     >
                         {saving
-                            ? <ActivityIndicator color="#fff" />
+                            ? <ActivityIndicator color={Palette.white} />
                             : <Text style={styles.primaryButtonText}>
                                 Save {complete.length || ''} {complete.length === 1 ? 'result' : 'results'}
                             </Text>}
@@ -196,7 +197,7 @@ export default function ManualEntryScreen() {
                 <SafeAreaView style={styles.container}>
                     <View style={styles.header}>
                         <TouchableOpacity onPress={() => setPickerIndex(null)} style={styles.backButton}>
-                            <Ionicons name="close" size={24} color="#1F2937" />
+                            <Ionicons name="close" size={24} color={Palette.text} />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Choose a biomarker</Text>
                         <View style={styles.backButton} />
@@ -217,7 +218,7 @@ export default function ManualEntryScreen() {
                                     <Text style={styles.catalogueName}>{item.displayName}</Text>
                                     <Text style={styles.catalogueUnit}>Stored in {item.unit}</Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+                                <Ionicons name="chevron-forward" size={18} color={tone('#D1D5DB')} />
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
@@ -227,8 +228,8 @@ export default function ManualEntryScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -236,42 +237,42 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16, paddingVertical: 12,
     },
     backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-    headerTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
+    headerTitle: { fontSize: 17, fontWeight: '600', color: Palette.text },
     scroll: { paddingHorizontal: 20, paddingBottom: 24 },
-    label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 12 },
+    label: { fontSize: 13, fontWeight: '600', color: tone('#374151'), marginBottom: 6, marginTop: 12 },
     sectionLabel: { marginTop: 24, fontSize: 15 },
     input: {
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10,
-        paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#1F2937',
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 10,
+        paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: Palette.text,
     },
     entry: {
-        borderWidth: 1, borderColor: '#F3F4F6', borderRadius: 14,
-        padding: 12, marginBottom: 12, backgroundColor: '#FAFAFA',
+        borderWidth: 1, borderColor: Palette.borderLight, borderRadius: 14,
+        padding: 12, marginBottom: 12, backgroundColor: Palette.surface,
     },
     picker: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10,
-        paddingHorizontal: 14, paddingVertical: 12, backgroundColor: '#fff', marginBottom: 10,
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 10,
+        paddingHorizontal: 14, paddingVertical: 12, backgroundColor: Palette.background, marginBottom: 10,
     },
-    pickerValue: { fontSize: 15, color: '#1F2937', fontWeight: '500' },
-    pickerPlaceholder: { fontSize: 15, color: '#9CA3AF' },
+    pickerValue: { fontSize: 15, color: Palette.text, fontWeight: '500' },
+    pickerPlaceholder: { fontSize: 15, color: Palette.textMuted },
     entryRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-    valueInput: { flex: 1, backgroundColor: '#fff' },
-    unitInput: { width: 110, backgroundColor: '#fff' },
+    valueInput: { flex: 1, backgroundColor: Palette.background },
+    unitInput: { width: 110, backgroundColor: Palette.background },
     remove: { padding: 4 },
-    hint: { fontSize: 11, color: '#9CA3AF', marginTop: 8 },
+    hint: { fontSize: 11, color: Palette.textMuted, marginTop: 8 },
     addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
-    addRowText: { fontSize: 14, color: '#7C3AED', fontWeight: '500' },
-    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    addRowText: { fontSize: 14, color: Palette.primary, fontWeight: '500' },
+    footer: { padding: 20, borderTopWidth: 1, borderTopColor: Palette.borderLight },
     primaryButton: {
-        backgroundColor: '#7C3AED', paddingVertical: 16, borderRadius: 12, alignItems: 'center',
+        backgroundColor: Palette.primaryFill, paddingVertical: 16, borderRadius: 12, alignItems: 'center',
     },
     buttonDisabled: { opacity: 0.5 },
-    primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    primaryButtonText: { color: Palette.white, fontSize: 16, fontWeight: '600' },
     catalogueRow: {
         flexDirection: 'row', alignItems: 'center',
-        paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+        paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Palette.borderLight,
     },
-    catalogueName: { fontSize: 15, color: '#1F2937', fontWeight: '500' },
-    catalogueUnit: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-});
+    catalogueName: { fontSize: 15, color: Palette.text, fontWeight: '500' },
+    catalogueUnit: { fontSize: 12, color: Palette.textMuted, marginTop: 2 },
+}));

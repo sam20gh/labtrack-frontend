@@ -11,9 +11,7 @@
  * type is a dead end for someone who opened it to see what is there.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator,
-} from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,7 +23,8 @@ import {
 } from '@/lib/resources';
 import { AutoCard } from '@/components/resources/ResourceCards';
 import FilterSheet, { EMPTY_FILTERS, countActive, toQuery, type Filters } from '@/components/resources/FilterSheet';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const TABS = [
     { key: 'all', label: 'All', icon: 'shapes-outline' },
@@ -37,6 +36,8 @@ const TABS = [
 ];
 
 export default function ResourceSearchScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [query, setQuery] = useState('');
@@ -228,7 +229,7 @@ export default function ResourceSearchScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     topBar: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     searchInput: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text, padding: 0 },
     filterDot: {
         position: 'absolute', top: -2, right: -2,
-        width: 8, height: 8, borderRadius: 4, backgroundColor: Palette.primary,
+        width: 8, height: 8, borderRadius: 4, backgroundColor: Palette.primaryFill,
     },
 
     tabStrip: { flexGrow: 0, borderBottomWidth: 1, borderBottomColor: Palette.borderLight },
@@ -267,4 +268,4 @@ const styles = StyleSheet.create({
     empty: { alignItems: 'center', paddingTop: Spacing.xxxl, gap: Spacing.sm },
     emptyTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text, textAlign: 'center' },
     emptyBody: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center' },
-});
+}));

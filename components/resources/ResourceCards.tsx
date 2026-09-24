@@ -13,53 +13,67 @@
  * card beside it reads as a bug in the number rather than in the component.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, activePalette } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import {
     formatCount, formatDuration, lengthLabel, formatPrice,
     type ResourceCard as Card,
 } from '@/lib/resources';
 
-const PLACEHOLDER = Palette.borderLight;
 
 /** views · likes · comments — the row every card in the kit carries. */
-export const StatRow = ({ stats, tint = Palette.textSecondary, compact = false }: {
+export const StatRow = ({ stats, tint: tintProp, compact = false }: {
     stats: Card['stats'];
     tint?: string;
     compact?: boolean;
-}) => (
-    <View style={styles.statRow}>
-        <Ionicons name="eye-outline" size={compact ? 13 : 15} color={tint} />
-        <Text style={[styles.statText, { color: tint }]}>{formatCount(stats.views)}</Text>
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    // Not a parameter default: that would run before the hook and read the light palette.
+    const tint = tintProp ?? Palette.textSecondary;
+    return (
+        <View style={styles.statRow}>
+            <Ionicons name="eye-outline" size={compact ? 13 : 15} color={tint} />
+            <Text style={[styles.statText, { color: tint }]}>{formatCount(stats.views)}</Text>
 
-        <Ionicons name={stats.liked ? 'heart' : 'heart-outline'} size={compact ? 13 : 15}
-            color={stats.liked ? Palette.primary : tint} style={styles.statGap} />
-        <Text style={[styles.statText, { color: tint }]}>{formatCount(stats.likes)}</Text>
+            <Ionicons name={stats.liked ? 'heart' : 'heart-outline'} size={compact ? 13 : 15}
+                color={stats.liked ? Palette.primary : tint} style={styles.statGap} />
+            <Text style={[styles.statText, { color: tint }]}>{formatCount(stats.likes)}</Text>
 
-        <Ionicons name="chatbox-outline" size={compact ? 13 : 15} color={tint} style={styles.statGap} />
-        <Text style={[styles.statText, { color: tint }]}>{formatCount(stats.comments)}</Text>
-    </View>
-);
+            <Ionicons name="chatbox-outline" size={compact ? 13 : 15} color={tint} style={styles.statGap} />
+            <Text style={[styles.statText, { color: tint }]}>{formatCount(stats.comments)}</Text>
+        </View>
+    );
+};
 
 /** Category or tag chip. Drawn over an image with `floating`, on a surface without. */
-export const Chip = ({ label, floating = false }: { label: string; floating?: boolean }) => (
-    <View style={[styles.chip, floating && styles.chipFloating]}>
-        <Text style={styles.chipText} numberOfLines={1}>{label}</Text>
-    </View>
-);
+export const Chip = ({ label, floating = false }: { label: string; floating?: boolean }) => {
+    const styles = useStyles();
+    return (
+        <View style={[styles.chip, floating && styles.chipFloating]}>
+            <Text style={styles.chipText} numberOfLines={1}>{label}</Text>
+        </View>
+    );
+};
 
 /** The Pro padlock. Small and consistent — a person should learn it once. */
-export const ProBadge = () => (
-    <View style={styles.proBadge}>
-        <Ionicons name="lock-closed" size={10} color={Palette.white} />
-        <Text style={styles.proBadgeText}>PRO</Text>
-    </View>
-);
+export const ProBadge = () => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.proBadge}>
+            <Ionicons name="lock-closed" size={10} color={Palette.white} />
+            <Text style={styles.proBadgeText}>PRO</Text>
+        </View>
+    );
+};
 
 const Byline = ({ card }: { card: Card }) => {
+    const styles = useStyles();
     if (!card.author) return null;
     return (
         <View style={styles.byline}>
@@ -82,13 +96,14 @@ const Byline = ({ card }: { card: Card }) => {
 const Thumb = ({ uri, style }: { uri: string | null; style: any }) => (
     uri
         ? <Image source={{ uri }} style={style} />
-        : <View style={[style, { backgroundColor: PLACEHOLDER }]} />
+        : <View style={[style, { backgroundColor: activePalette().borderLight }]} />
 );
 
 // ── variants ────────────────────────────────────────────────────────────────
 
 /** The Featured Resources rail: full-bleed image, label inside, title over a scrim. */
 export const FeaturedCard = ({ card, onPress }: { card: Card; onPress: () => void }) => {
+    const styles = useStyles();
     const { width } = useWindowDimensions();
     const cardWidth = Math.min(280, width * 0.72);
 
@@ -110,87 +125,100 @@ export const FeaturedCard = ({ card, onPress }: { card: Card; onPress: () => voi
 /** The Articles rail and the All Articles list: 16:9 hero, byline, title, stats. */
 export const ArticleCard = ({ card, onPress, width }: {
     card: Card; onPress: () => void; width?: number;
-}) => (
-    <TouchableOpacity
-        style={[styles.article, width ? { width } : styles.fullWidth]}
-        onPress={onPress}
-        activeOpacity={0.85}
-    >
-        <View>
-            <Thumb uri={card.thumbnail} style={styles.articleImage} />
-            <View style={styles.floatingTopRow}>
-                {!!card.category && <Chip label={card.category.name} floating />}
-                {card.isPro && <ProBadge />}
+}) => {
+    const styles = useStyles();
+    return (
+        <TouchableOpacity
+            style={[styles.article, width ? { width } : styles.fullWidth]}
+            onPress={onPress}
+            activeOpacity={0.85}
+        >
+            <View>
+                <Thumb uri={card.thumbnail} style={styles.articleImage} />
+                <View style={styles.floatingTopRow}>
+                    {!!card.category && <Chip label={card.category.name} floating />}
+                    {card.isPro && <ProBadge />}
+                </View>
             </View>
-        </View>
-        <View style={styles.articleBody}>
-            <Byline card={card} />
-            <Text style={styles.articleTitle} numberOfLines={2}>{card.title}</Text>
-            <StatRow stats={card.stats} />
-        </View>
-    </TouchableOpacity>
-);
+            <View style={styles.articleBody}>
+                <Byline card={card} />
+                <Text style={styles.articleTitle} numberOfLines={2}>{card.title}</Text>
+                <StatRow stats={card.stats} />
+            </View>
+        </TouchableOpacity>
+    );
+};
 
 /** The Shorts rail: 9:16 tile with a duration badge, title and author underneath. */
 export const ShortCard = ({ card, onPress, width = 132 }: {
     card: Card; onPress: () => void; width?: number;
-}) => (
-    <TouchableOpacity style={{ width }} onPress={onPress} activeOpacity={0.85}>
-        <View>
-            <Thumb uri={card.thumbnail} style={[styles.shortImage, { width, height: width * 1.45 }]} />
-            <View style={styles.playPip}>
-                <Ionicons name="play" size={16} color={Palette.white} />
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={{ width }} onPress={onPress} activeOpacity={0.85}>
+            <View>
+                <Thumb uri={card.thumbnail} style={[styles.shortImage, { width, height: width * 1.45 }]} />
+                <View style={styles.playPip}>
+                    <Ionicons name="play" size={16} color={Palette.white} />
+                </View>
+                <View style={styles.durationBadge}>
+                    <Text style={styles.durationText}>{formatDuration(card.durationSeconds)}</Text>
+                </View>
+                {card.isPro && <View style={styles.shortProBadge}><ProBadge /></View>}
             </View>
-            <View style={styles.durationBadge}>
-                <Text style={styles.durationText}>{formatDuration(card.durationSeconds)}</Text>
-            </View>
-            {card.isPro && <View style={styles.shortProBadge}><ProBadge /></View>}
-        </View>
-        <Text style={styles.shortTitle} numberOfLines={2}>{card.title}</Text>
-        {!!card.author && <Text style={styles.shortAuthor} numberOfLines={1}>{card.author.name}</Text>}
-        <StatRow stats={card.stats} compact />
-    </TouchableOpacity>
-);
+            <Text style={styles.shortTitle} numberOfLines={2}>{card.title}</Text>
+            {!!card.author && <Text style={styles.shortAuthor} numberOfLines={1}>{card.author.name}</Text>}
+            <StatRow stats={card.stats} compact />
+        </TouchableOpacity>
+    );
+};
 
 /** The Courses list: thumbnail left with its runtime on it, title and subtitle right. */
-export const CourseRow = ({ card, onPress }: { card: Card; onPress: () => void }) => (
-    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.85}>
-        <View>
-            <Thumb uri={card.thumbnail} style={styles.rowThumbLeft} />
-            <View style={[styles.durationBadge, styles.durationBadgeCorner]}>
-                <Text style={styles.durationText}>{formatDuration(card.durationSeconds)}</Text>
+export const CourseRow = ({ card, onPress }: { card: Card; onPress: () => void }) => {
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.85}>
+            <View>
+                <Thumb uri={card.thumbnail} style={styles.rowThumbLeft} />
+                <View style={[styles.durationBadge, styles.durationBadgeCorner]}>
+                    <Text style={styles.durationText}>{formatDuration(card.durationSeconds)}</Text>
+                </View>
             </View>
-        </View>
-        <View style={styles.rowBody}>
-            <Text style={styles.rowTitle} numberOfLines={2}>{card.title}</Text>
-            {!!card.subtitle && <Text style={styles.rowSubtitle} numberOfLines={2}>{card.subtitle}</Text>}
-            {card.sessionCount > 0 && (
-                <Text style={styles.rowMeta}>{card.sessionCount} session{card.sessionCount === 1 ? '' : 's'}</Text>
-            )}
-            <StatRow stats={card.stats} compact />
-        </View>
-        {card.isPro && <ProBadge />}
-    </TouchableOpacity>
-);
+            <View style={styles.rowBody}>
+                <Text style={styles.rowTitle} numberOfLines={2}>{card.title}</Text>
+                {!!card.subtitle && <Text style={styles.rowSubtitle} numberOfLines={2}>{card.subtitle}</Text>}
+                {card.sessionCount > 0 && (
+                    <Text style={styles.rowMeta}>{card.sessionCount} session{card.sessionCount === 1 ? '' : 's'}</Text>
+                )}
+                <StatRow stats={card.stats} compact />
+            </View>
+            {card.isPro && <ProBadge />}
+        </TouchableOpacity>
+    );
+};
 
 /** The Workshops list: byline above the title, thumbnail on the right, price if any. */
-export const WorkshopRow = ({ card, onPress }: { card: Card; onPress: () => void }) => (
-    <TouchableOpacity style={styles.workshop} onPress={onPress} activeOpacity={0.85}>
-        <View style={styles.rowBody}>
-            <Byline card={card} />
-            <Text style={styles.rowTitle} numberOfLines={2}>{card.title}</Text>
-            <StatRow stats={card.stats} compact />
-        </View>
-        <View>
-            <Thumb uri={card.thumbnail} style={styles.rowThumbRight} />
-            {card.workshop?.priceCents != null && (
-                <Text style={styles.price}>
-                    {formatPrice(card.workshop.priceCents, card.workshop.currency)}
-                </Text>
-            )}
-        </View>
-    </TouchableOpacity>
-);
+export const WorkshopRow = ({ card, onPress }: { card: Card; onPress: () => void }) => {
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={styles.workshop} onPress={onPress} activeOpacity={0.85}>
+            <View style={styles.rowBody}>
+                <Byline card={card} />
+                <Text style={styles.rowTitle} numberOfLines={2}>{card.title}</Text>
+                <StatRow stats={card.stats} compact />
+            </View>
+            <View>
+                <Thumb uri={card.thumbnail} style={styles.rowThumbRight} />
+                {card.workshop?.priceCents != null && (
+                    <Text style={styles.price}>
+                        {formatPrice(card.workshop.priceCents, card.workshop.currency)}
+                    </Text>
+                )}
+            </View>
+        </TouchableOpacity>
+    );
+};
 
 /**
  * The search-result and mixed-list row.
@@ -198,23 +226,27 @@ export const WorkshopRow = ({ card, onPress }: { card: Card; onPress: () => void
  * Search returns all five types ranked together, so this one row has to represent any of
  * them. It leans on the type icon rather than on a layout that implies a kind.
  */
-export const ResultRow = ({ card, onPress }: { card: Card; onPress: () => void }) => (
-    <TouchableOpacity style={styles.workshop} onPress={onPress} activeOpacity={0.85}>
-        <View style={styles.rowBody}>
-            <Byline card={card} />
-            <Text style={styles.rowTitle} numberOfLines={2}>{card.title}</Text>
-            <StatRow stats={card.stats} compact />
-        </View>
-        <View>
-            <Thumb uri={card.thumbnail} style={styles.rowThumbRight} />
-            {(card.type === 'short' || card.type === 'course' || card.type === 'audio') && (
-                <View style={styles.rowPlayPip}>
-                    <Ionicons name="play" size={12} color={Palette.white} />
-                </View>
-            )}
-        </View>
-    </TouchableOpacity>
-);
+export const ResultRow = ({ card, onPress }: { card: Card; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={styles.workshop} onPress={onPress} activeOpacity={0.85}>
+            <View style={styles.rowBody}>
+                <Byline card={card} />
+                <Text style={styles.rowTitle} numberOfLines={2}>{card.title}</Text>
+                <StatRow stats={card.stats} compact />
+            </View>
+            <View>
+                <Thumb uri={card.thumbnail} style={styles.rowThumbRight} />
+                {(card.type === 'short' || card.type === 'course' || card.type === 'audio') && (
+                    <View style={styles.rowPlayPip}>
+                        <Ionicons name="play" size={12} color={Palette.white} />
+                    </View>
+                )}
+            </View>
+        </TouchableOpacity>
+    );
+};
 
 /**
  * One card, drawn as whatever it is.
@@ -234,7 +266,7 @@ export const AutoCard = ({ card, onPress, variant }: {
     return <ArticleCard card={card} onPress={onPress} width={variant === 'rail' ? 260 : undefined} />;
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     fullWidth: { width: '100%' },
 
     statRow: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm },
@@ -248,13 +280,13 @@ const styles = StyleSheet.create({
         borderRadius: Radius.sm,
         backgroundColor: Palette.primarySurface,
     },
-    chipFloating: { backgroundColor: Palette.white, ...Shadow.card },
+    chipFloating: { backgroundColor: Palette.background, ...Shadow.card },
     chipText: { fontSize: 11, fontFamily: Fonts.semibold, color: Palette.text },
 
     proBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 3,
         paddingHorizontal: 6, paddingVertical: 3,
-        borderRadius: Radius.sm, backgroundColor: Palette.primary,
+        borderRadius: Radius.sm, backgroundColor: Palette.primaryFill,
     },
     proBadgeText: { fontSize: 9, fontFamily: Fonts.bold, color: Palette.white, letterSpacing: 0.5 },
 
@@ -325,4 +357,4 @@ const styles = StyleSheet.create({
     rowSubtitle: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
     rowMeta: { fontSize: 12, ...BodyFont.medium, color: Palette.primary, marginTop: 4 },
     price: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.primary, marginTop: 6, textAlign: 'center' },
-});
+}));

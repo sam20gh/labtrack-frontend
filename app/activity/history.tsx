@@ -10,13 +10,12 @@
  * alongside the goals they filter against. Search and type filtering work now.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, SectionList, TextInput, Pressable, StyleSheet, ActivityIndicator,
-} from 'react-native';
+import { View, Text, SectionList, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { SessionCard } from '@/components/metric/SessionCard';
 import { NoMatchArt, NO_MATCH_ART, RunnerHeroArt } from '@/components/activity/art';
@@ -51,6 +50,8 @@ const groupByDay = (sessions: ActivitySession[]) => {
 };
 
 export default function ActivityHistory() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [query, setQuery] = useState('');
@@ -211,7 +212,7 @@ export default function ActivityHistory() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     bar: {
         flexDirection: 'row',
@@ -280,4 +281,4 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: Spacing.xl,
     },
-});
+}));

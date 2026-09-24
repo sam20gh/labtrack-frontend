@@ -13,7 +13,7 @@
 import { api, apiFetch } from './api';
 import { getAccessToken } from './auth';
 import { API_URL } from '@/constants/config';
-import { Palette } from '@/constants/theme';
+import { schemed, tone } from '@/constants/theme';
 import type {
     MealDraft, MealLog, NutritionDay, NutritionHistoryEntry,
     NutritionPlan, NutritionStatus, MealAlignment, NutritionGallery,
@@ -149,12 +149,12 @@ export const ALIGNMENT_META: Record<MealAlignment, {
     color: string;
     bg: string;
     icon: string;
-}> = {
-    aligned: { label: 'On plan', color: '#059669', bg: '#ECFDF5', icon: 'checkmark-circle-outline' },
-    partial: { label: 'Part way', color: '#B45309', bg: '#FFFBEB', icon: 'contrast-outline' },
-    off_plan: { label: 'Off plan', color: '#DC2626', bg: '#FEF2F2', icon: 'alert-circle-outline' },
-    unassessed: { label: 'Logged', color: '#6B7280', bg: '#F9FAFB', icon: 'ellipse-outline' },
-};
+}> = schemed((Palette, scheme) => ({
+    aligned: { label: 'On plan', color: Palette.success, bg: Palette.successSurface, icon: 'checkmark-circle-outline' },
+    partial: { label: 'Part way', color: Palette.warning, bg: Palette.warningSurface, icon: 'contrast-outline' },
+    off_plan: { label: 'Off plan', color: Palette.danger, bg: Palette.dangerSurface, icon: 'alert-circle-outline' },
+    unassessed: { label: 'Logged', color: Palette.textSecondary, bg: tone('#F9FAFB', scheme), icon: 'ellipse-outline' },
+}));
 
 export const MEAL_TYPE_LABEL: Record<string, string> = {
     breakfast: 'Breakfast',
@@ -253,8 +253,10 @@ export const addDays = (day: string, delta: number): string => {
 
 /** How each macro is drawn wherever three bars sit side by side. Kept in one place so the
  *  dashboard, the history rows and the schedule strip cannot disagree on which is which. */
-export const MACRO_META = [
+export const MACRO_META = schemed((Palette) => ([
     { key: 'protein' as const, initial: 'P', label: 'Protein', color: Palette.primary },
-    { key: 'fat' as const, initial: 'F', label: 'Fat', color: Palette.danger },
+    // Fat is a nutrient, not a finding: the macro rose, never the clinical red. The text-weight
+    // step, because the circled initial draws in it. Same colour the weekly chart uses.
+    { key: 'fat' as const, initial: 'F', label: 'Fat', color: Palette.macroFatDeep },
     { key: 'carbs' as const, initial: 'C', label: 'Carbs', color: Palette.amber },
-];
+]));

@@ -27,10 +27,7 @@
  *    progress bars is a scroll; twenty-four tiles is a page. Frame 3 is that page.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity,
-    ActivityIndicator, RefreshControl, Switch, TextInput,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, TouchableOpacity, ActivityIndicator, RefreshControl, Switch, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -46,7 +43,8 @@ import { AchievementRow, FeaturedBadge } from '@/components/achievements/Achieve
 import { UnlockModal } from '@/components/achievements/UnlockModal';
 import { BadgeMedal } from '@/components/achievements/BadgeMedal';
 import { Avatar } from '@/components/Avatar';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 type Tab = 'achievement' | 'leaderboard' | 'stats';
 
@@ -57,6 +55,8 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 export default function AchievementsHubScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [tab, setTab] = useState<Tab>('achievement');
@@ -272,6 +272,8 @@ function LeaderboardTab({
     data: Leaderboard | null;
     onChange: (body: { optedIn?: boolean; displayName?: string }) => Promise<void>;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const [name, setName] = useState<string | null>(null);
 
     if (!data) {
@@ -370,6 +372,8 @@ function LeaderboardTab({
  * ------------------------------------------------------------------ */
 
 function StatsTab({ data }: { data: Stats | null }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!data) {
         return <View style={styles.centre}><ActivityIndicator color={Palette.primary} /></View>;
     }
@@ -422,18 +426,22 @@ const formatStat = (row: Stats['sections'][number]['rows'][number]) => {
 
 const Stat = ({
     icon, value, label,
-}: { icon: React.ComponentProps<typeof Ionicons>['name']; value: string; label: string }) => (
-    <View style={styles.stat}>
-        <Ionicons name={icon} size={20} color={Palette.textSecondary} />
-        <Text style={styles.statBig}>{value}</Text>
-        <Text style={styles.statSmall}>{label}</Text>
-    </View>
-);
+}: { icon: React.ComponentProps<typeof Ionicons>['name']; value: string; label: string }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.stat}>
+            <Ionicons name={icon} size={20} color={Palette.textSecondary} />
+            <Text style={styles.statBig}>{value}</Text>
+            <Text style={styles.statSmall}>{label}</Text>
+        </View>
+    );
+};
 
 const initialsOf = (name: string) =>
     name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('');
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xxxl },
 
@@ -550,4 +558,4 @@ const styles = StyleSheet.create({
     statRowDivided: { borderTopWidth: 1, borderTopColor: Palette.borderLight },
     statLabel: { flex: 1, fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     statValue: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
-});
+}));

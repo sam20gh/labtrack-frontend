@@ -12,15 +12,14 @@
  * the split `medications/insight.tsx` already makes.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Alert, Share,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getInsight, MACRO_META } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { NutritionInsight } from '@/types/api';
 
 /** The windows the header offers. 7 is a week's shape; 90 is whether anything has changed. */
@@ -33,6 +32,8 @@ const WINDOWS = [
 const CHART_HEIGHT = 150;
 
 export default function NutritionInsightScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [days, setDays] = useState<number>(30);
     const [data, setData] = useState<NutritionInsight | null>(null);
@@ -242,6 +243,8 @@ export default function NutritionInsightScreen() {
  * A weekday with no logged days draws nothing at all.
  */
 function WeekdayChart({ data }: { data: NutritionInsight }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const values = data.weekdays.map((w) => w.calories).filter((v): v is number => v != null);
     if (!values.length) return null;
 
@@ -345,26 +348,32 @@ const coachLine = (data: NutritionInsight): string => {
         : 'Your days are fairly even across the week.';
 };
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {children}
-    </View>
-);
-
-const Stat = ({ initial, value, unit, label }: { initial: string; value: string; unit: string; label: string }) => (
-    <View style={styles.stat}>
-        <View style={styles.statInitial}>
-            <Text style={styles.statInitialText}>{initial}</Text>
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {children}
         </View>
-        <Text style={styles.statValue}>
-            {value}<Text style={styles.statUnit}> {unit}</Text>
-        </Text>
-        <Text style={styles.statLabel}>{label}</Text>
-    </View>
-);
+    );
+};
 
-const styles = StyleSheet.create({
+const Stat = ({ initial, value, unit, label }: { initial: string; value: string; unit: string; label: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.stat}>
+            <View style={styles.statInitial}>
+                <Text style={styles.statInitialText}>{initial}</Text>
+            </View>
+            <Text style={styles.statValue}>
+                {value}<Text style={styles.statUnit}> {unit}</Text>
+            </Text>
+            <Text style={styles.statLabel}>{label}</Text>
+        </View>
+    );
+};
+
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -463,8 +472,8 @@ const styles = StyleSheet.create({
     emptyBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
     emptyCta: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, borderRadius: Radius.lg,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.lg,
         paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, marginTop: Spacing.md,
     },
     emptyCtaText: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.white },
-});
+}));

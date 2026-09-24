@@ -8,9 +8,10 @@
  * alarm that silently does not wake somebody is worse than not offering one.
  */
 import React from 'react';
-import { View, Text, Pressable, Switch, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { formatClock, formatMinutes, type SleepSchedule } from '@/lib/sleep';
 
 /** `Mon, Wed, Sun` — or "Every day" for the empty list, which is what empty means. */
@@ -27,6 +28,8 @@ interface Props {
 }
 
 export function ScheduleCard({ schedule, onPress, onToggle }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <Pressable
             style={styles.card}
@@ -62,7 +65,7 @@ export function ScheduleCard({ schedule, onPress, onToggle }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         padding: Spacing.lg,
@@ -73,6 +76,6 @@ const styles = StyleSheet.create({
     name: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
     time: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
     detail: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
-});
+}));
 
 export default ScheduleCard;

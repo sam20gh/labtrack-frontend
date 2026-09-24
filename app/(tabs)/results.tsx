@@ -20,17 +20,15 @@
  *    low and the opposite when you were high.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, Platform, UIManager,
-    TouchableOpacity, RefreshControl, LayoutAnimation,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Platform, UIManager, TouchableOpacity, RefreshControl, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, Shadow, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
@@ -108,6 +106,7 @@ function gauge(value: number, min?: number, max?: number) {
 const pct = (n: number): `${number}%` => `${Number((n * 100).toFixed(2))}%`;
 
 function RangeGauge({ b }: { b: BiomarkerSummary }) {
+    const styles = useStyles();
     const g = gauge(b.value, b.appliedRange?.min, b.appliedRange?.max);
     if (!g) return null;
 
@@ -161,6 +160,8 @@ function MovementChart({
     steady: number;
     onPick: (b: BiomarkerSummary) => void;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const peak = Math.max(...items.map((i) => Math.abs(i.change)), 1);
 
     return (
@@ -211,11 +212,11 @@ function MovementChart({
 
             <View style={styles.chartLegend}>
                 <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: Palette.warning }]} />
+                    <View style={[styles.legendDot, { backgroundColor: Palette.warningFill }]} />
                     <Text style={styles.legendText}>away from range</Text>
                 </View>
                 <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: Palette.success }]} />
+                    <View style={[styles.legendDot, { backgroundColor: Palette.successFill }]} />
                     <Text style={styles.legendText}>toward range</Text>
                 </View>
             </View>
@@ -236,6 +237,8 @@ function MovementChart({
 type Filter = 'all' | 'attention' | 'normal';
 
 export default function ResultsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [biomarkers, setBiomarkers] = useState<BiomarkerSummary[]>([]);
     const [reports, setReports] = useState<TestResult[]>([]);
@@ -346,7 +349,7 @@ export default function ResultsScreen() {
                         style={styles.hero}
                     >
                         <View style={styles.heroBadge}>
-                            <Ionicons name="flask-outline" size={13} color={Palette.white} />
+                            <Ionicons name="flask-outline" size={13} color={Palettes.light.white} />
                             <Text style={styles.heroBadgeText}>
                                 Last updated {fmtDate(latestAt)}
                             </Text>
@@ -571,14 +574,17 @@ export default function ResultsScreen() {
     );
 }
 
-const HeroStat = ({ value, label, last }: { value: number; label: string; last?: boolean }) => (
-    <View style={[styles.heroStat, !last && styles.heroStatDivider]}>
-        <Text style={styles.heroStatValue}>{value}</Text>
-        <Text style={styles.heroStatLabel}>{label}</Text>
-    </View>
-);
+const HeroStat = ({ value, label, last }: { value: number; label: string; last?: boolean }) => {
+    const styles = useStyles();
+    return (
+        <View style={[styles.heroStat, !last && styles.heroStatDivider]}>
+            <Text style={styles.heroStatValue}>{value}</Text>
+            <Text style={styles.heroStatLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.surface },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -597,9 +603,9 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: Radius.sm,
         paddingHorizontal: Spacing.sm, paddingVertical: 4,
     },
-    heroBadgeText: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.white, letterSpacing: 0.3 },
+    heroBadgeText: { fontFamily: Fonts.semibold, fontSize: 12, color: Palettes.light.white, letterSpacing: 0.3 },
     heroFigureRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginTop: Spacing.lg },
-    heroFigure: { fontFamily: Fonts.bold, fontSize: 46, lineHeight: 50, color: Palette.white },
+    heroFigure: { fontFamily: Fonts.bold, fontSize: 46, lineHeight: 50, color: Palettes.light.white },
     heroFigureLabel: {
         flex: 1, fontFamily: Fonts.semibold, fontSize: 15, lineHeight: 20, color: 'rgba(255,255,255,0.92)',
     },
@@ -621,7 +627,7 @@ const styles = StyleSheet.create({
         padding: Spacing.lg, marginHorizontal: GUTTER, marginTop: Spacing.lg,
     },
     dnaIcon: {
-        width: 38, height: 38, borderRadius: Radius.pill, backgroundColor: Palette.white,
+        width: 38, height: 38, borderRadius: Radius.pill, backgroundColor: Palette.background,
         alignItems: 'center', justifyContent: 'center',
     },
     dnaTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
@@ -722,7 +728,7 @@ const styles = StyleSheet.create({
     },
     gaugeGhost: {
         position: 'absolute', width: 10, height: 10, borderRadius: Radius.pill,
-        marginLeft: -5, borderWidth: 2, borderColor: Palette.textMuted, backgroundColor: Palette.white,
+        marginLeft: -5, borderWidth: 2, borderColor: Palette.textMuted, backgroundColor: Palette.background,
     },
     gaugeScale: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
     gaugeBound: { width: 40, ...BodyFont.regular, fontSize: 10, color: Palette.textMuted },
@@ -747,8 +753,8 @@ const styles = StyleSheet.create({
 
     addButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, paddingVertical: Spacing.lg,
+        backgroundColor: Palette.primaryFill, paddingVertical: Spacing.lg,
         borderRadius: Radius.lg, marginHorizontal: GUTTER, marginTop: Spacing.xxl,
     },
     addButtonText: { color: Palette.white, fontFamily: Fonts.semibold, fontSize: 16 },
-});
+}));

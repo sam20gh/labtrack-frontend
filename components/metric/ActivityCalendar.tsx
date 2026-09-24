@@ -19,7 +19,8 @@ import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { CalendarDay } from '@/lib/activity';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -45,6 +46,7 @@ const monthTitle = (month: string) => {
 };
 
 function DayRing({ progress, selected }: { progress: number | null; selected: boolean }) {
+    const Palette = usePalette();
     const r = (RING - STROKE) / 2;
     const c = 2 * Math.PI * r;
     const filled = Math.max(0, Math.min(1, progress ?? 0));
@@ -89,6 +91,8 @@ interface Props {
 export function ActivityCalendar({
     month, days, value, today, loading, onChangeMonth, onSelect,
 }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const byDay = useMemo(() => new Map(days.map((d) => [d.day, d])), [days]);
 
     // Leading blanks so the first of the month lands under its weekday.
@@ -196,7 +200,7 @@ export function ActivityCalendar({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         borderWidth: 1,
         borderColor: Palette.border,
@@ -239,11 +243,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderRadius: RING / 2,
     },
-    ringBoxSelected: { backgroundColor: Palette.primary },
+    ringBoxSelected: { backgroundColor: Palette.primaryFill },
     date: { fontSize: 12.5, ...BodyFont.medium, color: Palette.text },
     dateSelected: { fontFamily: Fonts.semibold, color: Palette.white },
     quiet: { color: Palette.textSecondary },
     future: { color: Palette.border },
     dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'transparent' },
-    dotOn: { backgroundColor: Palette.primary },
-});
+    dotOn: { backgroundColor: Palette.primaryFill },
+}));

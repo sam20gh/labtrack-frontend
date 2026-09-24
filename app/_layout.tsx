@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import {
   ChakraPetch_400Regular,
@@ -12,7 +12,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { ThemeProvider, useTheme } from '@/hooks/useTheme';
+import { hydrateAppearance } from '@/lib/appearance';
 import { BasketProvider } from '@/lib/basket';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { getPaymentStatus } from '@/lib/payments';
@@ -29,7 +30,6 @@ import ConnectionBanner from '@/components/errors/ConnectionBanner';
 ExpoSplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   // Fetched rather than hardcoded: swapping Stripe accounts should not need a new build
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
@@ -45,6 +45,12 @@ export default function RootLayout() {
   // `lib/units.ts`, so the stored value has to be in the module cache before the first
   // screen paints. Failure is swallowed there and leaves the metric defaults in place.
   useEffect(() => { hydrateUnits(); }, []);
+
+  // Appearance is awaited, unlike units: a unit in the default for one frame is invisible,
+  // a white flash on a phone set to dark is not. The splash stays up until it resolves,
+  // and `hydrateAppearance` never rejects — a bad preference falls back to the phone's.
+  const [appearanceReady, setAppearanceReady] = useState(false);
+  useEffect(() => { hydrateAppearance().finally(() => setAppearanceReady(true)); }, []);
 
   /**
    * Warm the paired-bracelet record before anything renders.
@@ -89,17 +95,44 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (loaded) {
+    if (loaded && appearanceReady) {
       ExpoSplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, appearanceReady]);
 
-  if (!loaded) {
+  if (!loaded || !appearanceReady) {
     return null;
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider>
+      <ThemedRoot publishableKey={publishableKey} />
+    </ThemeProvider>
+  );
+}
+
+/**
+ * Everything below the theme. Split out so it can read `useTheme()` — the navigation
+ * theme, the status bar and the Stack's own background all follow the person's choice,
+ * and the Stack's background is what shows for a frame during a push.
+ */
+function ThemedRoot({ publishableKey }: { publishableKey: string | null }) {
+  const { scheme, palette } = useTheme();
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navigationTheme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: palette.primary,
+      background: palette.canvas,
+      card: palette.background,
+      text: palette.text,
+      border: palette.border,
+    },
+  };
+
+  return (
+    <NavigationThemeProvider value={navigationTheme}>
       <StripeProvider publishableKey={publishableKey ?? ''} merchantIdentifier="merchant.com.labtrack.app">
       <BasketProvider>
       <Stack initialRouteName="SplashScreen">
@@ -191,7 +224,7 @@ export default function RootLayout() {
         <Stack.Screen name="myplans" options={{ title: "My Plans", headerShown: true }} />
       </Stack>
 
-        <StatusBar style="auto" />
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         {/* Connectivity is a fact about the app, not about whichever screen noticed it
             first, so it is reported once here rather than by each screen replacing its own
             content. `ErrorState` keeps the full-screen "No Internet" for a surface that has
@@ -206,6 +239,6 @@ export default function RootLayout() {
         <Toast />
       </BasketProvider>
       </StripeProvider>
-    </ThemeProvider>
+    </NavigationThemeProvider>
   );
 }

@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-} from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 export default function ConditionsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
 
@@ -52,7 +51,7 @@ export default function ConditionsScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -69,9 +68,9 @@ export default function ConditionsScreen() {
                 {/* Illustration */}
                 <View style={styles.illustrationContainer}>
                     <View style={styles.illustrationPlaceholder}>
-                        <Ionicons name="fitness-outline" size={60} color="#7C3AED" />
+                        <Ionicons name="fitness-outline" size={60} color={Palette.primary} />
                         <View style={styles.heartBadge}>
-                            <Ionicons name="heart" size={20} color="#7C3AED" />
+                            <Ionicons name="heart" size={20} color={Palette.primary} />
                         </View>
                     </View>
                 </View>
@@ -81,11 +80,11 @@ export default function ConditionsScreen() {
             <View style={styles.bottomContainer}>
                 <TouchableOpacity style={styles.yesButton} onPress={handleYes}>
                     <Text style={styles.yesButtonText}>Yes, I have them</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                    <Ionicons name="arrow-forward" size={20} color={Palette.white} />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.noButton} onPress={handleNo}>
-                    <Ionicons name="close" size={16} color="#7C3AED" />
+                    <Ionicons name="close" size={16} color={Palette.primary} />
                     <Text style={styles.noButtonText}>I don't have any</Text>
                 </TouchableOpacity>
             </View>
@@ -93,15 +92,15 @@ export default function ConditionsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -117,17 +116,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -139,7 +138,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 32,
@@ -152,7 +151,7 @@ const styles = StyleSheet.create({
     illustrationPlaceholder: {
         width: 180,
         height: 180,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
         borderRadius: 90,
         alignItems: 'center',
         justifyContent: 'center',
@@ -165,7 +164,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: '#EDE9FE',
+        backgroundColor: tone('#EDE9FE'),
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -174,7 +173,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     yesButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -183,7 +182,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     yesButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
@@ -194,12 +193,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 14,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
     },
     noButtonText: {
         fontSize: 15,
-        color: '#7C3AED',
+        color: Palette.primary,
         marginLeft: 8,
     },
-});
+}));

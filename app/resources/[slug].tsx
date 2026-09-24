@@ -19,10 +19,7 @@
  *     drift apart.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, useWindowDimensions, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, useWindowDimensions, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -36,10 +33,13 @@ import {
 } from '@/lib/resources';
 import { ArticleBody, GoProBanner, RatingCard } from '@/components/resources/ArticleBody';
 import { AutoCard, Chip, ProBadge } from '@/components/resources/ResourceCards';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 
 export default function ResourceDetailScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { slug } = useLocalSearchParams<{ slug: string }>();
     const { width } = useWindowDimensions();
@@ -440,7 +440,7 @@ export default function ResourceDetailScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
 
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     playBanner: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
         marginTop: Spacing.lg, paddingVertical: Spacing.lg,
-        borderRadius: Radius.lg, backgroundColor: Palette.primary,
+        borderRadius: Radius.lg, backgroundColor: Palette.primaryFill,
     },
     playBannerText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
 
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     checkoutButton: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         paddingHorizontal: Spacing.xxl, paddingVertical: Spacing.lg,
-        borderRadius: Radius.lg, backgroundColor: Palette.primary,
+        borderRadius: Radius.lg, backgroundColor: Palette.primaryFill,
     },
     checkoutText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
-});
+}));

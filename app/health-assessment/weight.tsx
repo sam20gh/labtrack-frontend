@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Dimensions,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { paramNumber, paramString } from './params';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette } from '@/constants/theme';
 
 const { width } = Dimensions.get('window');
 
 export default function WeightScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     // A saved weight is always kg (userModel.js stores metric), so seeding also
@@ -74,7 +72,7 @@ export default function WeightScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -119,9 +117,9 @@ export default function WeightScreen() {
                             maximumValue={maxWeight}
                             value={weight}
                             onValueChange={(value) => setWeight(Math.round(value))}
-                            minimumTrackTintColor="#7C3AED"
-                            maximumTrackTintColor="#E5E7EB"
-                            thumbTintColor="#7C3AED"
+                            minimumTrackTintColor={activePalette().primary}
+                            maximumTrackTintColor={activePalette().border}
+                            thumbTintColor={activePalette().primary}
                         />
                     </View>
                     {/* Scale markers */}
@@ -138,22 +136,22 @@ export default function WeightScreen() {
             <View style={styles.bottomContainer}>
                 <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
                     <Text style={styles.continueButtonText}>Continue</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                    <Ionicons name="arrow-forward" size={20} color={Palette.white} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -169,17 +167,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -191,14 +189,14 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 32,
     },
     unitToggle: {
         flexDirection: 'row',
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
         borderRadius: 12,
         padding: 4,
         marginBottom: 48,
@@ -209,7 +207,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     unitButtonActive: {
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
@@ -218,11 +216,11 @@ const styles = StyleSheet.create({
     },
     unitText: {
         fontSize: 15,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         fontWeight: '500',
     },
     unitTextActive: {
-        color: '#1F2937',
+        color: Palette.text,
     },
     weightDisplay: {
         flexDirection: 'row',
@@ -232,11 +230,11 @@ const styles = StyleSheet.create({
     weightValue: {
         fontSize: 72,
         fontWeight: '300',
-        color: '#1F2937',
+        color: Palette.text,
     },
     weightUnit: {
         fontSize: 24,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         marginLeft: 8,
     },
     sliderContainer: {
@@ -258,14 +256,14 @@ const styles = StyleSheet.create({
     },
     scaleText: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: Palette.textMuted,
     },
     bottomContainer: {
         paddingHorizontal: 24,
         paddingBottom: 40,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -273,9 +271,9 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
-});
+}));

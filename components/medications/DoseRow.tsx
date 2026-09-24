@@ -10,9 +10,10 @@
  * packet, and the surest way to prevent that is not to offer it.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { formatTime, WITH_FOOD_LABEL } from '@/lib/medications';
 import { PillGlyph } from './PillGlyph';
 import type { MedicationDose } from '@/types/api';
@@ -27,6 +28,8 @@ interface Props {
 }
 
 export function DoseRow({ dose, busy, onTake, onSkip, onUndo, onPress }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const med = dose.medication;
     const isTaken = dose.status === 'taken';
     const isSkipped = dose.status === 'skipped';
@@ -106,9 +109,9 @@ export function DoseRow({ dose, busy, onTake, onSkip, onUndo, onPress }: Props) 
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1,
         borderColor: Palette.border,
@@ -135,13 +138,13 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: Radius.md,
     },
-    skip: { backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border },
+    skip: { backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.border },
     skipText: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium },
-    take: { backgroundColor: Palette.primary },
+    take: { backgroundColor: Palette.primaryFill },
     takeText: { fontSize: 13, color: Palette.white, fontFamily: Fonts.semibold },
 
     settledRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     settledText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
     spacer: { flex: 1 },
     undo: { fontSize: 12, color: Palette.primary, fontFamily: Fonts.semibold },
-});
+}));

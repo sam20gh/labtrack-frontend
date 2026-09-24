@@ -12,9 +12,10 @@
  * dashes.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import { formatType, type ActivityBreakdownRow } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
 
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export function TotalsCard({ count, countLabel, figures, types = [] }: Props) {
+    const styles = useStyles();
     return (
         <View style={styles.card}>
             <View style={styles.top}>
@@ -65,7 +67,7 @@ export function TotalsCard({ count, countLabel, figures, types = [] }: Props) {
                         return (
                             <View key={t.type} style={[styles.chip, { backgroundColor: look.surface }]}>
                                 <MaterialCommunityIcons name={look.icon} size={15} color={look.tint} />
-                                <Text style={[styles.chipText, { color: look.tint }]} numberOfLines={1}>
+                                <Text style={styles.chipText} numberOfLines={1}>
                                     {formatType(t.type)} {t.count}
                                 </Text>
                             </View>
@@ -77,9 +79,9 @@ export function TotalsCard({ count, countLabel, figures, types = [] }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderWidth: 1,
         borderColor: Palette.border,
         borderRadius: Radius.lg,
@@ -113,4 +115,4 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
     },
     chipText: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.text },
-});
+}));

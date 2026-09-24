@@ -10,13 +10,12 @@
  * live-tracking flow (phase 11.6). This is the part that stands on its own.
  */
 import React, { useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, TextInput, StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { logActivity } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
 import { ApiError } from '@/lib/api';
@@ -47,6 +46,8 @@ const EFFORTS = [
 ];
 
 export default function LogActivityScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     /**
@@ -223,7 +224,7 @@ export default function LogActivityScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     bar: {
         flexDirection: 'row',
@@ -300,11 +301,11 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.background,
     },
     cta: {
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         borderRadius: Radius.lg,
         paddingVertical: Spacing.lg,
         alignItems: 'center',
     },
     ctaDisabled: { opacity: 0.4 },
     ctaText: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

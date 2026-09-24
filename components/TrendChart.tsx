@@ -11,11 +11,13 @@
  * their genetics. Drawing the band makes "inside or outside, and by how much" immediate.
  */
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Svg, { Path, Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
 import type { BiomarkerFlag } from '@/types/api';
 
-import { Palette } from '@/constants/theme';
+
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone, schemed } from '@/constants/theme';
 export interface TrendPoint {
     value: number;
     measuredAt: string;
@@ -31,18 +33,20 @@ interface Props {
     width: number;
 }
 
-const FLAG_COLOR: Record<BiomarkerFlag, string> = {
-    critical_low: '#DC2626',
-    low: '#F59E0B',
-    normal: '#10B981',
-    high: '#F59E0B',
-    critical_high: '#DC2626',
-    unknown: '#9CA3AF',
-};
+const FLAG_COLOR: Record<BiomarkerFlag, string> = schemed((_, scheme) => ({
+    critical_low: activePalette().danger,
+    low: tone('#F59E0B', scheme),
+    normal: tone('#10B981', scheme),
+    high: tone('#F59E0B', scheme),
+    critical_high: activePalette().danger,
+    unknown: activePalette().textMuted,
+}));
 
 const PADDING = { top: 16, right: 16, bottom: 28, left: 44 };
 
 export default function TrendChart({ points, range, unit, height = 200, width }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const chart = useMemo(() => {
         if (points.length === 0) return null;
 
@@ -128,7 +132,7 @@ export default function TrendChart({ points, range, unit, height = 200, width }:
                         y={chart.band.y}
                         width={chart.plotW}
                         height={chart.band.height}
-                        fill="#10B981"
+                        fill={tone('#10B981')}
                         opacity={0.1}
                     />
                 )}
@@ -139,11 +143,11 @@ export default function TrendChart({ points, range, unit, height = 200, width }:
                         <Line
                             x1={PADDING.left} y1={tick.y}
                             x2={PADDING.left + chart.plotW} y2={tick.y}
-                            stroke="#F3F4F6" strokeWidth={1}
+                            stroke={Palette.borderLight} strokeWidth={1}
                         />
                         <SvgText
                             x={PADDING.left - 6} y={tick.y + 3}
-                            fontSize={9} fill="#9CA3AF" textAnchor="end"
+                            fontSize={9} fill={Palette.textMuted} textAnchor="end"
                         >
                             {fmtValue(tick.v)}
                         </SvgText>
@@ -152,7 +156,7 @@ export default function TrendChart({ points, range, unit, height = 200, width }:
 
                 {/* Series */}
                 {chart.path ? (
-                    <Path d={chart.path} stroke="#7C3AED" strokeWidth={2} fill="none" strokeLinejoin="round" />
+                    <Path d={chart.path} stroke={Palette.primary} strokeWidth={2} fill="none" strokeLinejoin="round" />
                 ) : null}
 
                 {/* Points, coloured by their own verdict at the time */}
@@ -160,17 +164,17 @@ export default function TrendChart({ points, range, unit, height = 200, width }:
                     <Circle
                         key={i}
                         cx={c.cx} cy={c.cy} r={c.flag === 'normal' ? 4 : 5}
-                        fill={FLAG_COLOR[c.flag] ?? '#9CA3AF'}
-                        stroke="#fff" strokeWidth={2}
+                        fill={FLAG_COLOR[c.flag] ?? activePalette().textMuted}
+                        stroke={Palette.white} strokeWidth={2}
                     />
                 ))}
 
                 {/* X axis labels: only the ends, to avoid crowding */}
-                <SvgText x={PADDING.left} y={height - 8} fontSize={9} fill="#9CA3AF">
+                <SvgText x={PADDING.left} y={height - 8} fontSize={9} fill={Palette.textMuted}>
                     {fmtDate(chart.firstDate)}
                 </SvgText>
                 {points.length > 1 && (
-                    <SvgText x={PADDING.left + chart.plotW} y={height - 8} fontSize={9} fill="#9CA3AF" textAnchor="end">
+                    <SvgText x={PADDING.left + chart.plotW} y={height - 8} fontSize={9} fill={Palette.textMuted} textAnchor="end">
                         {fmtDate(chart.lastDate)}
                     </SvgText>
                 )}
@@ -200,12 +204,12 @@ export default function TrendChart({ points, range, unit, height = 200, width }:
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     empty: { alignItems: 'center', justifyContent: 'center' },
-    emptyText: { fontSize: 13, color: '#9CA3AF' },
+    emptyText: { fontSize: 13, color: Palette.textMuted },
     legend: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' },
     legendSwatch: { width: 14, height: 10, borderRadius: 2, backgroundColor: 'rgba(16,185,129,0.25)' },
-    legendText: { fontSize: 11, color: '#6B7280' },
+    legendText: { fontSize: 11, color: Palette.textSecondary },
     geneBadge: { backgroundColor: Palette.borderLight, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
     geneBadgeText: { fontSize: 10, color: Palette.textSecondary, fontWeight: '700' },
-});
+}));

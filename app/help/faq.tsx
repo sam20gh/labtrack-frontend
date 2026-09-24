@@ -16,17 +16,15 @@
  * that line sits relative to `utils/biomarkerGlossary.js`.
  */
 import React, { useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, Pressable, TextInput,
-    LayoutAnimation, Platform, UIManager, Linking,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, LayoutAnimation, Platform, UIManager, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { SUPPORT_EMAIL, searchFaq, type FaqEntry } from '@/lib/help';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 // The accordion's height change is animated by the platform rather than by Reanimated:
 // one LayoutAnimation call is cheaper than a shared value per row, and Android needs the
@@ -36,6 +34,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function FaqScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [query, setQuery] = useState('');
     const [open, setOpen] = useState<string | null>(null);
@@ -129,42 +129,46 @@ const Row = ({
     last: boolean;
     onToggle: () => void;
     onNavigate: () => void;
-}) => (
-    <View style={[styles.row, last && styles.rowLast]}>
-        <Pressable
-            style={styles.rowHead}
-            onPress={onToggle}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: open }}
-        >
-            <Ionicons
-                name="help-circle-outline"
-                size={18}
-                color={open ? Palette.primary : Palette.textSecondary}
-            />
-            <Text style={[styles.question, open && styles.questionOpen]}>{entry.question}</Text>
-            <Ionicons
-                name={open ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color={Palette.textMuted}
-            />
-        </Pressable>
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={[styles.row, last && styles.rowLast]}>
+            <Pressable
+                style={styles.rowHead}
+                onPress={onToggle}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open }}
+            >
+                <Ionicons
+                    name="help-circle-outline"
+                    size={18}
+                    color={open ? Palette.primary : Palette.textSecondary}
+                />
+                <Text style={[styles.question, open && styles.questionOpen]}>{entry.question}</Text>
+                <Ionicons
+                    name={open ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={Palette.textMuted}
+                />
+            </Pressable>
 
-        {open && (
-            <View style={styles.answerWrap}>
-                <Text style={styles.answer}>{entry.answer}</Text>
-                {!!entry.route && (
-                    <Pressable style={styles.answerLink} onPress={onNavigate} accessibilityRole="link">
-                        <Text style={styles.answerLinkText}>{entry.routeLabel ?? 'Open'}</Text>
-                        <Ionicons name="arrow-forward" size={14} color={Palette.primary} />
-                    </Pressable>
-                )}
-            </View>
-        )}
-    </View>
-);
+            {open && (
+                <View style={styles.answerWrap}>
+                    <Text style={styles.answer}>{entry.answer}</Text>
+                    {!!entry.route && (
+                        <Pressable style={styles.answerLink} onPress={onNavigate} accessibilityRole="link">
+                            <Text style={styles.answerLinkText}>{entry.routeLabel ?? 'Open'}</Text>
+                            <Ionicons name="arrow-forward" size={14} color={Palette.primary} />
+                        </Pressable>
+                    )}
+                </View>
+            )}
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     scroll: { paddingBottom: 48 },
     body: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, gap: Spacing.lg },
@@ -219,4 +223,4 @@ const styles = StyleSheet.create({
     },
     stillNeedHelpPressed: { opacity: 0.6 },
     stillNeedHelpText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
-});
+}));

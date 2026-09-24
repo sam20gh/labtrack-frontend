@@ -1,17 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    ScrollView,
-    FlatList,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { parseArrayParam } from './params';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 const commonMedications = [
     'Aspirin',
@@ -57,6 +51,8 @@ const commonMedications = [
 ];
 
 export default function MedicationsListScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [searchQuery, setSearchQuery] = useState('');
@@ -112,7 +108,7 @@ export default function MedicationsListScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -128,11 +124,11 @@ export default function MedicationsListScreen() {
 
                 {/* Search Input */}
                 <View style={styles.searchContainer}>
-                    <Ionicons name="search-outline" size={20} color="#9CA3AF" />
+                    <Ionicons name="search-outline" size={20} color={Palette.textMuted} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Search medication..."
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={Palette.textMuted}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
@@ -160,7 +156,7 @@ export default function MedicationsListScreen() {
                                         {medication}
                                     </Text>
                                     <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                                        {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                        {isSelected && <Ionicons name="checkmark" size={14} color={Palette.white} />}
                                     </View>
                                 </TouchableOpacity>
                             );
@@ -168,7 +164,7 @@ export default function MedicationsListScreen() {
                     ) : (
                         <View style={styles.notFoundContainer}>
                             <View style={styles.notFoundIcon}>
-                                <Ionicons name="close-circle" size={48} color="#EF4444" />
+                                <Ionicons name="close-circle" size={48} color={tone('#EF4444')} />
                             </View>
                             <Text style={styles.notFoundTitle}>Whoops! not found.</Text>
                             <Text style={styles.notFoundText}>
@@ -187,7 +183,7 @@ export default function MedicationsListScreen() {
                                 <View key={medication} style={styles.chip}>
                                     <Text style={styles.chipText}>{medication}</Text>
                                     <TouchableOpacity onPress={() => removeMedication(medication)}>
-                                        <Ionicons name="close" size={16} color="#6B7280" />
+                                        <Ionicons name="close" size={16} color={Palette.textSecondary} />
                                     </TouchableOpacity>
                                 </View>
                             ))}
@@ -200,22 +196,22 @@ export default function MedicationsListScreen() {
             <View style={styles.bottomContainer}>
                 <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
                     <Text style={styles.continueButtonText}>Continue</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                    <Ionicons name="arrow-forward" size={20} color={Palette.white} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -231,17 +227,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -252,7 +248,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 24,
@@ -260,9 +256,9 @@ const styles = StyleSheet.create({
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 12,
@@ -271,12 +267,12 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 15,
-        color: '#1F2937',
+        color: Palette.text,
         marginLeft: 12,
     },
     resultsCount: {
         fontSize: 13,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         marginBottom: 12,
     },
     listContainer: {
@@ -289,21 +285,21 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         paddingHorizontal: 16,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
         marginBottom: 8,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     medicationItemSelected: {
-        borderColor: '#7C3AED',
-        backgroundColor: '#FAF5FF',
+        borderColor: Palette.primary,
+        backgroundColor: tone('#FAF5FF'),
     },
     medicationText: {
         fontSize: 15,
-        color: '#4B5563',
+        color: tone('#4B5563'),
     },
     medicationTextSelected: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontWeight: '500',
     },
     checkbox: {
@@ -311,13 +307,13 @@ const styles = StyleSheet.create({
         height: 22,
         borderRadius: 11,
         borderWidth: 2,
-        borderColor: '#D1D5DB',
+        borderColor: tone('#D1D5DB'),
         alignItems: 'center',
         justifyContent: 'center',
     },
     checkboxSelected: {
-        backgroundColor: '#7C3AED',
-        borderColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
+        borderColor: Palette.primary,
     },
     notFoundContainer: {
         alignItems: 'center',
@@ -329,22 +325,22 @@ const styles = StyleSheet.create({
     notFoundTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         marginBottom: 8,
     },
     notFoundText: {
         fontSize: 14,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         textAlign: 'center',
     },
     selectedContainer: {
         paddingVertical: 16,
         borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
+        borderTopColor: Palette.border,
     },
     selectedLabel: {
         fontSize: 13,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         marginBottom: 8,
     },
     chipsContainer: {
@@ -355,7 +351,7 @@ const styles = StyleSheet.create({
     chip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
         paddingVertical: 6,
         paddingLeft: 12,
         paddingRight: 8,
@@ -363,7 +359,7 @@ const styles = StyleSheet.create({
     },
     chipText: {
         fontSize: 13,
-        color: '#4B5563',
+        color: tone('#4B5563'),
         marginRight: 6,
     },
     bottomContainer: {
@@ -371,7 +367,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -379,9 +375,9 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
-});
+}));

@@ -10,10 +10,12 @@
  * thread is least reliable.
  */
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, Easing } from 'react-native';
-import { Palette, Spacing, Radius } from '@/constants/theme';
+import { View, Animated, Easing } from 'react-native';
+import { Spacing, Radius } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 
 const Dot = ({ delay }: { delay: number }) => {
+    const styles = useStyles();
     const opacity = useRef(new Animated.Value(0.3)).current;
 
     useEffect(() => {
@@ -33,6 +35,7 @@ const Dot = ({ delay }: { delay: number }) => {
 };
 
 export default function TypingIndicator() {
+    const styles = useStyles();
     return (
         <View style={styles.bubble} accessibilityLabel="Predyqt AI is typing">
             <Dot delay={0} />
@@ -42,7 +45,7 @@ export default function TypingIndicator() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     bubble: {
         alignSelf: 'flex-start',
         flexDirection: 'row',
@@ -55,5 +58,5 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         marginBottom: Spacing.lg,
     },
-    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Palette.primary },
-});
+    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Palette.primaryFill },
+}));

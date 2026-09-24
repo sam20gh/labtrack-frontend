@@ -15,11 +15,12 @@
  * `grade()` in `utils/achievementCatalogue.js`.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BadgeMedal } from './BadgeMedal';
 import { progressLabel, toneColour, type Achievement } from '@/lib/achievements';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 interface RowProps {
     achievement: Achievement;
@@ -27,6 +28,8 @@ interface RowProps {
 }
 
 export function AchievementRow({ achievement: a, onPress }: RowProps) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const tint = toneColour(a.tone, !a.unlocked);
 
     return (
@@ -69,7 +72,7 @@ export function AchievementRow({ achievement: a, onPress }: RowProps) {
                             <View
                                 style={[
                                     styles.fill,
-                                    { width: `${Math.round(a.progress * 100)}%`, backgroundColor: Palette.primary },
+                                    { width: `${Math.round(a.progress * 100)}%`, backgroundColor: Palette.primaryFill },
                                 ]}
                             />
                         </View>
@@ -91,6 +94,7 @@ interface TileProps {
 }
 
 export function AchievementTile({ achievement: a, onPress, size = 56 }: TileProps) {
+    const styles = useStyles();
     return (
         <Pressable
             style={styles.tile}
@@ -115,6 +119,7 @@ export function AchievementTile({ achievement: a, onPress, size = 56 }: TileProp
 }
 
 export function FeaturedBadge({ achievement: a, onPress, size = 64 }: TileProps) {
+    const styles = useStyles();
     return (
         <Pressable
             style={styles.featured}
@@ -148,6 +153,8 @@ export function FeaturedBadge({ achievement: a, onPress, size = 64 }: TileProps)
 export function CategoryPrompt({
     label, blurb, onPress,
 }: { label: string; blurb: string; onPress: () => void }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <Pressable style={styles.prompt} onPress={onPress} accessibilityRole="button">
             <View style={styles.promptIcon}>
@@ -162,7 +169,7 @@ export function CategoryPrompt({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -223,4 +230,4 @@ const styles = StyleSheet.create({
     },
     promptTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     promptBlurb: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
-});
+}));

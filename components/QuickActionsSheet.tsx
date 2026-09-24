@@ -21,7 +21,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { QUICK_ACTIONS, type QuickAction } from '@/lib/quickActions';
-import { Palette, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, BodyFont, tone } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 
 interface Props {
     visible: boolean;
@@ -32,6 +33,7 @@ interface Props {
 }
 
 export function QuickActionsSheet({ visible, onClose, onSelect, barHeight }: Props) {
+    const styles = useStyles();
     const insets = useSafeAreaInsets();
     const anim = useRef(new Animated.Value(0)).current;
 
@@ -106,7 +108,7 @@ export function QuickActionsSheet({ visible, onClose, onSelect, barHeight }: Pro
 /** Half the caret's width. Kept here so the two triangles cannot drift apart. */
 const CARET = 11;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,23,42,0.35)' },
     anchor: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: Spacing.lg },
 
@@ -117,7 +119,7 @@ const styles = StyleSheet.create({
         borderColor: Palette.borderSlate,
         paddingVertical: Spacing.xl,
         paddingHorizontal: Spacing.sm,
-        shadowColor: '#0F172A',
+        shadowColor: tone('#0F172A'),
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.16,
         shadowRadius: 24,
@@ -150,4 +152,4 @@ const styles = StyleSheet.create({
         borderLeftColor: 'transparent', borderRightColor: 'transparent',
         borderTopColor: Palette.background,
     },
-});
+}));

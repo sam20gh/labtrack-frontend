@@ -21,6 +21,7 @@
  * wall-clock fact: it stays 22:30 when somebody flies to Tokyo. Storing an instant moves it.
  */
 import { api } from './api';
+import { activePalette, schemed, type ColorSchemeName } from '@/constants/theme';
 
 /** Minutes west of UTC, as `Date.getTimezoneOffset()` reports it. */
 const tzOffset = () => new Date().getTimezoneOffset();
@@ -516,29 +517,41 @@ export const dayLabel = (day: string): string => {
  * the colour-vision separation floor. Light and awake fall under 3:1 against white, which is
  * why every chart that uses them prints the legend with its values rather than relying on
  * colour alone.
+ *
+ * **Dark mode has its own set, validated against the dark card rather than flipped.** The
+ * light tints fall outside the dark lightness band (deep at 2:1 against `#16161E`), so each
+ * stage keeps its hue and moves in lightness and chroma: deep `#6A45F0`, light `#8D87E7`,
+ * REM `#10A6AD`, awake `#B7752B`, nap `#C33887`. `validate_palette.js --mode dark --surface
+ * "#16161E" --pairs all` passes every check: CVD ≥8.3, normal vision ≥16.4, all ≥3:1. It is a
+ * `schemed()` table, so it must be read during render, never copied out at module load.
  */
-export const STAGE_META: Record<SleepStageKey, { label: string; tint: string; description: string }> = {
+const STAGE_TINT: Record<ColorSchemeName, Record<SleepStageKey, string>> = {
+    light: { deep: '#5B21B6', rem: '#0891B2', light: '#A78BFA', awake: '#F59E0B' },
+    dark: { deep: '#6A45F0', rem: '#10A6AD', light: '#8D87E7', awake: '#B7752B' },
+};
+
+export const STAGE_META = schemed<Record<SleepStageKey, { label: string; tint: string; description: string }>>((_, scheme) => ({
     deep: {
         label: 'Deep',
-        tint: '#5B21B6',
+        tint: STAGE_TINT[scheme].deep,
         description: 'The restorative part of the night — physical repair and immune function.',
     },
     rem: {
         label: 'REM',
-        tint: '#0891B2',
+        tint: STAGE_TINT[scheme].rem,
         description: 'When most dreaming happens, and when memory is consolidated.',
     },
     light: {
         label: 'Light',
-        tint: '#A78BFA',
+        tint: STAGE_TINT[scheme].light,
         description: 'Most of a normal night. The stage you pass through between the others.',
     },
     awake: {
         label: 'Awake',
-        tint: '#F59E0B',
+        tint: STAGE_TINT[scheme].awake,
         description: 'Time in bed but not asleep. Brief waking through the night is normal.',
     },
-};
+}));
 
 /**
  * The two things a record draws that are not stages. A nap is its own hue (pink, validated
@@ -546,17 +559,22 @@ export const STAGE_META: Record<SleepStageKey, { label: string; tint: string; de
  * is grey: a source that reported only a total measured the night but not its make-up, and
  * a colour would claim a stage nobody recorded.
  */
-export const NAP_META = { label: 'Nap', tint: '#DB2777' } as const;
-export const UNSTAGED_META = { label: 'No stage data', tint: '#CBD5E1' } as const;
+export const NAP_META = schemed((_, scheme) => ({
+    label: 'Nap', tint: scheme === 'dark' ? '#C33887' : '#DB2777',
+}));
+export const UNSTAGED_META = schemed((palette) => ({
+    label: 'No stage data', tint: palette.borderStrong,
+}));
 
 export const STAGE_ORDER: SleepStageKey[] = ['deep', 'rem', 'light', 'awake'];
 
 /** The band's tone. Bands are semantic — a person reads them to understand a number. */
 export const bandTint = (key?: string | null): string => {
-    if (key === 'good') return '#059669';
-    if (key === 'suboptimal') return '#B45309';
-    if (key === 'attention') return '#DC2626';
-    return '#6B7280';
+    const palette = activePalette();
+    if (key === 'good') return palette.success;
+    if (key === 'suboptimal') return palette.warning;
+    if (key === 'attention') return palette.danger;
+    return palette.textSecondary;
 };
 
 /**

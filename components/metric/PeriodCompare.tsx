@@ -16,9 +16,10 @@
  *    about whether it was good for them, which is the plan's job and not this card's.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { PeriodComparison } from '@/lib/activity';
 
 interface Props {
@@ -41,6 +42,8 @@ interface Props {
 const MAX_BARS = 31;
 
 export function PeriodCompare({ comparison, values, periodLabel, unit = 'kcal' }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!comparison?.current) return null;
 
     const shown = values.length > MAX_BARS ? values.slice(-MAX_BARS) : values;
@@ -112,7 +115,7 @@ export function PeriodCompare({ comparison, values, periodLabel, unit = 'kcal' }
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         borderWidth: 1,
         borderColor: Palette.border,
@@ -123,7 +126,7 @@ const styles = StyleSheet.create({
     chart: { flexDirection: 'row', alignItems: 'flex-end', height: 80, gap: 2, marginBottom: Spacing.md },
     slot: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
     bar: { width: '72%', maxWidth: 14, borderRadius: 3 },
-    barOver: { backgroundColor: Palette.primary },
+    barOver: { backgroundColor: Palette.primaryFill },
     barUnder: { backgroundColor: Palette.primaryPale },
 
     avgLine: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center' },
@@ -144,4 +147,4 @@ const styles = StyleSheet.create({
     deltaDown: { color: Palette.textSecondary },
     deltaLabel: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary },
     copy: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
-});
+}));

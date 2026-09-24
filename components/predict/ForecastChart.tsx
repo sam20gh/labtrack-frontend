@@ -26,11 +26,12 @@
  *    reads as steady data.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, PanResponder, type GestureResponderEvent } from 'react-native';
+import { View, Text, PanResponder, type GestureResponderEvent } from 'react-native';
 import Svg, {
     Path, Line, Circle, Rect, G, Text as SvgText, Defs, LinearGradient, Stop,
 } from 'react-native-svg';
-import { Palette, BodyFont } from '@/constants/theme';
+import { BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { SeriesPoint } from '@/lib/prediction';
 
 interface Props {
@@ -118,10 +119,14 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function ForecastChart({
     history, projected, width, height = 200,
-    tone = Palette.primary, showSecondary = false,
+    tone: toneProp, showSecondary = false,
     bandLabels, annotations, axis = true, unit,
     scrubbable = false, onScrub,
 }: Props) {
+    const Palette = usePalette();
+    // Not a parameter default: that would run before the hook and read the light palette.
+    const tone = toneProp ?? Palette.primary;
+    const styles = useStyles();
     /** Index into `chart.nodes`, or null when the handle is resting on today. */
     const [scrubIndex, setScrubIndex] = useState<number | null>(null);
     const chart = useMemo(() => {
@@ -536,7 +541,7 @@ export function ForecastChart({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     empty: {
         alignItems: 'center', justifyContent: 'center',
         backgroundColor: Palette.borderLight, borderRadius: 12,
@@ -547,4 +552,4 @@ const styles = StyleSheet.create({
         marginTop: 6, fontSize: 11, ...BodyFont.medium,
         color: Palette.textMuted, textAlign: 'center',
     },
-});
+}));

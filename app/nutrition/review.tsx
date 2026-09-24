@@ -11,22 +11,22 @@
  * it never described.
  */
 import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-    ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { logMeal, ALIGNMENT_META, MEAL_TYPE_LABEL, mealTypeForNow } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { AnalysisResult } from '@/lib/nutrition';
 import type { MealType } from '@/types/api';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 export default function ReviewMealScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{ payload?: string; imageUri?: string }>();
 
@@ -263,7 +263,7 @@ export default function ReviewMealScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     centred: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.lg, padding: Spacing.xl },
     emptyText: { ...BodyFont.regular, fontSize: 14, color: Palette.textSecondary, textAlign: 'center' },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.sm,
     },
-    chipActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    chipActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     chipText: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary },
     chipTextActive: { color: Palette.white },
 
@@ -390,9 +390,9 @@ const styles = StyleSheet.create({
     primaryButton: {
         height: 48,
         borderRadius: Radius.md,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         alignItems: 'center',
         justifyContent: 'center',
     },
     primaryButtonText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
-});
+}));

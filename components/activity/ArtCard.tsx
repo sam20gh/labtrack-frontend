@@ -15,9 +15,10 @@
  * offering a button that goes nowhere useful.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { View, Text, Pressable, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 interface Props {
     /** Optional bold line above the body. Frame 6 has none; the sections' titles do that. */
@@ -40,6 +41,8 @@ interface Props {
 export function ArtCard({
     title, body, action, art, artOffset = { bottom: 0 }, copyWidth = '58%', minHeight = 116,
 }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <View style={[styles.card, { minHeight }]}>
             <View
@@ -70,7 +73,7 @@ export function ArtCard({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         backgroundColor: Palette.surface,
         borderWidth: 1,
@@ -86,4 +89,4 @@ const styles = StyleSheet.create({
     action: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, alignSelf: 'flex-start' },
     actionText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
     pressed: { opacity: 0.6 },
-});
+}));

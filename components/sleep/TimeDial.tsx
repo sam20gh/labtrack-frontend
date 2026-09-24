@@ -28,7 +28,8 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { View, Text, PanResponder, StyleSheet, type GestureResponderEvent } from 'react-native';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { formatClock, formatMinutes } from '@/lib/sleep';
 
 /** Minutes the handles snap to. See note 2. */
@@ -58,6 +59,8 @@ const minutesOf = (angle: number) => {
 };
 
 export function TimeDial({ bedtimeMin, wakeMin, onChange, size = 260, readOnly = false }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const stroke = 24;
     const radius = (size - stroke) / 2 - 8;
     const centre = size / 2;
@@ -209,12 +212,12 @@ export function TimeDial({ bedtimeMin, wakeMin, onChange, size = 260, readOnly =
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center' },
     centre: { alignItems: 'center', gap: 2, paddingHorizontal: Spacing.xxl },
     span: { fontSize: 30, fontFamily: Fonts.bold, color: Palette.text },
     caption: { fontSize: 11, ...BodyFont.medium, color: Palette.textSecondary },
     times: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted, marginTop: 4 },
-});
+}));
 
 export default TimeDial;

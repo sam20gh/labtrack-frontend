@@ -12,9 +12,10 @@
  * `ActivityCalendar` makes for a day with no target.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { Palette, Fonts, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { nightHasData, type SleepSeriesPoint } from '@/lib/sleep';
 
 const SIZE = 34;
@@ -35,6 +36,8 @@ interface Props {
 }
 
 export function WeekStrip({ series, today, selected, onSelect }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     // The last seven, so a longer range still draws a week here rather than a squashed month.
     const week = series.slice(-7);
 
@@ -100,7 +103,7 @@ export function WeekStrip({ series, today, selected, onSelect }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     strip: { flexDirection: 'row', justifyContent: 'space-between', gap: 2 },
     column: { alignItems: 'center', gap: 6, flex: 1 },
     letter: { fontSize: 12, ...BodyFont.medium, color: Palette.textMuted },
@@ -111,6 +114,6 @@ const styles = StyleSheet.create({
         position: 'absolute', width: 12, height: 12, borderRadius: 6,
         backgroundColor: Palette.primaryPale,
     },
-});
+}));
 
 export default WeekStrip;

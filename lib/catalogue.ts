@@ -11,6 +11,7 @@
  * next surface that wants it must not hand-copy it.
  */
 import type { Product } from '@/types/api';
+import { schemed, tone, activePalette } from '@/constants/theme';
 
 /**
  * A product's pictures, cover first.
@@ -49,17 +50,17 @@ export interface TypeMeta {
  * The tints are decorative, not clinical — nothing here is a verdict on a result, so they
  * deliberately avoid `FlagColors`' red/amber/green, which a person reads as a finding.
  */
-export const TYPE_META: Record<string, TypeMeta> = {
-    'Blood Test': { icon: 'water', short: 'Blood', tint: '#DC2626', surface: '#FEF2F2' },
-    'DNA Test': { icon: 'git-branch', short: 'DNA', tint: '#7C3AED', surface: '#F3E8FF' },
-    'Scan': { icon: 'scan', short: 'Scans', tint: '#0891B2', surface: '#ECFEFF' },
-    'Examination': { icon: 'body', short: 'Exams', tint: '#4F46E5', surface: '#EEF2FF' },
-    'Procedure': { icon: 'medkit', short: 'Procedures', tint: '#DB2777', surface: '#FDF2F8' },
-    'Urine Test': { icon: 'flask', short: 'Urine', tint: '#CA8A04', surface: '#FEFCE8' },
-};
+export const TYPE_META: Record<string, TypeMeta> = schemed((Palette, scheme) => ({
+    'Blood Test': { icon: 'water', short: 'Blood', tint: Palette.danger, surface: Palette.dangerSurface },
+    'DNA Test': { icon: 'git-branch', short: 'DNA', tint: Palette.primary, surface: Palette.primarySurface },
+    'Scan': { icon: 'scan', short: 'Scans', tint: tone('#0891B2', scheme), surface: tone('#ECFEFF', scheme) },
+    'Examination': { icon: 'body', short: 'Exams', tint: Palette.indigo, surface: Palette.indigoSurface },
+    'Procedure': { icon: 'medkit', short: 'Procedures', tint: tone('#DB2777', scheme), surface: Palette.pinkSurface },
+    'Urine Test': { icon: 'flask', short: 'Urine', tint: tone('#CA8A04', scheme), surface: tone('#FEFCE8', scheme) },
+}));
 
 export const metaFor = (type?: string): TypeMeta =>
-    (type && TYPE_META[type]) || { icon: 'ellipse', short: type || 'Other', tint: '#6B7280', surface: '#F3F4F6' };
+    (type && TYPE_META[type]) || { icon: 'ellipse', short: type || 'Other', tint: activePalette().textSecondary, surface: activePalette().borderLight };
 
 /** Sort comparator putting known categories in `TYPE_ORDER` and everything else after. */
 export const byTypeOrder = (a: string, b: string) => {

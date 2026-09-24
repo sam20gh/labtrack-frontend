@@ -36,7 +36,7 @@
  * an invitation, the call `StreakCard` already makes about a streak of zero.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,7 +45,8 @@ import { BadgeMedal, BADGE_TONES } from './BadgeMedal';
 import {
     nextUp, pickShelf, progressLabel, toneColour, type Achievement, type AchievementSummary,
 } from '@/lib/achievements';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /**
  * The fan's geometry.
@@ -74,6 +75,8 @@ interface Props {
 }
 
 export function TrophyCase({ achievements, summary, onOpen, onOpenBadge }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const shelf = pickShelf(achievements);
     if (!shelf.length) return null;
 
@@ -102,7 +105,7 @@ export function TrophyCase({ achievements, summary, onOpen, onOpenBadge }: Props
                 }
             >
                 <LinearGradient
-                    colors={[Palette.primaryDeep, Palette.primaryDark, Palette.indigo]}
+                    colors={[Palettes.light.primaryDeep, Palettes.light.primaryDark, Palettes.light.indigo]} // a dark plinth in both schemes
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.case}
@@ -272,6 +275,7 @@ const MOSAIC_GAP = 4;
 const MOSAIC_TILE = { min: 5, max: 10 };
 
 function Mosaic({ achievements }: { achievements: Achievement[] }) {
+    const styles = useStyles();
     const [width, setWidth] = React.useState(0);
     const count = achievements.length;
 
@@ -331,6 +335,8 @@ function Mosaic({ achievements }: { achievements: Achievement[] }) {
 export function CollectionRing({
     size, unlocked, total,
 }: { size: number; unlocked: number; total: number }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const stroke = 3;
     const r = (size - stroke) / 2;
     const circumference = 2 * Math.PI * r;
@@ -388,6 +394,7 @@ export function CollectionRing({
  * nothing-yet case with room to explain it.
  */
 export function AvatarMedal({ achievement, onPress }: { achievement: Achievement; onPress: () => void }) {
+    const styles = useStyles();
     if (!achievement.unlocked) return null;
 
     return (
@@ -418,6 +425,7 @@ export function AvatarMedal({ achievement, onPress }: { achievement: Achievement
  * shove the settings groups down the page under somebody's thumb.
  */
 export function TrophyCaseSkeleton() {
+    const styles = useStyles();
     return (
         <View style={styles.block}>
             <View style={styles.head}>
@@ -459,7 +467,7 @@ export function TrophyCaseSkeleton() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     block: { marginTop: Spacing.xxl },
     head: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -583,4 +591,4 @@ const styles = StyleSheet.create({
         height: 10, width: '52%', borderRadius: 5, backgroundColor: Palette.border,
     },
     skeletonLineShort: { width: '34%' },
-});
+}));

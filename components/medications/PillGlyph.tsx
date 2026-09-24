@@ -10,9 +10,10 @@
  * silhouettes, and `Ionicons` has about three of them.
  */
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Path, Circle, Rect, Ellipse, Polygon, G } from 'react-native-svg';
-import { Palette, Radius } from '@/constants/theme';
+import { Radius, activePalette } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { MedicationShape } from '@/types/api';
 
 interface Props {
@@ -23,12 +24,14 @@ interface Props {
 
 /** A pale wash of the pill colour, so the tile reads as tinted rather than saturated. */
 const tint = (colour: string | null | undefined) => {
-    if (!colour) return Palette.borderLight;
+    if (!colour) return activePalette().borderLight;
     // Six-digit hex only; anything else falls back rather than producing an invalid colour
-    return /^#[0-9a-f]{6}$/i.test(colour) ? `${colour}1A` : Palette.borderLight;
+    return /^#[0-9a-f]{6}$/i.test(colour) ? `${colour}1A` : activePalette().borderLight;
 };
 
 export function PillGlyph({ shape, colour, size = 44 }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const stroke = colour && /^#[0-9a-f]{6}$/i.test(colour) ? colour : Palette.textMuted;
     const s = size * 0.52;
     const c = s / 2;
@@ -79,7 +82,7 @@ export function PillGlyph({ shape, colour, size = 44 }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     tile: {
         borderRadius: Radius.md,
         alignItems: 'center',
@@ -87,4 +90,4 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Palette.border,
     },
-});
+}));

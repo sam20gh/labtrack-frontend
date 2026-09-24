@@ -26,10 +26,7 @@
  *    unresolved prediction says when it will be checked; it never renders as a miss.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable,
-    ActivityIndicator, useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -48,15 +45,18 @@ import {
     ConfidenceChip, ChangeBadge, BandChip, GeneratedPill, PredictionDisclaimer,
 } from '@/components/predict/Chips';
 import { Avatar } from '@/components/Avatar';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont, schemed, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
-const RISK_TONE = {
+const RISK_TONE = schemed((Palette) => ({
     high: { colour: Palette.danger, bg: Palette.dangerSurface },
     moderate: { colour: Palette.warning, bg: Palette.warningSurface },
     low: { colour: Palette.successDeep, bg: Palette.successSurface },
-} as const;
+} as const));
 
 export default function PredictionDetailsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -111,7 +111,7 @@ export default function PredictionDetailsScreen() {
                     <SafeAreaView edges={['top']}>
                         <View style={styles.heroTop}>
                             <TouchableOpacity onPress={() => router.back()} hitSlop={12} accessibilityLabel="Back">
-                                <Ionicons name="chevron-back" size={22} color={Palette.white} />
+                                <Ionicons name="chevron-back" size={22} color={Palettes.light.white} />
                             </TouchableOpacity>
                             <Text style={styles.heroTitle}>Prediction Details</Text>
                             <TouchableOpacity
@@ -122,7 +122,7 @@ export default function PredictionDetailsScreen() {
                                 hitSlop={12}
                                 accessibilityLabel="Open the insight chart"
                             >
-                                <Ionicons name="stats-chart-outline" size={20} color={Palette.white} />
+                                <Ionicons name="stats-chart-outline" size={20} color={Palettes.light.white} />
                             </TouchableOpacity>
                         </View>
 
@@ -389,18 +389,21 @@ export default function PredictionDetailsScreen() {
     );
 }
 
-const ProvenanceRow = ({ label, value }: { label: string; value: string }) => (
-    <View style={styles.provRow}>
-        <Text style={styles.provLabel}>{label}</Text>
-        <Text style={styles.provValue}>{value}</Text>
-    </View>
-);
+const ProvenanceRow = ({ label, value }: { label: string; value: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.provRow}>
+            <Text style={styles.provLabel}>{label}</Text>
+            <Text style={styles.provValue}>{value}</Text>
+        </View>
+    );
+};
 
 const initialsOf = (name: string) =>
     name.replace(/^Dr\.?\s*/i, '').split(/\s+/).filter(Boolean).slice(0, 2)
         .map((part) => part[0]?.toUpperCase() ?? '').join('') || name[0]?.toUpperCase() || '?';
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     content: { paddingBottom: Spacing.xxxl },
@@ -410,10 +413,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingTop: Spacing.sm, paddingBottom: Spacing.lg,
     },
-    heroTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
+    heroTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palettes.light.white },
     headline: {
         fontSize: 25, lineHeight: 34, fontFamily: Fonts.bold,
-        color: Palette.white, marginTop: Spacing.lg,
+        color: Palettes.light.white, marginTop: Spacing.lg,
     },
     heroMeta: {
         fontSize: 12, lineHeight: 18, ...BodyFont.regular,
@@ -476,7 +479,7 @@ const styles = StyleSheet.create({
     strip: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
     stripCell: { flex: 1, gap: 5 },
     stripTrack: {
-        height: 46, borderRadius: Radius.sm, backgroundColor: Palette.white,
+        height: 46, borderRadius: Radius.sm, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.border, overflow: 'hidden', justifyContent: 'flex-end',
     },
     stripFill: { height: '100%', opacity: 0.25 },
@@ -502,7 +505,7 @@ const styles = StyleSheet.create({
     },
 
     chartCard: {
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
         padding: Spacing.lg, marginTop: Spacing.lg,
     },
@@ -516,7 +519,7 @@ const styles = StyleSheet.create({
     chip: {
         paddingHorizontal: Spacing.md, paddingVertical: 8,
         borderRadius: Radius.md, borderWidth: 1, borderColor: Palette.border,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     chipText: { fontSize: 13, ...BodyFont.medium, color: Palette.text },
 
@@ -550,9 +553,9 @@ const styles = StyleSheet.create({
     rail: { gap: Spacing.md, paddingRight: Spacing.lg },
     pro: {
         width: 140, alignItems: 'center', gap: 4, padding: Spacing.md,
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
     },
     proName: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text, marginTop: 6 },
     proSpec: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
-});
+}));

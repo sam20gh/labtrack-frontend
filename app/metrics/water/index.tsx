@@ -31,10 +31,7 @@
  *   composes the day into a question and opens it, the way `app/symptoms` does.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, Pressable,
-    ActivityIndicator, RefreshControl, useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -57,8 +54,9 @@ import { WaterDrop, DropRow } from '@/components/hydration/WaterDrop';
 import { ContainerGlass } from '@/components/hydration/ContainerGlass';
 import { HydrationCalendar } from '@/components/hydration/HydrationCalendar';
 import { Sparkline } from '@/components/hydration/Sparkline';
-import { WaterHeader, SectionHeader, EmptyNote, cardStyles } from '@/components/hydration/HydrationChrome';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { WaterHeader, SectionHeader, EmptyNote, useCardStyles } from '@/components/hydration/HydrationChrome';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** How many days each range asks the server for. The API clamps to 7–365. */
 const SPAN: Record<MetricRange, number> = { '1d': 7, '1w': 31, '1m': 31, '1y': 365, all: 365 };
@@ -69,6 +67,9 @@ const VIEW_FOR: Record<MetricRange, ChartView> = {
 };
 
 export default function HydrationScreen() {
+    const cardStyles = useCardStyles();
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const units = useUnits();
     const { width } = useWindowDimensions();
@@ -188,8 +189,8 @@ export default function HydrationScreen() {
                             onChangeMonth={setMonth}
                         />
                         <View style={styles.legend}>
-                            <Legend colour="#22C55E" label="Target met" />
-                            <Legend colour="#EF4444" label="Under target" />
+                            <Legend colour={tone('#22C55E')} label="Target met" />
+                            <Legend colour={tone('#EF4444')} label="Under target" />
                             <Legend colour={Palette.textSecondary} hollow label="Not logged" />
                         </View>
                     </View>
@@ -202,7 +203,7 @@ export default function HydrationScreen() {
                                 points={series.map((p) => ({ day: p.day, value: p.value }))}
                                 width={chartWidth}
                                 height={168}
-                                color="#2563EB"
+                                color={tone('#2563EB')}
                                 unit="ml"
                                 maxXLabels={6}
                             />
@@ -250,14 +251,14 @@ export default function HydrationScreen() {
                         value={formatVolume(stats.totalMl, units) ?? '--'}
                         label={`Logged over ${stats.daysLogged || 'no'} ${stats.daysLogged === 1 ? 'day' : 'days'}`}
                         values={series.map((p) => p.value)}
-                        colour="#16A34A"
+                        colour={tone('#16A34A')}
                     />
                     <View style={styles.divider} />
                     <Highlight
                         value={formatVolume(stats.dailyAverageMl, units) ?? '--'}
                         label="Daily average, across days you logged"
                         values={series.map((p) => p.value)}
-                        colour="#2563EB"
+                        colour={tone('#2563EB')}
                     />
                     {stats.daysLogged === 0 && (
                         <EmptyNote>
@@ -337,36 +338,46 @@ export default function HydrationScreen() {
 
 const Meta = ({ icon, text, tone }: {
     icon: React.ComponentProps<typeof Ionicons>['name']; text: string; tone?: string;
-}) => (
-    <View style={styles.meta}>
-        <Ionicons name={icon} size={13} color={tone ?? Palette.textMuted} />
-        <Text style={[styles.metaText, tone ? { color: tone } : null]}>{text}</Text>
-    </View>
-);
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.meta}>
+            <Ionicons name={icon} size={13} color={tone ?? Palette.textMuted} />
+            <Text style={[styles.metaText, tone ? { color: tone } : null]}>{text}</Text>
+        </View>
+    );
+};
 
-const Legend = ({ colour, label, hollow }: { colour: string; label: string; hollow?: boolean }) => (
-    <View style={styles.legendItem}>
-        <View style={[
-            styles.legendDot,
-            hollow ? { borderWidth: 1.5, borderColor: colour } : { backgroundColor: colour },
-        ]} />
-        <Text style={styles.legendText}>{label}</Text>
-    </View>
-);
+const Legend = ({ colour, label, hollow }: { colour: string; label: string; hollow?: boolean }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.legendItem}>
+            <View style={[
+                styles.legendDot,
+                hollow ? { borderWidth: 1.5, borderColor: colour } : { backgroundColor: colour },
+            ]} />
+            <Text style={styles.legendText}>{label}</Text>
+        </View>
+    );
+};
 
 const Highlight = ({ value, label, values, colour }: {
     value: string; label: string; values: (number | null)[]; colour: string;
-}) => (
-    <View style={styles.highlight}>
-        <View style={styles.flex}>
-            <Text style={styles.highlightValue}>{value}</Text>
-            <Text style={styles.highlightLabel}>{label}</Text>
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.highlight}>
+            <View style={styles.flex}>
+                <Text style={styles.highlightValue}>{value}</Text>
+                <Text style={styles.highlightLabel}>{label}</Text>
+            </View>
+            <Sparkline values={values} color={colour} />
         </View>
-        <Sparkline values={values} color={colour} />
-    </View>
-);
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
@@ -426,4 +437,4 @@ const styles = StyleSheet.create({
     askBlurb: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textSecondary, marginTop: 2, lineHeight: 16 },
 
     note: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted, lineHeight: 17 },
-});
+}));

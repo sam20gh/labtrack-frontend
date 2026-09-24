@@ -7,10 +7,11 @@
  * scolds them teaches them to stop recording.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ALIGNMENT_META, MEAL_TYPE_LABEL } from '@/lib/nutrition';
 import type { MealLog } from '@/types/api';
 
@@ -23,6 +24,8 @@ const time = (iso: string) =>
     new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
 export function MealCard({ meal, onPress }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const alignment = ALIGNMENT_META[meal.analysis?.alignment || 'unassessed'];
 
     return (
@@ -74,7 +77,7 @@ export function MealCard({ meal, onPress }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         flexDirection: 'row',
         gap: Spacing.md,
@@ -104,4 +107,4 @@ const styles = StyleSheet.create({
         marginTop: Spacing.sm,
     },
     badgeText: { fontFamily: Fonts.semibold, fontSize: 10 },
-});
+}));

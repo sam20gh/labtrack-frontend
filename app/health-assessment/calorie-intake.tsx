@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { paramNumber } from './params';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette } from '@/constants/theme';
 
 export default function CalorieIntakeScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     // 'unknown' is a real answer from the Don't know button; it is not a number.
@@ -66,7 +64,7 @@ export default function CalorieIntakeScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -89,7 +87,7 @@ export default function CalorieIntakeScreen() {
                         style={styles.counterButton}
                         onPress={() => incrementCalories(-100)}
                     >
-                        <Ionicons name="remove" size={24} color="#7C3AED" />
+                        <Ionicons name="remove" size={24} color={Palette.primary} />
                     </TouchableOpacity>
 
                     <View style={styles.calorieDisplay}>
@@ -113,7 +111,7 @@ export default function CalorieIntakeScreen() {
                         style={styles.counterButton}
                         onPress={() => incrementCalories(100)}
                     >
-                        <Ionicons name="add" size={24} color="#7C3AED" />
+                        <Ionicons name="add" size={24} color={Palette.primary} />
                     </TouchableOpacity>
                 </View>
 
@@ -136,28 +134,28 @@ export default function CalorieIntakeScreen() {
                     <Ionicons
                         name="arrow-forward"
                         size={20}
-                        color={calories > 0 ? '#fff' : '#9CA3AF'}
+                        color={calories > 0 ? '#fff' : activePalette().textMuted}
                     />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.dontKnowButton} onPress={handleDontKnow}>
                     <Text style={styles.dontKnowText}>I don't know</Text>
-                    <Ionicons name="help-circle-outline" size={18} color="#6B7280" />
+                    <Ionicons name="help-circle-outline" size={18} color={Palette.textSecondary} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -173,17 +171,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -195,14 +193,14 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 48,
     },
     label: {
         fontSize: 14,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         marginBottom: 16,
     },
     counterContainer: {
@@ -214,7 +212,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -224,23 +222,23 @@ const styles = StyleSheet.create({
     calorieInput: {
         fontSize: 48,
         fontWeight: '300',
-        color: '#1F2937',
+        color: Palette.text,
         minWidth: 150,
     },
     summaryText: {
         fontSize: 15,
-        color: '#6B7280',
+        color: Palette.textSecondary,
     },
     summaryBold: {
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
     },
     bottomContainer: {
         paddingHorizontal: 24,
         paddingBottom: 40,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -249,16 +247,16 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     continueButtonDisabled: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
     continueButtonTextDisabled: {
-        color: '#9CA3AF',
+        color: Palette.textMuted,
     },
     dontKnowButton: {
         flexDirection: 'row',
@@ -266,12 +264,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 14,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
     },
     dontKnowText: {
         fontSize: 15,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         marginRight: 8,
     },
-});
+}));

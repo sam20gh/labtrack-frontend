@@ -12,7 +12,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { Palette, Fonts, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 interface Props {
     consumed: number;
@@ -34,6 +35,8 @@ interface Props {
 }
 
 export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption, tone = 'light' }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const onDark = tone === 'dark';
     const colors = {
         track: onDark ? 'rgba(255,255,255,0.28)' : Palette.borderLight,
@@ -143,11 +146,11 @@ export function CalorieRing({ consumed, target, size = 180, stroke = 14, caption
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     // fontSize on the three below is overridden per-instance from `type` — the values
     // here are the 180pt defaults, kept so the styles read at a glance.
     centre: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
     value: { fontFamily: Fonts.bold, fontSize: 38, color: Palette.text },
     of: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, marginTop: 2 },
     caption: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary, marginTop: 6 },
-});
+}));

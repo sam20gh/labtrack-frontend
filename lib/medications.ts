@@ -23,6 +23,7 @@ import type {
     MedicationIdentifyResult, MedicationInsight, MedicationStatus, MedicationCatalogueEntry,
     InteractionSeverity, InteractionFinding, MedicationFrequency, MedicationForm,
 } from '@/types/api';
+import { schemed, tone } from '@/constants/theme';
 
 /**
  * Minutes west of UTC, as `Date.getTimezoneOffset()` reports it.
@@ -194,32 +195,32 @@ export const SEVERITY_META: Record<InteractionSeverity, {
     icon: string;
     /** What the person should do about it, in two words, for the card's header. */
     urgency: string;
-}> = {
+}> = schemed((Palette, scheme) => ({
     severe: {
         label: 'Serious',
-        color: '#DC2626',
-        bg: '#FEF2F2',
-        border: '#FECACA',
+        color: Palette.danger,
+        bg: Palette.dangerSurface,
+        border: tone('#FECACA', scheme),
         icon: 'warning',
         urgency: 'Ask before your next dose',
     },
     moderate: {
         label: 'Worth checking',
-        color: '#B45309',
-        bg: '#FFFBEB',
-        border: '#FDE68A',
+        color: Palette.warning,
+        bg: Palette.warningSurface,
+        border: tone('#FDE68A', scheme),
         icon: 'alert-circle',
         urgency: 'Raise it at your next appointment',
     },
     mild: {
         label: 'Good to know',
-        color: '#1D4ED8',
-        bg: '#EFF6FF',
-        border: '#BFDBFE',
+        color: Palette.info,
+        bg: Palette.infoSurface,
+        border: tone('#BFDBFE', scheme),
         icon: 'information-circle',
         urgency: 'Usually solved by timing',
     },
-};
+}));
 
 export const KIND_LABEL: Record<string, string> = {
     drug: 'With another medicine',

@@ -14,8 +14,9 @@
  *    engine behind this; it reports when somebody trained, and the copy stops there.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { View, Text } from 'react-native';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import type { ActiveHoursInsight } from '@/lib/activity';
 
 /** "9 AM", "12 PM" — the clock the design's caption is written in. */
@@ -29,6 +30,7 @@ const hourLabel = (h: number): string => {
 const RAIL = [0, 6, 12, 18];
 
 export function ActiveHours({ data }: { data: ActiveHoursInsight }) {
+    const styles = useStyles();
     const max = Math.max(...data.hours, 1);
 
     return (
@@ -89,7 +91,7 @@ export function ActiveHours({ data }: { data: ActiveHoursInsight }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         borderWidth: 1,
         borderColor: Palette.border,
@@ -100,7 +102,7 @@ const styles = StyleSheet.create({
     chart: { flexDirection: 'row', alignItems: 'flex-end', height: 58, gap: 2 },
     slot: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
     bar: { width: 5, borderRadius: 3 },
-    barPeak: { backgroundColor: Palette.primary },
+    barPeak: { backgroundColor: Palette.primaryFill },
     barPlain: { backgroundColor: Palette.primaryPale },
     dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Palette.border },
     axis: {
@@ -112,4 +114,4 @@ const styles = StyleSheet.create({
     axisLabel: { fontSize: 10, ...BodyFont.regular, color: Palette.textMuted },
     headline: { fontSize: 20, fontFamily: Fonts.bold, color: Palette.text },
     copy: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
-});
+}));

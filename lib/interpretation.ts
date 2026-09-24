@@ -9,6 +9,7 @@
  * `raw` on a DNA report keeps the same shape, so this type serves both.
  */
 import { api, apiFetch, ApiError } from './api';
+import { schemed, tone } from '@/constants/theme';
 
 /**
  * The interpretation contract is **generated**, not written here.
@@ -164,12 +165,12 @@ export const hasMeaningfulChanges = (i: Interpretation | null): boolean => {
     return Boolean(text) && !/^first interpretation/i.test(text!);
 };
 
-export const RISK_META: Record<RiskLevel, { label: string; color: string; bg: string }> = {
-    high: { label: 'High', color: '#DC2626', bg: '#FEF2F2' },
-    moderate: { label: 'Moderate', color: '#B45309', bg: '#FFFBEB' },
-    low: { label: 'Low', color: '#059669', bg: '#ECFDF5' },
-    unknown: { label: 'Unclear', color: '#6B7280', bg: '#F9FAFB' },
-};
+export const RISK_META: Record<RiskLevel, { label: string; color: string; bg: string }> = schemed((Palette, scheme) => ({
+    high: { label: 'High', color: Palette.danger, bg: Palette.dangerSurface },
+    moderate: { label: 'Moderate', color: Palette.warning, bg: Palette.warningSurface },
+    low: { label: 'Low', color: Palette.success, bg: Palette.successSurface },
+    unknown: { label: 'Unclear', color: Palette.textSecondary, bg: tone('#F9FAFB', scheme) },
+}));
 
 /** Highest-severity risks first — the reason someone reads this at all. */
 export const byRiskSeverity = (a: { level: RiskLevel }, b: { level: RiskLevel }) => {

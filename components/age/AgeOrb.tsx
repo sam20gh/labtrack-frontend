@@ -54,7 +54,8 @@ import Animated, {
     useSharedValue, useAnimatedProps, useAnimatedStyle,
     withRepeat, withTiming, withSpring, useReducedMotion, Easing, cancelAnimation,
 } from 'react-native-reanimated';
-import { Fonts, Palette, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont, tone, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { AgeBand } from '@/lib/age';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -77,18 +78,18 @@ interface Props {
  * along the sweep gives it depth and makes the direction of travel legible at a glance. The
  * pairs stay inside one hue family — a rainbow arc would imply a scale that does not exist.
  */
-const BAND_RAMP: Record<AgeBand, [string, string]> = {
-    younger: ['#2DD4BF', '#0D9488'],
-    on_track: ['#A5B4FC', '#818CF8'],
-    older: ['#FCD34D', '#F59E0B'],
-};
+const BAND_RAMP: Record<AgeBand, [string, string]> = schemed((_, scheme) => ({
+    younger: [tone('#2DD4BF', scheme), tone('#0D9488', scheme)],
+    on_track: [tone('#A5B4FC', scheme), tone('#818CF8', scheme)],
+    older: [tone('#FCD34D', scheme), tone('#F59E0B', scheme)],
+}));
 
 /** The particle cloud's own tints, one per band, kept lighter than the ring. */
-const BAND_DUST: Record<AgeBand, string> = {
-    younger: '#5EEAD4',
-    on_track: '#C7D2FE',
-    older: '#FDE68A',
-};
+const BAND_DUST: Record<AgeBand, string> = schemed((_, scheme) => ({
+    younger: tone('#5EEAD4', scheme),
+    on_track: tone('#C7D2FE', scheme),
+    older: tone('#FDE68A', scheme),
+}));
 
 /** Years either side of the tick that fill the whole sweep, and where the marks go. */
 const SCALE_YEARS = 10;
@@ -204,6 +205,8 @@ const CountUp = ({ to, style, animate }: { to: number; style: object; animate: b
 export default function AgeOrb({
     value, band, chronologicalAge, caption, size = 240,
 }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const reduced = useReducedMotion();
 
     const cx = size / 2;
@@ -427,7 +430,7 @@ export default function AgeOrb({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: { alignItems: 'center', justifyContent: 'center' },
     centre: {
         ...StyleSheet.absoluteFillObject,
@@ -441,4 +444,4 @@ const styles = StyleSheet.create({
     unit: { fontFamily: Fonts.semibold, letterSpacing: 1.3, color: Palette.textMuted, marginTop: 1 },
     caption: { fontFamily: Fonts.semibold, marginTop: 5, textAlign: 'center' },
     empty: { ...BodyFont.medium, color: Palette.textSecondary, textAlign: 'center', lineHeight: 18 },
-});
+}));

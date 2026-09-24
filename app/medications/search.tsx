@@ -8,20 +8,21 @@
  * belongs on someone's list, and still one their interaction check needs to know about.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { searchCatalogue } from '@/lib/medications';
 import { PillGlyph } from '@/components/medications/PillGlyph';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { MedicationCatalogueEntry } from '@/types/api';
 
 const COMMON = ['ibuprofen', 'paracetamol', 'atorvastatin', 'metformin', 'levothyroxine', 'omeprazole'];
 
 export default function SearchScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<MedicationCatalogueEntry[]>([]);
@@ -146,7 +147,7 @@ export default function SearchScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
     },
     searchBox: {
         flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.white, borderRadius: Radius.md,
+        backgroundColor: Palette.background, borderRadius: Radius.md,
         borderWidth: 1, borderColor: Palette.border,
         paddingHorizontal: Spacing.md,
     },
@@ -166,7 +167,7 @@ const styles = StyleSheet.create({
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     chip: {
         paddingHorizontal: 12, paddingVertical: 7, borderRadius: Radius.pill,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
+        backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.border,
     },
     chipText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
 
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
     resultCount: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     row: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.md,
     },
     rowBody: { flex: 1, gap: 1 },
@@ -198,8 +199,8 @@ const styles = StyleSheet.create({
         textAlign: 'center', lineHeight: 20, marginBottom: Spacing.md,
     },
     primaryButton: {
-        backgroundColor: Palette.primary, borderRadius: Radius.md,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.md,
         paddingVertical: 13, paddingHorizontal: Spacing.xxl,
     },
     primaryButtonText: { fontSize: 14, color: Palette.white, fontFamily: Fonts.semibold },
-});
+}));

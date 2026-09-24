@@ -7,13 +7,12 @@
  * ring is worse than not offering one, so nothing here says "alarm".
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { ScheduleCard } from '@/components/sleep/ScheduleCard';
 import { BedIllustration } from '@/components/sleep/BedIllustration';
@@ -21,6 +20,8 @@ import { listSchedules, updateSchedule, type SleepSchedule } from '@/lib/sleep';
 import { ApiError } from '@/lib/api';
 
 export default function SleepScheduleListScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [schedules, setSchedules] = useState<SleepSchedule[]>([]);
@@ -126,7 +127,7 @@ export default function SleepScheduleListScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     },
     add: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        paddingVertical: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Palette.primary,
+        paddingVertical: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Palette.primaryFill,
     },
     addLabel: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

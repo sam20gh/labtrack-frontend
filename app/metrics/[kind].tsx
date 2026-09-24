@@ -18,10 +18,7 @@
  * to find one.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, Alert, useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -35,15 +32,16 @@ import {
     type MetricHistory, type MetricLog, type LoggableKind,
 } from '@/lib/metrics';
 import { useUnits, unitLabel, displayWeight, type UnitPrefs } from '@/lib/units';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, schemed, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 // Tints come from `METRIC_TINT` rather than being typed here: this table once held its own
 // copy of blood pressure's colour, which would have kept this screen purple after the
 // dashboard moved on.
-const META: Record<string, { title: string; unit: string; tint: string; logRoute: string }> = {
+const META = schemed<Record<string, { title: string; unit: string; tint: string; logRoute: string }>>(() => ({
     weight: { title: 'Weight', unit: 'kg', tint: METRIC_TINT.weight, logRoute: '/metrics/log/weight' },
     'blood-pressure': { title: 'Blood Pressure', unit: 'mmHg', tint: METRIC_TINT.blood_pressure, logRoute: '/metrics/log/blood-pressure' },
-};
+}));
 
 const RANGES = [
     { key: 7, label: '1w' },
@@ -53,6 +51,8 @@ const RANGES = [
 ];
 
 export default function MetricDetailScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const { kind } = useLocalSearchParams<{ kind: string }>();
@@ -155,9 +155,9 @@ export default function MetricDetailScreen() {
                             {summary.mean.systolic}/{summary.mean.diastolic}
                             <Text style={styles.bigUnit}> mmHg average</Text>
                         </Text>
-                        <View style={[styles.pill, { backgroundColor: `${summary.mean.category.colour}22` }]}>
-                            <View style={[styles.dot, { backgroundColor: summary.mean.category.colour }]} />
-                            <Text style={[styles.pillText, { color: summary.mean.category.colour }]}>
+                        <View style={[styles.pill, { backgroundColor: `${tone(summary.mean.category.colour)}22` }]}>
+                            <View style={[styles.dot, { backgroundColor: tone(summary.mean.category.colour) }]} />
+                            <Text style={[styles.pillText, { color: tone(summary.mean.category.colour) }]}>
                                 {summary.mean.category.label}
                             </Text>
                         </View>
@@ -176,7 +176,7 @@ export default function MetricDetailScreen() {
                                 <Ionicons
                                     name={summary.hadCrisis ? 'warning' : 'alert-circle-outline'}
                                     size={16}
-                                    color={summary.hadCrisis ? '#FFFFFF' : summary.worst.category.colour}
+                                    color={summary.hadCrisis ? '#FFFFFF' : tone(summary.worst.category.colour)}
                                 />
                                 <Text style={[styles.worstText, summary.hadCrisis && styles.worstTextUrgent]}>
                                     Your highest reading was {summary.worst.systolic}/{summary.worst.diastolic} —
@@ -249,6 +249,8 @@ export default function MetricDetailScreen() {
 const LogRow = ({ log, kind, last, units, onDelete }: {
     log: MetricLog; kind: string; last: boolean; units: UnitPrefs; onDelete: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const when = new Date(log.measuredAt);
     // Converted for display only — `log.weightKg` and `log.ml` are what the record holds.
     const value = kind === 'weight'
@@ -273,8 +275,8 @@ const LogRow = ({ log, kind, last, units, onDelete }: {
               * reading someone was already shown. See `MetricLog.category`.
               */}
             {log.category && (
-                <View style={[styles.pill, { backgroundColor: `${log.category.colour}22` }]}>
-                    <Text style={[styles.pillText, { color: log.category.colour }]}>{log.category.label}</Text>
+                <View style={[styles.pill, { backgroundColor: `${tone(log.category.colour)}22` }]}>
+                    <Text style={[styles.pillText, { color: tone(log.category.colour) }]}>{log.category.label}</Text>
                 </View>
             )}
 
@@ -285,7 +287,7 @@ const LogRow = ({ log, kind, last, units, onDelete }: {
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
@@ -313,14 +315,14 @@ const styles = StyleSheet.create({
         flexDirection: 'row', gap: 8, alignItems: 'flex-start',
         backgroundColor: Palette.borderLight, borderRadius: Radius.md, padding: Spacing.sm,
     },
-    worstBoxUrgent: { backgroundColor: '#DC2626' },
+    worstBoxUrgent: { backgroundColor: Palette.dangerFill },
     worstText: { flex: 1, ...BodyFont.medium, fontSize: 12, color: Palette.text, lineHeight: 17 },
-    worstTextUrgent: { color: '#FFFFFF' },
+    worstTextUrgent: { color: Palette.white },
 
     rangeRow: { flexDirection: 'row', gap: 5 },
     rangeChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: Radius.pill, backgroundColor: Palette.borderLight },
     rangeText: { ...BodyFont.medium, fontSize: 11, color: Palette.textSecondary },
-    rangeTextActive: { color: '#FFFFFF' },
+    rangeTextActive: { color: Palette.white },
 
     sectionTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text, marginTop: Spacing.xs },
     empty: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted, textAlign: 'center', paddingVertical: Spacing.lg },
@@ -329,4 +331,4 @@ const styles = StyleSheet.create({
     logDivider: { borderBottomWidth: 1, borderBottomColor: Palette.borderLight },
     logValue: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text },
     logWhen: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, marginTop: 2 },
-});
+}));

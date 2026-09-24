@@ -1,13 +1,10 @@
 import React from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-} from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 type ResetOption = {
     id: string;
@@ -38,6 +35,8 @@ const resetOptions: ResetOption[] = [
 ];
 
 const ForgotPasswordScreen = () => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const handleOptionPress = (route: string) => {
@@ -52,7 +51,7 @@ const ForgotPasswordScreen = () => {
                     style={styles.backButton}
                     onPress={() => router.back()}
                 >
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
             </View>
 
@@ -73,11 +72,11 @@ const ForgotPasswordScreen = () => {
                         >
                             <View style={styles.optionLeft}>
                                 <View style={styles.optionIconContainer}>
-                                    <Ionicons name={option.icon} size={24} color="#7C3AED" />
+                                    <Ionicons name={option.icon} size={24} color={Palette.primary} />
                                 </View>
                                 <Text style={styles.optionTitle}>{option.title}</Text>
                             </View>
-                            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                            <Ionicons name="chevron-forward" size={20} color={Palette.textMuted} />
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -86,10 +85,10 @@ const ForgotPasswordScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: Palette.background,
     },
     header: {
         paddingHorizontal: 16,
@@ -109,12 +108,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         marginBottom: 12,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         lineHeight: 24,
         marginBottom: 40,
     },
@@ -125,11 +124,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
         borderRadius: 16,
         padding: 20,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
     },
     optionLeft: {
         flexDirection: 'row',
@@ -140,15 +139,15 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 12,
-        backgroundColor: '#F3E8FF',
+        backgroundColor: Palette.primarySurface,
         justifyContent: 'center',
         alignItems: 'center',
     },
     optionTitle: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#1F2937',
+        color: Palette.text,
     },
-});
+}));
 
 export default ForgotPasswordScreen;

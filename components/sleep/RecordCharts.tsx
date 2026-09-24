@@ -25,7 +25,8 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import {
     STAGE_META, NAP_META, UNSTAGED_META, formatMinutes, formatClock,
     type SleepRecordBar, type RecordBucket, type SleepRecord, type SleepStageKey,
@@ -106,6 +107,7 @@ export function StackedSleepBars({
     onSelect: (index: number) => void;
     height?: number;
 }) {
+    const styles = useStyles();
     const n = bars.length;
     const peak = Math.max(...bars.map(barTotal), goalMinutes ?? 0, 360);
     const step = peak > 720 ? 240 : 120;
@@ -210,6 +212,7 @@ export function StackedSleepBars({
 
 /** The legend under the stack: only what the window actually contains, in stack order. */
 export function StackLegend({ bars }: { bars: SleepRecordBar[] }) {
+    const styles = useStyles();
     const any = (pick: (b: SleepRecordBar) => number | null) => bars.some((b) => finite(pick(b)) && (pick(b) as number) > 0);
     const items: { label: string; tint: string }[] = [];
     if (any((b) => b.deepMin)) items.push(STAGE_META.deep);
@@ -242,6 +245,8 @@ type Timeline = NonNullable<SleepRecord['timeline']>;
  * are not, and inventing a sequence for them is what `Hypnogram` refuses to do.
  */
 export function DayTimeline({ sessions }: { sessions: Timeline }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!sessions.length) return null;
     const HOUR = 3_600_000;
     const start = Math.floor(Math.min(...sessions.map((s) => new Date(s.startedAt).getTime())) / HOUR) * HOUR;
@@ -319,6 +324,7 @@ export function CompositionBar({
 }: {
     stages: Record<SleepStageKey, { avgMin: number | null; share: number | null }>;
 }) {
+    const styles = useStyles();
     const rows = COMPOSITION.filter((k) => finite(stages[k].share) && (stages[k].share as number) > 0);
     if (!rows.length) return null;
 
@@ -372,6 +378,7 @@ export function SleepWindowChart({
     wakeMin: number | null;
     height?: number;
 }) {
+    const styles = useStyles();
     const drawn = bars.map((b) => (finite(b.bedtimeMin) && finite(b.wakeMin) && fold(b.wakeMin) > fold(b.bedtimeMin)
         ? { top: fold(b.bedtimeMin), bottom: fold(b.wakeMin) }
         : null));
@@ -443,7 +450,7 @@ export function SleepWindowChart({
 
 const Y_AXIS = 28;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     plotRow: { flexDirection: 'row' },
     yAxis: { width: Y_AXIS, position: 'relative' },
     yTick: {
@@ -523,4 +530,4 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4, overflow: 'hidden',
         borderWidth: 1, borderColor: Palette.borderSlate, transform: [{ translateY: -1 }],
     },
-});
+}));

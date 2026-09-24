@@ -14,9 +14,10 @@
  *    disagree.
  */
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Radius, BodyFont, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { CalendarDay } from '@/lib/prediction';
 
 interface Props {
@@ -27,11 +28,11 @@ interface Props {
 
 const HEADS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-const TONE = {
+const TONE = schemed((Palette) => ({
     good: { colour: Palette.successDeep, bg: Palette.successSurface },
     bad: { colour: Palette.danger, bg: Palette.dangerSurface },
     neutral: { colour: Palette.textMuted, bg: Palette.borderLight },
-} as const;
+} as const));
 
 const GLYPH = { up: 'arrow-up', down: 'arrow-down', level: 'remove' } as const;
 
@@ -68,6 +69,8 @@ const labelFor = (cells: (CalendarDay | null)[]) => {
 };
 
 export function DirectionCalendar({ days, betterWhen }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const weeks = useMemo(() => toWeeks(days), [days]);
 
     if (!weeks.length) return null;
@@ -122,14 +125,17 @@ export function DirectionCalendar({ days, betterWhen }: Props) {
     );
 }
 
-const Legend = ({ colour, label }: { colour: string; label: string }) => (
-    <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: colour }]} />
-        <Text style={styles.legendLabel}>{label}</Text>
-    </View>
-);
+const Legend = ({ colour, label }: { colour: string; label: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colour }]} />
+            <Text style={styles.legendLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
     row: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
     rowLabel: {
@@ -148,4 +154,4 @@ const styles = StyleSheet.create({
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 6, height: 6, borderRadius: 3 },
     legendLabel: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary },
-});
+}));

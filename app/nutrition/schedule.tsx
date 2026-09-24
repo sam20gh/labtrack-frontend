@@ -15,9 +15,7 @@
  * `app/appointments/*` holds about professional availability.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -25,7 +23,8 @@ import { Ionicons } from '@expo/vector-icons';
 import {
     getDay, getCalendar, deleteMeal, today, addDays, MEAL_TYPE_LABEL, MACRO_META,
 } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { NutritionDay, NutritionCalendar, MealLog } from '@/types/api';
 
 /** A fortnight either side, so the strip can be scrolled back through a fair run of days. */
@@ -45,6 +44,8 @@ const hourLabel = (hour: number) => {
 };
 
 export default function NutritionScheduleScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [selected, setSelected] = useState(today());
     const [day, setDay] = useState<NutritionDay | null>(null);
@@ -160,7 +161,7 @@ export default function NutritionScheduleScreen() {
                             */}
                             <View style={[
                                 styles.stripDot,
-                                entry ? { backgroundColor: Palette.primary } : { backgroundColor: 'transparent' },
+                                entry ? { backgroundColor: Palette.primaryFill } : { backgroundColor: 'transparent' },
                             ]} />
                         </TouchableOpacity>
                     );
@@ -310,7 +311,7 @@ export default function NutritionScheduleScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
     mealMacro: { ...BodyFont.medium, fontSize: 11, color: Palette.textSecondary },
     delete: {
         width: 38, height: 38, borderRadius: 19,
-        backgroundColor: Palette.danger, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: Palette.dangerFill, alignItems: 'center', justifyContent: 'center',
     },
 
     empty: { alignItems: 'center', paddingHorizontal: Spacing.xxxl, marginTop: Spacing.xxxl, gap: Spacing.sm },
@@ -387,8 +388,8 @@ const styles = StyleSheet.create({
     fab: {
         position: 'absolute', right: Spacing.xl, bottom: Spacing.xxxl,
         width: 56, height: 56, borderRadius: 28,
-        backgroundColor: Palette.primary, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: Palette.primaryFill, alignItems: 'center', justifyContent: 'center',
         shadowColor: Palette.primary, shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.35, shadowRadius: 10, elevation: 6,
     },
-});
+}));

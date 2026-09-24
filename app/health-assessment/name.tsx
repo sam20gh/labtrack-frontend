@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    KeyboardAvoidingView,
-    Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { paramString } from './params';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette } from '@/constants/theme';
 
 export default function NameScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [name, setName] = useState(paramString(params.fullName) ?? '');
@@ -52,7 +48,7 @@ export default function NameScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={24} color={Palette.text} />
                     </TouchableOpacity>
                     <View style={styles.progressBarContainer}>
                         <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -69,14 +65,14 @@ export default function NameScreen() {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your name..."
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={Palette.textMuted}
                         value={name}
                         onChangeText={setName}
                         autoFocus
                     />
 
                     <View style={styles.infoContainer}>
-                        <Ionicons name="shield-checkmark-outline" size={16} color="#9CA3AF" />
+                        <Ionicons name="shield-checkmark-outline" size={16} color={Palette.textMuted} />
                         <Text style={styles.infoText}>
                             For regulatory purposes, please enter name stated on your state ID.
                         </Text>
@@ -96,7 +92,7 @@ export default function NameScreen() {
                         <Ionicons
                             name="arrow-forward"
                             size={20}
-                            color={name.trim() ? '#fff' : '#9CA3AF'}
+                            color={name.trim() ? '#fff' : activePalette().textMuted}
                         />
                     </TouchableOpacity>
                 </View>
@@ -105,10 +101,10 @@ export default function NameScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     keyboardView: {
         flex: 1,
@@ -116,7 +112,7 @@ const styles = StyleSheet.create({
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -132,17 +128,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -154,18 +150,18 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginBottom: 32,
     },
     input: {
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 16,
         fontSize: 16,
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
     },
     infoContainer: {
@@ -177,7 +173,7 @@ const styles = StyleSheet.create({
     },
     infoText: {
         fontSize: 13,
-        color: '#9CA3AF',
+        color: Palette.textMuted,
         marginLeft: 8,
         textAlign: 'center',
     },
@@ -186,7 +182,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -194,15 +190,15 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     continueButtonDisabled: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
     continueButtonTextDisabled: {
-        color: '#9CA3AF',
+        color: Palette.textMuted,
     },
-});
+}));

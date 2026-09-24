@@ -12,9 +12,7 @@
  * describe is common and is not an error.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -27,12 +25,15 @@ import { PillGlyph } from '@/components/medications/PillGlyph';
 import { ensureRemindersReady } from '@/lib/notifications';
 import { warnRemindersUnavailable } from '@/lib/medicationReminders';
 import { FindingCard } from '@/components/medications/FindingCard';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { TrackedMedication, MedicationCatalogueEntry, InteractionFinding, MedicationInsight } from '@/types/api';
 
 type Tab = 'overview' | 'insight';
 
 export default function MedicationDetailScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -329,42 +330,58 @@ export default function MedicationDetailScreen() {
     );
 }
 
-const TabButton = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
-    <TouchableOpacity style={[styles.tab, active && styles.tabActive]} onPress={onPress} activeOpacity={0.75}>
-        <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
-    </TouchableOpacity>
-);
+const TabButton = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => {
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={[styles.tab, active && styles.tabActive]} onPress={onPress} activeOpacity={0.75}>
+            <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+        </TouchableOpacity>
+    );
+};
 
-const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <View style={styles.card}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        {children}
-    </View>
-);
+const Card = ({ title, children }: { title: string; children: React.ReactNode }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.card}>
+            <Text style={styles.cardTitle}>{title}</Text>
+            {children}
+        </View>
+    );
+};
 
-const Row = ({ icon, label, warn }: { icon: string; label: string; warn?: boolean }) => (
-    <View style={styles.detailRow}>
-        <Ionicons name={icon as any} size={15} color={warn ? Palette.warning : Palette.textSecondary} />
-        <Text style={[styles.body, warn && { color: Palette.warning, fontFamily: Fonts.semibold }]}>{label}</Text>
-    </View>
-);
+const Row = ({ icon, label, warn }: { icon: string; label: string; warn?: boolean }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.detailRow}>
+            <Ionicons name={icon as any} size={15} color={warn ? Palette.warning : Palette.textSecondary} />
+            <Text style={[styles.body, warn && { color: Palette.warning, fontFamily: Fonts.semibold }]}>{label}</Text>
+        </View>
+    );
+};
 
-const Pill = ({ text }: { text: string }) => (
-    <View style={styles.heroChip}><Text style={styles.heroChipText}>{text}</Text></View>
-);
+const Pill = ({ text }: { text: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.heroChip}><Text style={styles.heroChipText}>{text}</Text></View>
+    );
+};
 
 const Stat = ({ value, suffix, label, colour }: {
     value: number | null; suffix?: string; label: string; colour: string;
-}) => (
-    <View style={styles.stat}>
-        <Text style={[styles.statValue, { color: colour }]}>
-            {value === null ? '—' : value}{value !== null && suffix ? suffix : ''}
-        </Text>
-        <Text style={styles.statLabel}>{label}</Text>
-    </View>
-);
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.stat}>
+            <Text style={[styles.statValue, { color: colour }]}>
+                {value === null ? '—' : value}{value !== null && suffix ? suffix : ''}
+            </Text>
+            <Text style={styles.statLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -390,7 +407,7 @@ const styles = StyleSheet.create({
 
     content: { padding: Spacing.xl, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
     card: {
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg, gap: Spacing.sm,
     },
     cardTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold, marginBottom: Spacing.xs },
@@ -433,4 +450,4 @@ const styles = StyleSheet.create({
     statLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
 
     footer: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 17 },
-});
+}));

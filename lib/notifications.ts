@@ -12,6 +12,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, apiFetch } from './api';
+import { activePalette } from '@/constants/theme';
 
 const ASKED_KEY = 'notificationsAsked';
 const TOKEN_KEY = 'expoPushToken';
@@ -51,7 +52,7 @@ const ensureAndroidChannel = async () => {
         name: 'Health reminders',
         importance: Notifications.AndroidImportance.DEFAULT,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#7C3AED',
+        lightColor: activePalette().primary,
     });
 };
 

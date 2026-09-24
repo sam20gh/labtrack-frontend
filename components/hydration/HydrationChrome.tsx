@@ -6,10 +6,11 @@
  * already makes for the segmented control.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { View, Text, Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /**
  * Back, an optional status pill, and an optional action.
@@ -24,6 +25,8 @@ export function WaterHeader({ title, pill, onAdd, right }: {
     onAdd?: () => void;
     right?: React.ReactNode;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     return (
         <View style={styles.header}>
@@ -63,6 +66,8 @@ export function SectionHeader({ title, icon, onSeeAll, style }: {
     onSeeAll?: () => void;
     style?: StyleProp<ViewStyle>;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <View style={[styles.section, style]}>
             <View style={styles.sectionLeft}>
@@ -80,10 +85,11 @@ export function SectionHeader({ title, icon, onSeeAll, style }: {
 
 /** A statement of absence, never of failure. Used wherever a window has nothing in it. */
 export function EmptyNote({ children }: { children: React.ReactNode }) {
+    const styles = useStyles();
     return <Text style={styles.empty}>{children}</Text>;
 }
 
-export const cardStyles = StyleSheet.create({
+export const useCardStyles = makeStyles((Palette) => ({
     card: {
         backgroundColor: Palette.surface,
         borderRadius: Radius.xl,
@@ -97,9 +103,9 @@ export const cardStyles = StyleSheet.create({
         padding: Spacing.lg,
         ...Shadow.card,
     },
-});
+}));
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     flex: { flex: 1 },
     header: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
@@ -116,12 +122,12 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.primarySurface,
         maxWidth: 150,
     },
-    pillDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.primary },
+    pillDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.primaryFill },
     pillText: { ...BodyFont.medium, fontSize: 12.5, color: Palette.primaryDark },
 
     add: {
         width: 38, height: 38, borderRadius: 19,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
         ...Shadow.card,
     },
@@ -135,4 +141,4 @@ const styles = StyleSheet.create({
         ...BodyFont.regular, fontSize: 12.5, color: Palette.textMuted,
         textAlign: 'center', paddingVertical: Spacing.lg, lineHeight: 18,
     },
-});
+}));

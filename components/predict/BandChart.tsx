@@ -10,9 +10,10 @@
  * to somebody who has never met a prediction interval.
  */
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Svg, { Path, Line, Text as SvgText, Defs, LinearGradient, Stop, G } from 'react-native-svg';
-import { Palette, Fonts, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont, schemed, activePalette } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { SeriesPoint } from '@/lib/prediction';
 
 interface Props {
@@ -24,13 +25,15 @@ interface Props {
 const PADDING = { top: 10, right: 8, bottom: 34, left: 30 };
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const SERIES = [
+const SERIES = schemed((Palette) => ([
     { key: 'low' as const, label: 'Min', colour: Palette.text },
     { key: 'value' as const, label: 'Average', colour: Palette.primary },
-    { key: 'high' as const, label: 'Max', colour: '#F43F5E' },
-];
+    { key: 'high' as const, label: 'Max', colour: Palette.alert },
+]));
 
 export function BandChart({ points, width, height = 190 }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const chart = useMemo(() => {
         const plotW = width - PADDING.left - PADDING.right;
         const plotH = height - PADDING.top - PADDING.bottom;
@@ -93,8 +96,8 @@ export function BandChart({ points, width, height = 190 }: Props) {
             <Svg width={width} height={height}>
                 <Defs>
                     <LinearGradient id="bcHigh" x1="0" y1="0" x2="0" y2="1">
-                        <Stop offset="0" stopColor="#F43F5E" stopOpacity={0.30} />
-                        <Stop offset="1" stopColor="#F43F5E" stopOpacity={0.04} />
+                        <Stop offset="0" stopColor={activePalette().alert} stopOpacity={0.30} />
+                        <Stop offset="1" stopColor={activePalette().alert} stopOpacity={0.04} />
                     </LinearGradient>
                     <LinearGradient id="bcLow" x1="0" y1="0" x2="0" y2="1">
                         <Stop offset="0" stopColor={Palette.primary} stopOpacity={0.30} />
@@ -146,7 +149,7 @@ export function BandChart({ points, width, height = 190 }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     empty: {
         alignItems: 'center', justifyContent: 'center',
         backgroundColor: Palette.borderLight, borderRadius: 12,
@@ -156,4 +159,4 @@ const styles = StyleSheet.create({
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     dot: { width: 7, height: 7, borderRadius: 4 },
     legendLabel: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.text },
-});
+}));

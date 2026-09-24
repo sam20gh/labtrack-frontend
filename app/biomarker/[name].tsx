@@ -6,10 +6,7 @@
  * their DNA report warrants it — so the answer is visible rather than calculated.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator,
-    TouchableOpacity, useWindowDimensions, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, useWindowDimensions, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -17,11 +14,15 @@ import { Ionicons } from '@expo/vector-icons';
 import TrendChart from '@/components/TrendChart';
 import { getBiomarkerTrend, FLAG_META, formatValue, explainFlag, medicalName } from '@/lib/biomarkers';
 import type { BiomarkerTrend } from '@/types/api';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default function BiomarkerTrendScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { name } = useLocalSearchParams();
     const { width } = useWindowDimensions();
@@ -43,7 +44,7 @@ export default function BiomarkerTrendScreen() {
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
     if (loading) {
-        return <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color="#7C3AED" /></View></SafeAreaView>;
+        return <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color={Palette.primary} /></View></SafeAreaView>;
     }
 
     const series = trend?.series ?? [];
@@ -59,7 +60,7 @@ export default function BiomarkerTrendScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.headerText}>
                     <Text style={styles.headerTitle} numberOfLines={1}>
@@ -82,7 +83,7 @@ export default function BiomarkerTrendScreen() {
             >
                 {!series.length ? (
                     <View style={styles.empty}>
-                        <Ionicons name="analytics-outline" size={40} color="#D1D5DB" />
+                        <Ionicons name="analytics-outline" size={40} color={tone('#D1D5DB')} />
                         <Text style={styles.emptyTitle}>No measurements</Text>
                     </View>
                 ) : (
@@ -177,7 +178,7 @@ export default function BiomarkerTrendScreen() {
 
                         {latest.flag === 'unknown' && (
                             <View style={styles.notice}>
-                                <Ionicons name="information-circle-outline" size={18} color="#6B7280" />
+                                <Ionicons name="information-circle-outline" size={18} color={Palette.textSecondary} />
                                 <Text style={styles.noticeText}>
                                     This value is stored but not assessed — we don't hold a reference range for
                                     it, or the unit wasn't recognised. It still appears in your history.
@@ -191,8 +192,8 @@ export default function BiomarkerTrendScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -200,45 +201,45 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16, paddingVertical: 12,
     },
     backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-    headerTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: '#1F2937', textAlign: 'center' },
+    headerTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: Palette.text, textAlign: 'center' },
     scroll: { paddingHorizontal: 20, paddingBottom: 40 },
     empty: { alignItems: 'center', paddingVertical: 60, gap: 10 },
-    emptyTitle: { fontSize: 16, fontWeight: '600', color: '#1F2937' },
+    emptyTitle: { fontSize: 16, fontWeight: '600', color: Palette.text },
     hero: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
     heroLeft: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-    heroValue: { fontSize: 40, fontWeight: '700', color: '#1F2937' },
-    heroUnit: { fontSize: 15, color: '#9CA3AF' },
-    heroDate: { fontSize: 13, color: '#9CA3AF', marginTop: 4, marginBottom: 18 },
+    heroValue: { fontSize: 40, fontWeight: '700', color: Palette.text },
+    heroUnit: { fontSize: 15, color: Palette.textMuted },
+    heroDate: { fontSize: 13, color: Palette.textMuted, marginTop: 4, marginBottom: 18 },
     badge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
     badgeText: { fontSize: 12, fontWeight: '700' },
-    chartCard: { borderWidth: 1, borderColor: '#F3F4F6', borderRadius: 14, padding: 14 },
+    chartCard: { borderWidth: 1, borderColor: Palette.borderLight, borderRadius: 14, padding: 14 },
     headerText: { flex: 1 },
-    headerSub: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginTop: 1 },
-    explainer: { backgroundColor: '#FAFAFA', borderRadius: 14, padding: 16, marginBottom: 16 },
-    explainerTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
-    explainerBody: { fontSize: 13.5, lineHeight: 20, color: '#4B5563' },
+    headerSub: { fontSize: 12, color: Palette.textMuted, textAlign: 'center', marginTop: 1 },
+    explainer: { backgroundColor: Palette.surface, borderRadius: 14, padding: 16, marginBottom: 16 },
+    explainerTitle: { fontSize: 13, fontWeight: '700', color: Palette.text, marginBottom: 8 },
+    explainerBody: { fontSize: 13.5, lineHeight: 20, color: tone('#4B5563') },
     explainerSpaced: { marginTop: 8 },
     meaningBox: { borderRadius: 10, padding: 12, marginTop: 14 },
     meaningTitle: { fontSize: 12.5, fontWeight: '700', marginBottom: 5 },
-    explainerNote: { fontSize: 11.5, lineHeight: 17, color: '#9CA3AF', marginTop: 12 },
+    explainerNote: { fontSize: 11.5, lineHeight: 17, color: Palette.textMuted, marginTop: 12 },
     statsRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
-    stat: { flex: 1, backgroundColor: '#FAFAFA', borderRadius: 12, padding: 12 },
-    statLabel: { fontSize: 11, color: '#9CA3AF', fontWeight: '600' },
-    statValue: { fontSize: 17, fontWeight: '700', color: '#1F2937', marginTop: 4 },
-    statSub: { fontSize: 10, color: '#9CA3AF', marginTop: 2 },
-    sectionLabel: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 26, marginBottom: 10 },
+    stat: { flex: 1, backgroundColor: Palette.surface, borderRadius: 12, padding: 12 },
+    statLabel: { fontSize: 11, color: Palette.textMuted, fontWeight: '600' },
+    statValue: { fontSize: 17, fontWeight: '700', color: Palette.text, marginTop: 4 },
+    statSub: { fontSize: 10, color: Palette.textMuted, marginTop: 2 },
+    sectionLabel: { fontSize: 15, fontWeight: '700', color: Palette.text, marginTop: 26, marginBottom: 10 },
     historyRow: {
         flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
-        borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+        borderBottomWidth: 1, borderBottomColor: Palette.borderLight,
     },
-    historyValue: { fontSize: 15, fontWeight: '600', color: '#1F2937' },
-    historyUnit: { fontSize: 12, color: '#9CA3AF', fontWeight: '400' },
-    historyDate: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+    historyValue: { fontSize: 15, fontWeight: '600', color: Palette.text },
+    historyUnit: { fontSize: 12, color: Palette.textMuted, fontWeight: '400' },
+    historyDate: { fontSize: 12, color: Palette.textMuted, marginTop: 2 },
     smallBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
     smallBadgeText: { fontSize: 10, fontWeight: '700' },
     notice: {
         flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-        backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, marginTop: 20,
+        backgroundColor: tone('#F9FAFB'), borderRadius: 12, padding: 14, marginTop: 20,
     },
-    noticeText: { flex: 1, fontSize: 12, color: '#6B7280', lineHeight: 18 },
-});
+    noticeText: { flex: 1, fontSize: 12, color: Palette.textSecondary, lineHeight: 18 },
+}));

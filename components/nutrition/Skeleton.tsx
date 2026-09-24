@@ -14,8 +14,9 @@
  * placeholders drive one timer rather than twelve of them.
  */
 import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View, type ViewStyle } from 'react-native';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { Animated, Easing, View, type ViewStyle } from 'react-native';
+import { Radius, Spacing } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 
 const PulseContext = createContext<Animated.AnimatedInterpolation<number> | null>(null);
 
@@ -51,6 +52,7 @@ interface BlockProps {
 
 /** One placeholder. Outside a `SkeletonGroup` it renders static rather than throwing. */
 export function SkeletonBlock({ width = '100%', height = 14, radius = Radius.sm, style }: BlockProps) {
+    const styles = useStyles();
     const opacity = useContext(PulseContext);
     const shape = [styles.block, { width, height, borderRadius: radius }, style];
 
@@ -61,10 +63,11 @@ export function SkeletonBlock({ width = '100%', height = 14, radius = Radius.sm,
 
 /** A card-shaped placeholder, so a skeleton keeps the page's real vertical rhythm. */
 export function SkeletonCard({ children, style }: { children?: React.ReactNode; style?: ViewStyle }) {
+    const styles = useStyles();
     return <View style={[styles.card, style]}>{children}</View>;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     block: { backgroundColor: Palette.borderLight },
     card: {
         backgroundColor: Palette.canvas,
@@ -74,4 +77,4 @@ const styles = StyleSheet.create({
         padding: Spacing.lg,
         gap: Spacing.md,
     },
-});
+}));

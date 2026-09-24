@@ -30,10 +30,11 @@
  */
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Pressable, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Fonts, Palette, Radius, Shadow, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Radius, Shadow, Spacing, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { isReachable, onReachabilityChange } from '@/lib/api';
 
 type Props = {
@@ -45,6 +46,8 @@ type Props = {
 };
 
 const ConnectionBanner = ({ onRetry }: Props) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const insets = useSafeAreaInsets();
     const [offline, setOffline] = useState(!isReachable());
     const slide = useRef(new Animated.Value(offline ? 1 : 0)).current;
@@ -105,7 +108,7 @@ const ConnectionBanner = ({ onRetry }: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 100 },
     pill: {
         flexDirection: 'row',
@@ -121,6 +124,6 @@ const styles = StyleSheet.create({
     },
     label: { fontSize: 12, ...BodyFont.medium, color: Palette.alert },
     retry: { fontSize: 12, fontFamily: Fonts.bold, color: Palette.alert, textDecorationLine: 'underline' },
-});
+}));
 
 export default ConnectionBanner;

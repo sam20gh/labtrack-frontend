@@ -19,9 +19,10 @@
  * the app.
  */
 import React, { useId } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Svg, { Rect, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, BodyFont, tone } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import { WaterDrop } from './WaterDrop';
 import type { HydrationLevel } from '@/lib/metrics';
 
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export function HydrationLevelMeter({ levels, activeKey }: Props) {
+    const styles = useStyles();
     // Scoped, so two meters on one screen cannot claim the same gradient.
     const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
     const count = levels.length || 5;
@@ -51,9 +53,9 @@ export function HydrationLevelMeter({ levels, activeKey }: Props) {
                 <Svg width={TRACK_W} height={TRACK_H}>
                     <Defs>
                         <LinearGradient id={`hlm${uid}`} x1="0" y1="0" x2="0" y2="1">
-                            <Stop offset="0" stopColor="#94A3B8" />
-                            <Stop offset="0.28" stopColor="#60A5FA" />
-                            <Stop offset="1" stopColor="#2563EB" />
+                            <Stop offset="0" stopColor={tone('#94A3B8')} />
+                            <Stop offset="0.28" stopColor={tone('#60A5FA')} />
+                            <Stop offset="1" stopColor={tone('#2563EB')} />
                         </LinearGradient>
                     </Defs>
                     <Rect
@@ -75,7 +77,7 @@ export function HydrationLevelMeter({ levels, activeKey }: Props) {
                 {/* The marker, drawn over the capsule so it reads as sitting on the track. */}
                 {activeIndex >= 0 && (
                     <View style={[styles.marker, { top: yFor(activeIndex) - 26 }]}>
-                        <WaterDrop size={22} filled color="#2563EB" />
+                        <WaterDrop size={22} filled color={tone('#2563EB')} />
                     </View>
                 )}
             </View>
@@ -96,14 +98,14 @@ export function HydrationLevelMeter({ levels, activeKey }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: { flexDirection: 'row', gap: Spacing.lg, alignSelf: 'center' },
     marker: {
         position: 'absolute', left: (TRACK_W - 52) / 2,
         width: 52, height: 52, borderRadius: 26,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         alignItems: 'center', justifyContent: 'center',
-        shadowColor: '#0F172A', shadowOpacity: 0.16, shadowRadius: 10,
+        shadowColor: tone('#0F172A'), shadowOpacity: 0.16, shadowRadius: 10,
         shadowOffset: { width: 0, height: 3 }, elevation: 5,
     },
     rung: { position: 'absolute', left: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, height: 22 },
@@ -111,4 +113,4 @@ const styles = StyleSheet.create({
     numberActive: { color: Palette.primary },
     label: { ...BodyFont.medium, fontSize: 13.5, color: Palette.textSecondary },
     labelActive: { fontFamily: Fonts.bold, color: Palette.text },
-});
+}));

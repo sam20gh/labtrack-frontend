@@ -17,7 +17,7 @@
  * The rung labels are the server's. See the note in `HydrationLevelMeter`.
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -28,8 +28,9 @@ import { attainment, drops, splitVolume } from '@/lib/hydration';
 import { useUnits, formatVolume } from '@/lib/units';
 import { HydrationLevelMeter } from '@/components/hydration/HydrationLevelMeter';
 import { DropRow } from '@/components/hydration/WaterDrop';
-import { WaterHeader, SectionHeader, cardStyles } from '@/components/hydration/HydrationChrome';
-import { Palette, Spacing, Fonts, BodyFont } from '@/constants/theme';
+import { WaterHeader, SectionHeader, useCardStyles } from '@/components/hydration/HydrationChrome';
+import { Spacing, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /**
  * How to move up a rung.
@@ -46,6 +47,9 @@ const STEPS = [
 ];
 
 export default function HydrationLevelScreen() {
+    const cardStyles = useCardStyles();
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const units = useUnits();
 
@@ -203,7 +207,7 @@ export default function HydrationLevelScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
@@ -253,7 +257,7 @@ const styles = StyleSheet.create({
     stepRail: { alignItems: 'center', width: 16 },
     stepDot: {
         width: 12, height: 12, borderRadius: 6, marginTop: 4,
-        borderWidth: 3, borderColor: Palette.primary, backgroundColor: Palette.white,
+        borderWidth: 3, borderColor: Palette.primary, backgroundColor: Palette.background,
     },
     stepLine: { flex: 1, width: 2, backgroundColor: Palette.primaryLight, marginVertical: 3 },
     stepTitle: { fontFamily: Fonts.semibold, fontSize: 13.5, color: Palette.text },
@@ -263,4 +267,4 @@ const styles = StyleSheet.create({
     },
 
     note: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted, lineHeight: 17 },
-});
+}));

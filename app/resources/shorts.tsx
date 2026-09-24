@@ -31,11 +31,14 @@ import {
     listResources, getResource, toggleLike, recordView, formatCount,
     type ResourceCard, type ResourceDetail,
 } from '@/lib/resources';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 type Short = ResourceCard & { videoUrl?: string | null };
 
 export default function ShortsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { slug } = useLocalSearchParams<{ slug?: string }>();
     const { height, width } = useWindowDimensions();
@@ -268,12 +271,12 @@ export default function ShortsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: '#000' },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
     emptyText: { fontSize: 15, ...BodyFont.medium, color: Palette.white, textAlign: 'center' },
     emptyAction: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primaryLight },
-    placeholder: { backgroundColor: '#111827' },
+    placeholder: { backgroundColor: tone('#111827') },
 
     scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.22)' },
     topBar: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
@@ -302,4 +305,4 @@ const styles = StyleSheet.create({
     captionAvatar: { width: 22, height: 22, borderRadius: 11 },
     captionAuthorName: { fontSize: 13, ...BodyFont.medium, color: 'rgba(255,255,255,0.9)' },
     captionBody: { fontSize: 13, ...BodyFont.regular, color: 'rgba(255,255,255,0.8)', lineHeight: 18 },
-});
+}));

@@ -16,9 +16,7 @@
  * is gone and the button here does what it says.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -31,10 +29,13 @@ import {
     formatDayShort, formatTime, MODE_LABEL, STATUS_META,
     type AppointmentMode, type BookableDay,
 } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { Appointment, Professional } from '@/types/api';
 
 export default function ProfessionalDetailsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{ professionalId?: string }>();
 
@@ -265,16 +266,19 @@ export default function ProfessionalDetailsScreen() {
     );
 }
 
-const Stat = ({ value, label }: { value: string; label: string }) => (
-    <View style={styles.stat}>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
-    </View>
-);
+const Stat = ({ value, label }: { value: string; label: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.stat}>
+            <Text style={styles.statValue}>{value}</Text>
+            <Text style={styles.statLabel}>{label}</Text>
+        </View>
+    );
+};
 
 const GUTTER = Spacing.lg;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     flex: { flex: 1 },
     center: { alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
@@ -295,7 +299,7 @@ const styles = StyleSheet.create({
     identityCard: {
         marginTop: -56, alignItems: 'center', gap: 4,
         padding: Spacing.lg, borderRadius: Radius.lg,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.borderSlate,
+        backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.borderSlate,
         ...Shadow.card,
     },
     avatar: {
@@ -331,7 +335,7 @@ const styles = StyleSheet.create({
     mineRow: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         padding: Spacing.md, borderRadius: Radius.md,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.borderSlate,
+        backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.borderSlate,
     },
     mineDate: {
         alignItems: 'center', paddingHorizontal: Spacing.sm, paddingVertical: 5,
@@ -354,26 +358,26 @@ const styles = StyleSheet.create({
     strip: { gap: Spacing.sm, paddingRight: GUTTER },
     dayCell: {
         width: 58, height: 66, alignItems: 'center', justifyContent: 'center', gap: 2,
-        borderRadius: Radius.md, backgroundColor: Palette.white,
+        borderRadius: Radius.md, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
     dayWeekday: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
     dayNumber: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
-    dayDot: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: Palette.success },
+    dayDot: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: Palette.successFill },
     stripNote: { fontSize: 12, color: Palette.textMuted, ...BodyFont.regular },
 
     footer: {
         paddingHorizontal: GUTTER, paddingTop: Spacing.md, paddingBottom: Spacing.xl,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderTopWidth: 1, borderTopColor: Palette.borderSlate,
     },
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        height: 48, borderRadius: Radius.md, backgroundColor: Palette.primary,
+        height: 48, borderRadius: Radius.md, backgroundColor: Palette.primaryFill,
     },
     ctaText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.bold },
 
     emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     backLink: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg },
     backLinkText: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.semibold },
-});
+}));

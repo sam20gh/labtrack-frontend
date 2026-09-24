@@ -14,21 +14,22 @@
  * matters most.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { ActivityGuidance } from '@/lib/activity';
 
 const KIND_STYLE: Record<
     ActivityGuidance['kind'],
     { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }
-> = {
+> = schemed((Palette) => ({
     caution: { icon: 'alert-circle-outline', color: Palette.warning, bg: Palette.warningSurface },
     volume: { icon: 'trending-up-outline', color: Palette.primary, bg: Palette.primarySurface },
     intensity: { icon: 'speedometer-outline', color: Palette.indigo, bg: Palette.primarySurface },
     modality: { icon: 'barbell-outline', color: Palette.indigo, bg: Palette.primarySurface },
     other: { icon: 'information-circle-outline', color: Palette.textSecondary, bg: Palette.surface },
-};
+}));
 
 interface Props {
     guidance: ActivityGuidance[];
@@ -37,6 +38,8 @@ interface Props {
 }
 
 export function PlanGuidanceCard({ guidance, explanation }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!guidance.length) {
         return (
             <View style={styles.empty}>
@@ -76,7 +79,7 @@ export function PlanGuidanceCard({ guidance, explanation }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: { gap: Spacing.sm },
     heading: {
         fontSize: 13,
@@ -115,4 +118,4 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     emptyBody: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
-});
+}));

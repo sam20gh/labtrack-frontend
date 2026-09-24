@@ -23,11 +23,10 @@
  *    rather than slowed for anyone who has asked the phone for less of it.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, Pressable, Animated, AccessibilityInfo,
-} from 'react-native';
+import { View, Text, Pressable, Animated, AccessibilityInfo } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont, schemed } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import type { NutritionInsight } from '@/types/api';
 
 type MacroKey = 'carbs' | 'protein' | 'fat';
@@ -36,11 +35,11 @@ type MacroKey = 'carbs' | 'protein' | 'fat';
 const KCAL_PER_GRAM: Record<MacroKey, number> = { carbs: 4, protein: 4, fat: 9 };
 
 /** Bottom to top. Carbohydrate is the base because it is usually most of the column. */
-const STACK: { key: MacroKey; label: string; colors: [string, string] }[] = [
+const STACK: { key: MacroKey; label: string; colors: [string, string] }[] = schemed((Palette) => ([
     { key: 'carbs', label: 'Carbs', colors: [Palette.flameLight, Palette.flame] },
     { key: 'protein', label: 'Protein', colors: [Palette.primaryLight, Palette.primary] },
     { key: 'fat', label: 'Fat', colors: [Palette.macroFat, Palette.macroFatDeep] },
-];
+]));
 
 const CHART_HEIGHT = 168;
 const COLUMN_WIDTH = 22;
@@ -102,6 +101,7 @@ interface Props {
 }
 
 export function MacroWeekChart({ insight }: Props) {
+    const styles = useStyles();
     const week = useMemo(() => buildWeek(insight), [insight]);
     const target = insight.calorieTarget && insight.calorieTarget > 0 ? insight.calorieTarget : null;
 
@@ -340,7 +340,7 @@ export function MacroWeekChart({ insight }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         backgroundColor: Palette.background,
         borderRadius: Radius.xl,
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
         marginTop: 2,
         marginBottom: Spacing.sm,
     },
-    dateBubbleToday: { backgroundColor: Palette.primary },
+    dateBubbleToday: { backgroundColor: Palette.primaryFill },
     dateText: { fontFamily: Fonts.semibold, fontSize: 11, color: Palette.text },
     dateTextToday: { color: Palette.white },
 
@@ -465,4 +465,4 @@ const styles = StyleSheet.create({
     tileValue: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text, marginTop: 2 },
     tileUnit: { ...BodyFont.regular, fontSize: 12, color: Palette.textMuted },
     tileMeta: { ...BodyFont.regular, fontSize: 10, color: Palette.textSecondary },
-});
+}));

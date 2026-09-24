@@ -24,10 +24,7 @@
  * repeating never overwrites what somebody already read.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -40,9 +37,12 @@ import {
 } from '@/lib/prediction';
 import { ForecastChart, type ScrubPoint } from '@/components/predict/ForecastChart';
 import { ConfidenceChip, PredictionDisclaimer } from '@/components/predict/Chips';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function PredictionResultScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -209,7 +209,7 @@ const headingFor = (direction: string, betterWhen: BetterWhen) => {
     return direction === betterWhen ? 'Moving the right way' : 'Moving the wrong way';
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: {
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
 
     chartCard: {
         alignSelf: 'stretch', padding: Spacing.md,
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
     },
     scrub: {
         alignItems: 'center', gap: 1,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
 
     primaryCta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        alignSelf: 'stretch', backgroundColor: Palette.primary,
+        alignSelf: 'stretch', backgroundColor: Palette.primaryFill,
         paddingVertical: 16, borderRadius: Radius.lg, marginTop: Spacing.xxl,
     },
     primaryCtaText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
@@ -267,4 +267,4 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
     },
     secondaryCtaText: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.primary },
-});
+}));

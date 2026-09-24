@@ -9,14 +9,17 @@
  * is then created or linked before the app is entered.
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/constants/supabase';
 import { syncAccount } from '@/lib/auth';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function AuthCallback() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [error, setError] = useState<string | null>(null);
@@ -63,7 +66,7 @@ export default function AuthCallback() {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.center}>
-                    <Ionicons name="alert-circle-outline" size={48} color="#DC2626" />
+                    <Ionicons name="alert-circle-outline" size={48} color={Palette.danger} />
                     <Text style={styles.title}>Something went wrong</Text>
                     <Text style={styles.body}>{error}</Text>
                     <TouchableOpacity
@@ -80,21 +83,21 @@ export default function AuthCallback() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.center}>
-                <ActivityIndicator size="large" color="#7C3AED" />
+                <ActivityIndicator size="large" color={Palette.primary} />
                 <Text style={styles.body}>Confirming your account…</Text>
             </View>
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
-    title: { fontSize: 20, fontWeight: '700', color: '#1F2937', marginTop: 16, marginBottom: 8 },
-    body: { fontSize: 15, color: '#6B7280', textAlign: 'center', marginTop: 12, lineHeight: 22 },
+    title: { fontSize: 20, fontWeight: '700', color: Palette.text, marginTop: 16, marginBottom: 8 },
+    body: { fontSize: 15, color: Palette.textSecondary, textAlign: 'center', marginTop: 12, lineHeight: 22 },
     button: {
-        backgroundColor: '#7C3AED', paddingVertical: 14, paddingHorizontal: 40,
+        backgroundColor: Palette.primaryFill, paddingVertical: 14, paddingHorizontal: 40,
         borderRadius: 12, marginTop: 28,
     },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-});
+    buttonText: { color: Palette.white, fontSize: 16, fontWeight: '600' },
+}));

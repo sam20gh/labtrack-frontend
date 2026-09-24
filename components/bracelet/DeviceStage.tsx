@@ -30,7 +30,8 @@ import Animated, {
     Easing, cancelAnimation,
 } from 'react-native-reanimated';
 
-import { Palette } from '@/constants/theme';
+import { activePalette } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export type StageState = 'idle' | 'scanning' | 'connected';
 
@@ -84,11 +85,11 @@ const floorColumns = (): number[] => {
  * screen that tinted it for mood would be spending the one signal this composition has.
  */
 const ringColour = (state: StageState, battery?: number): string => {
-    if (state !== 'connected') return Palette.textMuted;
-    if (typeof battery !== 'number') return Palette.primary;
-    if (battery < 15) return Palette.danger;
-    if (battery < 30) return Palette.amber;
-    return Palette.primary;
+    if (state !== 'connected') return activePalette().textMuted;
+    if (typeof battery !== 'number') return activePalette().primary;
+    if (battery < 15) return activePalette().danger;
+    if (battery < 30) return activePalette().amber;
+    return activePalette().primary;
 };
 
 interface Props {
@@ -101,6 +102,8 @@ interface Props {
 }
 
 export default function DeviceStage({ state, battery, children, style }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const rows = useMemo(floorRows, []);
     const cols = useMemo(floorColumns, []);
     const ring = ringColour(state, battery);
@@ -218,6 +221,7 @@ const Sonar = () => (
 const SONAR_MS = 2400;
 
 const SonarRing = ({ index }: { index: number }) => {
+    const styles = useStyles();
     const t = useSharedValue(0);
 
     useEffect(() => {
@@ -239,7 +243,7 @@ const SonarRing = ({ index }: { index: number }) => {
     return <Animated.View style={[styles.sonar, style]} />;
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     stage: {
         width: STAGE_WIDTH,
         height: STAGE_HEIGHT,
@@ -271,4 +275,4 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: Palette.primary,
     },
-});
+}));

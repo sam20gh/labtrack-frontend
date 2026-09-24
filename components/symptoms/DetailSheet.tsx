@@ -11,13 +11,11 @@
  * is worth, and a person who only wants to name a symptom and ask can still do that.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, Modal, Pressable, ScrollView, TouchableOpacity, TextInput,
-    KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, Modal, Pressable, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ONSETS, SEVERITIES, NOTE_LIMIT, type OnsetId, type SymptomDraft } from '@/lib/symptoms';
 
 interface Props {
@@ -28,6 +26,8 @@ interface Props {
 }
 
 export default function DetailSheet({ visible, draft, onApply, onDismiss }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const [onset, setOnset] = useState<OnsetId | null>(draft.onset);
     const [severity, setSeverity] = useState<number | null>(draft.severity);
     const [note, setNote] = useState(draft.note);
@@ -141,12 +141,12 @@ export default function DetailSheet({ visible, draft, onApply, onDismiss }: Prop
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15,23,42,0.45)' },
     lift: { justifyContent: 'flex-end' },
     sheet: {
         maxHeight: '92%',
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
         paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxl, paddingTop: Spacing.md,
     },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     chip: {
         paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
         borderRadius: Radius.md, borderWidth: 1, borderColor: Palette.border,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     chipOn: { borderColor: Palette.primary, backgroundColor: Palette.primarySurface },
     chipText: { fontSize: 14, ...BodyFont.regular, color: Palette.text },
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
 
     noteBox: {
         borderWidth: 1, borderColor: Palette.border, borderRadius: Radius.xl,
-        backgroundColor: Palette.white, padding: Spacing.lg, paddingBottom: Spacing.sm,
+        backgroundColor: Palette.background, padding: Spacing.lg, paddingBottom: Spacing.sm,
     },
     note: {
         minHeight: 92, fontSize: 15, ...BodyFont.regular, color: Palette.text, padding: 0,
@@ -203,8 +203,8 @@ const styles = StyleSheet.create({
     },
 
     apply: {
-        height: 54, borderRadius: Radius.xl, backgroundColor: Palette.primary,
+        height: 54, borderRadius: Radius.xl, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center', marginTop: Spacing.md,
     },
     applyText: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
-});
+}));

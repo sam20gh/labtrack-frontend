@@ -30,10 +30,12 @@
  * own authored paths at full: identical to the pixel with the filters removed from both.
  */
 import React, { useId } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Path, G, Defs, LinearGradient, Stop, ClipPath } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette } from '@/constants/theme';
+
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 /** The export's own frame: the cup spans x 42.3–332.7, y 288–690.7. */
 const VIEW = { x: 38, y: 282, w: 300, h: 416 };
@@ -97,6 +99,8 @@ interface Props {
 }
 
 export function WaterGlass({ fill, width, complete }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
     const level = Math.max(0, Math.min(1, fill));
     const height = (width * VIEW.h) / VIEW.w;
@@ -109,20 +113,20 @@ export function WaterGlass({ fill, width, complete }: Props) {
             <Svg width={width} height={height} viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`}>
                 <Defs>
                     <LinearGradient id={id('cup')} x1="187.486" y1="689.727" x2="187.486" y2="309" gradientUnits="userSpaceOnUse">
-                        <Stop stopColor="#FFFFFF" />
-                        <Stop offset="1" stopColor="#DBEAFE" />
+                        <Stop stopColor={Palette.white} />
+                        <Stop offset="1" stopColor={tone('#DBEAFE')} />
                     </LinearGradient>
                     <LinearGradient id={id('rim')} x1="187.486" y1="689.727" x2="187.486" y2="289" gradientUnits="userSpaceOnUse">
-                        <Stop stopColor="#FFFFFF" stopOpacity="0" />
-                        <Stop offset="1" stopColor="#FFFFFF" />
+                        <Stop stopColor={Palette.white} stopOpacity="0" />
+                        <Stop offset="1" stopColor={Palette.white} />
                     </LinearGradient>
                     <LinearGradient id={id('w1')} x1="199.092" y1="546.226" x2="199.092" y2="693.897" gradientUnits="userSpaceOnUse">
-                        <Stop stopColor="#BFDBFE" />
-                        <Stop offset="1" stopColor="#DBEAFE" />
+                        <Stop stopColor={tone('#BFDBFE')} />
+                        <Stop offset="1" stopColor={tone('#DBEAFE')} />
                     </LinearGradient>
                     <LinearGradient id={id('w2')} x1="187" y1="584.225" x2="187" y2="688.225" gradientUnits="userSpaceOnUse">
-                        <Stop stopColor="#60A5FA" />
-                        <Stop offset="1" stopColor="#BFDBFE" />
+                        <Stop stopColor={tone('#60A5FA')} />
+                        <Stop offset="1" stopColor={tone('#BFDBFE')} />
                     </LinearGradient>
                     {/*
                       Inside the translated group, so a coordinate `c` paints at `c + shift`.
@@ -136,8 +140,8 @@ export function WaterGlass({ fill, width, complete }: Props) {
                         x2="285.573" y2={CUP_BASE - shift}
                         gradientUnits="userSpaceOnUse"
                     >
-                        <Stop stopColor="#2563EB" />
-                        <Stop offset="1" stopColor="#60A5FA" />
+                        <Stop stopColor={tone('#2563EB')} />
+                        <Stop offset="1" stopColor={tone('#60A5FA')} />
                     </LinearGradient>
                     <ClipPath id={id('cut')}>
                         <Path d={CUP} />
@@ -178,18 +182,18 @@ export function WaterGlass({ fill, width, complete }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     badgeWrap: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
     badgeRing: {
         width: 108, height: 108, borderRadius: 54,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         alignItems: 'center', justifyContent: 'center',
-        shadowColor: '#0F172A', shadowOpacity: 0.14, shadowRadius: 14,
+        shadowColor: tone('#0F172A'), shadowOpacity: 0.14, shadowRadius: 14,
         shadowOffset: { width: 0, height: 4 }, elevation: 6,
     },
     badgeFill: {
         width: 82, height: 82, borderRadius: 41,
-        backgroundColor: '#22C55E',
+        backgroundColor: tone('#22C55E'),
         alignItems: 'center', justifyContent: 'center',
     },
-});
+}));

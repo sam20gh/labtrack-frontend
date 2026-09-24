@@ -7,6 +7,7 @@
  */
 import { api, apiFetch } from './api';
 import type { PlanItem, GroupedPlanItems, Professional } from '@/types/api';
+import { schemed, tone } from '@/constants/theme';
 
 export interface PlanResponse {
     items: PlanItem[];
@@ -59,15 +60,15 @@ export const regenerateFromInterpretation = (dnaReportId?: string, testResultId?
         body: { dnaReportId, testResultId, force: true },
     });
 
-export const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-    urgent: { label: 'Overdue', color: '#DC2626', bg: '#FEF2F2' },
-    due: { label: 'Due now', color: '#EA580C', bg: '#FFF7ED' },
-    upcoming: { label: 'Scheduled', color: '#6B7280', bg: '#F9FAFB' },
-    ordered: { label: 'Ordered', color: '#7C3AED', bg: '#F5F3FF' },
-    booked: { label: 'Booked', color: '#7C3AED', bg: '#F5F3FF' },
-    completed: { label: 'Done', color: '#059669', bg: '#ECFDF5' },
-    dismissed: { label: 'Dismissed', color: '#9CA3AF', bg: '#F9FAFB' },
-};
+export const STATUS_META: Record<string, { label: string; color: string; bg: string }> = schemed((Palette, scheme) => ({
+    urgent: { label: 'Overdue', color: Palette.danger, bg: Palette.dangerSurface },
+    due: { label: 'Due now', color: tone('#EA580C', scheme), bg: Palette.orangeSurface },
+    upcoming: { label: 'Scheduled', color: Palette.textSecondary, bg: tone('#F9FAFB', scheme) },
+    ordered: { label: 'Ordered', color: Palette.primary, bg: Palette.primaryTint },
+    booked: { label: 'Booked', color: Palette.primary, bg: Palette.primaryTint },
+    completed: { label: 'Done', color: Palette.success, bg: Palette.successSurface },
+    dismissed: { label: 'Dismissed', color: Palette.textMuted, bg: tone('#F9FAFB', scheme) },
+}));
 
 export const TYPE_ICON: Record<string, string> = {
     test: 'flask-outline',

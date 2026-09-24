@@ -3,6 +3,7 @@
  */
 import { api } from './api';
 import type { BiomarkerSummary, BiomarkerTrend, BiomarkerFlag, BiomarkerExplainer } from '@/types/api';
+import { schemed, tone } from '@/constants/theme';
 
 export const getLatestBiomarkers = () => api.get<{ biomarkers: BiomarkerSummary[] }>('/biomarkers/latest');
 
@@ -43,14 +44,14 @@ export const FLAG_META: Record<BiomarkerFlag, {
     chipText: string;
     /** The card's hairline, tinted to the flag so the edge agrees with the pill. */
     border: string;
-}> = {
-    critical_low: { label: 'Critically low', color: '#DC2626', bg: '#FEF2F2', value: '#DC2626', chipBg: '#DC2626', chipText: '#FFFFFF', border: '#F6D6D6' },
-    low: { label: 'Low', color: '#B45309', bg: '#FFFBEB', value: '#B45309', chipBg: '#B45309', chipText: '#FFFFFF', border: '#F0E0C4' },
-    normal: { label: 'Normal', color: '#059669', bg: '#ECFDF5', value: '#047857', chipBg: '#047857', chipText: '#FFFFFF', border: '#CDE9DC' },
-    high: { label: 'High', color: '#B45309', bg: '#FFFBEB', value: '#B45309', chipBg: '#B45309', chipText: '#FFFFFF', border: '#F0E0C4' },
-    critical_high: { label: 'Critically high', color: '#DC2626', bg: '#FEF2F2', value: '#DC2626', chipBg: '#DC2626', chipText: '#FFFFFF', border: '#F6D6D6' },
-    unknown: { label: 'Not evaluated', color: '#6B7280', bg: '#F9FAFB', value: '#6B7280', chipBg: '#6B7280', chipText: '#FFFFFF', border: '#E5E7EB' },
-};
+}> = schemed((Palette, scheme) => ({
+    critical_low: { label: 'Critically low', color: Palette.danger, bg: Palette.dangerSurface, value: Palette.danger, chipBg: Palette.dangerFill, chipText: Palette.white, border: tone('#F6D6D6', scheme) },
+    low: { label: 'Low', color: Palette.warning, bg: Palette.warningSurface, value: Palette.warning, chipBg: Palette.warningFill, chipText: Palette.white, border: tone('#F0E0C4', scheme) },
+    normal: { label: 'Normal', color: Palette.success, bg: Palette.successSurface, value: Palette.successDeep, chipBg: Palette.successDeep, chipText: Palette.white, border: tone('#CDE9DC', scheme) },
+    high: { label: 'High', color: Palette.warning, bg: Palette.warningSurface, value: Palette.warning, chipBg: Palette.warningFill, chipText: Palette.white, border: tone('#F0E0C4', scheme) },
+    critical_high: { label: 'Critically high', color: Palette.danger, bg: Palette.dangerSurface, value: Palette.danger, chipBg: Palette.dangerFill, chipText: Palette.white, border: tone('#F6D6D6', scheme) },
+    unknown: { label: 'Not evaluated', color: Palette.textSecondary, bg: tone('#F9FAFB', scheme), value: Palette.textSecondary, chipBg: Palette.textSecondary, chipText: Palette.white, border: Palette.border },
+}));
 
 /** Whether a flag is the crisis tier, which gets an icon as well as a colour. */
 export const isCriticalFlag = (f: BiomarkerFlag) => f === 'critical_low' || f === 'critical_high';

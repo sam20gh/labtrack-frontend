@@ -21,6 +21,7 @@
  * or someone will trust it more than it deserves.
  */
 import { api } from './api';
+import { schemed, tone } from '@/constants/theme';
 
 /** Minutes west of UTC, as `Date.getTimezoneOffset()` reports it. */
 const tzOffset = () => new Date().getTimezoneOffset();
@@ -139,21 +140,21 @@ export const recompute = (trigger: 'sync' | 'manual' = 'manual') =>
  * and a person who simply has not logged anything for a fortnight must not be told they are
  * in a critical state by a number that knows nothing about them.
  */
-export const BAND_META: Record<ScoreBand | 'unknown', { label: string; color: string }> = {
-    healthy: { label: 'Healthy', color: '#34D399' },
-    suboptimal: { label: 'Suboptimal', color: '#FBBF24' },
-    attention: { label: 'Needs attention', color: '#FB7185' },
-    unknown: { label: 'Not enough data', color: '#CBD5E1' },
-};
+export const BAND_META: Record<ScoreBand | 'unknown', { label: string; color: string }> = schemed((Palette, scheme) => ({
+    healthy: { label: 'Healthy', color: tone('#34D399', scheme) },
+    suboptimal: { label: 'Suboptimal', color: tone('#FBBF24', scheme) },
+    attention: { label: 'Needs attention', color: tone('#FB7185', scheme) },
+    unknown: { label: 'Not enough data', color: Palette.borderStrong },
+}));
 
 export const bandMeta = (band: ScoreBand | null) => BAND_META[band ?? 'unknown'];
 
 /** How a pillar's provenance reads on the breakdown screen. */
-export const SOURCE_META: Record<PillarSource, { label: string; color: string }> = {
-    observed: { label: 'Measured', color: '#7C3AED' },
-    reported: { label: 'You told us', color: '#F59E0B' },
-    none: { label: 'No data', color: '#94A3B8' },
-};
+export const SOURCE_META: Record<PillarSource, { label: string; color: string }> = schemed((Palette, scheme) => ({
+    observed: { label: 'Measured', color: Palette.primary },
+    reported: { label: 'You told us', color: tone('#F59E0B', scheme) },
+    none: { label: 'No data', color: tone('#94A3B8', scheme) },
+}));
 
 /** The icon each pillar carries, matching the metric list in the kit. */
 export const PILLAR_ICON: Record<PillarKey, string> = {

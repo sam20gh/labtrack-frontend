@@ -18,15 +18,13 @@
  *    and grading it out of ten is the app taking a view on shift work.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
-    useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
@@ -45,6 +43,8 @@ import { ApiError } from '@/lib/api';
  * on every card; an improvement measured against no data is not an improvement.
  */
 function Delta({ comparison, period }: { comparison: PeriodComparison; period: string }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (comparison.deltaPct === null || comparison.direction === null) {
         return (
             <Text style={styles.deltaMuted}>
@@ -77,6 +77,8 @@ const PERIOD_LABEL: Record<MetricRange, string> = {
 };
 
 export default function SleepInsightScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -117,7 +119,7 @@ export default function SleepInsightScreen() {
             >
                 <View style={styles.heroRow}>
                     <Pressable onPress={() => router.back()} hitSlop={10}>
-                        <Ionicons name="chevron-back" size={24} color={Palette.white} />
+                        <Ionicons name="chevron-back" size={24} color={Palettes.light.white} />
                     </Pressable>
                     <Text style={styles.heroTitle}>Sleep insight</Text>
                     <View style={{ width: 24 }} />
@@ -246,7 +248,7 @@ export default function SleepInsightScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     hero: {
@@ -254,7 +256,7 @@ const styles = StyleSheet.create({
         gap: Spacing.lg,
     },
     heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    heroTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
+    heroTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palettes.light.white },
 
     content: { padding: Spacing.xl, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
 
@@ -287,4 +289,4 @@ const styles = StyleSheet.create({
         fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', paddingHorizontal: Spacing.lg, lineHeight: 19,
     },
-});
+}));

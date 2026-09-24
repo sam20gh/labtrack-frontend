@@ -12,9 +12,10 @@
  * front of somebody whose plan says to swim.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, BodyFont } from '@/constants/theme';
+import { Spacing, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export interface QuickAction {
     key: string;
@@ -26,6 +27,8 @@ export interface QuickAction {
 }
 
 export function QuickActions({ actions }: { actions: QuickAction[] }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!actions.length) return null;
 
     return (
@@ -56,7 +59,7 @@ export function QuickActions({ actions }: { actions: QuickAction[] }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     row: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-start' },
     item: { alignItems: 'center', gap: Spacing.sm, flex: 1 },
     disc: {
@@ -67,7 +70,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     discPrimary: {
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         // The kit's shadow, which is what makes the filled disc read as raised rather than
         // as a purple circle sitting in the page.
         shadowColor: Palette.primary,
@@ -77,10 +80,10 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     discPlain: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderWidth: 1,
         borderColor: Palette.border,
     },
     pressed: { opacity: 0.75 },
     label: { fontSize: 12.5, ...BodyFont.medium, color: Palette.text },
-});
+}));

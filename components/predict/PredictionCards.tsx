@@ -8,9 +8,10 @@
  * number is the point estimate and which is the range.
  */
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Radius, Spacing, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Radius, Spacing, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import {
     iconFor, toneColour, formatDate, relativeDay, outcomeOf, confidencePct,
     type Prediction, type PredictionSummary, type BetterWhen,
@@ -36,6 +37,8 @@ export function MetricPredictionCard({
     betterWhen: BetterWhen;
     onOpen: () => void;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const [open, setOpen] = useState(false);
     const primary = prediction.components[0];
     const colour = toneColour(primary.direction, betterWhen);
@@ -140,6 +143,7 @@ export function PastPredictionRow({
     betterWhen: BetterWhen;
     onOpen: () => void;
 }) {
+    const styles = useStyles();
     const colour = toneColour(item.direction, betterWhen);
     const outcome = outcomeOf(item.resolution);
 
@@ -177,9 +181,9 @@ export function PastPredictionRow({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1,
         borderColor: Palette.border,
@@ -211,7 +215,7 @@ const styles = StyleSheet.create({
 
     pastRow: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
         padding: Spacing.lg, marginBottom: Spacing.md, gap: Spacing.md,
         ...Shadow.card,
@@ -224,4 +228,4 @@ const styles = StyleSheet.create({
     outcomeDot: { width: 6, height: 6, borderRadius: 3 },
     outcomeText: { fontSize: 12, fontFamily: Fonts.semibold },
     pending: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted, marginTop: 4 },
-});
+}));

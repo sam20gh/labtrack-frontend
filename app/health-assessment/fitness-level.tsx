@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-} from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { paramNumber } from './params';
 import { fitnessLevels } from './options';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 
 export default function FitnessLevelScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [selectedLevel, setSelectedLevel] = useState(paramNumber(params.fitnessLevel, 4));
@@ -51,7 +50,7 @@ export default function FitnessLevelScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -110,7 +109,7 @@ export default function FitnessLevelScreen() {
 
                 {/* Info */}
                 <View style={styles.infoContainer}>
-                    <Ionicons name="information-circle-outline" size={16} color="#9CA3AF" />
+                    <Ionicons name="information-circle-outline" size={16} color={Palette.textMuted} />
                     <Text style={styles.infoText}>Drag the slider to adjust</Text>
                 </View>
 
@@ -140,22 +139,22 @@ export default function FitnessLevelScreen() {
             <View style={styles.bottomContainer}>
                 <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
                     <Text style={styles.continueButtonText}>Continue</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                    <Ionicons name="arrow-forward" size={20} color={Palette.white} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -171,17 +170,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -193,7 +192,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 32,
@@ -201,7 +200,7 @@ const styles = StyleSheet.create({
     levelLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#7C3AED',
+        color: Palette.primary,
         letterSpacing: 1,
         marginBottom: 24,
     },
@@ -253,7 +252,7 @@ const styles = StyleSheet.create({
     },
     description: {
         fontSize: 15,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         marginBottom: 16,
     },
     infoContainer: {
@@ -263,7 +262,7 @@ const styles = StyleSheet.create({
     },
     infoText: {
         fontSize: 13,
-        color: '#9CA3AF',
+        color: Palette.textMuted,
         marginLeft: 6,
     },
     levelButtonsContainer: {
@@ -275,22 +274,22 @@ const styles = StyleSheet.create({
         height: 44,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     levelButtonSelected: {
-        borderColor: '#7C3AED',
-        backgroundColor: '#FAF5FF',
+        borderColor: Palette.primary,
+        backgroundColor: tone('#FAF5FF'),
     },
     levelButtonText: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         fontWeight: '500',
     },
     levelButtonTextSelected: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontWeight: '600',
     },
     bottomContainer: {
@@ -298,7 +297,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -306,9 +305,9 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
-});
+}));

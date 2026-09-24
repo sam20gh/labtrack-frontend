@@ -11,9 +11,7 @@
  * something is unpublished.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -21,11 +19,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ApiError } from '@/lib/api';
 import { getCategories, type ResourceCategory } from '@/lib/resources';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 type Group = { name: string; categories: ResourceCategory[] };
 
 export default function ResourceCategoriesScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [groups, setGroups] = useState<Group[]>([]);
     const [loading, setLoading] = useState(true);
@@ -113,7 +114,7 @@ export default function ResourceCategoriesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
@@ -136,4 +137,4 @@ const styles = StyleSheet.create({
 
     empty: { alignItems: 'center', paddingTop: Spacing.xxxl * 2, gap: Spacing.md },
     emptyTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
-});
+}));

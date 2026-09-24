@@ -8,7 +8,8 @@
 import React from 'react';
 import { View } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { Palette } from '@/constants/theme';
+
+import { usePalette } from '@/hooks/useTheme';
 
 interface Props {
     values: number[];
@@ -19,8 +20,11 @@ interface Props {
 }
 
 export function Sparkline({
-    values, width = 110, height = 44, colour = Palette.successDeep, id = 'sp',
+    values, width = 110, height = 44, colour: colourProp, id = 'sp',
 }: Props) {
+    const Palette = usePalette();
+    // Not a parameter default: that would run before the hook and read the light palette.
+    const colour = colourProp ?? Palette.successDeep;
     if (values.length < 2) return <View style={{ width, height }} />;
 
     const max = Math.max(...values);

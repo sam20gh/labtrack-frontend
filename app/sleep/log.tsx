@@ -19,14 +19,13 @@
  *    time.
  */
 import React, { useMemo, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert, Platform,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { logNight, formatMinutes } from '@/lib/sleep';
 import { ApiError } from '@/lib/api';
 
@@ -41,6 +40,8 @@ const defaults = () => {
 };
 
 export default function LogSleepScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const initial = useMemo(defaults, []);
 
@@ -168,7 +169,7 @@ export default function LogSleepScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -203,8 +204,8 @@ const styles = StyleSheet.create({
     },
     save: {
         alignItems: 'center', justifyContent: 'center',
-        paddingVertical: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Palette.primary,
+        paddingVertical: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Palette.primaryFill,
     },
     saveDisabled: { backgroundColor: Palette.borderStrong },
     saveLabel: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

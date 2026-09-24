@@ -10,10 +10,7 @@
  * tracker people abandon.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, TextInput,
-    ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,10 +18,13 @@ import * as ImagePicker from 'expo-image-picker';
 import {
     getStatus, analysePhoto, estimateFromDescription, logMeal, mealTypeForNow,
 } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { AnalysisResult } from '@/lib/nutrition';
 
 export default function LogMealScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
     const [busy, setBusy] = useState<string | null>(null);
@@ -256,7 +256,7 @@ export default function LogMealScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row',
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     primaryButton: {
         height: 48,
         borderRadius: Radius.md,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -358,4 +358,4 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.lg,
     },
     manualLinkText: { ...BodyFont.medium, fontSize: 14, color: Palette.textSecondary },
-});
+}));

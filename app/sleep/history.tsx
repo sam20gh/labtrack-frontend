@@ -14,14 +14,12 @@
  * reappear.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Modal, Alert,
-    RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Modal, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { NightRow } from '@/components/sleep/NightRow';
 import { BedIllustration } from '@/components/sleep/BedIllustration';
@@ -55,6 +53,8 @@ const daysAgo = (n: number): string => {
 };
 
 export default function SleepHistoryScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [nights, setNights] = useState<SleepNight[]>([]);
@@ -301,7 +301,7 @@ export default function SleepHistoryScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     apply: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
         paddingVertical: Spacing.lg, borderRadius: Radius.pill,
-        backgroundColor: Palette.primary, marginTop: Spacing.lg,
+        backgroundColor: Palette.primaryFill, marginTop: Spacing.lg,
     },
     applyLabel: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

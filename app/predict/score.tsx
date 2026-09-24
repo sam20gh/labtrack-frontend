@@ -19,10 +19,7 @@
  * would be the dummy control this app keeps removing.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable,
-    ActivityIndicator, useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,12 +32,15 @@ import {
 import { BandChart } from '@/components/predict/BandChart';
 import { HorizonTabs, ConfidenceChip, BandChip, PredictionDisclaimer } from '@/components/predict/Chips';
 import { NotEnoughDataIllustration } from '@/components/predict/NotEnoughDataIllustration';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** How many companion cards sit under the chart. Two, as the design draws. */
 const COMPANIONS = 2;
 
 export default function ScorePredictionScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -192,7 +192,7 @@ export default function ScorePredictionScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { paddingVertical: 80, alignItems: 'center' },
     topBar: {
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     companionRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.xl },
     companion: {
         flex: 1, gap: 6, padding: Spacing.lg,
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
     },
     companionValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
 
     saveCta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, paddingVertical: 15,
+        backgroundColor: Palette.primaryFill, paddingVertical: 15,
         borderRadius: Radius.lg, marginTop: Spacing.xxl,
     },
     saveCtaText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
@@ -244,8 +244,8 @@ const styles = StyleSheet.create({
         color: Palette.textSecondary, textAlign: 'center',
     },
     refusalCta: {
-        marginTop: Spacing.md, backgroundColor: Palette.primary,
+        marginTop: Spacing.md, backgroundColor: Palette.primaryFill,
         paddingHorizontal: Spacing.xxl, paddingVertical: 13, borderRadius: Radius.lg,
     },
     refusalCtaText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

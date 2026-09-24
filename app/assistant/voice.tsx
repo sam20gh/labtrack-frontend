@@ -22,9 +22,7 @@
  * answer appears where the person was, under the orb, rather than on a screen they left.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,7 +35,8 @@ import {
     SPEECH_RECORDING_OPTIONS, recordingUpload, beginSession, endSession,
     meteringToLevel, formatDuration, MAX_RECORDING_MS,
 } from '@/lib/voice';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** How many bars the waveform holds. At a 100ms cadence this is the last four seconds. */
 const BARS = 40;
@@ -51,27 +50,33 @@ type Phase = 'idle' | 'recording' | 'transcribing' | 'review';
  * the array is padded from the left while it fills — starting from a full bank of zeroes
  * rather than growing from one bar keeps the row from jumping about on the first word.
  */
-const Waveform = ({ levels, active }: { levels: number[]; active: boolean }) => (
-    <View style={styles.waveform}>
-        {levels.map((level, i) => (
-            <View
-                key={i}
-                style={[
-                    styles.bar,
-                    {
-                        // A floor of 2pt: a bar of zero height disappears, and a waveform
-                        // with gaps in it reads as a rendering fault rather than as silence.
-                        height: Math.max(2, level * 56),
-                        backgroundColor: active ? Palette.primary : Palette.border,
-                        opacity: active ? 0.45 + level * 0.55 : 1,
-                    },
-                ]}
-            />
-        ))}
-    </View>
-);
+const Waveform = ({ levels, active }: { levels: number[]; active: boolean }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.waveform}>
+            {levels.map((level, i) => (
+                <View
+                    key={i}
+                    style={[
+                        styles.bar,
+                        {
+                            // A floor of 2pt: a bar of zero height disappears, and a waveform
+                            // with gaps in it reads as a rendering fault rather than as silence.
+                            height: Math.max(2, level * 56),
+                            backgroundColor: active ? Palette.primary : Palette.border,
+                            opacity: active ? 0.45 + level * 0.55 : 1,
+                        },
+                    ]}
+                />
+            ))}
+        </View>
+    );
+};
 
 export default function VoiceMode() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{ returnTo?: string }>();
     const returnTo = params.returnTo || '/assistant/immersive';
@@ -333,7 +338,7 @@ export default function VoiceMode() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     wash: { position: 'absolute', left: 0, right: 0, top: 0, height: '55%' },
@@ -381,15 +386,15 @@ const styles = StyleSheet.create({
     },
     centreWrap: { alignItems: 'center', gap: Spacing.sm },
     centreButton: {
-        width: 76, height: 76, borderRadius: 38, backgroundColor: Palette.primary,
+        width: 76, height: 76, borderRadius: 38, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
     },
-    centreButtonRecording: { backgroundColor: Palette.danger },
-    stopSquare: { width: 24, height: 24, borderRadius: 4, backgroundColor: Palette.white },
+    centreButtonRecording: { backgroundColor: Palette.dangerFill },
+    stopSquare: { width: 24, height: 24, borderRadius: 4, backgroundColor: Palette.background },
     caption: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
 
     sideButton: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
     sideButtonIdle: { backgroundColor: Palette.borderLight },
     sideButtonDanger: { backgroundColor: Palette.dangerSurface },
     sideButtonConfirm: { backgroundColor: Palette.primarySurface },
-});
+}));

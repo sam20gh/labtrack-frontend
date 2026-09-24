@@ -38,13 +38,17 @@ import {
 import { useUnits, formatVolume } from '@/lib/units';
 import { ContainerGlass } from '@/components/hydration/ContainerGlass';
 import { Sparkline } from '@/components/hydration/Sparkline';
-import { WaterHeader, SectionHeader, EmptyNote, cardStyles } from '@/components/hydration/HydrationChrome';
+import { WaterHeader, SectionHeader, EmptyNote, useCardStyles } from '@/components/hydration/HydrationChrome';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const SPAN: Record<MetricRange, number> = { '1d': 7, '1w': 7, '1m': 31, '1y': 365, all: 365 };
 
 export default function HydrationInsightScreen() {
+    const cardStyles = useCardStyles();
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const units = useUnits();
     const { width } = useWindowDimensions();
@@ -182,14 +186,14 @@ export default function HydrationInsightScreen() {
                         value={formatVolume(stats.totalMl, units) ?? '--'}
                         label={`Logged across ${stats.daysLogged} ${stats.daysLogged === 1 ? 'day' : 'days'}`}
                         values={series.map((p) => p.value)}
-                        colour="#16A34A"
+                        colour={tone('#16A34A')}
                     />
                     <View style={styles.divider} />
                     <Row
                         value={formatVolume(stats.weeklyAverageMl, units) ?? '--'}
                         label="Weekly average, from your daily average"
                         values={series.map((p) => p.value)}
-                        colour="#2563EB"
+                        colour={tone('#2563EB')}
                     />
                     <View style={styles.divider} />
                     <View style={styles.factRow}>
@@ -242,6 +246,8 @@ export default function HydrationInsightScreen() {
 
 /** The design's level ring. Dimmed rather than empty when nothing was logged. */
 function Ring({ percent, label, dim }: { percent: number; label: string; dim?: boolean }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const SIZE = 72;
     const STROKE = 6;
     const r = (SIZE - STROKE) / 2;
@@ -274,6 +280,7 @@ function Ring({ percent, label, dim }: { percent: number; label: string; dim?: b
  * A weekday with no logged days draws its label and nothing above it — see the header note.
  */
 function WeekdayBars({ data, width }: { data: { label: string; ml: number | null }[]; width: number }) {
+    const styles = useStyles();
     const values = data.map((d) => d.ml).filter((v): v is number => v !== null);
     const max = values.length ? Math.max(...values) : 0;
     const H = 108;
@@ -300,24 +307,30 @@ function WeekdayBars({ data, width }: { data: { label: string; ml: number | null
 
 const Row = ({ value, label, values, colour }: {
     value: string; label: string; values: (number | null)[]; colour: string;
-}) => (
-    <View style={styles.row}>
-        <View style={styles.flex}>
-            <Text style={styles.rowValue}>{value}</Text>
-            <Text style={styles.rowLabel}>{label}</Text>
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.row}>
+            <View style={styles.flex}>
+                <Text style={styles.rowValue}>{value}</Text>
+                <Text style={styles.rowLabel}>{label}</Text>
+            </View>
+            <Sparkline values={values} color={colour} />
         </View>
-        <Sparkline values={values} color={colour} />
-    </View>
-);
+    );
+};
 
-const Fact = ({ label, value }: { label: string; value: string }) => (
-    <View style={styles.fact}>
-        <Text style={styles.factValue}>{value}</Text>
-        <Text style={styles.factLabel}>{label}</Text>
-    </View>
-);
+const Fact = ({ label, value }: { label: string; value: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.fact}>
+            <Text style={styles.factValue}>{value}</Text>
+            <Text style={styles.factLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
@@ -359,6 +372,6 @@ const styles = StyleSheet.create({
     bars: { flexDirection: 'row', alignItems: 'flex-end', marginTop: Spacing.xl, gap: Spacing.xs },
     barCol: { flex: 1, alignItems: 'center', gap: 6 },
     barTrack: { width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
-    bar: { width: '68%', borderRadius: Radius.sm, backgroundColor: '#3B82F6' },
+    bar: { width: '68%', borderRadius: Radius.sm, backgroundColor: tone('#3B82F6') },
     barLabel: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
-});
+}));

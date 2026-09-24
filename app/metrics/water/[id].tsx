@@ -19,9 +19,7 @@
  *    contradict the derived target beside it.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert, Share,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -38,8 +36,9 @@ import {
 } from '@/lib/hydration';
 import { useUnits, formatVolume } from '@/lib/units';
 import { ContainerGlass } from '@/components/hydration/ContainerGlass';
-import { WaterHeader, SectionHeader, EmptyNote, cardStyles } from '@/components/hydration/HydrationChrome';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { WaterHeader, SectionHeader, EmptyNote, useCardStyles } from '@/components/hydration/HydrationChrome';
+import { Spacing, Radius, Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** Matches `STEPS` on the level screen. Behavioural, and deliberately free of figures. */
 const ADVICE = [
@@ -52,6 +51,9 @@ const ADVICE = [
 const WINDOW_DAYS = 365;
 
 export default function HydrationEntryScreen() {
+    const cardStyles = useCardStyles();
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const units = useUnits();
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -280,28 +282,36 @@ export default function HydrationEntryScreen() {
     );
 }
 
-const Stamp = ({ icon, text }: { icon: React.ComponentProps<typeof Ionicons>['name']; text: string }) => (
-    <View style={styles.stamp}>
-        <Ionicons name={icon} size={14} color={Palette.textMuted} />
-        <Text style={styles.stampText}>{text}</Text>
-    </View>
-);
+const Stamp = ({ icon, text }: { icon: React.ComponentProps<typeof Ionicons>['name']; text: string }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.stamp}>
+            <Ionicons name={icon} size={14} color={Palette.textMuted} />
+            <Text style={styles.stampText}>{text}</Text>
+        </View>
+    );
+};
 
 const Stat = ({ icon, label, value, sub, tone, last }: {
     icon: React.ComponentProps<typeof Ionicons>['name'];
     label: string; value: string; sub: string; tone?: string; last?: boolean;
-}) => (
-    <View style={[styles.stat, !last && styles.statDivided]}>
-        <Ionicons name={icon} size={18} color={Palette.textSecondary} />
-        <View style={styles.flex}>
-            <Text style={styles.statLabel}>{label}</Text>
-            <Text style={styles.statSub}>{sub}</Text>
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={[styles.stat, !last && styles.statDivided]}>
+            <Ionicons name={icon} size={18} color={Palette.textSecondary} />
+            <View style={styles.flex}>
+                <Text style={styles.statLabel}>{label}</Text>
+                <Text style={styles.statSub}>{sub}</Text>
+            </View>
+            <Text style={[styles.statValue, tone ? { color: tone } : null]}>{value}</Text>
         </View>
-        <Text style={[styles.statValue, tone ? { color: tone } : null]}>{value}</Text>
-    </View>
-);
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
@@ -328,7 +338,7 @@ const styles = StyleSheet.create({
     },
     percentText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primaryDark },
     track: { height: 8, borderRadius: 4, backgroundColor: Palette.border, overflow: 'hidden', marginTop: Spacing.lg },
-    fill: { height: '100%', borderRadius: 4, backgroundColor: '#2563EB' },
+    fill: { height: '100%', borderRadius: 4, backgroundColor: tone('#2563EB') },
     dayNote: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, marginTop: Spacing.md, lineHeight: 18 },
 
     stat: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md },
@@ -344,7 +354,7 @@ const styles = StyleSheet.create({
 
     primary: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, borderRadius: Radius.xl, paddingVertical: Spacing.lg,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.xl, paddingVertical: Spacing.lg,
     },
     primaryText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
     secondary: {
@@ -353,4 +363,4 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.primaryLight, backgroundColor: Palette.primarySurface,
     },
     secondaryText: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.primary },
-});
+}));

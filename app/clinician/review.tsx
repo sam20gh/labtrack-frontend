@@ -6,18 +6,19 @@
  * original — the audit trail is the point, not a side effect.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity,
-    TextInput, KeyboardAvoidingView, Platform, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { getReportForReview, submitReview, addFollowUp } from '@/lib/clinician';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 export default function ReviewScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { reportId } = useLocalSearchParams();
     const [report, setReport] = useState<any>(null);
@@ -93,7 +94,7 @@ export default function ReviewScreen() {
     };
 
     if (loading) {
-        return <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color="#7C3AED" /></View></SafeAreaView>;
+        return <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color={Palette.primary} /></View></SafeAreaView>;
     }
     if (!report) {
         return <SafeAreaView style={styles.container}><View style={styles.center}><Text>Report not found</Text></View></SafeAreaView>;
@@ -110,7 +111,7 @@ export default function ReviewScreen() {
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={24} color={Palette.text} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Review</Text>
                     <View style={styles.backButton} />
@@ -130,7 +131,7 @@ export default function ReviewScreen() {
 
                     {alreadyReviewed && (
                         <View style={styles.reviewedBanner}>
-                            <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                            <Ionicons name="checkmark-circle" size={16} color={Palette.success} />
                             <Text style={styles.reviewedText}>Already reviewed — submitting again adds a further amendment</Text>
                         </View>
                     )}
@@ -185,7 +186,7 @@ export default function ReviewScreen() {
                         onChangeText={setSummary}
                         multiline
                         placeholder="AI summary"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={Palette.textMuted}
                     />
 
                     {(raw.recommended_screenings ?? []).length > 0 && (
@@ -230,7 +231,7 @@ export default function ReviewScreen() {
                         onChangeText={setFollowUp}
                         multiline
                         placeholder="When should this patient be seen again?"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={Palette.textMuted}
                     />
 
                     <Text style={styles.sectionLabel}>Your clinical note</Text>
@@ -240,7 +241,7 @@ export default function ReviewScreen() {
                         onChangeText={setNotes}
                         multiline
                         placeholder="Visible to the patient alongside your name"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={Palette.textMuted}
                     />
 
                     {showFollowUpForm ? (
@@ -251,14 +252,14 @@ export default function ReviewScreen() {
                                 value={newItem.title}
                                 onChangeText={(t) => setNewItem((n) => ({ ...n, title: t }))}
                                 placeholder="e.g. Transvaginal ultrasound"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={Palette.textMuted}
                             />
                             <TextInput
                                 style={styles.input}
                                 value={newItem.description}
                                 onChangeText={(t) => setNewItem((n) => ({ ...n, description: t }))}
                                 placeholder="Why (shown to the patient)"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={Palette.textMuted}
                             />
                             <View style={styles.chipRow}>
                                 {['once', 'every_6_months', 'annually'].map((f) => (
@@ -284,7 +285,7 @@ export default function ReviewScreen() {
                         </View>
                     ) : (
                         <TouchableOpacity style={styles.addFollowUp} onPress={() => setShowFollowUpForm(true)}>
-                            <Ionicons name="add-circle-outline" size={20} color="#7C3AED" />
+                            <Ionicons name="add-circle-outline" size={20} color={Palette.primary} />
                             <Text style={styles.addFollowUpText}>Order a follow-up</Text>
                         </TouchableOpacity>
                     )}
@@ -307,7 +308,7 @@ export default function ReviewScreen() {
                         onPress={() => sign(true)}
                         disabled={saving}
                     >
-                        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Approve</Text>}
+                        {saving ? <ActivityIndicator color={Palette.white} /> : <Text style={styles.primaryButtonText}>Approve</Text>}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -316,8 +317,8 @@ export default function ReviewScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -325,48 +326,48 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16, paddingVertical: 12,
     },
     backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-    headerTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
+    headerTitle: { fontSize: 17, fontWeight: '600', color: Palette.text },
     scroll: { paddingHorizontal: 20, paddingBottom: 30 },
-    patientName: { fontSize: 22, fontWeight: '700', color: '#1F2937' },
-    patientMeta: { fontSize: 13, color: '#6B7280', marginTop: 3 },
+    patientName: { fontSize: 22, fontWeight: '700', color: Palette.text },
+    patientMeta: { fontSize: 13, color: Palette.textSecondary, marginTop: 3 },
     reviewedBanner: {
         flexDirection: 'row', gap: 8, alignItems: 'center',
-        backgroundColor: '#ECFDF5', borderRadius: 10, padding: 12, marginTop: 14,
+        backgroundColor: Palette.successSurface, borderRadius: 10, padding: 12, marginTop: 14,
     },
-    reviewedText: { flex: 1, fontSize: 12, color: '#059669' },
-    sectionLabel: { fontSize: 14, fontWeight: '700', color: '#1F2937', marginTop: 22, marginBottom: 8 },
-    mutation: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, padding: 11, marginBottom: 8 },
-    mutationPathogenic: { borderColor: '#FECACA', backgroundColor: '#FFFBFB' },
-    gene: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
-    significance: { fontSize: 12, color: '#6B7280', marginTop: 3, textTransform: 'capitalize' },
+    reviewedText: { flex: 1, fontSize: 12, color: Palette.success },
+    sectionLabel: { fontSize: 14, fontWeight: '700', color: Palette.text, marginTop: 22, marginBottom: 8 },
+    mutation: { borderWidth: 1, borderColor: Palette.border, borderRadius: 10, padding: 11, marginBottom: 8 },
+    mutationPathogenic: { borderColor: tone('#FECACA'), backgroundColor: tone('#FFFBFB') },
+    gene: { fontSize: 14, fontWeight: '700', color: Palette.text },
+    significance: { fontSize: 12, color: Palette.textSecondary, marginTop: 3, textTransform: 'capitalize' },
     input: {
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10,
-        paddingHorizontal: 13, paddingVertical: 11, fontSize: 14, color: '#1F2937', marginBottom: 10,
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 10,
+        paddingHorizontal: 13, paddingVertical: 11, fontSize: 14, color: Palette.text, marginBottom: 10,
     },
     multiline: { minHeight: 90, textAlignVertical: 'top' },
-    listRow: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6', paddingVertical: 9 },
-    listTitle: { fontSize: 14, color: '#1F2937', fontWeight: '500' },
-    listMeta: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-    limitation: { fontSize: 12, color: '#6B7280', lineHeight: 18, marginBottom: 5 },
+    listRow: { borderBottomWidth: 1, borderBottomColor: Palette.borderLight, paddingVertical: 9 },
+    listTitle: { fontSize: 14, color: Palette.text, fontWeight: '500' },
+    listMeta: { fontSize: 12, color: Palette.textMuted, marginTop: 2 },
+    limitation: { fontSize: 12, color: Palette.textSecondary, lineHeight: 18, marginBottom: 5 },
     addFollowUp: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, marginTop: 6 },
-    addFollowUpText: { fontSize: 14, color: '#7C3AED', fontWeight: '600' },
-    followUpForm: { backgroundColor: '#FAFAFA', borderRadius: 12, padding: 12, marginTop: 12 },
+    addFollowUpText: { fontSize: 14, color: Palette.primary, fontWeight: '600' },
+    followUpForm: { backgroundColor: Palette.surface, borderRadius: 12, padding: 12, marginTop: 12 },
     chipRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-    chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB' },
-    chipActive: { backgroundColor: '#7C3AED', borderColor: '#7C3AED' },
-    chipText: { fontSize: 12, color: '#6B7280' },
-    chipTextActive: { color: '#fff' },
+    chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: Palette.border },
+    chipActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
+    chipText: { fontSize: 12, color: Palette.textSecondary },
+    chipTextActive: { color: Palette.white },
     formActions: { flexDirection: 'row', gap: 8, justifyContent: 'flex-end' },
-    footer: { flexDirection: 'row', gap: 10, padding: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+    footer: { flexDirection: 'row', gap: 10, padding: 20, borderTopWidth: 1, borderTopColor: Palette.borderLight },
     concernButton: {
         flex: 1, paddingVertical: 15, borderRadius: 12, alignItems: 'center',
-        borderWidth: 1, borderColor: '#FCD34D',
+        borderWidth: 1, borderColor: tone('#FCD34D'),
     },
-    concernButtonText: { color: '#92400E', fontSize: 15, fontWeight: '600' },
-    primaryButton: { flex: 1, backgroundColor: '#7C3AED', paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
-    primaryButtonSmall: { backgroundColor: '#7C3AED', paddingVertical: 11, paddingHorizontal: 20, borderRadius: 10 },
+    concernButtonText: { color: tone('#92400E'), fontSize: 15, fontWeight: '600' },
+    primaryButton: { flex: 1, backgroundColor: Palette.primaryFill, paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
+    primaryButtonSmall: { backgroundColor: Palette.primaryFill, paddingVertical: 11, paddingHorizontal: 20, borderRadius: 10 },
     secondaryButton: { paddingVertical: 11, paddingHorizontal: 18, borderRadius: 10 },
-    secondaryButtonText: { color: '#9CA3AF', fontSize: 14, fontWeight: '500' },
+    secondaryButtonText: { color: Palette.textMuted, fontSize: 14, fontWeight: '500' },
     buttonDisabled: { opacity: 0.6 },
-    primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-});
+    primaryButtonText: { color: Palette.white, fontSize: 15, fontWeight: '600' },
+}));

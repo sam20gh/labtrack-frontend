@@ -14,10 +14,11 @@
  * measurement nothing collects.
  */
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { capabilities, type JstyleCommand, type JstyleVariant } from '@/modules/jstyle-ble';
 
 /**
@@ -42,6 +43,8 @@ const FAMILIES: {
 ];
 
 export default function ReadsList({ variant }: { variant: JstyleVariant }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const available = useMemo(() => {
         try {
             const set = new Set(capabilities(variant).commands);
@@ -80,7 +83,7 @@ export default function ReadsList({ variant }: { variant: JstyleVariant }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: { width: '100%', marginTop: Spacing.xl },
     head: {
         fontFamily: Fonts.semibold, fontSize: 14, color: Palette.textSecondary,
@@ -100,4 +103,4 @@ const styles = StyleSheet.create({
         ...BodyFont.regular, fontSize: 12, color: Palette.textMuted,
         lineHeight: 18, marginTop: Spacing.md,
     },
-});
+}));

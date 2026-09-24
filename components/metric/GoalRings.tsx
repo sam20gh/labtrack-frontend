@@ -16,7 +16,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, G, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { GoalProgress } from '@/lib/activity';
 import { GoalRunnerArt, GOAL_RUNNER_ART } from '@/components/activity/art';
 
@@ -24,6 +25,8 @@ const SIZE = 62;
 const STROKE = 6;
 
 function Ring({ progress }: { progress: GoalProgress }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const r = (SIZE - STROKE) / 2;
     const c = 2 * Math.PI * r;
     const ratio = progress.target > 0 ? progress.done / progress.target : 0;
@@ -86,6 +89,7 @@ interface Props {
 }
 
 export function GoalRings({ goal, band }: Props) {
+    const styles = useStyles();
     const targets: { key: string; value: string; label: string }[] = [];
     if (goal.calories) targets.push({ key: 'kcal', value: pair(goal.calories), label: 'kcal goal' });
     targets.push({ key: 'min', value: pair(goal.minutes), label: 'min goal' });
@@ -147,7 +151,7 @@ export function GoalRings({ goal, band }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         borderWidth: 1,
         borderColor: Palette.border,
@@ -188,4 +192,4 @@ const styles = StyleSheet.create({
     reachedTitle: { fontSize: 14, fontFamily: Fonts.bold, color: Palette.text },
     reachedBody: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     reachedArt: { alignSelf: 'flex-end' },
-});
+}));

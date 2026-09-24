@@ -37,7 +37,7 @@
  */
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Pressable, Text, View, ViewStyle } from 'react-native';
 
 import {
     FeatureLockedArt,
@@ -49,7 +49,8 @@ import {
     ServerErrorArt,
     UpdateRequiredArt,
 } from '@/components/errors/art';
-import { Fonts, Palette, Radius, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Radius, Spacing, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { StateDescriptor, StateKey } from '@/lib/appState';
 
 const ART: Record<StateKey, (props: { width?: number }) => React.ReactElement> = {
@@ -87,6 +88,8 @@ type Props = {
 const ART_WIDTH = { screen: 236, inline: 150 } as const;
 
 const StateView = ({ state, primary, secondary, variant = 'screen', style }: Props) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const Art = ART[state.key];
     const inline = variant === 'inline';
     const toneColor = state.tone === 'alert' ? Palette.alert : Palette.primary;
@@ -151,7 +154,7 @@ const StateView = ({ state, primary, secondary, variant = 'screen', style }: Pro
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     // The kit centres the block on an 812pt frame; `justifyContent: 'center'` reproduces
     // that on every phone rather than pinning it to a measurement from one.
     screenRoot: {
@@ -203,7 +206,7 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch',
         height: 48,
         borderRadius: Radius.sm,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         marginTop: Spacing.xxl + Spacing.xs,
     },
     primaryInline: { alignSelf: 'center', paddingHorizontal: Spacing.xxl, marginTop: Spacing.xl },
@@ -231,6 +234,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         paddingHorizontal: Spacing.md,
     },
-});
+}));
 
 export default StateView;

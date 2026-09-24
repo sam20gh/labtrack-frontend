@@ -15,10 +15,7 @@
  *     than back-filled to make the chart look fuller. See `utils/resourceRating.js`.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, useWindowDimensions, Linking, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, useWindowDimensions, Linking, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -31,7 +28,8 @@ import {
     type ResourceAuthorDetail, type ResourceCard,
 } from '@/lib/resources';
 import { AutoCard } from '@/components/resources/ResourceCards';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 
 const TABS = ['About', 'Courses', 'Videos'] as const;
@@ -48,6 +46,8 @@ const SOCIAL_ICON: Record<string, string> = {
 };
 
 export default function AuthorScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { slug } = useLocalSearchParams<{ slug: string }>();
     const { width } = useWindowDimensions();
@@ -374,7 +374,7 @@ export default function AuthorScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
     flex: { flex: 1 },
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     secondaryText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
     primaryButton: {
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        paddingVertical: Spacing.md, borderRadius: Radius.lg, backgroundColor: Palette.primary,
+        paddingVertical: Spacing.md, borderRadius: Radius.lg, backgroundColor: Palette.primaryFill,
     },
     followingButton: { backgroundColor: Palette.primarySurface, borderWidth: 1, borderColor: Palette.primary },
     primaryText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.white },
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     histogramRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     histogramStar: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary, width: 10 },
     histogramTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: Palette.borderLight, overflow: 'hidden' },
-    histogramFill: { height: '100%', borderRadius: 3, backgroundColor: Palette.primary },
+    histogramFill: { height: '100%', borderRadius: 3, backgroundColor: Palette.primaryFill },
     histogramCount: { fontSize: 11, ...BodyFont.regular, color: Palette.textSecondary, width: 34, textAlign: 'right' },
 
     contactRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
@@ -477,4 +477,4 @@ const styles = StyleSheet.create({
         fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary,
         textAlign: 'center', paddingVertical: Spacing.xxxl,
     },
-});
+}));

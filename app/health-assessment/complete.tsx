@@ -1,13 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Animated,
-    Dimensions,
-    ActivityIndicator,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,10 +12,14 @@ import {
     hasListEntries,
     MOOD_ID_TO_ENUM,
 } from './params';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 const { width } = Dimensions.get('window');
 
 export default function CompleteScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [isSaving, setIsSaving] = useState(true);
@@ -318,7 +314,7 @@ export default function CompleteScreen() {
         router.replace('/profile');
     };
 
-    const confettiColors = ['#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
+    const confettiColors = [activePalette().primary, tone('#10B981'), tone('#F59E0B'), tone('#EF4444'), tone('#3B82F6'), tone('#EC4899')];
 
     // Show loading state while saving
     if (isSaving) {
@@ -326,7 +322,7 @@ export default function CompleteScreen() {
             <SafeAreaView style={styles.container} edges={['top']}>
                 <Text style={styles.screenTitle}>Health Assessment</Text>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#7C3AED" />
+                    <ActivityIndicator size="large" color={Palette.primary} />
                     <Text style={styles.loadingText}>Saving your health profile...</Text>
                 </View>
             </SafeAreaView>
@@ -379,7 +375,7 @@ export default function CompleteScreen() {
                 >
                     <View style={[styles.innerCircle, saveError && styles.innerCircleError]}>
                         <Animated.View style={{ opacity: checkAnim }}>
-                            <Ionicons name={saveError ? 'alert' : 'checkmark'} size={80} color="#fff" />
+                            <Ionicons name={saveError ? 'alert' : 'checkmark'} size={80} color={Palette.white} />
                         </Animated.View>
                     </View>
                 </Animated.View>
@@ -402,7 +398,7 @@ export default function CompleteScreen() {
                             <View style={styles.statsContainer}>
                                 <View style={styles.statItem}>
                                     <View style={styles.statIcon}>
-                                        <Ionicons name="document-text" size={24} color="#7C3AED" />
+                                        <Ionicons name="document-text" size={24} color={Palette.primary} />
                                     </View>
                                     <Text style={styles.statLabel}>Profile</Text>
                                     <Text style={styles.statValue}>Complete</Text>
@@ -410,7 +406,7 @@ export default function CompleteScreen() {
                                 <View style={styles.statDivider} />
                                 <View style={styles.statItem}>
                                     <View style={styles.statIcon}>
-                                        <Ionicons name="shield-checkmark" size={24} color="#10B981" />
+                                        <Ionicons name="shield-checkmark" size={24} color={tone('#10B981')} />
                                     </View>
                                     <Text style={styles.statLabel}>Data</Text>
                                     <Text style={styles.statValue}>Secured</Text>
@@ -418,7 +414,7 @@ export default function CompleteScreen() {
                                 <View style={styles.statDivider} />
                                 <View style={styles.statItem}>
                                     <View style={styles.statIcon}>
-                                        <Ionicons name="analytics" size={24} color="#3B82F6" />
+                                        <Ionicons name="analytics" size={24} color={tone('#3B82F6')} />
                                     </View>
                                     <Text style={styles.statLabel}>Insights</Text>
                                     <Text style={styles.statValue}>Ready</Text>
@@ -471,15 +467,15 @@ export default function CompleteScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#7C3AED',
+        color: Palette.primary,
         textAlign: 'center',
         paddingTop: 8,
         marginBottom: 8,
@@ -492,7 +488,7 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         marginTop: 12,
     },
     confettiContainer: {
@@ -519,22 +515,22 @@ const styles = StyleSheet.create({
         width: 160,
         height: 160,
         borderRadius: 80,
-        backgroundColor: '#EDE9FE',
+        backgroundColor: tone('#EDE9FE'),
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 32,
     },
     errorCircle: {
-        backgroundColor: '#FEF2F2',
+        backgroundColor: Palette.dangerSurface,
     },
     innerCircleError: {
-        backgroundColor: '#DC2626',
+        backgroundColor: Palette.dangerFill,
     },
     innerCircle: {
         width: 120,
         height: 120,
         borderRadius: 60,
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -545,13 +541,13 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         marginBottom: 12,
         textAlign: 'center',
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         lineHeight: 24,
         textAlign: 'center',
         marginBottom: 32,
@@ -559,7 +555,7 @@ const styles = StyleSheet.create({
     },
     statsContainer: {
         flexDirection: 'row',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
         borderRadius: 16,
         padding: 20,
         width: '100%',
@@ -573,35 +569,35 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,
     },
     statLabel: {
         fontSize: 12,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         marginBottom: 2,
     },
     statValue: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
     },
     statDivider: {
         width: 1,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
     },
     nextStepsContainer: {
         width: '100%',
-        backgroundColor: '#F0FDF4',
+        backgroundColor: tone('#F0FDF4'),
         borderRadius: 16,
         padding: 20,
     },
     nextStepsTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         marginBottom: 16,
     },
     nextStepItem: {
@@ -613,7 +609,7 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: '#10B981',
+        backgroundColor: tone('#10B981'),
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
@@ -621,12 +617,12 @@ const styles = StyleSheet.create({
     nextStepNumberText: {
         fontSize: 12,
         fontWeight: '700',
-        color: '#fff',
+        color: Palette.white,
     },
     nextStepText: {
         flex: 1,
         fontSize: 14,
-        color: '#374151',
+        color: tone('#374151'),
         lineHeight: 20,
     },
     bottomContainer: {
@@ -635,25 +631,25 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     primaryButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 30,
         paddingVertical: 16,
         alignItems: 'center',
     },
     primaryButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 18,
         fontWeight: '600',
     },
     secondaryButton: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
         borderRadius: 30,
         paddingVertical: 16,
         alignItems: 'center',
     },
     secondaryButtonText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 18,
         fontWeight: '600',
     },
-});
+}));

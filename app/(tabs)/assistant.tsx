@@ -12,16 +12,14 @@
  *   - they chose Immersive Mode → `/assistant/immersive`
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity,
-    KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import MessageBubble from '@/components/assistant/MessageBubble';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
 import InputDock from '@/components/assistant/InputDock';
@@ -34,6 +32,8 @@ import {
 const NO_CAPABILITIES: AssistantCapabilities = { text: true, vision: false, voice: false };
 
 export default function AssistantScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     /**
      * `spoken` is set by `assistant/voice.tsx` when a transcript has been read back and
@@ -257,7 +257,7 @@ export default function AssistantScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     },
     avatar: {
         width: 38, height: 38, borderRadius: 19,
-        backgroundColor: Palette.primary, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: Palette.primaryFill, alignItems: 'center', justifyContent: 'center',
     },
     headerText: { flex: 1, gap: 1 },
     headerName: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text },
@@ -314,4 +314,4 @@ const styles = StyleSheet.create({
     unavailableText: {
         fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center',
     },
-});
+}));

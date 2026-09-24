@@ -24,8 +24,9 @@
  *    component's props shape exists to prevent — it never sees the filter.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated, Easing } from 'react-native';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { View, Text, Pressable, Animated, Easing } from 'react-native';
+import { Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 
 export type TabKey = 'unread' | 'read';
 
@@ -41,6 +42,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function SegmentedTabs({ value, onChange, counts }: Props) {
+    const styles = useStyles();
     const [trackWidth, setTrackWidth] = useState(0);
     const slide = useRef(new Animated.Value(value === 'read' ? 1 : 0)).current;
 
@@ -107,7 +109,7 @@ export default function SegmentedTabs({ value, onChange, counts }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     track: {
         flexDirection: 'row',
         marginHorizontal: 16,
@@ -134,7 +136,7 @@ const styles = StyleSheet.create({
         borderRadius: Radius.pill, backgroundColor: Palette.border,
         alignItems: 'center',
     },
-    pillActive: { backgroundColor: Palette.primary },
+    pillActive: { backgroundColor: Palette.primaryFill },
     pillText: { fontSize: 11, color: Palette.textSecondary, fontFamily: Fonts.bold },
     pillTextActive: { color: Palette.white },
-});
+}));

@@ -17,8 +17,9 @@
  * without the claim about sequence.
  */
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Palette, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { View, Text } from 'react-native';
+import { Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import { STAGE_META, STAGE_ORDER, type SleepSegment, type SleepStageKey } from '@/lib/sleep';
 
 interface Props {
@@ -40,6 +41,7 @@ const hourLabel = (date: Date): string => {
 };
 
 export function Hypnogram({ segments, height = 132, showAxis = true }: Props) {
+    const styles = useStyles();
     const drawable = useMemo(
         () => (segments || []).filter((s) => STAGE_ORDER.includes(s.stage as SleepStageKey)),
         [segments]
@@ -120,6 +122,7 @@ export function Hypnogram({ segments, height = 132, showAxis = true }: Props) {
 
 /** The colour key. Its own component because the chart and the totals card both need it. */
 export function StageLegend({ stages }: { stages?: SleepStageKey[] }) {
+    const styles = useStyles();
     return (
         <View style={styles.legend}>
             {(stages || STAGE_ORDER).map((stage) => (
@@ -132,7 +135,7 @@ export function StageLegend({ stages }: { stages?: SleepStageKey[] }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     plot: {
         position: 'relative',
         backgroundColor: Palette.background,
@@ -152,6 +155,6 @@ const styles = StyleSheet.create({
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     dot: { width: 8, height: 8, borderRadius: 4 },
     legendLabel: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
-});
+}));
 
 export default Hypnogram;

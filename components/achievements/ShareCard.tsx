@@ -36,7 +36,7 @@ import { Avatar } from '@/components/Avatar';
 import BrandMark from '@/components/BrandMark';
 import type { BadgeGlyph, BadgeShape } from './badgeArt';
 import type { BadgeTone } from './BadgeMedal';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, Shadow, BodyFont, Palettes } from '@/constants/theme';
 
 /** "Ada Lovelace" → "AL". One letter is fine; `Avatar` falls back to a glyph on empty. */
 const initialsOf = (name: string) =>
@@ -58,6 +58,8 @@ interface Props {
 }
 
 export function ShareCard({ name, shape, glyph, tone, how, level, person, host }: Props) {
+    // The shared image is the light card in both schemes, matching the web preview of it.
+    const Palette = Palettes.light;
     return (
         <View style={styles.card}>
             <View style={styles.head}>
@@ -104,6 +106,8 @@ export function ShareCard({ name, shape, glyph, tone, how, level, person, host }
     );
 }
 
+// Static and light, whatever the scheme: this is a picture that leaves the app.
+const Palette = Palettes.light;
 const styles = StyleSheet.create({
     card: {
         backgroundColor: Palette.background,

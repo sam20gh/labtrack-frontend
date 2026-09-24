@@ -25,10 +25,7 @@
  *    has to be able to take the page down without deleting the achievement.
  */
 import React, { useCallback, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -43,9 +40,12 @@ import {
 } from '@/lib/achievements';
 import { BadgeMedal } from '@/components/achievements/BadgeMedal';
 import { ShareCard } from '@/components/achievements/ShareCard';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function AchievementDetailScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { key } = useLocalSearchParams<{ key: string }>();
 
@@ -281,7 +281,7 @@ export default function AchievementDetailScreen() {
                               */}
                             <View ref={cardRef} collapsable={false} style={styles.plateWrap}>
                                 <LinearGradient
-                                    colors={[Palette.white, Palette.primarySurface]}
+                                    colors={[Palette.background, Palette.primarySurface]}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                     style={styles.plate}
@@ -341,7 +341,7 @@ export default function AchievementDetailScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     milestoneLevel: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
     milestoneNext: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     track: { height: 8, borderRadius: 4, backgroundColor: Palette.borderLight, overflow: 'hidden' },
-    fill: { height: 8, borderRadius: 4, backgroundColor: Palette.primary },
+    fill: { height: 8, borderRadius: 4, backgroundColor: Palette.primaryFill },
     milestoneFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
     milestoneHow: { flex: 1, fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary },
     milestonePct: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
 
     cta: {
         alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: Spacing.sm, backgroundColor: Palette.primary,
+        gap: Spacing.sm, backgroundColor: Palette.primaryFill,
         borderRadius: Radius.lg, paddingVertical: 16, marginTop: Spacing.xxl,
     },
     ctaText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
@@ -428,4 +428,4 @@ const styles = StyleSheet.create({
         fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary,
         textAlign: 'center', paddingVertical: Spacing.md,
     },
-});
+}));

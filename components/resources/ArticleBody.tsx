@@ -11,81 +11,86 @@
  * a body rendered by a Markdown engine and half by hand is worse than either.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { Block, RatingValue } from '@/lib/resources';
 
-export const ArticleBody = ({ blocks }: { blocks: Block[] }) => (
-    <View>
-        {blocks.map((block, index) => {
-            const key = `${block.type}-${index}`;
+export const ArticleBody = ({ blocks }: { blocks: Block[] }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View>
+            {blocks.map((block, index) => {
+                const key = `${block.type}-${index}`;
 
-            switch (block.type) {
-                case 'heading':
-                    return <Text key={key} style={styles.heading}>{block.text}</Text>;
+                switch (block.type) {
+                    case 'heading':
+                        return <Text key={key} style={styles.heading}>{block.text}</Text>;
 
-                case 'paragraph':
-                    return <Text key={key} style={styles.paragraph}>{block.text}</Text>;
+                    case 'paragraph':
+                        return <Text key={key} style={styles.paragraph}>{block.text}</Text>;
 
-                case 'quote':
-                    return (
-                        <View key={key} style={styles.quote}>
-                            <Text style={styles.quoteText}>{block.text}</Text>
-                        </View>
-                    );
+                    case 'quote':
+                        return (
+                            <View key={key} style={styles.quote}>
+                                <Text style={styles.quoteText}>{block.text}</Text>
+                            </View>
+                        );
 
-                case 'callout':
-                    return (
-                        <View key={key} style={styles.callout}>
-                            <Ionicons name="information-circle-outline" size={18} color={Palette.info} />
-                            <Text style={styles.calloutText}>{block.text}</Text>
-                        </View>
-                    );
+                    case 'callout':
+                        return (
+                            <View key={key} style={styles.callout}>
+                                <Ionicons name="information-circle-outline" size={18} color={Palette.info} />
+                                <Text style={styles.calloutText}>{block.text}</Text>
+                            </View>
+                        );
 
-                case 'list':
-                    return (
-                        <View key={key} style={styles.list}>
-                            {block.items.map((item, i) => (
-                                <View key={i} style={styles.listRow}>
-                                    <View style={styles.bullet} />
-                                    <Text style={styles.listText}>{item}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    );
+                    case 'list':
+                        return (
+                            <View key={key} style={styles.list}>
+                                {block.items.map((item, i) => (
+                                    <View key={i} style={styles.listRow}>
+                                        <View style={styles.bullet} />
+                                        <Text style={styles.listText}>{item}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        );
 
-                case 'checklist':
-                    return (
-                        <View key={key} style={styles.list}>
-                            {block.items.map((item, i) => (
-                                <View key={i} style={styles.listRow}>
-                                    <Ionicons name="checkmark-circle" size={20} color={Palette.success} />
-                                    <Text style={styles.listText}>{item}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    );
+                    case 'checklist':
+                        return (
+                            <View key={key} style={styles.list}>
+                                {block.items.map((item, i) => (
+                                    <View key={i} style={styles.listRow}>
+                                        <Ionicons name="checkmark-circle" size={20} color={Palette.success} />
+                                        <Text style={styles.listText}>{item}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        );
 
-                case 'image':
-                    return (
-                        <View key={key} style={styles.imageBlock}>
-                            <Image source={{ uri: block.url }} style={styles.image} />
-                            {!!block.caption && <Text style={styles.caption}>{block.caption}</Text>}
-                        </View>
-                    );
+                    case 'image':
+                        return (
+                            <View key={key} style={styles.imageBlock}>
+                                <Image source={{ uri: block.url }} style={styles.image} />
+                                {!!block.caption && <Text style={styles.caption}>{block.caption}</Text>}
+                            </View>
+                        );
 
-                default:
-                    // An unknown block type from a newer backend renders as nothing rather
-                    // than crashing the screen. An article missing a paragraph is
-                    // recoverable; a white screen is not.
-                    return null;
-            }
-        })}
-    </View>
-);
+                    default:
+                        // An unknown block type from a newer backend renders as nothing rather
+                        // than crashing the screen. An article missing a paragraph is
+                        // recoverable; a white screen is not.
+                        return null;
+                }
+            })}
+        </View>
+    );
+};
 
 /**
  * The paywall banner.
@@ -93,27 +98,31 @@ export const ArticleBody = ({ blocks }: { blocks: Block[] }) => (
  * It names how much is behind it. "Go Pro to unlock" with no idea whether that is two
  * paragraphs or twenty is a worse offer than the truth.
  */
-export const GoProBanner = ({ hiddenBlocks, onPress }: { hiddenBlocks: number; onPress: () => void }) => (
-    <TouchableOpacity style={styles.pro} onPress={onPress} activeOpacity={0.9}>
-        <View style={styles.proBody}>
-            <Text style={styles.proTitle}>Go Pro to unlock the full article</Text>
-            <Text style={styles.proMeta}>
-                {hiddenBlocks} more section{hiddenBlocks === 1 ? '' : 's'} to read
-            </Text>
-            <View style={styles.proLink}>
-                <Text style={styles.proLinkText}>Go Pro</Text>
-                <Ionicons name="arrow-forward" size={14} color={Palette.primary} />
+export const GoProBanner = ({ hiddenBlocks, onPress }: { hiddenBlocks: number; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={styles.pro} onPress={onPress} activeOpacity={0.9}>
+            <View style={styles.proBody}>
+                <Text style={styles.proTitle}>Go Pro to unlock the full article</Text>
+                <Text style={styles.proMeta}>
+                    {hiddenBlocks} more section{hiddenBlocks === 1 ? '' : 's'} to read
+                </Text>
+                <View style={styles.proLink}>
+                    <Text style={styles.proLinkText}>Go Pro</Text>
+                    <Ionicons name="arrow-forward" size={14} color={Palette.primary} />
+                </View>
             </View>
-        </View>
-        <Ionicons name="lock-closed" size={40} color={Palette.primaryLight} />
-    </TouchableOpacity>
-);
+            <Ionicons name="lock-closed" size={40} color={Palette.primaryLight} />
+        </TouchableOpacity>
+    );
+};
 
-const RATINGS: { value: RatingValue; label: string; icon: string; tint: string; surface: string }[] = [
+const RATINGS: { value: RatingValue; label: string; icon: string; tint: string; surface: string }[] = schemed((Palette) => ([
     { value: 'bad', label: 'Bad', icon: 'sad-outline', tint: Palette.danger, surface: Palette.dangerSurface },
     { value: 'neutral', label: 'Neutral', icon: 'remove-circle-outline', tint: Palette.textSecondary, surface: Palette.surface },
     { value: 'great', label: 'Great', icon: 'happy-outline', tint: Palette.primary, surface: Palette.primarySurface },
-];
+]));
 
 /**
  * "How would you rate this article?"
@@ -125,43 +134,47 @@ const RATINGS: { value: RatingValue; label: string; icon: string; tint: string; 
 export const RatingCard = ({ value, onRate }: {
     value: RatingValue | null;
     onRate: (rating: RatingValue) => void;
-}) => (
-    <View style={styles.ratingCard}>
-        <Text style={styles.ratingTitle}>
-            {value ? 'Thanks — you can change this any time' : 'How would you rate this article?'}
-        </Text>
-        <View style={styles.ratingRow}>
-            {RATINGS.map((option) => {
-                const selected = value === option.value;
-                return (
-                    <TouchableOpacity
-                        key={option.value}
-                        style={styles.ratingOption}
-                        onPress={() => onRate(option.value)}
-                        activeOpacity={0.8}
-                    >
-                        <View style={[
-                            styles.ratingCircle,
-                            { borderColor: selected ? option.tint : Palette.border },
-                            selected && { backgroundColor: option.surface },
-                        ]}>
-                            <Ionicons
-                                name={option.icon as any}
-                                size={24}
-                                color={selected ? option.tint : Palette.textMuted}
-                            />
-                        </View>
-                        <Text style={[styles.ratingLabel, selected && { color: option.tint }]}>
-                            {option.label}
-                        </Text>
-                    </TouchableOpacity>
-                );
-            })}
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.ratingCard}>
+            <Text style={styles.ratingTitle}>
+                {value ? 'Thanks — you can change this any time' : 'How would you rate this article?'}
+            </Text>
+            <View style={styles.ratingRow}>
+                {RATINGS.map((option) => {
+                    const selected = value === option.value;
+                    return (
+                        <TouchableOpacity
+                            key={option.value}
+                            style={styles.ratingOption}
+                            onPress={() => onRate(option.value)}
+                            activeOpacity={0.8}
+                        >
+                            <View style={[
+                                styles.ratingCircle,
+                                { borderColor: selected ? option.tint : Palette.border },
+                                selected && { backgroundColor: option.surface },
+                            ]}>
+                                <Ionicons
+                                    name={option.icon as any}
+                                    size={24}
+                                    color={selected ? option.tint : Palette.textMuted}
+                                />
+                            </View>
+                            <Text style={[styles.ratingLabel, selected && { color: option.tint }]}>
+                                {option.label}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
         </View>
-    </View>
-);
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     heading: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text, marginTop: Spacing.xxl, marginBottom: Spacing.md },
     paragraph: { fontSize: 15, ...BodyFont.regular, color: Palette.text, lineHeight: 24, marginBottom: Spacing.md },
 
@@ -180,7 +193,7 @@ const styles = StyleSheet.create({
 
     list: { gap: Spacing.md, marginVertical: Spacing.sm },
     listRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
-    bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.primary, marginTop: 8 },
+    bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.primaryFill, marginTop: 8 },
     listText: { flex: 1, fontSize: 15, ...BodyFont.regular, color: Palette.text, lineHeight: 22 },
 
     imageBlock: { marginVertical: Spacing.lg },
@@ -212,4 +225,4 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     ratingLabel: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
-});
+}));

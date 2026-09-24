@@ -11,9 +11,10 @@
  * tempting — a 120pt-tall card on a home screen — is the one where it would do most damage.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import {
     iconFor, tintFor, tintSurface, relativeDay, confidencePct, outcomeOf,
     type Prediction, type Accuracy,
@@ -27,6 +28,8 @@ interface Props {
 }
 
 export function PredictionCard({ predictions, accuracy, onOpen, onSeeAll }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!predictions.length) return null;
 
     // Two at most. A home card is a pointer, and a list of every forecast somebody has ever
@@ -90,9 +93,9 @@ export function PredictionCard({ predictions, accuracy, onOpen, onSeeAll }: Prop
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg,
     },
     row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
@@ -120,4 +123,4 @@ const styles = StyleSheet.create({
         marginTop: Spacing.md, paddingTop: Spacing.md,
         borderTopWidth: 1, borderTopColor: Palette.borderLight,
     },
-});
+}));

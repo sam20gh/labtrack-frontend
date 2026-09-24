@@ -14,9 +14,7 @@
  * apply: unload on unmount or the audio keeps playing over the next screen.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Pressable,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,12 +25,15 @@ import {
     getResource, saveProgress, formatDuration, PROGRESS_INTERVAL_MS,
     type CourseSession, type ResourceDetail,
 } from '@/lib/resources';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 
 const CONTROLS_TIMEOUT_MS = 3500;
 
 export default function VideoPlayerScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { slug } = useLocalSearchParams<{ slug: string }>();
 
@@ -267,7 +268,7 @@ export default function VideoPlayerScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: '#000' },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
 
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
     },
     lessonTitle: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white, marginBottom: Spacing.md },
     track: { height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' },
-    trackFill: { height: '100%', borderRadius: 2, backgroundColor: Palette.primary },
+    trackFill: { height: '100%', borderRadius: 2, backgroundColor: Palette.primaryFill },
     timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm },
     time: { fontSize: 12, ...BodyFont.medium, color: 'rgba(255,255,255,0.85)' },
     transport: {
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.lg,
     },
     playButton: {
-        width: 60, height: 60, borderRadius: 30, backgroundColor: Palette.primary,
+        width: 60, height: 60, borderRadius: 30, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
     },
 
@@ -327,4 +328,4 @@ const styles = StyleSheet.create({
     sessionTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     sessionTitleLocked: { color: Palette.textMuted },
     sessionMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 2 },
-});
+}));

@@ -10,16 +10,7 @@
  *    only; see `lib/password.ts`.
  */
 import React, { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
@@ -29,11 +20,15 @@ import AuthField from '@/components/auth/AuthField';
 import AuthHeader from '@/components/auth/AuthHeader';
 import PasswordStrength from '@/components/auth/PasswordStrength';
 import { authStyles } from '@/components/auth/styles';
-import { Fonts, Palette, BodyFont } from '@/constants/theme';
+import { Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { signUpWithEmail } from '@/lib/auth';
 import { MIN_ACCEPTED_LEVEL, scorePassword } from '@/lib/password';
 
 const RegisterScreen = () => {
+  const Palette = usePalette();
+  const confirmStyles = useConfirmStyles();
+  const styles = useStyles();
   const router = useRouter();
   const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
@@ -273,7 +268,7 @@ const RegisterScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
   bannerSlot: {
     marginBottom: 16,
   },
@@ -286,9 +281,9 @@ const styles = StyleSheet.create({
   submit: {
     marginTop: 12,
   },
-});
+}));
 
-const confirmStyles = StyleSheet.create({
+const useConfirmStyles = makeStyles((Palette) => ({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   iconCircle: {
     width: 80,
@@ -319,6 +314,6 @@ const confirmStyles = StyleSheet.create({
   },
   fullWidth: { alignSelf: 'stretch', marginBottom: 20 },
   resend: { color: Palette.primary, fontSize: 14, fontFamily: Fonts.semibold },
-});
+}));
 
 export default RegisterScreen;

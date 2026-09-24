@@ -16,7 +16,7 @@
  * `app/help/feedback.tsx` for why.
  */
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
+import { View, Text, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,9 +24,12 @@ import Constants from 'expo-constants';
 
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { SUPPORT_EMAIL, allFaqEntries } from '@/lib/help';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function HelpCenterScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const faqCount = allFaqEntries().length;
 
@@ -102,30 +105,34 @@ export default function HelpCenterScreen() {
 
 const Card = ({
     icon, title, blurb, meta, onPress,
-}: { icon: string; title: string; blurb: string; meta?: string; onPress: () => void }) => (
-    <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={`${title}. ${blurb}`}
-    >
-        <View style={styles.cardIcon}>
-            <Ionicons name={icon as never} size={20} color={Palette.primary} />
-        </View>
-        <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>{title}</Text>
-            <Text style={styles.cardBlurb} numberOfLines={2}>{blurb}</Text>
-        </View>
-        {!!meta && (
-            <View style={styles.metaPill}>
-                <Text style={styles.metaText}>{meta}</Text>
+}: { icon: string; title: string; blurb: string; meta?: string; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <Pressable
+            style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={`${title}. ${blurb}`}
+        >
+            <View style={styles.cardIcon}>
+                <Ionicons name={icon as never} size={20} color={Palette.primary} />
             </View>
-        )}
-        <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-    </Pressable>
-);
+            <View style={styles.cardText}>
+                <Text style={styles.cardTitle}>{title}</Text>
+                <Text style={styles.cardBlurb} numberOfLines={2}>{blurb}</Text>
+            </View>
+            {!!meta && (
+                <View style={styles.metaPill}>
+                    <Text style={styles.metaText}>{meta}</Text>
+                </View>
+            )}
+            <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+        </Pressable>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     scroll: { paddingBottom: 48 },
     body: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xxl, gap: Spacing.md },
@@ -163,4 +170,4 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.dangerSurface, borderRadius: Radius.xl, padding: Spacing.lg,
     },
     urgentText: { flex: 1, fontSize: 12, lineHeight: 18, ...BodyFont.medium, color: Palette.danger },
-});
+}));

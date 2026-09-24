@@ -13,9 +13,7 @@
  * `log.day` rather than by `measuredAt` is what preserves that.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, SectionList, Pressable, ActivityIndicator, Alert, RefreshControl,
-} from 'react-native';
+import { View, Text, SectionList, Pressable, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -28,11 +26,14 @@ import { useUnits, formatVolume } from '@/lib/units';
 import { ContainerGlass } from '@/components/hydration/ContainerGlass';
 import { WaterHeader, EmptyNote } from '@/components/hydration/HydrationChrome';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const SPAN: Record<MetricRange, number> = { '1d': 7, '1w': 7, '1m': 31, '1y': 365, all: 365 };
 
 export default function HydrationHistoryScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const units = useUnits();
     const day = localToday();
@@ -168,7 +169,7 @@ export default function HydrationHistoryScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
@@ -200,4 +201,4 @@ const styles = StyleSheet.create({
     rowValue: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
     rowMeta: { ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, marginTop: 1 },
     rowTime: { ...BodyFont.medium, fontSize: 12.5, color: Palette.textSecondary },
-});
+}));

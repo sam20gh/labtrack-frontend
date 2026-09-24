@@ -1,21 +1,16 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    KeyboardAvoidingView,
-    Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { paramString } from './params';
+import { makeStyles } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 const MAX_CHARS = 500;
 
 export default function HealthNotesScreen() {
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [notes, setNotes] = useState(paramString(params.healthNotes) ?? '');
@@ -107,7 +102,7 @@ export default function HealthNotesScreen() {
                         <TextInput
                             style={styles.textInput}
                             placeholder="Type your health notes here..."
-                            placeholderTextColor="#999"
+                            placeholderTextColor={tone('#999999')}
                             multiline
                             value={notes}
                             onChangeText={handleTextChange}
@@ -130,7 +125,7 @@ export default function HealthNotesScreen() {
                             <Ionicons
                                 name="arrow-undo"
                                 size={20}
-                                color={historyIndex === 0 ? '#ccc' : '#7C3AED'}
+                                color={historyIndex === 0 ? tone('#CCCCCC') : activePalette().primary}
                             />
                             <Text style={[
                                 styles.actionButtonText,
@@ -146,7 +141,7 @@ export default function HealthNotesScreen() {
                             <Ionicons
                                 name="arrow-redo"
                                 size={20}
-                                color={historyIndex >= history.length - 1 ? '#ccc' : '#7C3AED'}
+                                color={historyIndex >= history.length - 1 ? tone('#CCCCCC') : activePalette().primary}
                             />
                             <Text style={[
                                 styles.actionButtonText,
@@ -162,11 +157,11 @@ export default function HealthNotesScreen() {
                             <Ionicons
                                 name="trash-outline"
                                 size={20}
-                                color={notes.length === 0 ? '#ccc' : '#EF4444'}
+                                color={notes.length === 0 ? tone('#CCCCCC') : tone('#EF4444')}
                             />
                             <Text style={[
                                 styles.actionButtonText,
-                                { color: notes.length === 0 ? '#ccc' : '#EF4444' }
+                                { color: notes.length === 0 ? tone('#CCCCCC') : tone('#EF4444') }
                             ]}>Clear</Text>
                         </TouchableOpacity>
                     </View>
@@ -183,15 +178,15 @@ export default function HealthNotesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#7C3AED',
+        color: Palette.primary,
         textAlign: 'center',
         paddingTop: 8,
         marginBottom: 8,
@@ -214,17 +209,17 @@ const styles = StyleSheet.create({
     },
     progressBar: {
         height: 8,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 4,
     },
     progressFill: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 4,
     },
     skipText: {
         fontSize: 16,
-        color: '#7C3AED',
+        color: Palette.primary,
         fontWeight: '500',
     },
     content: {
@@ -235,34 +230,34 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         lineHeight: 24,
         marginBottom: 24,
     },
     inputContainer: {
         flex: 1,
         maxHeight: 300,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         padding: 16,
         marginBottom: 16,
     },
     textInput: {
         flex: 1,
         fontSize: 16,
-        color: '#1F2937',
+        color: Palette.text,
         lineHeight: 24,
     },
     charCount: {
         fontSize: 14,
-        color: '#9CA3AF',
+        color: Palette.textMuted,
         textAlign: 'right',
         marginTop: 8,
     },
@@ -278,33 +273,33 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 16,
         borderRadius: 20,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
         gap: 6,
     },
     actionButtonDisabled: {
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
     },
     actionButtonText: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#7C3AED',
+        color: Palette.primary,
     },
     actionButtonTextDisabled: {
-        color: '#ccc',
+        color: tone('#CCCCCC'),
     },
     bottomContainer: {
         paddingHorizontal: 24,
         paddingBottom: 20,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 30,
         paddingVertical: 16,
         alignItems: 'center',
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 18,
         fontWeight: '600',
     },
-});
+}));

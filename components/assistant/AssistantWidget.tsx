@@ -12,9 +12,10 @@
  * one measurement is how people stop trusting the colour.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts, FlagColors, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, FlagColors, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { AssistantWidget as Widget, WidgetKind, WidgetStat, WidgetRow, Flag } from '@/lib/assistant';
 
 /** Icon per card kind. Purely decorative — the title carries the meaning. */
@@ -33,6 +34,7 @@ const ICONS: Record<WidgetKind, keyof typeof Ionicons.glyphMap> = {
 const flagStyle = (flag: Flag | null) => (flag ? FlagColors[flag] ?? FlagColors.unknown : null);
 
 const StatTile = ({ label, value, unit, flag }: WidgetStat) => {
+    const styles = useStyles();
     const meta = flagStyle(flag);
     return (
         <View style={[styles.stat, meta ? { backgroundColor: meta.bg } : styles.statPlain]}>
@@ -48,6 +50,8 @@ const StatTile = ({ label, value, unit, flag }: WidgetStat) => {
 };
 
 const Row = ({ title, subtitle, meta, flag }: WidgetRow) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const tone = flagStyle(flag);
     return (
         <View style={styles.row}>
@@ -64,6 +68,7 @@ const Row = ({ title, subtitle, meta, flag }: WidgetRow) => {
 };
 
 const ProgressBar = ({ label, value, max }: NonNullable<Widget['progress']>) => {
+    const styles = useStyles();
     // Guard the denominator and the overshoot: a model-supplied max of 0 would make this
     // NaN, and a value above max would draw a bar past the end of its track.
     const pct = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
@@ -84,6 +89,8 @@ const ProgressBar = ({ label, value, max }: NonNullable<Widget['progress']>) => 
 };
 
 export default function AssistantWidgetCard({ widget }: { widget: Widget }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const stats = widget.stats ?? [];
     const rows = widget.rows ?? [];
 
@@ -118,9 +125,9 @@ export default function AssistantWidgetCard({ widget }: { widget: Widget }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.xl,
         borderWidth: 1,
         borderColor: Palette.border,
@@ -177,5 +184,5 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.borderLight,
         overflow: 'hidden',
     },
-    progressFill: { height: '100%', borderRadius: Radius.pill, backgroundColor: Palette.primary },
-});
+    progressFill: { height: '100%', borderRadius: Radius.pill, backgroundColor: Palette.primaryFill },
+}));

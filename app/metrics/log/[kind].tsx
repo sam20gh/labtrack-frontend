@@ -18,10 +18,7 @@
  *   through something the record should not hold.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-    ActivityIndicator, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,7 +30,8 @@ import {
     type MetricsReference, type BpCategory,
 } from '@/lib/metrics';
 import { useUnits, unitLabel, toCanonicalWeight, displayWeight } from '@/lib/units';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const TITLES: Record<string, { title: string; blurb: string }> = {
     weight: { title: 'Log Your Weight', blurb: 'Log your weight here.' },
@@ -42,6 +40,8 @@ const TITLES: Record<string, { title: string; blurb: string }> = {
 };
 
 export default function LogMetricScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { kind } = useLocalSearchParams<{ kind: string }>();
     const meta = TITLES[kind ?? ''] ?? null;
@@ -285,7 +285,7 @@ export default function LogMetricScreen() {
                                         .filter((c) => c.key !== 'low')
                                         .map((c) => (
                                             <View key={c.key} style={styles.legendRow}>
-                                                <View style={[styles.legendDot, { backgroundColor: c.colour }]} />
+                                                <View style={[styles.legendDot, { backgroundColor: tone(c.colour) }]} />
                                                 <Text style={styles.legendLabel}>{c.label}</Text>
                                                 <Text style={styles.legendRange}>
                                                     {c.key === 'crisis' ? 'over 180/120'
@@ -309,7 +309,7 @@ export default function LogMetricScreen() {
                             disabled={!canSave || saving}
                         >
                             {saving
-                                ? <ActivityIndicator color="#FFFFFF" />
+                                ? <ActivityIndicator color={Palette.white} />
                                 : <Text style={styles.primaryText}>Save</Text>}
                         </TouchableOpacity>
                     </View>
@@ -328,39 +328,43 @@ export default function LogMetricScreen() {
  */
 const BpResult = ({ result, onDone }: {
     result: { category: BpCategory; urgentNote: string | null; note: string }; onDone: () => void;
-}) => (
-    <View style={[styles.card, result.category.isCrisis && styles.crisisCard]}>
-        <View style={styles.resultTop}>
-            <View style={[styles.legendDot, { backgroundColor: result.category.colour, width: 12, height: 12, borderRadius: 6 }]} />
-            <Text style={[styles.resultLabel, result.category.isCrisis && styles.crisisText]}>
-                {result.category.label}
-            </Text>
-        </View>
-
-        <Text style={styles.resultSummary}>{result.category.summary}</Text>
-
-        {result.category.driver && result.category.driver !== 'both' && (
-            <Text style={styles.hint}>
-                It is your {result.category.driver} number that puts this reading in that range.
-            </Text>
-        )}
-
-        {result.urgentNote && (
-            <View style={styles.crisisBox}>
-                <Ionicons name="warning" size={18} color="#FFFFFF" />
-                <Text style={styles.crisisBoxText}>{result.urgentNote}</Text>
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={[styles.card, result.category.isCrisis && styles.crisisCard]}>
+            <View style={styles.resultTop}>
+                <View style={[styles.legendDot, { backgroundColor: tone(result.category.colour), width: 12, height: 12, borderRadius: 6 }]} />
+                <Text style={[styles.resultLabel, result.category.isCrisis && styles.crisisText]}>
+                    {result.category.label}
+                </Text>
             </View>
-        )}
 
-        <Text style={styles.hint}>{result.note}</Text>
+            <Text style={styles.resultSummary}>{result.category.summary}</Text>
 
-        <TouchableOpacity style={styles.primary} onPress={onDone}>
-            <Text style={styles.primaryText}>Done</Text>
-        </TouchableOpacity>
-    </View>
-);
+            {result.category.driver && result.category.driver !== 'both' && (
+                <Text style={styles.hint}>
+                    It is your {result.category.driver} number that puts this reading in that range.
+                </Text>
+            )}
 
-const styles = StyleSheet.create({
+            {result.urgentNote && (
+                <View style={styles.crisisBox}>
+                    <Ionicons name="warning" size={18} color={Palette.white} />
+                    <Text style={styles.crisisBoxText}>{result.urgentNote}</Text>
+                </View>
+            )}
+
+            <Text style={styles.hint}>{result.note}</Text>
+
+            <TouchableOpacity style={styles.primary} onPress={onDone}>
+                <Text style={styles.primaryText}>Done</Text>
+            </TouchableOpacity>
+        </View>
+    );
+};
+
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     flex: { flex: 1 },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -388,15 +392,15 @@ const styles = StyleSheet.create({
 
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.pill, backgroundColor: Palette.borderLight },
-    chipActive: { backgroundColor: Palette.primary },
+    chipActive: { backgroundColor: Palette.primaryFill },
     chipText: { ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary },
-    chipTextActive: { color: '#FFFFFF' },
+    chipTextActive: { color: Palette.white },
 
     container: {
         flex: 1, alignItems: 'center', gap: 3, paddingVertical: Spacing.sm,
         borderRadius: Radius.md, borderWidth: 1.5, borderColor: Palette.border,
     },
-    containerActive: { borderColor: Palette.primary, backgroundColor: '#F5F3FF' },
+    containerActive: { borderColor: Palette.primary, backgroundColor: Palette.primaryTint },
     containerLabel: { fontFamily: Fonts.semibold, fontSize: 12, color: Palette.textSecondary },
     containerLabelActive: { color: Palette.primary },
     containerMl: { ...BodyFont.regular, fontSize: 10, color: Palette.textMuted },
@@ -418,16 +422,16 @@ const styles = StyleSheet.create({
     resultTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     resultLabel: { fontFamily: Fonts.bold, fontSize: 19, color: Palette.text },
     resultSummary: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19 },
-    crisisCard: { borderWidth: 2, borderColor: '#DC2626' },
-    crisisText: { color: '#DC2626' },
+    crisisCard: { borderWidth: 2, borderColor: Palette.danger },
+    crisisText: { color: Palette.danger },
     crisisBox: {
         flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-        backgroundColor: '#DC2626', borderRadius: Radius.md, padding: Spacing.sm,
+        backgroundColor: Palette.dangerFill, borderRadius: Radius.md, padding: Spacing.sm,
     },
-    crisisBoxText: { flex: 1, ...BodyFont.medium, fontSize: 12, color: '#FFFFFF', lineHeight: 17 },
+    crisisBoxText: { flex: 1, ...BodyFont.medium, fontSize: 12, color: Palette.white, lineHeight: 17 },
 
     footer: { padding: Spacing.lg, paddingTop: Spacing.sm },
-    primary: { backgroundColor: Palette.primary, borderRadius: Radius.md, paddingVertical: 15, alignItems: 'center' },
+    primary: { backgroundColor: Palette.primaryFill, borderRadius: Radius.md, paddingVertical: 15, alignItems: 'center' },
     primaryDisabled: { opacity: 0.4 },
-    primaryText: { fontFamily: Fonts.semibold, fontSize: 15, color: '#FFFFFF' },
-});
+    primaryText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
+}));

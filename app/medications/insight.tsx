@@ -12,20 +12,21 @@
  * failed at something that has not happened.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getInsight, WEEKDAY_NAMES } from '@/lib/medications';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { MedicationInsight } from '@/types/api';
 
 const RANGES = [7, 30, 90];
 
 export default function InsightScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [days, setDays] = useState(30);
     const [data, setData] = useState<MedicationInsight | null>(null);
@@ -112,13 +113,13 @@ export default function InsightScreen() {
                                     <View key={i} style={styles.chartCol}>
                                         <View style={styles.chartStack}>
                                             {w.missed ? (
-                                                <View style={[styles.bar, { height: `${(w.missed / peak) * 100}%`, backgroundColor: Palette.danger }]} />
+                                                <View style={[styles.bar, { height: `${(w.missed / peak) * 100}%`, backgroundColor: Palette.dangerFill }]} />
                                             ) : null}
                                             {w.late ? (
-                                                <View style={[styles.bar, { height: `${(w.late / peak) * 100}%`, backgroundColor: Palette.warning }]} />
+                                                <View style={[styles.bar, { height: `${(w.late / peak) * 100}%`, backgroundColor: Palette.warningFill }]} />
                                             ) : null}
                                             {w.taken ? (
-                                                <View style={[styles.bar, { height: `${(w.taken / peak) * 100}%`, backgroundColor: Palette.primary }]} />
+                                                <View style={[styles.bar, { height: `${(w.taken / peak) * 100}%`, backgroundColor: Palette.primaryFill }]} />
                                             ) : null}
                                             {total === 0 ? <View style={styles.barEmpty} /> : null}
                                         </View>
@@ -178,21 +179,27 @@ export default function InsightScreen() {
     );
 }
 
-const StatCard = ({ value, label, colour }: { value: number; label: string; colour: string }) => (
-    <View style={styles.statCard}>
-        <Text style={[styles.statValue, { color: colour }]}>{value}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
-    </View>
-);
+const StatCard = ({ value, label, colour }: { value: number; label: string; colour: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.statCard}>
+            <Text style={[styles.statValue, { color: colour }]}>{value}</Text>
+            <Text style={styles.statLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const Legend = ({ colour, label }: { colour: string; label: string }) => (
-    <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: colour }]} />
-        <Text style={styles.legendLabel}>{label}</Text>
-    </View>
-);
+const Legend = ({ colour, label }: { colour: string; label: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colour }]} />
+            <Text style={styles.legendLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -203,9 +210,9 @@ const styles = StyleSheet.create({
     rangeRow: { flexDirection: 'row', gap: 6, paddingHorizontal: Spacing.xl, paddingBottom: Spacing.md },
     range: {
         paddingHorizontal: 14, paddingVertical: 7, borderRadius: Radius.pill,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
+        backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.border,
     },
-    rangeActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    rangeActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     rangeText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
     rangeTextActive: { color: Palette.white, fontFamily: Fonts.semibold },
 
@@ -218,14 +225,14 @@ const styles = StyleSheet.create({
     statRow: { flexDirection: 'row', gap: Spacing.sm },
     statCard: {
         flex: 1, alignItems: 'center', gap: 2,
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, paddingVertical: Spacing.lg,
     },
     statValue: { fontSize: 22, fontFamily: Fonts.bold },
     statLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
 
     card: {
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg, gap: Spacing.md,
     },
     cardTitle: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold },
@@ -246,7 +253,7 @@ const styles = StyleSheet.create({
     medName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
     medPlain: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
     track: { height: 5, borderRadius: 3, backgroundColor: Palette.borderLight, marginTop: 6, overflow: 'hidden' },
-    trackFill: { height: '100%', borderRadius: 3, backgroundColor: Palette.primary },
+    trackFill: { height: '100%', borderRadius: 3, backgroundColor: Palette.primaryFill },
     medScore: { fontSize: 14, color: Palette.text, fontFamily: Fonts.bold, width: 44, textAlign: 'right' },
 
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, padding: Spacing.xxxl },
@@ -254,4 +261,4 @@ const styles = StyleSheet.create({
     emptyBody: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, textAlign: 'center', lineHeight: 19 },
 
     footer: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 17 },
-});
+}));

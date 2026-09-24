@@ -19,16 +19,14 @@
  * line, anything non-typical opens itself.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, Platform, UIManager,
-    TouchableOpacity, RefreshControl, Alert, LayoutAnimation,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Platform, UIManager, TouchableOpacity, RefreshControl, Alert, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, Shadow, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import {
     getGenotypeFile, setRiskConsent, groupByCategory, TONE_META,
     type GenotypeFile, type Finding, type Category, type Tone,
@@ -79,6 +77,8 @@ const CATEGORY_SHORT: Record<Category, string> = {
  * you" — not the panel size, which is a fact about the assay rather than about the person.
  */
 function Hero({ file, notable }: { file: GenotypeFile; notable: number }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const assay = file.assayType === 'array' ? 'Genotyping array' : file.assayType;
     const s = file.summary;
 
@@ -90,7 +90,7 @@ function Hero({ file, notable }: { file: GenotypeFile; notable: number }) {
             style={styles.hero}
         >
             <View style={styles.heroBadge}>
-                <Ionicons name="git-branch-outline" size={13} color={Palette.white} />
+                <Ionicons name="git-branch-outline" size={13} color={Palettes.light.white} />
                 <Text style={styles.heroBadgeText}>{assay}</Text>
             </View>
 
@@ -126,12 +126,15 @@ function Hero({ file, notable }: { file: GenotypeFile; notable: number }) {
     );
 }
 
-const HeroStat = ({ value, label, last }: { value: number; label: string; last?: boolean }) => (
-    <View style={[styles.heroStat, !last && styles.heroStatDivider]}>
-        <Text style={styles.heroStatValue}>{value}</Text>
-        <Text style={styles.heroStatLabel}>{label}</Text>
-    </View>
-);
+const HeroStat = ({ value, label, last }: { value: number; label: string; last?: boolean }) => {
+    const styles = useStyles();
+    return (
+        <View style={[styles.heroStat, !last && styles.heroStatDivider]}>
+            <Text style={styles.heroStatValue}>{value}</Text>
+            <Text style={styles.heroStatLabel}>{label}</Text>
+        </View>
+    );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Charts
@@ -150,6 +153,8 @@ function ResultChart({
     active: Category | 'all';
     onPick: (c: Category) => void;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const MAX_BLOCKS = 9;
 
     return (
@@ -222,6 +227,8 @@ function ResultChart({
  * at the bottom of the screen.
  */
 function CoverageBar({ summary }: { summary: GenotypeFile['summary'] }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     // Every segment counts findings. Scaling one of them against a different unit — the
     // curated `notTested` topic list — would make the bar a picture of nothing.
     const segs = [
@@ -264,6 +271,7 @@ function CoverageBar({ summary }: { summary: GenotypeFile['summary'] }) {
 
 /** The findings that ask something of the reader, lifted clear of the scroll. */
 function Highlights({ items, onPick }: { items: Finding[]; onPick: (f: Finding) => void }) {
+    const styles = useStyles();
     if (items.length === 0) return null;
     return (
         <View style={styles.railWrap}>
@@ -319,6 +327,8 @@ function FindingRow({
     onToggle: () => void;
     onBiomarker: (n: string) => void;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const inert = finding.withheld || finding.status !== 'called';
     const tone = TONE_META[finding.tone ?? 'typical'];
 
@@ -409,6 +419,8 @@ function FindingRow({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function DnaReportScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { id } = useLocalSearchParams();
     const [file, setFile] = useState<GenotypeFile | null>(null);
@@ -622,7 +634,7 @@ export default function DnaReportScreen() {
                 {file.riskResultsAvailable && (
                     <View style={styles.section}>
                         <LinearGradient
-                            colors={[Palette.primarySurface, Palette.white]}
+                            colors={[Palette.primarySurface, Palette.background]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.consentCard}
@@ -712,7 +724,7 @@ export default function DnaReportScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     safe: { flex: 1, backgroundColor: Palette.surface },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -735,11 +747,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.sm, paddingVertical: 4,
     },
     heroBadgeText: {
-        fontFamily: Fonts.semibold, fontSize: 12, color: Palette.white,
+        fontFamily: Fonts.semibold, fontSize: 12, color: Palettes.light.white,
         letterSpacing: 0.3, textTransform: 'capitalize',
     },
     heroFigureRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginTop: Spacing.lg },
-    heroFigure: { fontFamily: Fonts.bold, fontSize: 46, lineHeight: 50, color: Palette.white },
+    heroFigure: { fontFamily: Fonts.bold, fontSize: 46, lineHeight: 50, color: Palettes.light.white },
     heroFigureLabel: {
         flex: 1, fontFamily: Fonts.semibold, fontSize: 15, lineHeight: 20,
         color: 'rgba(255,255,255,0.92)',
@@ -825,7 +837,7 @@ const styles = StyleSheet.create({
         width: 30, height: 30, borderRadius: Radius.pill, marginTop: Spacing.md,
         alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.borderLight,
     },
-    chartFootOn: { backgroundColor: Palette.primary },
+    chartFootOn: { backgroundColor: Palette.primaryFill },
     chartAxis: {
         ...BodyFont.medium, fontSize: 11, color: Palette.textMuted, marginTop: 5,
     },
@@ -920,7 +932,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.primarySurface,
     },
     consentIcon: {
-        width: 36, height: 36, borderRadius: Radius.pill, backgroundColor: Palette.white,
+        width: 36, height: 36, borderRadius: Radius.pill, backgroundColor: Palette.background,
         alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md,
     },
     consentTitle: { fontFamily: Fonts.bold, fontSize: 17, color: Palette.text },
@@ -929,7 +941,7 @@ const styles = StyleSheet.create({
         lineHeight: 22, marginTop: 5,
     },
     consentButton: {
-        backgroundColor: Palette.primary, borderRadius: Radius.md,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.md,
         paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.lg,
     },
     consentButtonText: { fontFamily: Fonts.semibold, fontSize: 16, color: Palette.white },
@@ -939,4 +951,4 @@ const styles = StyleSheet.create({
         lineHeight: 19, textAlign: 'center',
         marginTop: Spacing.xxl, marginHorizontal: Spacing.xxl,
     },
-});
+}));

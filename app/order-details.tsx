@@ -5,9 +5,7 @@
  * the lab returned a report, which is already in the person's biomarker history.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -18,11 +16,15 @@ import { getOrder, cancelOrder, ORDER_STAGES, ORDER_STATUS_META, isCancellable }
 import { createPaymentIntent, confirmPayment, formatMoney } from '@/lib/payments';
 import { ApiError } from '@/lib/api';
 import type { Order } from '@/types/api';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 const formatDate = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
 export default function OrderDetailsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { orderId } = useLocalSearchParams();
     const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -115,7 +117,7 @@ export default function OrderDetailsScreen() {
     if (loading) {
         return (
             <SafeAreaView style={styles.container}>
-                <View style={styles.center}><ActivityIndicator size="large" color="#7C3AED" /></View>
+                <View style={styles.center}><ActivityIndicator size="large" color={Palette.primary} /></View>
             </SafeAreaView>
         );
     }
@@ -136,7 +138,7 @@ export default function OrderDetailsScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Your order</Text>
                 <View style={styles.backButton} />
@@ -158,7 +160,7 @@ export default function OrderDetailsScreen() {
                                 <View key={stage} style={styles.stageRow}>
                                     <View style={styles.stageMarker}>
                                         <View style={[styles.dot, done && styles.dotDone, active && styles.dotActive]}>
-                                            {done && <Ionicons name="checkmark" size={11} color="#fff" />}
+                                            {done && <Ionicons name="checkmark" size={11} color={Palette.white} />}
                                         </View>
                                         {index < ORDER_STAGES.length - 1 && (
                                             <View style={[styles.connector, index < currentStage && styles.connectorDone]} />
@@ -176,23 +178,23 @@ export default function OrderDetailsScreen() {
                 {order.payment?.status !== 'paid' && !terminal && order.payment?.provider === 'stripe' && (
                     <TouchableOpacity style={styles.payButton} onPress={payNow} disabled={paying}>
                         {paying
-                            ? <ActivityIndicator color="#fff" />
+                            ? <ActivityIndicator color={Palette.white} />
                             : <Text style={styles.payButtonText}>Pay {formatMoney(order.total, order.currency)}</Text>}
                     </TouchableOpacity>
                 )}
 
                 {order.payment?.status === 'paid' && (
                     <View style={styles.paidRow}>
-                        <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                        <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
                         <Text style={styles.paidText}>Paid {formatDate(order.payment.paidAt)}</Text>
                     </View>
                 )}
 
                 {order.status === 'resulted' && (
                     <TouchableOpacity style={styles.resultBanner} onPress={() => router.push('/(tabs)/results')}>
-                        <Ionicons name="analytics-outline" size={20} color="#059669" />
+                        <Ionicons name="analytics-outline" size={20} color={Palette.success} />
                         <Text style={styles.resultBannerText}>Your results are ready — view them</Text>
-                        <Ionicons name="chevron-forward" size={18} color="#059669" />
+                        <Ionicons name="chevron-forward" size={18} color={Palette.success} />
                     </TouchableOpacity>
                 )}
 
@@ -238,7 +240,7 @@ export default function OrderDetailsScreen() {
                 {isCancellable(order.status) && (
                     <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={cancelling}>
                         {cancelling
-                            ? <ActivityIndicator size="small" color="#DC2626" />
+                            ? <ActivityIndicator size="small" color={Palette.danger} />
                             : <Text style={styles.cancelButtonText}>Cancel this order</Text>}
                     </TouchableOpacity>
                 )}
@@ -247,8 +249,8 @@ export default function OrderDetailsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -256,56 +258,56 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16, paddingVertical: 12,
     },
     backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-    headerTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
+    headerTitle: { fontSize: 17, fontWeight: '600', color: Palette.text },
     scroll: { paddingHorizontal: 20, paddingBottom: 40 },
-    emptyTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
+    emptyTitle: { fontSize: 17, fontWeight: '600', color: Palette.text },
     statusCard: { borderWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 20 },
     statusLabel: { fontSize: 17, fontWeight: '700' },
-    statusDescription: { fontSize: 14, color: '#6B7280', marginTop: 4 },
-    orderRef: { fontSize: 12, color: '#9CA3AF', marginTop: 10 },
+    statusDescription: { fontSize: 14, color: Palette.textSecondary, marginTop: 4 },
+    orderRef: { fontSize: 12, color: Palette.textMuted, marginTop: 10 },
     tracker: { marginBottom: 20 },
     stageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
     stageMarker: { alignItems: 'center', width: 20 },
     dot: {
-        width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#E5E7EB',
+        width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: Palette.border,
         alignItems: 'center', justifyContent: 'center',
     },
-    dotDone: { backgroundColor: '#7C3AED', borderColor: '#7C3AED' },
-    dotActive: { borderColor: '#7C3AED' },
-    connector: { width: 2, height: 26, backgroundColor: '#E5E7EB' },
-    connectorDone: { backgroundColor: '#7C3AED' },
-    stageLabel: { fontSize: 14, color: '#9CA3AF', paddingBottom: 26 },
-    stageLabelDone: { color: '#1F2937', fontWeight: '500' },
+    dotDone: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
+    dotActive: { borderColor: Palette.primary },
+    connector: { width: 2, height: 26, backgroundColor: Palette.border },
+    connectorDone: { backgroundColor: Palette.primaryFill },
+    stageLabel: { fontSize: 14, color: Palette.textMuted, paddingBottom: 26 },
+    stageLabelDone: { color: Palette.text, fontWeight: '500' },
     payButton: {
-        backgroundColor: '#7C3AED', paddingVertical: 15, borderRadius: 12,
+        backgroundColor: Palette.primaryFill, paddingVertical: 15, borderRadius: 12,
         alignItems: 'center', marginBottom: 16,
     },
-    payButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+    payButtonText: { color: Palette.white, fontSize: 15, fontWeight: '600' },
     paidRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
-    paidText: { fontSize: 13, color: '#059669', fontWeight: '600' },
+    paidText: { fontSize: 13, color: Palette.success, fontWeight: '600' },
     resultBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 10,
-        backgroundColor: '#ECFDF5', borderRadius: 12, padding: 14, marginBottom: 20,
+        backgroundColor: Palette.successSurface, borderRadius: 12, padding: 14, marginBottom: 20,
     },
-    resultBannerText: { flex: 1, fontSize: 14, color: '#059669', fontWeight: '600' },
-    sectionLabel: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 8, marginBottom: 10 },
+    resultBannerText: { flex: 1, fontSize: 14, color: Palette.success, fontWeight: '600' },
+    sectionLabel: { fontSize: 15, fontWeight: '700', color: Palette.text, marginTop: 8, marginBottom: 10 },
     itemRow: {
         flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
-        borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+        borderBottomWidth: 1, borderBottomColor: Palette.borderLight,
     },
-    itemName: { fontSize: 14, color: '#1F2937', fontWeight: '500' },
-    itemQty: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-    itemPrice: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
+    itemName: { fontSize: 14, color: Palette.text, fontWeight: '500' },
+    itemQty: { fontSize: 12, color: Palette.textMuted, marginTop: 2 },
+    itemPrice: { fontSize: 14, fontWeight: '600', color: Palette.text },
     totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14 },
-    totalLabel: { fontSize: 15, color: '#6B7280' },
-    totalValue: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
-    address: { fontSize: 14, color: '#6B7280', lineHeight: 21 },
+    totalLabel: { fontSize: 15, color: Palette.textSecondary },
+    totalValue: { fontSize: 18, fontWeight: '700', color: Palette.text },
+    address: { fontSize: 14, color: Palette.textSecondary, lineHeight: 21 },
     historyRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
-    historyStatus: { fontSize: 13, color: '#1F2937' },
-    historyDate: { fontSize: 13, color: '#9CA3AF' },
+    historyStatus: { fontSize: 13, color: Palette.text },
+    historyDate: { fontSize: 13, color: Palette.textMuted },
     cancelButton: {
         marginTop: 28, paddingVertical: 14, borderRadius: 12,
-        borderWidth: 1, borderColor: '#FECACA', alignItems: 'center',
+        borderWidth: 1, borderColor: tone('#FECACA'), alignItems: 'center',
     },
-    cancelButtonText: { color: '#DC2626', fontSize: 15, fontWeight: '600' },
-});
+    cancelButtonText: { color: Palette.danger, fontSize: 15, fontWeight: '600' },
+}));

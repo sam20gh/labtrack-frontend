@@ -13,13 +13,12 @@
  * predates the native modules. Each gets a route forward rather than a dead Connect button.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert, Linking, Platform,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { probe, requestPermissions, labelFor, platformFor, type HealthCapability } from '@/lib/health';
 import { runSync, resetSyncThrottle } from '@/lib/health/sync';
 import { getWearableStatus, disconnectSource, type WearableStatus } from '@/lib/activity';
@@ -43,6 +42,8 @@ const relativeTime = (iso: string | null): string => {
 };
 
 export default function SourcesScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const platform = platformFor();
 
@@ -297,7 +298,7 @@ export default function SourcesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     bar: {
         flexDirection: 'row',
@@ -366,4 +367,4 @@ const styles = StyleSheet.create({
         lineHeight: 18,
         marginTop: Spacing.xl,
     },
-});
+}));

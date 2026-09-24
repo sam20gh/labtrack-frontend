@@ -12,22 +12,26 @@
  * tint from a figure. See the note on the tints in `constants/theme.ts`.
  */
 import type { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette } from '@/constants/theme';
+import { schemed } from '@/constants/theme';
 
 export type ActivityGlyph = keyof typeof MaterialCommunityIcons.glyphMap;
 
 export interface ActivityTypeStyle {
     icon: ActivityGlyph;
-    /** Icon and label colour. Every value is AA on its own `surface`. */
+    /**
+     * The icon's colour — never a label's. Labels wear text colour (the dataviz rule: text
+     * wears text tokens, never the series colour), so a tint needs icon contrast, 3:1 on its
+     * own `surface`, not text contrast. That is what leaves room for seven hues to separate.
+     */
     tint: string;
     /** The pale tile or pill the icon sits on. */
     surface: string;
 }
 
-const TYPES: Record<string, ActivityTypeStyle> = {
+const TYPES: Record<string, ActivityTypeStyle> = schemed((Palette) => ({
     walking: { icon: 'walk', tint: Palette.teal, surface: Palette.tealSurface },
-    jogging: { icon: 'run', tint: Palette.primary, surface: Palette.primaryTint },
-    running: { icon: 'run-fast', tint: Palette.primary, surface: Palette.primaryTint },
+    jogging: { icon: 'run', tint: Palette.gold, surface: Palette.goldSurface },
+    running: { icon: 'run-fast', tint: Palette.gold, surface: Palette.goldSurface },
     hiking: { icon: 'hiking', tint: Palette.lime, surface: Palette.limeSurface },
     biking: { icon: 'bike', tint: Palette.orange, surface: Palette.orangeSurface },
     swimming: { icon: 'swim', tint: Palette.sky, surface: Palette.skySurface },
@@ -36,10 +40,10 @@ const TYPES: Record<string, ActivityTypeStyle> = {
     rowing: { icon: 'rowing', tint: Palette.sky, surface: Palette.skySurface },
     weightlifting: { icon: 'weight-lifter', tint: Palette.indigo, surface: Palette.indigoSurface },
     soccer: { icon: 'soccer', tint: Palette.lime, surface: Palette.limeSurface },
-};
+}));
 
-const FALLBACK: ActivityTypeStyle = { icon: 'dumbbell', tint: Palette.indigo, surface: Palette.indigoSurface };
-const OTHER: ActivityTypeStyle = { icon: 'dots-horizontal', tint: Palette.textSecondary, surface: Palette.canvas };
+const FALLBACK: ActivityTypeStyle = schemed((Palette) => ({ icon: 'dumbbell', tint: Palette.indigo, surface: Palette.indigoSurface }));
+const OTHER: ActivityTypeStyle = schemed((Palette) => ({ icon: 'dots-horizontal', tint: Palette.textSecondary, surface: Palette.canvas }));
 
 /** The style for a type key as the API sends it. Unknown types get a neutral dumbbell. */
 export const typeStyle = (type: string | null | undefined): ActivityTypeStyle => {

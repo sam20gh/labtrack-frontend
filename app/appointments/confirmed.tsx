@@ -8,15 +8,18 @@
  * that was asked for and says who has to agree to it.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { MODE_LABEL, formatDayLong, formatTime, type AppointmentMode } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function AppointmentConfirmedScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{
         at?: string; mode?: string; doctor?: string; rescheduled?: string;
@@ -81,26 +84,30 @@ export default function AppointmentConfirmedScreen() {
 
 const Row = ({ icon, label, value, pending }: {
     icon: string; label: string; value: string; pending?: boolean;
-}) => (
-    <View style={styles.row}>
-        <Ionicons name={icon as any} size={17} color={Palette.textSecondary} />
-        <Text style={styles.rowLabel}>{label}</Text>
-        <Text style={[styles.rowValue, pending && styles.rowValuePending]} numberOfLines={1}>
-            {value}
-        </Text>
-    </View>
-);
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.row}>
+            <Ionicons name={icon as any} size={17} color={Palette.textSecondary} />
+            <Text style={styles.rowLabel}>{label}</Text>
+            <Text style={[styles.rowValue, pending && styles.rowValuePending]} numberOfLines={1}>
+                {value}
+            </Text>
+        </View>
+    );
+};
 
 const GUTTER = Spacing.lg;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     body: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: GUTTER, gap: Spacing.md },
 
     mark: {
         width: 72, height: 72, borderRadius: Radius.pill,
         alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.success, marginBottom: Spacing.sm,
+        backgroundColor: Palette.successFill, marginBottom: Spacing.sm,
     },
     title: { fontSize: 24, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center' },
     subtitle: {
@@ -110,7 +117,7 @@ const styles = StyleSheet.create({
 
     slipCard: {
         alignSelf: 'stretch', marginTop: Spacing.xl,
-        borderRadius: Radius.lg, backgroundColor: Palette.white,
+        borderRadius: Radius.lg, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
         paddingHorizontal: Spacing.lg,
     },
@@ -123,9 +130,9 @@ const styles = StyleSheet.create({
     footer: { paddingHorizontal: GUTTER, paddingBottom: Spacing.xl, gap: Spacing.sm },
     cta: {
         height: 48, alignItems: 'center', justifyContent: 'center',
-        borderRadius: Radius.md, backgroundColor: Palette.primary,
+        borderRadius: Radius.md, backgroundColor: Palette.primaryFill,
     },
     ctaText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.bold },
     linkButton: { height: 40, alignItems: 'center', justifyContent: 'center' },
     linkText: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.semibold },
-});
+}));

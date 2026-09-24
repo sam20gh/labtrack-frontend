@@ -17,13 +17,11 @@
  * that fix stops looking like a bug in saving.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet,
-    type ViewStyle, type ImageStyle, type StyleProp,
-} from 'react-native';
+import { View, Text, type ViewStyle, type ImageStyle, type StyleProp } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export const Avatar = ({
     uri, initials, size, style, textStyle,
@@ -37,6 +35,8 @@ export const Avatar = ({
     style?: StyleProp<ViewStyle & ImageStyle>;
     textStyle?: { fontSize?: number; color?: string };
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const [failed, setFailed] = useState(false);
 
     // A new URL deserves a fresh attempt: without this, one bad image would poison the
@@ -76,13 +76,13 @@ export const Avatar = ({
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     fallback: {
         backgroundColor: Palette.primarySurface,
         alignItems: 'center',
         justifyContent: 'center',
     },
     initials: { fontFamily: Fonts.bold, color: Palette.text, includeFontPadding: false },
-});
+}));
 
 export default Avatar;

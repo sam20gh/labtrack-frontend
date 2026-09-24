@@ -1,23 +1,16 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    StyleSheet,
-    TouchableOpacity,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    ActivityIndicator,
-    Image,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { sendPasswordResetEmail } from '@/lib/auth';
 import Toast from 'react-native-toast-message';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 const ResetPasswordEmailScreen = () => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
@@ -63,7 +56,7 @@ const ResetPasswordEmailScreen = () => {
                         style={styles.backButton}
                         onPress={() => router.back()}
                     >
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={24} color={Palette.text} />
                     </TouchableOpacity>
                 </View>
 
@@ -80,7 +73,7 @@ const ResetPasswordEmailScreen = () => {
                                 <View style={styles.personBody} />
                             </View>
                             <View style={styles.lockContainer}>
-                                <Ionicons name="lock-closed" size={40} color="#7C3AED" />
+                                <Ionicons name="lock-closed" size={40} color={Palette.primary} />
                                 <View style={styles.dotsContainer}>
                                     {[...Array(6)].map((_, i) => (
                                         <View key={i} style={styles.dot} />
@@ -99,10 +92,10 @@ const ResetPasswordEmailScreen = () => {
                     {/* Email Input */}
                     <View style={styles.inputGroup}>
                         <View style={styles.inputContainer}>
-                            <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            <Ionicons name="mail-outline" size={20} color={Palette.textMuted} style={styles.inputIcon} />
                             <TextInput
                                 placeholder="elementary221b@gmail.com"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={Palette.textMuted}
                                 value={email}
                                 autoCapitalize="none"
                                 keyboardType="email-address"
@@ -119,11 +112,11 @@ const ResetPasswordEmailScreen = () => {
                         disabled={loading || !email}
                     >
                         {loading ? (
-                            <ActivityIndicator size="small" color="#fff" />
+                            <ActivityIndicator size="small" color={Palette.white} />
                         ) : (
                             <>
                                 <Text style={styles.sendButtonText}>Send Password</Text>
-                                <Ionicons name="arrow-forward" size={20} color="#fff" />
+                                <Ionicons name="arrow-forward" size={20} color={Palette.white} />
                             </>
                         )}
                     </TouchableOpacity>
@@ -142,10 +135,10 @@ const ResetPasswordEmailScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: Palette.background,
     },
     keyboardView: {
         flex: 1,
@@ -186,12 +179,12 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#FDE68A',
+        backgroundColor: tone('#FDE68A'),
     },
     personBody: {
         width: 60,
         height: 80,
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         marginTop: -10,
@@ -210,18 +203,18 @@ const styles = StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: '#1F2937',
+        backgroundColor: Palette.text,
     },
     title: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginBottom: 12,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         textAlign: 'center',
         lineHeight: 24,
         marginBottom: 32,
@@ -233,9 +226,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
     },
     inputIcon: {
         marginLeft: 16,
@@ -245,24 +238,24 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 12,
         fontSize: 16,
-        color: '#1F2937',
+        color: Palette.text,
     },
     sendButton: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 12,
         paddingVertical: 16,
         gap: 8,
     },
     sendButtonDisabled: {
-        backgroundColor: '#D1D5DB',
+        backgroundColor: tone('#D1D5DB'),
     },
     sendButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#FFFFFF',
+        color: Palette.white,
     },
     helpContainer: {
         marginTop: 32,
@@ -270,14 +263,14 @@ const styles = StyleSheet.create({
     },
     helpText: {
         fontSize: 14,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         textAlign: 'center',
         lineHeight: 22,
     },
     helpLink: {
-        color: '#7C3AED',
+        color: Palette.primary,
         textDecorationLine: 'underline',
     },
-});
+}));
 
 export default ResetPasswordEmailScreen;

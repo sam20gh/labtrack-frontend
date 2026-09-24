@@ -15,10 +15,7 @@
  * prompts you to.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -31,9 +28,12 @@ import {
     type MetricCard, type MetricsOverview,
 } from '@/lib/metrics';
 import { presentMetric, useUnits } from '@/lib/units';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function HealthMetricsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [data, setData] = useState<MetricsOverview | null>(null);
     const [loading, setLoading] = useState(true);
@@ -121,6 +121,8 @@ export default function HealthMetricsScreen() {
 }
 
 const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen: () => void; onLog: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const { width } = useWindowDimensions();
     const units = useUnits();
     const tint = METRIC_TINT[metric.key];
@@ -150,7 +152,7 @@ const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen: () =
                       */}
                     {metric.urgent && (
                         <View style={styles.urgentChip}>
-                            <Ionicons name="warning" size={10} color="#FFFFFF" />
+                            <Ionicons name="warning" size={10} color={Palette.white} />
                             <Text style={styles.urgentText}>Check</Text>
                         </View>
                     )}
@@ -184,7 +186,7 @@ const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen: () =
                         <Text style={styles.cardValueMuted}>--</Text>
                     )}
 
-                    <Text style={[styles.cardStatus, metric.statusColour ? { color: metric.statusColour } : null]}>
+                    <Text style={[styles.cardStatus, metric.statusColour ? { color: tone(metric.statusColour) } : null]}>
                         {metric.status}
                     </Text>
                 </View>
@@ -193,7 +195,7 @@ const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen: () =
 
                 {metric.loggable && (
                     <TouchableOpacity style={[styles.logButton, { backgroundColor: tint }]} onPress={onLog} hitSlop={8}>
-                        <Ionicons name="add" size={18} color="#FFFFFF" />
+                        <Ionicons name="add" size={18} color={Palette.white} />
                     </TouchableOpacity>
                 )}
             </View>
@@ -258,7 +260,7 @@ const whenLabel = (day: string) => {
     return new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
@@ -270,9 +272,9 @@ const styles = StyleSheet.create({
 
     insightBanner: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        backgroundColor: '#F5F3FF',
+        backgroundColor: Palette.primaryTint,
         borderRadius: Radius.lg, padding: Spacing.md,
-        borderWidth: 1, borderColor: '#DDD6FE',
+        borderWidth: 1, borderColor: tone('#DDD6FE'),
     },
     insightTitle: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.text, marginBottom: 4 },
     insightLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -288,9 +290,9 @@ const styles = StyleSheet.create({
     cardWhen: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
     urgentChip: {
         flexDirection: 'row', alignItems: 'center', gap: 3,
-        backgroundColor: '#DC2626', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.pill,
+        backgroundColor: Palette.dangerFill, paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.pill,
     },
-    urgentText: { fontFamily: Fonts.semibold, fontSize: 9, color: '#FFFFFF' },
+    urgentText: { fontFamily: Fonts.semibold, fontSize: 9, color: Palette.white },
 
     cardBody: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     cardValue: { fontFamily: Fonts.bold, fontSize: 24, color: Palette.text },
@@ -304,4 +306,4 @@ const styles = StyleSheet.create({
 
     privacy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: Spacing.lg, paddingHorizontal: Spacing.lg },
     privacyText: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, textAlign: 'center', flexShrink: 1 },
-});
+}));

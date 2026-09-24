@@ -5,10 +5,7 @@
  * that makes muting hard gets uninstalled rather than muted.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity,
-    ActivityIndicator, Linking, Platform,
-} from 'react-native';
+import { View, Text, ScrollView, Switch, TouchableOpacity, ActivityIndicator, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -18,6 +15,8 @@ import {
     getPreferences, updatePreferences, registerForPushNotifications,
     getPermissionStatus, sendTestNotification, type NotificationPreferences,
 } from '@/lib/notifications';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 const OFFSET_CHOICES = [
     { days: 30, label: '1 month before' },
@@ -28,6 +27,8 @@ const OFFSET_CHOICES = [
 ];
 
 export default function NotificationSettingsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
     const [deviceCount, setDeviceCount] = useState(0);
@@ -94,7 +95,7 @@ export default function NotificationSettingsScreen() {
     };
 
     if (loading || !prefs) {
-        return <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color="#7C3AED" /></View></SafeAreaView>;
+        return <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color={Palette.primary} /></View></SafeAreaView>;
     }
 
     const toggleOffset = (days: number) => {
@@ -109,7 +110,7 @@ export default function NotificationSettingsScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Notifications</Text>
                 <View style={styles.backButton} />
@@ -118,7 +119,7 @@ export default function NotificationSettingsScreen() {
             <ScrollView contentContainerStyle={styles.scroll}>
                 {permission !== 'granted' && (
                     <View style={styles.notice}>
-                        <Ionicons name="notifications-off-outline" size={20} color="#92400E" />
+                        <Ionicons name="notifications-off-outline" size={20} color={tone('#92400E')} />
                         <View style={styles.flex}>
                             <Text style={styles.noticeTitle}>Notifications are off on this device</Text>
                             <Text style={styles.noticeText}>
@@ -135,7 +136,7 @@ export default function NotificationSettingsScreen() {
 
                 {permission === 'granted' && deviceCount > 0 && (
                     <View style={styles.okNotice}>
-                        <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                        <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
                         <Text style={styles.okNoticeText}>
                             {deviceCount === 1 ? 'This device is' : `${deviceCount} devices are`} set up for notifications
                         </Text>
@@ -152,7 +153,7 @@ export default function NotificationSettingsScreen() {
                     <Switch
                         value={prefs.enabled}
                         onValueChange={(v) => save({ enabled: v })}
-                        trackColor={{ true: '#7C3AED' }}
+                        trackColor={{ true: activePalette().primary }}
                         disabled={saving}
                     />
                 </View>
@@ -165,7 +166,7 @@ export default function NotificationSettingsScreen() {
                     <Switch
                         value={prefs.overdueReminders}
                         onValueChange={(v) => save({ overdueReminders: v })}
-                        trackColor={{ true: '#7C3AED' }}
+                        trackColor={{ true: activePalette().primary }}
                         disabled={saving || !prefs.enabled}
                     />
                 </View>
@@ -178,7 +179,7 @@ export default function NotificationSettingsScreen() {
                     <Switch
                         value={prefs.orderUpdates}
                         onValueChange={(v) => save({ orderUpdates: v })}
-                        trackColor={{ true: '#7C3AED' }}
+                        trackColor={{ true: activePalette().primary }}
                         disabled={saving || !prefs.enabled}
                     />
                 </View>
@@ -191,7 +192,7 @@ export default function NotificationSettingsScreen() {
                     <Switch
                         value={prefs.resultsReady}
                         onValueChange={(v) => save({ resultsReady: v })}
-                        trackColor={{ true: '#7C3AED' }}
+                        trackColor={{ true: activePalette().primary }}
                         disabled={saving || !prefs.enabled}
                     />
                 </View>
@@ -224,7 +225,7 @@ export default function NotificationSettingsScreen() {
 
                 {permission === 'granted' && deviceCount > 0 && (
                     <TouchableOpacity style={styles.testButton} onPress={test}>
-                        <Ionicons name="paper-plane-outline" size={18} color="#7C3AED" />
+                        <Ionicons name="paper-plane-outline" size={18} color={Palette.primary} />
                         <Text style={styles.testButtonText}>Send a test notification</Text>
                     </TouchableOpacity>
                 )}
@@ -234,8 +235,8 @@ export default function NotificationSettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -243,41 +244,41 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16, paddingVertical: 12,
     },
     backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-    headerTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
+    headerTitle: { fontSize: 17, fontWeight: '600', color: Palette.text },
     scroll: { paddingHorizontal: 20, paddingBottom: 40 },
     notice: {
         flexDirection: 'row', gap: 12, alignItems: 'flex-start',
-        backgroundColor: '#FEF3C7', borderRadius: 12, padding: 14, marginBottom: 16,
+        backgroundColor: tone('#FEF3C7'), borderRadius: 12, padding: 14, marginBottom: 16,
     },
-    noticeTitle: { fontSize: 14, fontWeight: '700', color: '#92400E' },
-    noticeText: { fontSize: 12, color: '#92400E', lineHeight: 18, marginTop: 3 },
+    noticeTitle: { fontSize: 14, fontWeight: '700', color: tone('#92400E') },
+    noticeText: { fontSize: 12, color: tone('#92400E'), lineHeight: 18, marginTop: 3 },
     noticeButton: {
-        backgroundColor: '#92400E', alignSelf: 'flex-start',
+        backgroundColor: tone('#92400E'), alignSelf: 'flex-start',
         paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, marginTop: 10,
     },
-    noticeButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    noticeButtonText: { color: Palette.white, fontSize: 13, fontWeight: '600' },
     okNotice: {
         flexDirection: 'row', gap: 8, alignItems: 'center',
-        backgroundColor: '#ECFDF5', borderRadius: 10, padding: 12, marginBottom: 16,
+        backgroundColor: Palette.successSurface, borderRadius: 10, padding: 12, marginBottom: 16,
     },
-    okNoticeText: { fontSize: 13, color: '#059669', fontWeight: '500' },
-    sectionLabel: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 20, marginBottom: 4 },
-    sectionHint: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, marginBottom: 12 },
+    okNoticeText: { fontSize: 13, color: Palette.success, fontWeight: '500' },
+    sectionLabel: { fontSize: 15, fontWeight: '700', color: Palette.text, marginTop: 20, marginBottom: 4 },
+    sectionHint: { fontSize: 12, color: Palette.textMuted, lineHeight: 18, marginBottom: 12 },
     row: {
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+        paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Palette.borderLight,
     },
     rowDisabled: { opacity: 0.45 },
-    rowTitle: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
-    rowSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+    rowTitle: { fontSize: 14, fontWeight: '600', color: Palette.text },
+    rowSub: { fontSize: 12, color: Palette.textMuted, marginTop: 2 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: '#E5E7EB' },
-    chipActive: { backgroundColor: '#7C3AED', borderColor: '#7C3AED' },
-    chipText: { fontSize: 13, color: '#6B7280' },
-    chipTextActive: { color: '#fff', fontWeight: '600' },
+    chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: Palette.border },
+    chipActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
+    chipText: { fontSize: 13, color: Palette.textSecondary },
+    chipTextActive: { color: Palette.white, fontWeight: '600' },
     testButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingVertical: 14, marginTop: 28,
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 12, paddingVertical: 14, marginTop: 28,
     },
-    testButtonText: { color: '#7C3AED', fontSize: 14, fontWeight: '600' },
-});
+    testButtonText: { color: Palette.primary, fontSize: 14, fontWeight: '600' },
+}));

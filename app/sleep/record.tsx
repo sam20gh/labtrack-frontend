@@ -41,7 +41,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState, StaleNotice } from '@/components/errors';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { Hypnogram } from '@/components/sleep/Hypnogram';
@@ -96,6 +97,8 @@ const BUCKET_NOTE: Record<RecordBucket, string> = {
 
 /** `▲ 6% vs previous week`, or a plain line when there is nothing to compare with. */
 function DeltaChip({ comparison, period }: { comparison: PeriodComparison | undefined; period: string }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!comparison || comparison.deltaPct === null || comparison.direction === null) return null;
     const flat = comparison.direction === 'flat';
     const up = comparison.direction === 'up';
@@ -114,6 +117,8 @@ function DeltaChip({ comparison, period }: { comparison: PeriodComparison | unde
 }
 
 function HeroChip({ icon, label }: { icon: IconName; label: string }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <View style={styles.heroChip}>
             <Ionicons name={icon} size={13} color={Palette.white} />
@@ -137,6 +142,7 @@ function StatTile({
 }: {
     icon: IconName; tint: string; surface: string; label: string; value: string; note?: string | null;
 }) {
+    const styles = useStyles();
     return (
         <View style={styles.tile}>
             <View style={[styles.tileIcon, { backgroundColor: surface }]}>
@@ -152,6 +158,7 @@ function StatTile({
 function Card({ title, subtitle, children, right }: {
     title: string; subtitle?: string; children: React.ReactNode; right?: React.ReactNode;
 }) {
+    const styles = useStyles();
     return (
         <View style={styles.card}>
             <View style={styles.cardHead}>
@@ -170,6 +177,8 @@ function Card({ title, subtitle, children, right }: {
 function SelectedPanel({
     bar, bucket, onOpen,
 }: { bar: SleepRecordBar; bucket: RecordBucket; onOpen: (id: string) => void }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const chips: { label: string; tint: string; minutes: number | null }[] = [
         { label: STAGE_META.deep.label, tint: STAGE_META.deep.tint, minutes: bar.deepMin },
         { label: STAGE_META.light.label, tint: STAGE_META.light.tint, minutes: bar.lightMin },
@@ -235,6 +244,8 @@ function SelectedPanel({
 function NightStrip({
     bar, bucket, scale, onPress,
 }: { bar: SleepRecordBar; bucket: RecordBucket; scale: number; onPress?: () => void }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const pieces = [
         { key: 'deep', m: bar.deepMin, tint: STAGE_META.deep.tint },
         { key: 'light', m: bar.lightMin, tint: STAGE_META.light.tint },
@@ -284,6 +295,8 @@ function NightStrip({
 /* ------------------------------------------------------------------ screen */
 
 export default function SleepRecordScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [range, setRange] = useState<MetricRange>('1w');
@@ -812,7 +825,7 @@ export default function SleepRecordScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     dimmed: { opacity: 0.55 },
@@ -959,7 +972,7 @@ const styles = StyleSheet.create({
     emptyActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
     primaryButton: {
         paddingHorizontal: Spacing.xl, paddingVertical: 10, borderRadius: Radius.pill,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
     },
     primaryButtonText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.white },
     secondaryButton: {
@@ -967,4 +980,4 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.primarySurface,
     },
     secondaryButtonText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
-});
+}));

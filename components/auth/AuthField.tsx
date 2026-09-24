@@ -9,15 +9,10 @@
  * which is what a shadow-based ring would have done on iOS and nothing at all on Android.
  */
 import React, { useState } from 'react';
-import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TextInputProps,
-    View,
-} from 'react-native';
+import { Text, TextInput, TextInputProps, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Fonts, Palette, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Radius, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 interface Props extends Omit<TextInputProps, 'style'> {
     label: string;
@@ -35,13 +30,15 @@ interface Props extends Omit<TextInputProps, 'style'> {
 }
 
 export default function AuthField({ label, icon, accessory, invalid, attached, onFocus, onBlur, ...input }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const [focused, setFocused] = useState(false);
     const accent = invalid ? Palette.danger : Palette.primary;
 
     return (
         <View style={[styles.group, attached && styles.attached]}>
             <Text style={styles.label}>{label}</Text>
-            <View style={[styles.ring, (focused || invalid) && { backgroundColor: invalid ? Palette.dangerSurface : RING }]}>
+            <View style={[styles.ring, (focused || invalid) && { backgroundColor: invalid ? Palette.dangerSurface : ring() }]}>
                 <View
                     style={[
                         styles.field,
@@ -74,9 +71,10 @@ export default function AuthField({ label, icon, accessory, invalid, attached, o
 }
 
 /** The kit's focus halo, measured off the export. Not a palette token — it exists here only. */
-const RING = '#DECEFB';
+/** The focus ring's wash, read at render so it follows the scheme. */
+const ring = () => tone('#DECEFB');
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     group: {
         // 23 and 11 rather than 20 and 8: the focus ring's `margin: -3` lets the halo grow
         // outside the field's box (which is what the kit draws), and that -3 eats into the
@@ -117,4 +115,4 @@ const styles = StyleSheet.create({
         color: Palette.text,
         padding: 0,
     },
-});
+}));

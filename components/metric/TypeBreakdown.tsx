@@ -12,9 +12,10 @@
  * person.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import { formatType, type ActivityBreakdownRow } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
 
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export function TypeBreakdown({ rows, onSeeAll }: Props) {
+    const styles = useStyles();
     if (!rows.length) return null;
 
     const top = rows[0];
@@ -57,7 +59,7 @@ export function TypeBreakdown({ rows, onSeeAll }: Props) {
                             ]}
                         >
                             <MaterialCommunityIcons name={look.icon} size={16} color={look.tint} />
-                            <Text style={[styles.pillLabel, { color: look.tint }]} numberOfLines={1}>{formatType(r.type)}</Text>
+                            <Text style={styles.pillLabel} numberOfLines={1}>{formatType(r.type)}</Text>
                         </View>
 
                         {/*
@@ -90,7 +92,7 @@ export function TypeBreakdown({ rows, onSeeAll }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         borderWidth: 1,
         borderColor: Palette.border,
@@ -128,4 +130,4 @@ const styles = StyleSheet.create({
         marginTop: Spacing.xs,
     },
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary, marginTop: 2 },
-});
+}));

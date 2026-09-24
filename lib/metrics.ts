@@ -13,6 +13,7 @@
  * Days are local: every call carries `tzOffset`, the rule every tracker in this app follows.
  */
 import { api } from './api';
+import { schemed } from '@/constants/theme';
 
 const tzOffset = () => new Date().getTimezoneOffset();
 
@@ -236,15 +237,30 @@ export const METRIC_ICON: Record<MetricKey, string> = {
  * Sleep's `#6366F1` is still 8.7 from the brand. That is not fixable here — the brand's three
  * violets span the whole indigo-to-lavender band a night colour would live in — and waits on
  * the brand, not on this table. Validate any change: `validate_palette.js --pairs all`.
+ *
+ * **Dark has its own set, searched and checked as a set** — lightening each light tint in
+ * isolation put blood pressure and hydration at ΔE 3.0 and sleep and hydration at 0.3 for a
+ * deuteranope. The dark set keeps each hue within ±24° and was searched against the dark
+ * card, the status colours and the brand violets together. Against light mode it is better
+ * on every measure: weakest pair 9.8 vs 9.6 (normal vision), weakest neighbours 8.9 vs 3.9
+ * (colour-blind), ≥8 from every status and brand colour, ≥6.3:1 on the card vs 2.1:1.
+ *
+ * It deliberately sits above the validator's dark lightness band (L 0.70–0.80 against a 0.67
+ * ceiling). That band stops an area fill dominating a chart; these are glyphs, sparkline
+ * strokes and labelled marks, which have to be bright enough to read on near-black.
  */
-export const METRIC_TINT: Record<MetricKey, string> = {
-    weight: '#F59E0B',
-    blood_pressure: '#0C6EA0',
-    heart_rate: '#FB7185',
-    sleep: '#6366F1',
-    hydration: '#38BDF8',
-    steps: '#10B981',
+const METRIC_TINTS: Record<'light' | 'dark', Record<MetricKey, string>> = {
+    light: {
+        weight: '#F59E0B', blood_pressure: '#0C6EA0', heart_rate: '#FB7185',
+        sleep: '#6366F1', hydration: '#38BDF8', steps: '#10B981',
+    },
+    dark: {
+        weight: '#F59E0B', blood_pressure: '#54D0EC', heart_rate: '#DF76AC',
+        sleep: '#A3BBFF', hydration: '#20B2C4', steps: '#59B934',
+    },
 };
+
+export const METRIC_TINT = schemed((_, scheme) => ({ ...METRIC_TINTS[scheme] }));
 
 /** Which detail route a card opens. Device-fed metrics point at their own trackers. */
 export const METRIC_ROUTE: Record<MetricKey, string> = {

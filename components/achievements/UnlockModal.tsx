@@ -17,14 +17,13 @@
  *    back-navigation cannot land on it.
  */
 import React from 'react';
-import {
-    Modal, View, Text, Pressable, StyleSheet, useWindowDimensions,
-} from 'react-native';
+import { Modal, View, Text, Pressable, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BadgeMedal } from './BadgeMedal';
 import { Confetti } from './Confetti';
 import type { Unlock } from '@/lib/achievements';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 interface Props {
     unlock: Unlock | null;
@@ -35,6 +34,8 @@ interface Props {
 }
 
 export function UnlockModal({ unlock, remaining = 0, onDismiss, onOpen }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const { width } = useWindowDimensions();
     if (!unlock) return null;
 
@@ -100,7 +101,7 @@ export function UnlockModal({ unlock, remaining = 0, onDismiss, onOpen }: Props)
 /** "Record 1,000 steps" → "recording 1,000 steps" reads badly; lowercasing the verb is enough. */
 const lowerFirst = (s: string) => (s ? s[0].toLowerCase() + s.slice(1) : s);
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     backdrop: {
         flex: 1,
         backgroundColor: 'rgba(31, 41, 55, 0.55)',
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
     },
     cta: {
         alignSelf: 'stretch',
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         borderRadius: Radius.md,
         paddingVertical: 14,
         alignItems: 'center',
@@ -148,4 +149,4 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.text,
         alignItems: 'center', justifyContent: 'center',
     },
-});
+}));

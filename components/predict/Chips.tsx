@@ -7,9 +7,10 @@
  * chip and the next.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Radius, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Radius, Spacing, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import {
     confidenceLabel, confidencePct, toneColour, toneSurface, DIRECTION_ICON,
     type Direction, type BetterWhen, type Horizon, type Band,
@@ -24,6 +25,8 @@ import {
  * of illness.
  */
 export function ConfidenceChip({ value, compact = false }: { value: number; compact?: boolean }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const { label, colour, weak } = confidenceLabel(value);
     return (
         <View style={[styles.confidence, { borderColor: weak ? Palette.warning : Palette.border }]}>
@@ -43,6 +46,7 @@ export function HorizonTabs({
     value: string;
     onChange: (id: string) => void;
 }) {
+    const styles = useStyles();
     return (
         <ScrollView
             horizontal
@@ -80,6 +84,8 @@ export function ChangeBadge({
     direction: Direction;
     betterWhen: BetterWhen;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (changePct === null || direction === 'flat') {
         return (
             <View style={[styles.badge, { backgroundColor: Palette.surface }]}>
@@ -106,6 +112,8 @@ export function ChangeBadge({
  * every band identically.
  */
 export function BandChip({ band }: { band: Band | null }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!band) return null;
     const colour = band.crisis ? Palette.danger : Palette.textSecondary;
     return (
@@ -125,6 +133,7 @@ export function BandChip({ band }: { band: Band | null }) {
  * it has claimed to be a measurement of the future.
  */
 export function PredictionDisclaimer({ text, tone = 'quiet' }: { text: string; tone?: 'quiet' | 'card' }) {
+    const styles = useStyles();
     return (
         <View style={tone === 'card' ? styles.disclaimerCard : undefined}>
             <Text style={styles.disclaimer}>{text}</Text>
@@ -134,6 +143,7 @@ export function PredictionDisclaimer({ text, tone = 'quiet' }: { text: string; t
 
 /** The design's "AI-Generated Prediction" pill on the details hero. */
 export function GeneratedPill({ degraded }: { degraded?: boolean }) {
+    const styles = useStyles();
     return (
         <View style={styles.generated}>
             <Text style={styles.generatedText}>
@@ -143,18 +153,18 @@ export function GeneratedPill({ degraded }: { degraded?: boolean }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     confidence: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
         alignSelf: 'center', paddingHorizontal: 10, paddingVertical: 5,
-        borderRadius: Radius.sm, borderWidth: 1, backgroundColor: Palette.white,
+        borderRadius: Radius.sm, borderWidth: 1, backgroundColor: Palette.background,
     },
     confidenceText: { fontSize: 12, ...BodyFont.medium },
 
     tabTrack: { gap: 4, padding: 4, backgroundColor: Palette.borderLight, borderRadius: 12 },
     tab: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 9 },
     tabActive: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4,
         shadowOffset: { width: 0, height: 1 }, elevation: 1,
     },
@@ -185,8 +195,8 @@ const styles = StyleSheet.create({
     },
 
     generated: {
-        alignSelf: 'flex-start', backgroundColor: Palette.white,
+        alignSelf: 'flex-start', backgroundColor: Palette.background,
         paddingHorizontal: 10, paddingVertical: 5, borderRadius: Radius.sm,
     },
     generatedText: { fontSize: 11, fontFamily: Fonts.semibold, color: Palette.text },
-});
+}));

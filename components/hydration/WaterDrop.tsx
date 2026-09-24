@@ -13,9 +13,10 @@
  * make add up.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { Palette, Spacing, BodyFont } from '@/constants/theme';
+import { Spacing, BodyFont, tone } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import { DROP_ML } from '@/lib/hydration';
 
 /** The export's droplet, 20.67 × 25.66. */
@@ -27,11 +28,13 @@ const SOLID = 'M20.419 10.666L20.667 11.325V19.325L20.374 20.032L15.04 25.366L14
 const HOLLOW = `${SOLID.slice(0, -1)}ZM2.004 11.7V18.911L6.744 23.659H13.924L18.664 `
     + '18.911V11.7L10.334 2.177L2.004 11.7Z';
 
-export const WATER_BLUE = '#3B82F6';
+/** The drop's blue, read at the moment it is drawn so it follows the scheme. */
+export const waterBlue = () => tone('#3B82F6');
 
-export function WaterDrop({ size = 18, filled = true, color = WATER_BLUE }: {
+export function WaterDrop({ size = 18, filled = true, color: colorProp }: {
     size?: number; filled?: boolean; color?: string;
 }) {
+    const color = colorProp ?? waterBlue();
     const height = (size * BOX.h) / BOX.w;
     return (
         <Svg width={size} height={height} viewBox={`0 0 ${BOX.w} ${BOX.h}`}>
@@ -49,6 +52,7 @@ export function WaterDrop({ size = 18, filled = true, color = WATER_BLUE }: {
 export function DropRow({ filled, total, caption = true }: {
     filled: number; total: number; caption?: boolean;
 }) {
+    const styles = useStyles();
     return (
         <View style={styles.wrap}>
             <View
@@ -68,9 +72,9 @@ export function DropRow({ filled, total, caption = true }: {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     wrap: { alignItems: 'center', gap: Spacing.sm },
     row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.sm },
     caption: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted },
-    approx: { color: WATER_BLUE },
-});
+    approx: { color: waterBlue() },
+}));

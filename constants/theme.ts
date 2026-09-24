@@ -12,19 +12,29 @@ import { Platform, type TextStyle } from 'react-native';
  * the next palette change is one edit instead of twenty-seven.
  */
 
-export const Palette = {
-    /** Primary accent — the turing kit purple. */
-    primary: '#7C3AED',
-    primaryDark: '#6D28D9',
+const LightPalette = {
     /**
-     * A **fill and decoration** weight, never text on a light ground: 2.72:1 on white and
-     * 2.31:1 on `primarySurface`, under both AA text (4.5:1) and non-text (3:1). Fine as a
-     * chart mark beside a label, a gradient stop, a border on a card whose fill already
-     * defines it, or anything on a dark surface (5.6:1 on `primaryDeep`, 7.7:1 on black).
-     * For text, an icon that means something, or the outline that alone marks a selected
-     * state, use `primary` (5.7:1).
+     * Primary accent — **Predyqt violet**, `#853AAB`, OKLCH 0.50 / 0.18 / 312°.
+     *
+     * It replaced `#7C3AED`, which is Tailwind's stock violet-600 — the same colour as every
+     * "AI product" launch page, and 8.7 ΔE from the sleep metric's indigo. Chosen by search
+     * against five requirements: ≥5 ΔE from every stock Tailwind violet/purple/fuchsia step
+     * (6.4); clear of the data and status colours (nearest, sleep, now 14.5); ≥5.5:1 both as
+     * text on white and as a fill under white text (6.6:1 each way, up from 5.7); a dark-mode
+     * counterpart ≥4.5:1 on the dark card (7.7:1); and a calmer chroma (0.18 against 0.25).
+     * The hue moved *away* from blue on purpose — towards red-violet — which is what freed the
+     * blues and indigos for data. Every step below is the same hue at a different lightness.
      */
-    primaryLight: '#A78BFA',
+    primary: '#853AAB',
+    primaryDark: '#6C2B8D',
+    /**
+     * A **fill and decoration** weight, never text on a light ground: 2.8:1 on white, under
+     * both AA text (4.5:1) and non-text (3:1). Fine as a chart mark beside a label, a gradient
+     * stop, a border on a card whose fill already defines it, or anything on a dark surface.
+     * For text, an icon that means something, or the outline that alone marks a selected
+     * state, use `primary` (6.6:1).
+     */
+    primaryLight: '#B788D4',
     /**
      * One stop paler than `primaryLight`, and the kit's own value for a violet that has to
      * read as an *outline* rather than as a fill — the Symptom Checker card's calm badge
@@ -32,36 +42,37 @@ export const Palette = {
      * `#A78BFA` is a fill weight: drawn as a 1pt ring at 24pt it reads as a second accent
      * competing with the purple button above it.
      */
-    primaryPale: '#C4B5FD',
+    primaryPale: '#D1B3E5',
     /** Tinted surface behind icons and badges. */
-    primarySurface: '#F3E8FF',
+    primarySurface: '#F6ECFD',
     /**
      * Deep violet and indigo from the turing kit. The kit uses `#4F46E5` for primary
      * buttons and `#2E1065` as the darkest point of its hero gradients.
      */
-    primaryDeep: '#2E1065',
+    primaryDeep: '#300B42',
     indigo: '#4F46E5',
     /**
      * Hero *surfaces* — every gradient header and hero card. Deep and single-hue, top-left to
-     * bottom-right: violet-900 to violet-950.
+     * bottom-right: the brand hue at OKLCH lightness 0.37 → 0.25.
      *
      * The kit draws these as bright violet into indigo, which is `actionGradient` below, and
      * across fifteen screens that made the loudest colour in the app the background of the
      * most important news on each: "3 markers outside your range" printed on something that
      * looks like a promotion. Deep, it reads as a plinth rather than a shout — the argument
      * `TrophyCase` makes for its dark card — and the bright purple is left meaning *act here*.
-     * Every colour drawn on a hero gets more legible, not less: white goes from 5.7:1 to
-     * ≥10.9:1, and the amber, green and rose the rings use clear 4:1.
+     * Every colour drawn on a hero gets more legible, not less: white is ≥11:1 on it, and the
+     * amber, green and rose the rings use clear 4:1.
      *
      * Only something *darker* than this can be lost on it. A purple button on a hero now
      * reads as a button, where on the old gradient it was the same colour as its background.
      */
-    heroGradient: ['#4C1D95', '#3D177D', '#2E1065'] as [string, string, string],
+    heroGradient: ['#582174', '#44165B', '#310C43'] as [string, string, string],
     /**
-     * The kit's bright gradient, for the one control that *is* the brand's action: the raised
-     * button in the tab bar. Not for surfaces — see `heroGradient`.
+     * The bright gradient, for the one control that *is* the brand's action: the raised button
+     * in the tab bar. The brand hue from OKLCH 0.56 to 0.43 — no longer the kit's violet into
+     * indigo. Not for surfaces — see `heroGradient`.
      */
-    actionGradient: ['#7C3AED', '#6D28D9', '#4F46E5'] as [string, string, string],
+    actionGradient: ['#9949C3', '#853AAB', '#6C2B8D'] as [string, string, string],
 
     // Clinical status. These are semantic, not decorative: a person reads them to
     // understand a result, so they must stay distinguishable and consistent everywhere.
@@ -127,6 +138,15 @@ export const Palette = {
     orange: '#C2410C',
     orangeSurface: '#FFF7ED',
     indigoSurface: '#EEF2FF',
+    /**
+     * Running and jogging. They were the brand purple — 1.3 ΔE from weightlifting's indigo for a
+     * deuteranope, and brand colour used as data. Searched against the other activity tints and
+     * the brand and status colours: nearest activity 11.9 normal / 6.2 colour-blind, which
+     * clears the 6.0 floor because every type also has its own glyph and label. An icon weight
+     * (3.3:1 on `goldSurface`) — activity labels are drawn in text colour, never in the tint.
+     */
+    gold: '#968739',
+    goldSurface: '#F8F4DE',
 
     // Neutrals
     text: '#1F2937',
@@ -189,7 +209,7 @@ export const Palette = {
      * yet. `primarySurface` at `#F3E8FF` is a step towards magenta and reads as a second
      * accent beside the purple button below it; this is the kit's own violet-50.
      */
-    primaryTint: '#F5F3FF',
+    primaryTint: '#F9F5FD',
     /**
      * The kit's password-strength meter, and the one place a red and a green in this app are
      * *not* clinical. `danger`/`success` are read as a verdict on a result; reusing them to
@@ -202,7 +222,242 @@ export const Palette = {
     black: '#000000',
 
     white: '#FFFFFF',
-} as const;
+
+    /**
+     * Fills behind white text. In light mode each is its base colour; in dark mode the base
+     * colour is lightened to read as *text* on a near-black card, which puts it under 4.5:1
+     * with white on top — so a button keeps the saturated value. See `DarkPalette`.
+     */
+    primaryFill: '#853AAB',
+    primaryDarkFill: '#6C2B8D',
+    successFill: '#059669',
+    warningFill: '#B45309',
+    dangerFill: '#DC2626',
+};
+
+export type ThemePalette = typeof LightPalette;
+export type ColorSchemeName = 'light' | 'dark';
+
+/**
+ * The dark set — same keys, same meanings.
+ *
+ * Built on three rules, each the dark-mode form of one the light set already follows:
+ *
+ * 1. **Surfaces step up in lightness, not down in shadow.** `canvas` is the page, `background`
+ *    the card on it, `surface` a well inside a card. Shadows are near-invisible on black, so
+ *    the step between them is what separates a card from the page.
+ * 2. **Every foreground colour is lightened until it reads as text on `background`.** The
+ *    brand purple becomes `#A78BFA`, the clinical green, amber and red their 300–400 steps.
+ *    That is why the `…Fill` tokens exist: the lightened values fail under white text.
+ * 3. **Tinted surfaces are dark tints, not pastels.** A `dangerSurface` of `#FEF2F2` on a
+ *    black page is a lamp; a flag has to stay a quiet wash behind a coloured word.
+ *
+ * `white` and `black` are literal in both modes: `white` is text on a fill. A *card* is
+ * `background`, never `white` — the one confusion this split cannot absorb for you.
+ */
+const DarkPalette: ThemePalette = {
+    primary: '#C797E5',
+    primaryDark: '#DCBCF1',
+    primaryLight: '#853AAB',
+    primaryPale: '#5D3075',
+    primarySurface: '#2F1F38',
+    primaryDeep: '#300B42',
+    indigo: '#818CF8',
+    heroGradient: LightPalette.heroGradient,
+    actionGradient: LightPalette.actionGradient,
+
+    success: '#34D399',
+    successDeep: '#6EE7B7',
+    successSurface: '#0F2A20',
+    successBand: '#14503C',
+    warning: '#FBBF24',
+    warningSurface: '#2B2110',
+    danger: '#F87171',
+    dangerSurface: '#2D1515',
+    info: '#60A5FA',
+    infoSurface: '#14203A',
+    amber: '#F59E0B',
+
+    flameLight: '#FBBF24',
+    flame: '#F59E0B',
+    flameDeep: '#FB923C',
+    macroFat: '#F472B6',
+    macroFatDeep: '#F9A8D4',
+
+    teal: '#2DD4BF',
+    tealSurface: '#0E2A27',
+    sky: '#38BDF8',
+    skySurface: '#0C2233',
+    pink: '#F472B6',
+    pinkSurface: '#2E1424',
+    lime: '#A3E635',
+    limeSurface: '#1B2610',
+    orange: '#FB923C',
+    orangeSurface: '#2E1D10',
+    indigoSurface: '#1C1F3A',
+    gold: '#E4E495',
+    goldSurface: '#28280F',
+
+    text: '#F4F4F5',
+    textSecondary: '#A1A1AA',
+    textMuted: '#7A7A85',
+    textOnWarm: '#B5AC9E',
+    border: '#2E2E3A',
+    borderLight: '#23232D',
+    surface: '#1D1D27',
+    surfaceWarm: '#1F1D22',
+    background: '#16161E',
+    canvas: '#0D0D13',
+    borderSlate: '#2A2A35',
+    borderStrong: '#6E6E82',
+
+    alert: '#FB7185',
+    alertSurface: '#2E1419',
+    alertBorder: '#5A2130',
+    primaryTint: '#1F1625',
+    meterWeak: '#FB7185',
+    meterStrong: '#34D399',
+    black: '#000000',
+    white: '#FFFFFF',
+
+    primaryFill: '#853AAB',
+    primaryDarkFill: '#6C2B8D',
+    successFill: '#059669',
+    warningFill: '#B45309',
+    dangerFill: '#DC2626',
+};
+
+export const Palettes: Record<ColorSchemeName, ThemePalette> = { light: LightPalette, dark: DarkPalette };
+
+/**
+ * The scheme in force, mirrored here by `ThemeProvider` before its children render.
+ *
+ * For colour that lives in a **table** rather than in a component — a stage's tint, a band's
+ * tone — read by helpers that are called during render but are not components, so cannot
+ * take a hook. Anything that can call `usePalette()` should: this exists so thirty call
+ * sites of `STAGE_META.deep.tint` do not each have to become one.
+ */
+let activeScheme: ColorSchemeName = 'light';
+export const setActiveScheme = (scheme: ColorSchemeName) => { activeScheme = scheme; };
+export const activePalette = (): ThemePalette => Palettes[activeScheme];
+
+/**
+ * A table that follows the theme. `build` runs at most once per scheme; reads go to the
+ * active scheme's copy, so `STAGE_META.deep.tint` read during a render in dark mode is the
+ * dark tint, and the call site does not change. Keys, `in` and `Object.entries` all see the
+ * active copy.
+ *
+ * Read it during render. A value copied out at module load is frozen at the light scheme,
+ * which is the mistake this exists to avoid.
+ */
+export function schemed<T extends object>(
+    build: (palette: ThemePalette, scheme: ColorSchemeName) => T,
+): T {
+    // Light is built now, once, both to seed the cache and to learn the table's shape: an array
+    // table behind a plain-object proxy answers `Array.isArray` with false, and a FlatList
+    // handed one renders nothing.
+    const cache: Partial<Record<ColorSchemeName, T>> = { light: build(Palettes.light, 'light') };
+    const current = (): T => (cache[activeScheme] ??= build(Palettes[activeScheme], activeScheme));
+    const target = (Array.isArray(cache.light) ? [] : {}) as T;
+    return new Proxy(target, {
+        get: (_target, key) => (current() as Record<PropertyKey, unknown>)[key],
+        has: (_target, key) => key in current(),
+        ownKeys: () => Reflect.ownKeys(current()),
+        getOwnPropertyDescriptor: (t, key) => {
+            const descriptor = Reflect.getOwnPropertyDescriptor(current(), key);
+            // An array's `length` is non-configurable on the target too; everything else is
+            // reported configurable because the target does not actually hold it.
+            if (descriptor && Reflect.getOwnPropertyDescriptor(t, key)?.configurable !== false) {
+                descriptor.configurable = true;
+            }
+            return descriptor;
+        },
+    });
+}
+
+/* ------------------------------------------------------------------ *
+ * tone() — a dark counterpart for a colour that is not a token
+ * ------------------------------------------------------------------ */
+
+type Oklch = [number, number, number];
+
+const toLinear = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+const fromLinear = (v: number) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+
+const hexToOklch = (hex: string): Oklch => {
+    const [r, g, b] = [1, 3, 5].map((i) => toLinear(parseInt(hex.slice(i, i + 2), 16) / 255));
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+    const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+    const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    return [L, Math.hypot(A, B), (Math.atan2(B, A) * 180) / Math.PI];
+};
+
+const oklchToHex = ([L, C, h]: Oklch): string | null => {
+    const A = C * Math.cos((h * Math.PI) / 180);
+    const B = C * Math.sin((h * Math.PI) / 180);
+    const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+    const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+    const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+    const rgb = [
+        4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+        -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+        -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+    ];
+    if (rgb.some((v) => v < -0.0005 || v > 1.0005)) return null;
+    return '#' + rgb.map((v) => Math.round(fromLinear(Math.min(1, Math.max(0, v))) * 255)
+        .toString(16).padStart(2, '0')).join('').toUpperCase();
+};
+
+const toneCache = new Map<string, string>();
+
+/**
+ * The colour to draw `hex` in under `scheme`. Light returns it untouched; dark keeps its hue
+ * and moves its lightness to the role it plays:
+ *
+ * - a pastel **surface** (L ≥ 0.9, the `#FEF2F2` kind) becomes a dark tint of the same hue;
+ * - a pastel **border or chip** (0.78–0.9, `#FECACA`) becomes a mid-dark tint;
+ * - a **foreground** (anything darker) is lightened until it reads on a dark card;
+ * - a **grey** is mirrored, so a light grey rule becomes a dark one;
+ * - white and black are left alone — white on a fill is still white.
+ *
+ * For semantic colour that is not a token — a flag's border, a status tint. **Not for data
+ * colours**: a categorical palette needs its own dark set validated as a set, which a per-colour
+ * mapping cannot guarantee. See `STAGE_META` in `lib/sleep.ts`.
+ */
+export const tone = (hex: string, scheme: ColorSchemeName = activeScheme): string => {
+    if (scheme === 'light' || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return hex;
+    const key = hex.toUpperCase();
+    if (key === '#FFFFFF' || key === '#000000') return key;
+    const cached = toneCache.get(key);
+    if (cached) return cached;
+    const [L, C, h] = hexToOklch(key);
+    let target: Oklch;
+    if (C < 0.02) target = [Math.min(0.92, Math.max(0.22, 1.08 - L)), C, h];
+    else if (L >= 0.9) target = [0.27, Math.min(C, 0.05), h];
+    else if (L >= 0.78) target = [0.38, Math.min(C, 0.08), h];
+    else target = [Math.max(L, 0.76), C, h];
+    // Pull chroma in until the colour exists in sRGB; lightness is the property that matters.
+    let out = oklchToHex(target);
+    for (let c = target[1]; !out && c > 0; c -= 0.01) out = oklchToHex([target[0], Math.max(0, c), target[2]]);
+    const result = out ?? key;
+    toneCache.set(key, result);
+    return result;
+};
+
+/** The active scheme, for a module-level helper that has to pick a colour at call time. */
+export const activeSchemeName = (): ColorSchemeName => activeScheme;
+
+/**
+ * The light set, read statically.
+ *
+ * **Migration shim.** A file that imports this renders light whatever the person chose. A
+ * migrated file takes the palette from `usePalette()` / `makeStyles()` in `hooks/useTheme.ts`
+ * instead, and shadows this import inside its components so the JSX does not change.
+ */
+export const Palette = LightPalette;
 
 /** Spacing scale, 4pt based. */
 export const Spacing = {

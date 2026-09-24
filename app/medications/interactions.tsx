@@ -19,10 +19,7 @@
  *      answer than the one someone was reading a minute ago.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, Alert, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -30,10 +27,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { getCheck, runCheck, interactionVerdict, SEVERITY_META } from '@/lib/medications';
 import { FindingCard } from '@/components/medications/FindingCard';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { MedicationCheckResponse } from '@/types/api';
 
 export default function InteractionsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [data, setData] = useState<MedicationCheckResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -278,15 +278,18 @@ export default function InteractionsScreen() {
 
 const Section = ({ title, subtitle, children }: {
     title: string; subtitle?: string; children: React.ReactNode;
-}) => (
-    <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
-        <View style={styles.sectionBody}>{children}</View>
-    </View>
-);
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+            <View style={styles.sectionBody}>{children}</View>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -296,7 +299,7 @@ const styles = StyleSheet.create({
     content: { padding: Spacing.xl, paddingTop: Spacing.sm, gap: Spacing.lg, paddingBottom: Spacing.xxxl * 2 },
 
     verdict: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1,
         borderColor: Palette.border,
@@ -308,7 +311,7 @@ const styles = StyleSheet.create({
     verdictDetail: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 20 },
 
     summaryCard: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
         padding: Spacing.lg,
@@ -336,7 +339,7 @@ const styles = StyleSheet.create({
     sectionBody: { gap: Spacing.sm, marginTop: Spacing.xs },
 
     timingCard: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
         padding: Spacing.lg,
@@ -363,7 +366,7 @@ const styles = StyleSheet.create({
 
     runButton: {
         flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         borderRadius: Radius.md,
         paddingVertical: 15,
     },
@@ -378,7 +381,7 @@ const styles = StyleSheet.create({
 
     emptyCard: {
         alignItems: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
         padding: Spacing.xxxl,
@@ -386,8 +389,8 @@ const styles = StyleSheet.create({
     emptyTitle: { fontSize: 17, color: Palette.text, fontFamily: Fonts.semibold },
     emptyBody: { fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, textAlign: 'center', lineHeight: 20 },
     primaryButton: {
-        backgroundColor: Palette.primary, borderRadius: Radius.md,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.md,
         paddingVertical: 13, paddingHorizontal: Spacing.xxl, marginTop: Spacing.sm,
     },
     primaryButtonText: { fontSize: 14, color: Palette.white, fontFamily: Fonts.semibold },
-});
+}));

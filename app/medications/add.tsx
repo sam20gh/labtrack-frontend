@@ -11,10 +11,7 @@
  * and no reminders, and a "saved" medication that does nothing looks broken.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-    Switch, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Linking,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Switch, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,11 +19,12 @@ import { createMedication, today, FREQUENCY_LABEL, FORM_LABEL, WEEKDAYS, formatT
 import { PillGlyph } from '@/components/medications/PillGlyph';
 import { ensureRemindersReady } from '@/lib/notifications';
 import { warnRemindersUnavailable } from '@/lib/medicationReminders';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont, activePalette, tone, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { MedicationFrequency, MedicationForm, MedicationShape } from '@/types/api';
 
 /** The design's swatch row. */
-const COLOURS = ['#7C3AED', '#1F2937', '#E5E7EB', '#F43F5E', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
+const COLOURS = schemed((_, scheme) => ([activePalette().primary, activePalette().text, activePalette().border, activePalette().alert, tone('#F59E0B', scheme), tone('#10B981', scheme), tone('#3B82F6', scheme), tone('#8B5CF6', scheme)]));
 
 const SHAPES: MedicationShape[] = [
     'oblong', 'diamond', 'square', 'triangle', 'hexagon', 'round',
@@ -51,6 +49,8 @@ const DEFAULT_TIMES: Record<string, string[]> = {
 };
 
 export default function AddMedicationScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{ prefill?: string; imageUri?: string }>();
 
@@ -422,53 +422,66 @@ export default function AddMedicationScreen() {
 
 const Section = ({ title, subtitle, children }: {
     title: string; subtitle?: string; children: React.ReactNode;
-}) => (
-    <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
-        <View style={styles.sectionBody}>{children}</View>
-    </View>
-);
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+            <View style={styles.sectionBody}>{children}</View>
+        </View>
+    );
+};
 
 const Field = ({ label, hint, flex, children }: {
     label: string; hint?: string; flex?: boolean; children: React.ReactNode;
-}) => (
-    <View style={[styles.field, flex && { flex: 1 }]}>
-        <Text style={styles.label}>{label}</Text>
-        {children}
-        {hint ? <Text style={styles.hint}>{hint}</Text> : null}
-    </View>
-);
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={[styles.field, flex && { flex: 1 }]}>
+            <Text style={styles.label}>{label}</Text>
+            {children}
+            {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+        </View>
+    );
+};
 
-const Chip = ({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) => (
-    <TouchableOpacity
-        style={[styles.chip, selected && styles.chipSelected]}
-        onPress={onPress}
-        activeOpacity={0.75}
-    >
-        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
-    </TouchableOpacity>
-);
+const Chip = ({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) => {
+    const styles = useStyles();
+    return (
+        <TouchableOpacity
+            style={[styles.chip, selected && styles.chipSelected]}
+            onPress={onPress}
+            activeOpacity={0.75}
+        >
+            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+        </TouchableOpacity>
+    );
+};
 
 const ToggleRow = ({ label, hint, value, disabled, onChange }: {
     label: string; hint?: string; value: boolean; disabled?: boolean; onChange: (v: boolean) => void;
-}) => (
-    <View style={styles.toggleRow}>
-        <View style={{ flex: 1 }}>
-            <Text style={[styles.toggleLabel, disabled && { color: Palette.textMuted }]}>{label}</Text>
-            {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.toggleRow}>
+            <View style={{ flex: 1 }}>
+                <Text style={[styles.toggleLabel, disabled && { color: Palette.textMuted }]}>{label}</Text>
+                {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+            </View>
+            <Switch
+                value={value}
+                onValueChange={onChange}
+                disabled={disabled}
+                trackColor={{ true: Palette.primary, false: Palette.border }}
+                thumbColor={Palette.white}
+            />
         </View>
-        <Switch
-            value={value}
-            onValueChange={onChange}
-            disabled={disabled}
-            trackColor={{ true: Palette.primary, false: Palette.border }}
-            thumbColor={Palette.white}
-        />
-    </View>
-);
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -486,7 +499,7 @@ const styles = StyleSheet.create({
     sectionSubtitle: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, marginTop: -4 },
     sectionBody: {
         gap: Spacing.lg, marginTop: Spacing.xs,
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg,
     },
 
@@ -498,7 +511,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.border, borderRadius: Radius.md,
         paddingHorizontal: Spacing.md, paddingVertical: 11,
         fontSize: 14, color: Palette.text, ...BodyFont.regular,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
     textArea: { minHeight: 72, textAlignVertical: 'top' },
 
@@ -507,9 +520,9 @@ const styles = StyleSheet.create({
     chip: {
         paddingHorizontal: 12, paddingVertical: 7,
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.border,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
     },
-    chipSelected: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    chipSelected: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     chipText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium },
     chipTextSelected: { color: Palette.white, fontFamily: Fonts.semibold },
 
@@ -553,9 +566,9 @@ const styles = StyleSheet.create({
 
     saveButton: {
         flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.primary, borderRadius: Radius.md, paddingVertical: 15,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.md, paddingVertical: 15,
     },
     saveButtonBusy: { opacity: 0.7 },
     saveButtonText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.semibold },
     footer: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 17 },
-});
+}));

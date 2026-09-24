@@ -1,16 +1,14 @@
 import React from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Linking,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 const PasswordResetSentScreen = () => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { email } = useLocalSearchParams<{ email: string }>();
 
@@ -40,7 +38,7 @@ const PasswordResetSentScreen = () => {
                     style={styles.backButton}
                     onPress={() => router.push('/(auth)/loginscreen')}
                 >
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
             </View>
 
@@ -53,16 +51,16 @@ const PasswordResetSentScreen = () => {
                         <View style={styles.phoneContainer}>
                             <View style={styles.phone}>
                                 <View style={styles.phoneScreen}>
-                                    <Ionicons name="mail" size={24} color="#7C3AED" />
+                                    <Ionicons name="mail" size={24} color={Palette.primary} />
                                 </View>
                             </View>
                             {/* Stars */}
-                            <Ionicons name="star" size={16} color="#FCD34D" style={styles.star1} />
-                            <Ionicons name="star" size={12} color="#FCD34D" style={styles.star2} />
-                            <Ionicons name="star" size={14} color="#FCD34D" style={styles.star3} />
+                            <Ionicons name="star" size={16} color={tone('#FCD34D')} style={styles.star1} />
+                            <Ionicons name="star" size={12} color={tone('#FCD34D')} style={styles.star2} />
+                            <Ionicons name="star" size={14} color={tone('#FCD34D')} style={styles.star3} />
                             {/* Checkmark */}
                             <View style={styles.checkmarkContainer}>
-                                <Ionicons name="checkmark" size={20} color="#10B981" />
+                                <Ionicons name="checkmark" size={20} color={tone('#10B981')} />
                             </View>
                         </View>
                     </View>
@@ -80,7 +78,7 @@ const PasswordResetSentScreen = () => {
                     onPress={handleOpenEmail}
                 >
                     <Text style={styles.openEmailButtonText}>Open my email</Text>
-                    <Ionicons name="mail-outline" size={20} color="#fff" />
+                    <Ionicons name="mail-outline" size={20} color={Palette.white} />
                 </TouchableOpacity>
 
                 {/* Help Text */}
@@ -95,10 +93,10 @@ const PasswordResetSentScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: Palette.background,
     },
     header: {
         paddingHorizontal: 16,
@@ -132,7 +130,7 @@ const styles = StyleSheet.create({
     phone: {
         width: 80,
         height: 140,
-        backgroundColor: '#1F2937',
+        backgroundColor: Palette.text,
         borderRadius: 16,
         padding: 8,
         justifyContent: 'center',
@@ -141,7 +139,7 @@ const styles = StyleSheet.create({
     phoneScreen: {
         width: '100%',
         height: '100%',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
@@ -168,22 +166,22 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: '#D1FAE5',
+        backgroundColor: activePalette().successBand,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 3,
-        borderColor: '#FFFFFF',
+        borderColor: Palette.white,
     },
     title: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginBottom: 16,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         textAlign: 'center',
         lineHeight: 24,
         marginBottom: 32,
@@ -193,7 +191,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 12,
         paddingVertical: 16,
         gap: 8,
@@ -201,7 +199,7 @@ const styles = StyleSheet.create({
     openEmailButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#FFFFFF',
+        color: Palette.white,
     },
     helpContainer: {
         marginTop: 32,
@@ -209,14 +207,14 @@ const styles = StyleSheet.create({
     },
     helpText: {
         fontSize: 14,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         textAlign: 'center',
         lineHeight: 22,
     },
     helpLink: {
-        color: '#7C3AED',
+        color: Palette.primary,
         textDecorationLine: 'underline',
     },
-});
+}));
 
 export default PasswordResetSentScreen;

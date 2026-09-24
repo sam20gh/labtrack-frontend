@@ -11,12 +11,11 @@
  * agree with the chips behind them and Apply replaces rather than appends.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, Modal, Pressable, ScrollView, TouchableOpacity,
-} from 'react-native';
+import { View, Text, Modal, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { BODY_AREAS, areaById, symptomsInArea } from '@/lib/symptoms';
 
 interface Props {
@@ -28,6 +27,8 @@ interface Props {
 }
 
 export default function BodyAreaSheet({ visible, selected, onApply, onDismiss }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const [areaId, setAreaId] = useState<string | null>(null);
     const [working, setWorking] = useState<string[]>(selected);
 
@@ -140,11 +141,11 @@ export default function BodyAreaSheet({ visible, selected, onApply, onDismiss }:
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15,23,42,0.45)' },
     sheet: {
         maxHeight: '86%',
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
         paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxl, paddingTop: Spacing.md,
     },
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
     badge: {
         position: 'absolute', top: 6, right: 6,
         minWidth: 18, height: 18, borderRadius: Radius.pill, paddingHorizontal: 5,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primary,
+        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primaryFill,
     },
     badgeText: { fontSize: 11, fontFamily: Fonts.bold, color: Palette.white },
 
@@ -189,13 +190,13 @@ const styles = StyleSheet.create({
         borderWidth: 1.5, borderColor: Palette.border,
         alignItems: 'center', justifyContent: 'center',
     },
-    boxOn: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    boxOn: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     rowLabel: { flex: 1, fontSize: 15, ...BodyFont.regular, color: Palette.text },
     rowLabelOn: { ...BodyFont.medium, color: Palette.primary },
 
     apply: {
-        height: 54, borderRadius: Radius.xl, backgroundColor: Palette.primary,
+        height: 54, borderRadius: Radius.xl, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center', marginTop: Spacing.md,
     },
     applyText: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
-});
+}));

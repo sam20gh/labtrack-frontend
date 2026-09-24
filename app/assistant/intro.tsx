@@ -11,12 +11,13 @@
  * plainly that it is not, before the first message rather than in a footer afterwards.
  */
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { savePreferences, type AssistantMode } from '@/lib/assistant';
 
 const PRECAUTIONS = [
@@ -53,6 +54,8 @@ const MODES: { value: AssistantMode; icon: 'chatbubbles-outline' | 'planet-outli
 ];
 
 export default function AssistantIntro() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [step, setStep] = useState(0);
     const [mode, setMode] = useState<AssistantMode>('chat');
@@ -185,7 +188,7 @@ export default function AssistantIntro() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
 
     topBar: {
@@ -195,13 +198,13 @@ const styles = StyleSheet.create({
     topBarSpacer: { width: 24 },
     dots: { flexDirection: 'row', gap: 6 },
     dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Palette.border },
-    dotActive: { backgroundColor: Palette.primary, width: 20 },
+    dotActive: { backgroundColor: Palette.primaryFill, width: 20 },
 
     body: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: Spacing.xl, paddingVertical: Spacing.xxl },
     stepBlock: { gap: Spacing.lg },
 
     hero: {
-        width: 72, height: 72, borderRadius: 36, backgroundColor: Palette.primary,
+        width: 72, height: 72, borderRadius: 36, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm,
     },
     title: { fontSize: 27, lineHeight: 34, fontFamily: Fonts.bold, color: Palette.text },
@@ -213,7 +216,7 @@ const styles = StyleSheet.create({
         width: 38, height: 38, borderRadius: Radius.lg, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
-    listIconSelected: { backgroundColor: Palette.primary },
+    listIconSelected: { backgroundColor: Palette.primaryFill },
     listText: { flex: 1, gap: 3 },
     listTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     listBody: { fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
@@ -228,9 +231,9 @@ const styles = StyleSheet.create({
 
     footer: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg, paddingTop: Spacing.sm },
     cta: {
-        height: 52, borderRadius: Radius.xl, backgroundColor: Palette.primary,
+        height: 52, borderRadius: Radius.xl, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
     },
     ctaDisabled: { opacity: 0.6 },
     ctaText: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

@@ -21,14 +21,12 @@
  * show the next screen, and the answer is always yes.
  */
 import React, { useMemo, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert,
-    useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { SleepIllustration } from '@/components/sleep/SleepIllustration';
 import { TimeDial } from '@/components/sleep/TimeDial';
 import { updateSleepPlan, formatMinutes, formatClock } from '@/lib/sleep';
@@ -56,6 +54,8 @@ type Step = 'intro' | 'average' | 'window' | 'depth' | 'summary';
 const ORDER: Step[] = ['intro', 'average', 'window', 'depth', 'summary'];
 
 export default function SleepSetupScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -289,7 +289,7 @@ export default function SleepSetupScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     },
     progress: { flexDirection: 'row', gap: 6, flex: 1, justifyContent: 'center' },
     pip: { width: 20, height: 4, borderRadius: 2, backgroundColor: Palette.borderSlate },
-    pipOn: { backgroundColor: Palette.primary },
+    pipOn: { backgroundColor: Palette.primaryFill },
     skip: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
 
     content: { padding: Spacing.xl, paddingBottom: Spacing.xxxl, gap: Spacing.xl },
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     depthRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     depthStop: { flex: 1, alignItems: 'center', paddingVertical: Spacing.md },
     depthDot: { width: 16, height: 16, borderRadius: 8, backgroundColor: Palette.borderSlate },
-    depthDotOn: { backgroundColor: Palette.primary },
+    depthDotOn: { backgroundColor: Palette.primaryFill },
     depthCaption: {
         fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center',
     },
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     },
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        paddingVertical: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Palette.primary,
+        paddingVertical: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Palette.primaryFill,
     },
     ctaLabel: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

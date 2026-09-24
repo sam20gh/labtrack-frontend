@@ -22,7 +22,8 @@ import * as Haptics from 'expo-haptics';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { QuickActionsSheet } from '@/components/QuickActionsSheet';
 import { openQuickAction, type QuickAction } from '@/lib/quickActions';
-import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, BodyFont, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /** Route names in bar order. The action button goes between index 1 and 2. */
 const TAB_ORDER = ['index', 'assistant', 'orders', 'results'] as const;
@@ -45,16 +46,16 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
  */
 type TabIcon = { on: IconName; off: IconName; tint: string; surface: string };
 
-const TAB_ICON: Record<string, TabIcon> = {
+const TAB_ICON: Record<string, TabIcon> = schemed((Palette) => ({
     index: { on: 'home', off: 'home-outline', tint: Palette.sky, surface: Palette.skySurface },
     assistant: { on: 'sparkles', off: 'sparkles-outline', tint: Palette.primary, surface: Palette.primaryTint },
     orders: { on: 'bag-handle', off: 'bag-handle-outline', tint: Palette.orange, surface: Palette.orangeSurface },
     results: { on: 'analytics', off: 'analytics-outline', tint: Palette.teal, surface: Palette.tealSurface },
-};
+}));
 
-const FALLBACK_ICON: TabIcon = {
+const FALLBACK_ICON: TabIcon = schemed((Palette) => ({
     on: 'ellipse', off: 'ellipse-outline', tint: Palette.textSecondary, surface: Palette.borderLight,
-};
+}));
 
 /**
  * One tab. Its own component so the pill can animate per tab without the bar re-running
@@ -66,6 +67,7 @@ function TabItem({ label, focused, icon, onPress }: {
     icon: TabIcon;
     onPress: () => void;
 }) {
+    const styles = useStyles();
     const progress = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
     useEffect(() => {
@@ -127,6 +129,8 @@ function TabItem({ label, focused, icon, onPress }: {
 export const TAB_BAR_HEIGHT = 68;
 
 export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const [sheetOpen, setSheetOpen] = useState(false);
@@ -217,7 +221,7 @@ const BUTTON = 56;
 const PILL_W = 52;
 const PILL_H = 30;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     bar: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -244,7 +248,7 @@ const styles = StyleSheet.create({
         width: BUTTON,
         height: BUTTON,
         borderRadius: BUTTON / 2,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         shadowColor: Palette.primary,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.4,
@@ -259,4 +263,4 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-});
+}));

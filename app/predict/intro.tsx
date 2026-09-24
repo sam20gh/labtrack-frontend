@@ -11,7 +11,7 @@
  * what actually happens instead — which is a better pitch anyway, because it is checkable.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,9 +19,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { PREDICT_INTRO_KEY } from '@/lib/prediction';
 import { PredictIllustration } from '@/components/predict/PredictIllustration';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function PredictIntroScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const start = async () => {
@@ -66,14 +69,18 @@ export default function PredictIntroScreen() {
     );
 }
 
-const Point = ({ icon, text }: { icon: React.ComponentProps<typeof Ionicons>['name']; text: string }) => (
-    <View style={styles.point}>
-        <Ionicons name={icon} size={18} color={Palette.primary} />
-        <Text style={styles.pointText}>{text}</Text>
-    </View>
-);
+const Point = ({ icon, text }: { icon: React.ComponentProps<typeof Ionicons>['name']; text: string }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.point}>
+            <Ionicons name={icon} size={18} color={Palette.primary} />
+            <Text style={styles.pointText}>{text}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     topBar: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm, alignItems: 'flex-start' },
     body: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xl },
@@ -91,11 +98,11 @@ const styles = StyleSheet.create({
     footer: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg, gap: Spacing.md },
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, paddingVertical: 16, borderRadius: Radius.lg,
+        backgroundColor: Palette.primaryFill, paddingVertical: 16, borderRadius: Radius.lg,
     },
     ctaText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
     small: {
         fontSize: 11, lineHeight: 16, ...BodyFont.regular,
         color: Palette.textMuted, textAlign: 'center',
     },
-});
+}));

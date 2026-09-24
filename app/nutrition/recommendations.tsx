@@ -16,20 +16,20 @@
  *      record.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity,
-    Modal, Pressable, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Modal, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getRecommendations, logMeal, mealFromSuggestion, MEAL_TYPE_LABEL, MACRO_META } from '@/lib/nutrition';
 import { SuggestionCard, SuggestionHero } from '@/components/nutrition/SuggestionCard';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { NutritionRecommendations, MealSuggestion } from '@/types/api';
 
 export default function RecommendationsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [data, setData] = useState<NutritionRecommendations | null>(null);
     const [loading, setLoading] = useState(true);
@@ -241,16 +241,19 @@ export default function RecommendationsScreen() {
 
 const SheetStat = ({ label, value, unit = '', colour }: {
     label: string; value: number; unit?: string; colour?: string;
-}) => (
-    <View style={styles.sheetStat}>
-        <Text style={[styles.sheetStatValue, colour ? { color: colour } : null]}>
-            {Math.round(value)}{unit}
-        </Text>
-        <Text style={styles.sheetStatLabel}>{label}</Text>
-    </View>
-);
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.sheetStat}>
+            <Text style={[styles.sheetStatValue, colour ? { color: colour } : null]}>
+                {Math.round(value)}{unit}
+            </Text>
+            <Text style={styles.sheetStatLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -321,7 +324,7 @@ const styles = StyleSheet.create({
     sheetSection: { fontFamily: Fonts.bold, fontSize: 14, color: Palette.text, marginTop: Spacing.xxl, marginBottom: Spacing.md },
     ingredients: { gap: Spacing.sm },
     ingredient: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    ingredientDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.primary },
+    ingredientDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.primaryFill },
     ingredientText: { flex: 1, ...BodyFont.regular, fontSize: 13, color: Palette.text },
 
     disclaimer: {
@@ -331,7 +334,7 @@ const styles = StyleSheet.create({
 
     primary: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, borderRadius: Radius.lg,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.lg,
         paddingVertical: Spacing.lg, marginTop: Spacing.lg,
     },
     primaryText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
@@ -341,4 +344,4 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.lg, marginTop: Spacing.md,
     },
     secondaryText: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.primary },
-});
+}));

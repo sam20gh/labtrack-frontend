@@ -13,13 +13,15 @@
  *     state of this card.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 import { SEVERITY_META, KIND_LABEL } from '@/lib/medications';
 import type { InteractionFinding } from '@/types/api';
 
 export function FindingCard({ finding }: { finding: InteractionFinding }) {
+    const styles = useStyles();
     const meta = SEVERITY_META[finding.severity];
 
     return (
@@ -58,7 +60,7 @@ export function FindingCard({ finding }: { finding: InteractionFinding }) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         borderRadius: Radius.lg,
         borderWidth: 1,
@@ -76,7 +78,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: Spacing.sm,
         alignItems: 'flex-start',
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderRadius: Radius.md,
         borderWidth: 1,
         padding: Spacing.md,
@@ -84,4 +86,4 @@ const styles = StyleSheet.create({
     },
     action: { flex: 1, fontSize: 13, color: Palette.text, ...BodyFont.medium, lineHeight: 19 },
     source: { fontSize: 10, color: Palette.textMuted, ...BodyFont.regular, marginTop: 2 },
-});
+}));

@@ -10,10 +10,7 @@
  * Ordering adds to the shared basket rather than placing an order — see `addToBasket`.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, ActivityIndicator,
-    TouchableOpacity, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -27,13 +24,17 @@ import { getPlan, dismissPlanItem, STATUS_META, TYPE_ICON } from '@/lib/plan';
 import { hasBeenAsked, registerForPushNotifications } from '@/lib/notifications';
 import type { PlanItem, GroupedPlanItems, Product } from '@/types/api';
 
-import { Palette } from '@/constants/theme';
+
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
 
 
 export default function MyPlansScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { add, has, count, estimatedTotal } = useBasket();
@@ -173,7 +174,7 @@ export default function MyPlansScreen() {
                         ? <Image source={{ uri: item.image }} style={styles.thumb} />
                         : (
                             <View style={styles.thumbFallback}>
-                                <Ionicons name={(TYPE_ICON[item.type] ?? 'ellipse-outline') as any} size={20} color="#7C3AED" />
+                                <Ionicons name={(TYPE_ICON[item.type] ?? 'ellipse-outline') as any} size={20} color={Palette.primary} />
                             </View>
                         )}
 
@@ -194,12 +195,12 @@ export default function MyPlansScreen() {
 
                 {item.professionalName ? (
                     <Text style={styles.linked}>
-                        <Ionicons name="person-circle-outline" size={13} color="#6B7280" /> {item.professionalName}
+                        <Ionicons name="person-circle-outline" size={13} color={Palette.textSecondary} /> {item.professionalName}
                     </Text>
                 ) : null}
                 {item.productName ? (
                     <Text style={styles.linked}>
-                        <Ionicons name="cube-outline" size={13} color="#6B7280" /> {item.productName}
+                        <Ionicons name="cube-outline" size={13} color={Palette.textSecondary} /> {item.productName}
                         {typeof price === 'number' ? <Text style={styles.linkedPrice}>{`  £${price.toFixed(2)}`}</Text> : null}
                     </Text>
                 ) : null}
@@ -208,9 +209,9 @@ export default function MyPlansScreen() {
                     button that cannot work */}
                 {canTrack ? (
                     <TouchableOpacity style={styles.trackLink} onPress={() => router.push('/nutrition')}>
-                        <Ionicons name="restaurant-outline" size={14} color="#7C3AED" />
+                        <Ionicons name="restaurant-outline" size={14} color={Palette.primary} />
                         <Text style={styles.trackLinkText}>Track this in your nutrition log</Text>
-                        <Ionicons name="chevron-forward" size={14} color="#7C3AED" />
+                        <Ionicons name="chevron-forward" size={14} color={Palette.primary} />
                     </TouchableOpacity>
                 ) : null}
 
@@ -224,12 +225,12 @@ export default function MyPlansScreen() {
                     <View style={styles.actions}>
                         {canOrder && (inBasket ? (
                             <TouchableOpacity style={styles.inBasketAction} onPress={() => router.push('/basket')}>
-                                <Ionicons name="checkmark" size={16} color="#059669" />
+                                <Ionicons name="checkmark" size={16} color={Palette.success} />
                                 <Text style={styles.inBasketActionText}>In basket</Text>
                             </TouchableOpacity>
                         ) : (
                             <TouchableOpacity style={styles.primaryAction} onPress={() => addToBasket(item)} disabled={busy}>
-                                {busy ? <ActivityIndicator size="small" color="#fff" />
+                                {busy ? <ActivityIndicator size="small" color={Palette.white} />
                                     : <Text style={styles.primaryActionText}>Add to basket</Text>}
                             </TouchableOpacity>
                         ))}
@@ -255,7 +256,7 @@ export default function MyPlansScreen() {
     if (loading) {
         return (
             <SafeAreaView style={styles.container}>
-                <View style={styles.center}><ActivityIndicator size="large" color="#7C3AED" /></View>
+                <View style={styles.center}><ActivityIndicator size="large" color={Palette.primary} /></View>
             </SafeAreaView>
         );
     }
@@ -286,7 +287,7 @@ export default function MyPlansScreen() {
 
                 {total === 0 && !error && (
                     <View style={styles.empty}>
-                        <Ionicons name="calendar-outline" size={44} color="#D1D5DB" />
+                        <Ionicons name="calendar-outline" size={44} color={tone('#D1D5DB')} />
                         <Text style={styles.emptyTitle}>No plan yet</Text>
                         <Text style={styles.emptyBody}>
                             Add a test result or genetic report, then generate an interpretation to build your plan.
@@ -312,7 +313,7 @@ export default function MyPlansScreen() {
                                 </Text>
                                 <View style={styles.sectionRight}>
                                     <Text style={styles.sectionCount}>{items.length}</Text>
-                                    <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color="#9CA3AF" />
+                                    <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={Palette.textMuted} />
                                 </View>
                             </TouchableOpacity>
                             {open && items.map(renderItem)}
@@ -329,7 +330,7 @@ export default function MyPlansScreen() {
                     style={[styles.viewBasket, { bottom: Math.max(insets.bottom, 16) }]}
                     onPress={() => router.push('/basket')}
                 >
-                    <Ionicons name="bag-outline" size={18} color="#fff" />
+                    <Ionicons name="bag-outline" size={18} color={Palette.white} />
                     <Text style={styles.viewBasketText}>
                         View basket ({count} {count === 1 ? 'item' : 'items'})
                     </Text>
@@ -341,75 +342,75 @@ export default function MyPlansScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+const useStyles = makeStyles((Palette) => ({
+    container: { flex: 1, backgroundColor: Palette.background },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     scroll: { paddingHorizontal: 20, paddingBottom: 110 },
-    pageTitle: { fontSize: 26, fontWeight: '700', color: '#1F2937', marginTop: 8 },
-    pageSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 4, marginBottom: 20 },
+    pageTitle: { fontSize: 26, fontWeight: '700', color: Palette.text, marginTop: 8 },
+    pageSubtitle: { fontSize: 14, color: Palette.textSecondary, marginTop: 4, marginBottom: 20 },
     empty: { alignItems: 'center', paddingVertical: 48, gap: 10 },
-    emptyTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
-    emptyBody: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 21, marginBottom: 12 },
+    emptyTitle: { fontSize: 17, fontWeight: '600', color: Palette.text },
+    emptyBody: { fontSize: 14, color: Palette.textMuted, textAlign: 'center', lineHeight: 21, marginBottom: 12 },
     section: { marginBottom: 18 },
     sectionHeader: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingVertical: 10,
     },
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
-    sectionTitleUrgent: { color: '#DC2626' },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: Palette.text },
+    sectionTitleUrgent: { color: Palette.danger },
     sectionRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    sectionCount: { fontSize: 13, color: '#9CA3AF', fontWeight: '600' },
+    sectionCount: { fontSize: 13, color: Palette.textMuted, fontWeight: '600' },
     card: {
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 14,
-        padding: 14, marginBottom: 10, backgroundColor: '#fff',
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 14,
+        padding: 14, marginBottom: 10, backgroundColor: Palette.background,
     },
-    cardUrgent: { borderColor: '#FECACA', backgroundColor: '#FFFBFB' },
+    cardUrgent: { borderColor: tone('#FECACA'), backgroundColor: tone('#FFFBFB') },
     cardHeader: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-    thumb: { width: 44, height: 44, borderRadius: 10, backgroundColor: '#F3F4F6' },
+    thumb: { width: 44, height: 44, borderRadius: 10, backgroundColor: Palette.borderLight },
     thumbFallback: {
-        width: 44, height: 44, borderRadius: 10, backgroundColor: '#F3E8FF',
+        width: 44, height: 44, borderRadius: 10, backgroundColor: Palette.primarySurface,
         alignItems: 'center', justifyContent: 'center',
     },
     cardBody: { flex: 1 },
-    cardTitle: { fontSize: 15, fontWeight: '600', color: '#1F2937', lineHeight: 20 },
+    cardTitle: { fontSize: 15, fontWeight: '600', color: Palette.text, lineHeight: 20 },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
     badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
     badgeText: { fontSize: 11, fontWeight: '700' },
-    dueText: { fontSize: 12, color: '#9CA3AF' },
-    description: { fontSize: 13, color: '#6B7280', lineHeight: 19, marginTop: 10 },
-    linked: { fontSize: 12, color: '#6B7280', marginTop: 8 },
+    dueText: { fontSize: 12, color: Palette.textMuted },
+    description: { fontSize: 13, color: Palette.textSecondary, lineHeight: 19, marginTop: 10 },
+    linked: { fontSize: 12, color: Palette.textSecondary, marginTop: 8 },
     linkedPrice: { color: Palette.textSecondary, fontWeight: '700' },
-    unavailable: { fontSize: 12, color: '#9CA3AF', marginTop: 10, fontStyle: 'italic' },
+    unavailable: { fontSize: 12, color: Palette.textMuted, marginTop: 10, fontStyle: 'italic' },
     trackLink: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: '#F5F3FF',
+        backgroundColor: Palette.primaryTint,
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
         marginTop: 10,
     },
-    trackLinkText: { flex: 1, fontSize: 13, color: '#7C3AED', fontWeight: '600' },
+    trackLinkText: { flex: 1, fontSize: 13, color: Palette.primary, fontWeight: '600' },
     actions: { flexDirection: 'row', gap: 8, marginTop: 14 },
     primaryAction: {
-        backgroundColor: '#7C3AED', paddingVertical: 11, paddingHorizontal: 20,
+        backgroundColor: Palette.primaryFill, paddingVertical: 11, paddingHorizontal: 20,
         borderRadius: 10, alignItems: 'center', minWidth: 110,
     },
-    primaryActionText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+    primaryActionText: { color: Palette.white, fontSize: 14, fontWeight: '600' },
     secondaryAction: { paddingVertical: 11, paddingHorizontal: 16, borderRadius: 10 },
-    secondaryActionText: { color: '#9CA3AF', fontSize: 14, fontWeight: '500' },
+    secondaryActionText: { color: Palette.textMuted, fontSize: 14, fontWeight: '500' },
     inBasketAction: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-        backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#A7F3D0',
+        backgroundColor: Palette.successSurface, borderWidth: 1, borderColor: tone('#A7F3D0'),
         paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10, minWidth: 110,
     },
-    inBasketActionText: { color: '#059669', fontSize: 14, fontWeight: '600' },
+    inBasketActionText: { color: Palette.success, fontSize: 14, fontWeight: '600' },
     viewBasket: {
         position: 'absolute', left: 20, right: 20,
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: '#7C3AED', paddingVertical: 16, paddingHorizontal: 18, borderRadius: 14,
+        backgroundColor: Palette.primaryFill, paddingVertical: 16, paddingHorizontal: 18, borderRadius: 14,
     },
-    viewBasketText: { flex: 1, color: '#fff', fontSize: 15, fontWeight: '600' },
-    viewBasketTotal: { color: '#fff', fontSize: 15, fontWeight: '700' },
-});
+    viewBasketText: { flex: 1, color: Palette.white, fontSize: 15, fontWeight: '600' },
+    viewBasketTotal: { color: Palette.white, fontSize: 15, fontWeight: '700' },
+}));

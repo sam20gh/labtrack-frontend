@@ -23,17 +23,15 @@
  * and says why, rather than failing on tap.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, Easing,
-    ScrollView, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Animated, Easing, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ApiError } from '@/lib/api';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import AssistantWidgetCard from '@/components/assistant/AssistantWidget';
 import InputDock from '@/components/assistant/InputDock';
 import {
@@ -59,6 +57,8 @@ const NO_CAPABILITIES: AssistantCapabilities = { text: true, vision: false, voic
  * thread is busy awaiting the response, which is exactly when a JS-driven animation stutters.
  */
 const Orb = ({ busy }: { busy: boolean }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const breath = useRef(new Animated.Value(0)).current;
     const pulse = useRef(new Animated.Value(0)).current;
 
@@ -110,6 +110,8 @@ const Orb = ({ busy }: { busy: boolean }) => {
 };
 
 export default function ImmersiveAssistant() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     // Set by `assistant/voice.tsx` when a transcript has been read back and confirmed.
     const params = useLocalSearchParams<{ spoken?: string }>();
@@ -324,7 +326,7 @@ export default function ImmersiveAssistant() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     // Immersive mode is dark in the kit regardless of system theme — the orb and the
     // gradient are the screen, and they do not read on white.
     container: { flex: 1, backgroundColor: Palette.primaryDeep },
@@ -362,7 +364,7 @@ const styles = StyleSheet.create({
 
     escalate: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.danger, borderRadius: Radius.lg, padding: Spacing.md,
+        backgroundColor: Palette.dangerFill, borderRadius: Radius.lg, padding: Spacing.md,
     },
     escalateText: { flex: 1, fontSize: 12, lineHeight: 17, ...BodyFont.medium, color: Palette.white },
 
@@ -378,4 +380,4 @@ const styles = StyleSheet.create({
     // The composer is the shared component, so it arrives light. Rounding and clipping it
     // here keeps one input implementation rather than a near-duplicate for the dark screen.
     dock: { borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, overflow: 'hidden' },
-});
+}));

@@ -10,9 +10,7 @@
  * predictions gone" is the question people actually bring here.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -24,9 +22,12 @@ import {
     type Prediction, type PredictableMetric, type MetricKey,
 } from '@/lib/prediction';
 import { PastPredictionRow } from '@/components/predict/PredictionCards';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function PastPredictionsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [rows, setRows] = useState<Prediction[]>([]);
@@ -146,18 +147,21 @@ export default function PastPredictionsScreen() {
     );
 }
 
-const Filter = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
-    <TouchableOpacity
-        style={[styles.filter, active && styles.filterActive]}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityState={{ selected: active }}
-    >
-        <Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text>
-    </TouchableOpacity>
-);
+const Filter = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => {
+    const styles = useStyles();
+    return (
+        <TouchableOpacity
+            style={[styles.filter, active && styles.filterActive]}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+        >
+            <Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text>
+        </TouchableOpacity>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
@@ -172,14 +176,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg, paddingVertical: 8,
         borderRadius: Radius.pill, borderWidth: 1, borderColor: Palette.border,
     },
-    filterActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    filterActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     filterText: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     filterTextActive: { color: Palette.white, fontFamily: Fonts.semibold },
     empty: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxxl },
     emptyText: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary },
     emptyCta: {
-        backgroundColor: Palette.primary, paddingHorizontal: Spacing.xl,
+        backgroundColor: Palette.primaryFill, paddingHorizontal: Spacing.xl,
         paddingVertical: 12, borderRadius: Radius.lg,
     },
     emptyCtaText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

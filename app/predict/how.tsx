@@ -12,13 +12,14 @@
  * believe the rest of it.
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getStatus, getAccuracy, type Accuracy } from '@/lib/prediction';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const STEPS = [
     {
@@ -45,6 +46,8 @@ const STEPS = [
 ];
 
 export default function HowWePredictScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [accuracy, setAccuracy] = useState<Accuracy | null>(null);
     const [narrative, setNarrative] = useState<boolean | null>(null);
@@ -128,7 +131,7 @@ export default function HowWePredictScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     topBar: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
     content: { padding: Spacing.xl, paddingBottom: Spacing.xxxl, alignItems: 'center' },
@@ -177,4 +180,4 @@ const styles = StyleSheet.create({
         fontSize: 12, lineHeight: 18, ...BodyFont.regular,
         color: Palette.textMuted, textAlign: 'center', marginTop: Spacing.xl,
     },
-});
+}));

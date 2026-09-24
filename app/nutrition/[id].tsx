@@ -18,9 +18,7 @@
  *      fibre and sodium and nothing else, so only what it returned is listed.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Share } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -28,7 +26,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getMeal, deleteMeal, ALIGNMENT_META, MEAL_TYPE_LABEL, MACRO_META } from '@/lib/nutrition';
 import { SkeletonGroup, SkeletonBlock, SkeletonCard } from '@/components/nutrition/Skeleton';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { NutritionMealDetail } from '@/types/api';
 
 const dateLine = (iso: string) => {
@@ -40,6 +39,8 @@ const dateLine = (iso: string) => {
 };
 
 export default function NutritionDetailsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [data, setData] = useState<NutritionMealDetail | null>(null);
@@ -422,14 +423,17 @@ export default function NutritionDetailsScreen() {
     );
 }
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {children}
-    </View>
-);
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {children}
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     header: {
         flexDirection: 'row',
@@ -491,7 +495,7 @@ const styles = StyleSheet.create({
     galleryTile: { width: 88, height: 88, borderRadius: Radius.md, backgroundColor: Palette.borderLight },
     dots: { flexDirection: 'row', gap: Spacing.xs, justifyContent: 'center', marginTop: Spacing.md },
     pageDot: { width: 14, height: 5, borderRadius: 3, backgroundColor: Palette.border },
-    pageDotOn: { backgroundColor: Palette.primary },
+    pageDotOn: { backgroundColor: Palette.primaryFill },
 
     breakdownTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Palette.text },
     breakdownBody: { ...BodyFont.regular, fontSize: 13, color: Palette.textSecondary, lineHeight: 19, marginTop: Spacing.xs },
@@ -536,7 +540,7 @@ const styles = StyleSheet.create({
     actions: { paddingHorizontal: Spacing.lg, marginTop: Spacing.xxl, gap: Spacing.md },
     primary: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, borderRadius: Radius.lg, paddingVertical: Spacing.lg,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.lg, paddingVertical: Spacing.lg,
     },
     primaryText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
     secondary: {
@@ -546,4 +550,4 @@ const styles = StyleSheet.create({
     secondaryText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.primary },
     tertiary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, paddingVertical: Spacing.md },
     tertiaryText: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.primary },
-});
+}));

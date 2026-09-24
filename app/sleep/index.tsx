@@ -21,15 +21,13 @@
  *    database read.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
-    useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
@@ -56,6 +54,7 @@ function Section({
 }: {
     title: string; action?: string; onAction?: () => void; children: React.ReactNode;
 }) {
+    const styles = useStyles();
     return (
         <View style={styles.section}>
             <View style={styles.sectionHead}>
@@ -78,6 +77,8 @@ function SetupRow({
     icon: React.ComponentProps<typeof Ionicons>['name'];
     title: string; body: string; cta: string; onPress: () => void;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <Pressable style={styles.setupRow} onPress={onPress}>
             <View style={styles.setupIcon}>
@@ -93,6 +94,8 @@ function SetupRow({
 }
 
 export default function SleepDashboard() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -271,7 +274,7 @@ export default function SleepDashboard() {
                 <View style={styles.figures}>
                     <View style={styles.figure}>
                         <View style={styles.figureHead}>
-                            <View style={[styles.figureDot, { backgroundColor: Palette.primary }]} />
+                            <View style={[styles.figureDot, { backgroundColor: Palette.primaryFill }]} />
                             <Text style={styles.figureValue}>
                                 {split ? `${split.hours}h ${split.mins}m` : '—'}
                             </Text>
@@ -309,7 +312,7 @@ export default function SleepDashboard() {
                                 <View key={i} style={[styles.recordBar, { height: `${h * 100}%` }]}>
                                     <View style={{ flex: 2, backgroundColor: STAGE_META.rem.tint }} />
                                     <View style={{ flex: 3, backgroundColor: STAGE_META.light.tint }} />
-                                    <View style={{ flex: 2, backgroundColor: Palette.white }} />
+                                    <View style={{ flex: 2, backgroundColor: Palettes.light.background }} />
                                 </View>
                             ))}
                         </View>
@@ -319,7 +322,7 @@ export default function SleepDashboard() {
                                 Every night and nap, by stage — day, week, month or all time.
                             </Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={Palette.white} />
+                        <Ionicons name="chevron-forward" size={20} color={Palettes.light.white} />
                     </LinearGradient>
                 </Pressable>
 
@@ -327,7 +330,7 @@ export default function SleepDashboard() {
                 <Section title="Sleep goal" action="Edit" onAction={() => router.push('/sleep/goal')}>
                     <Pressable style={styles.goalCard} onPress={() => router.push('/sleep/goal')}>
                         <LinearGradient
-                            colors={[Palette.primarySurface, Palette.white]}
+                            colors={[Palette.primarySurface, Palette.background]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.goalGradient}
@@ -525,14 +528,14 @@ export default function SleepDashboard() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     recordCard: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         padding: Spacing.lg, borderRadius: 18,
     },
     recordBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 40, width: 40 },
     recordBar: { flex: 1, borderRadius: 2, overflow: 'hidden' },
-    recordTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
+    recordTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palettes.light.white },
     recordBody: { fontSize: 12, ...BodyFont.regular, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
 
     screen: { flex: 1, backgroundColor: Palette.background },
@@ -544,7 +547,7 @@ const styles = StyleSheet.create({
     headerDate: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     headerAdd: {
         width: 36, height: 36, borderRadius: 18,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primary,
+        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primaryFill,
     },
 
     staleNote: {
@@ -614,9 +617,9 @@ const styles = StyleSheet.create({
     },
     setupIcon: {
         width: 34, height: 34, borderRadius: 17,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.white,
+        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.background,
     },
     setupTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     setupBody: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, marginTop: 1 },
     setupCta: { fontSize: 13, ...BodyFont.medium, color: Palette.primary },
-});
+}));

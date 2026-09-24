@@ -30,10 +30,7 @@
  * to the server.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TextInput, Pressable,
-    ActivityIndicator, KeyboardAvoidingView, Platform, ActionSheetIOS, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ActionSheetIOS, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -47,7 +44,8 @@ import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
 import { useUnits, displayWeight, toCanonicalWeight, unitLabel } from '@/lib/units';
 import { pickAvatar, AvatarError } from '@/lib/avatar';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { User } from '@/types/api';
 
 const GENDERS = ['Male', 'Female', 'Other'];
@@ -69,6 +67,8 @@ const initialsOf = (first?: string, last?: string, email?: string) => {
 };
 
 export default function ProfileSettingsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const units = useUnits();
 
@@ -396,13 +396,16 @@ export default function ProfileSettingsScreen() {
 
 const Field = ({
     label, hint, children,
-}: { label: string; hint?: string; children: React.ReactNode }) => (
-    <View style={styles.field}>
-        <Text style={styles.fieldLabel}>{label}</Text>
-        {children}
-        {!!hint && <Text style={styles.fieldHint}>{hint}</Text>}
-    </View>
-);
+}: { label: string; hint?: string; children: React.ReactNode }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.field}>
+            <Text style={styles.fieldLabel}>{label}</Text>
+            {children}
+            {!!hint && <Text style={styles.fieldHint}>{hint}</Text>}
+        </View>
+    );
+};
 
 /**
  * A wrapping row of choices, used where the kit draws a dropdown.
@@ -413,26 +416,29 @@ const Field = ({
  */
 const Chips = ({
     options, value, onChange,
-}: { options: string[]; value: string | null; onChange: (next: string | null) => void }) => (
-    <View style={styles.chips}>
-        {options.map((option) => {
-            const active = value === option;
-            return (
-                <Pressable
-                    key={option}
-                    style={[styles.chip, active && styles.chipActive]}
-                    onPress={() => onChange(active ? null : option)}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: active }}
-                >
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{option}</Text>
-                </Pressable>
-            );
-        })}
-    </View>
-);
+}: { options: string[]; value: string | null; onChange: (next: string | null) => void }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.chips}>
+            {options.map((option) => {
+                const active = value === option;
+                return (
+                    <Pressable
+                        key={option}
+                        style={[styles.chip, active && styles.chipActive]}
+                        onPress={() => onChange(active ? null : option)}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: active }}
+                    >
+                        <Text style={[styles.chipText, active && styles.chipTextActive]}>{option}</Text>
+                    </Pressable>
+                );
+            })}
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
     center: { alignItems: 'center', justifyContent: 'center' },
@@ -448,7 +454,7 @@ const styles = StyleSheet.create({
     avatarBadge: {
         position: 'absolute', right: 0, bottom: 0,
         width: 28, height: 28, borderRadius: 14,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 3, borderColor: Palette.background,
     },
@@ -490,10 +496,10 @@ const styles = StyleSheet.create({
 
     save: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, borderRadius: Radius.xl,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.xl,
         paddingVertical: 16, marginTop: Spacing.md,
     },
-    savePressed: { backgroundColor: Palette.primaryDark },
+    savePressed: { backgroundColor: Palette.primaryDarkFill },
     saveBusy: { opacity: 0.7 },
     saveText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
 
@@ -501,4 +507,4 @@ const styles = StyleSheet.create({
         fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textMuted,
         textAlign: 'center', marginTop: Spacing.xs,
     },
-});
+}));

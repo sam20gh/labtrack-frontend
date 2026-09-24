@@ -14,10 +14,7 @@
  * behaves differently from the one it looks identical to.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
-    ActivityIndicator, RefreshControl, useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -29,26 +26,33 @@ import { getHub, routeFor, type ResourceCard, type ResourceHub } from '@/lib/res
 import {
     FeaturedCard, ArticleCard, ShortCard, CourseRow, WorkshopRow,
 } from '@/components/resources/ResourceCards';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState, StaleNotice } from '@/components/errors';
 
 const SectionHeader = ({ icon, title, onSeeAll }: {
     icon: string; title: string; onSeeAll?: () => void;
-}) => (
-    <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleRow}>
-            <Ionicons name={icon as any} size={18} color={Palette.text} />
-            <Text style={styles.sectionTitle}>{title}</Text>
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+                <Ionicons name={icon as any} size={18} color={Palette.text} />
+                <Text style={styles.sectionTitle}>{title}</Text>
+            </View>
+            {!!onSeeAll && (
+                <TouchableOpacity onPress={onSeeAll} hitSlop={8}>
+                    <Text style={styles.seeAll}>See All</Text>
+                </TouchableOpacity>
+            )}
         </View>
-        {!!onSeeAll && (
-            <TouchableOpacity onPress={onSeeAll} hitSlop={8}>
-                <Text style={styles.seeAll}>See All</Text>
-            </TouchableOpacity>
-        )}
-    </View>
-);
+    );
+};
 
 export default function ResourcesScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const [hub, setHub] = useState<ResourceHub | null>(null);
@@ -103,12 +107,12 @@ export default function ResourcesScreen() {
                 <SafeAreaView edges={['top']}>
                     <View style={styles.header}>
                         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-                            <Ionicons name="chevron-back" size={24} color={Palette.white} />
+                            <Ionicons name="chevron-back" size={24} color={Palettes.light.white} />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Resources</Text>
                         <TouchableOpacity onPress={() => router.push('/resources/saved')} hitSlop={12}>
                             <View style={styles.headerAction}>
-                                <Ionicons name="bookmark-outline" size={18} color={Palette.primary} />
+                                <Ionicons name="bookmark-outline" size={18} color={Palettes.light.primary} />
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -118,9 +122,9 @@ export default function ResourcesScreen() {
                         onPress={() => router.push('/resources/search')}
                         activeOpacity={0.9}
                     >
-                        <Ionicons name="search" size={18} color={Palette.textMuted} />
+                        <Ionicons name="search" size={18} color={Palettes.light.textMuted} />
                         <Text style={styles.searchPlaceholder}>Search for a resource...</Text>
-                        <Ionicons name="options-outline" size={18} color={Palette.textMuted} />
+                        <Ionicons name="options-outline" size={18} color={Palettes.light.textMuted} />
                     </TouchableOpacity>
 
                     {/* The category strip. "All categories" is the last tile rather than a
@@ -140,7 +144,7 @@ export default function ResourcesScreen() {
                                 })}
                                 activeOpacity={0.85}
                             >
-                                <Ionicons name={category.icon as any} size={18} color={Palette.white} />
+                                <Ionicons name={category.icon as any} size={18} color={Palettes.light.white} />
                                 <Text style={styles.categoryLabel} numberOfLines={1}>{category.name}</Text>
                             </TouchableOpacity>
                         ))}
@@ -149,7 +153,7 @@ export default function ResourcesScreen() {
                             onPress={() => router.push('/resources/categories')}
                             activeOpacity={0.85}
                         >
-                            <Ionicons name="grid-outline" size={18} color={Palette.white} />
+                            <Ionicons name="grid-outline" size={18} color={Palettes.light.white} />
                             <Text style={styles.categoryLabel}>All</Text>
                         </TouchableOpacity>
                     </ScrollView>
@@ -240,7 +244,7 @@ export default function ResourcesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
@@ -248,18 +252,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: Spacing.xl, paddingTop: Spacing.md, paddingBottom: Spacing.lg,
     },
-    headerTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.white },
+    headerTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Palettes.light.white },
     headerAction: {
-        width: 36, height: 36, borderRadius: 18, backgroundColor: Palette.white,
+        width: 36, height: 36, borderRadius: 18, backgroundColor: Palettes.light.background,
         alignItems: 'center', justifyContent: 'center',
     },
 
     searchBar: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         marginHorizontal: Spacing.xl, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
-        borderRadius: Radius.lg, backgroundColor: Palette.white,
+        borderRadius: Radius.lg, backgroundColor: Palettes.light.background,
     },
-    searchPlaceholder: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.textMuted },
+    searchPlaceholder: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palettes.light.textMuted },
 
     categoryStrip: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg, gap: Spacing.md },
     categoryTile: {
@@ -269,7 +273,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.sm,
     },
     categoryTileGhost: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
-    categoryLabel: { fontSize: 12, fontFamily: Fonts.semibold, color: Palette.white },
+    categoryLabel: { fontSize: 12, fontFamily: Fonts.semibold, color: Palettes.light.white },
 
     content: { paddingBottom: Spacing.xxxl * 2 },
     sectionHeader: {
@@ -287,4 +291,4 @@ const styles = StyleSheet.create({
     empty: { alignItems: 'center', paddingHorizontal: Spacing.xxxl, paddingTop: Spacing.xxxl * 2, gap: Spacing.md },
     emptyTitle: { fontSize: 17, fontFamily: Fonts.bold, color: Palette.text },
     emptyBody: { fontSize: 14, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center', lineHeight: 20 },
-});
+}));

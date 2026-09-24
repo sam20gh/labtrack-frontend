@@ -14,10 +14,7 @@
  * scatter as a share of the reading.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity,
-    ActivityIndicator, Modal,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -30,9 +27,12 @@ import {
 } from '@/lib/prediction';
 import { NotEnoughDataIllustration } from '@/components/predict/NotEnoughDataIllustration';
 import { HorizonTabs } from '@/components/predict/Chips';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function SelectMetricScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [metrics, setMetrics] = useState<PredictableMetric[]>([]);
@@ -216,7 +216,7 @@ export default function SelectMetricScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     rowHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
     icon: {
         width: 40, height: 40, borderRadius: Radius.md,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.white,
+        alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.background,
     },
     /** Half opacity rather than a grey fill: an unavailable metric is still that metric. */
     iconDim: { opacity: 0.45 },
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     rowNote: { fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
     rowCta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-        backgroundColor: Palette.primary, paddingVertical: 13, borderRadius: Radius.lg,
+        backgroundColor: Palette.primaryFill, paddingVertical: 13, borderRadius: Radius.lg,
     },
     rowCtaText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.white },
 
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', padding: Spacing.xl,
     },
     modal: {
-        width: '100%', backgroundColor: Palette.white, borderRadius: 16,
+        width: '100%', backgroundColor: Palette.background, borderRadius: 16,
         padding: Spacing.xl, alignItems: 'center', gap: Spacing.sm,
     },
     modalTitle: {
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
         color: Palette.textSecondary, textAlign: 'center',
     },
     modalCta: {
-        alignSelf: 'stretch', backgroundColor: Palette.primary,
+        alignSelf: 'stretch', backgroundColor: Palette.primaryFill,
         paddingVertical: 15, borderRadius: Radius.lg,
         alignItems: 'center', marginTop: Spacing.md,
     },
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     },
     close: {
         position: 'absolute', bottom: 48,
-        width: 52, height: 52, borderRadius: 26, backgroundColor: '#111827',
+        width: 52, height: 52, borderRadius: 26, backgroundColor: tone('#111827'),
         alignItems: 'center', justifyContent: 'center',
     },
-});
+}));

@@ -14,7 +14,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { Palette, Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { STAGE_META, STAGE_ORDER, formatMinutes, type SleepStageKey } from '@/lib/sleep';
 
 export interface StageRow {
@@ -38,6 +39,8 @@ export function StageDonut({
     caption?: string;
     size?: number;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const stroke = 18;
     const radius = (size - stroke) / 2;
     const circumference = 2 * Math.PI * radius;
@@ -93,6 +96,7 @@ export function StageRows({
     rows: StageRow[];
     showDescription?: boolean;
 }) {
+    const styles = useStyles();
     const ordered = STAGE_ORDER
         .map((stage) => rows.find((r) => r.stage === stage))
         .filter(Boolean) as StageRow[];
@@ -132,7 +136,7 @@ export function StageRows({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     donutWrap: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center' },
     donutCentre: { alignItems: 'center' },
     donutTotal: { fontSize: 26, fontFamily: Fonts.bold, color: Palette.text },
@@ -151,6 +155,6 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.borderLight, overflow: 'hidden',
     },
     fill: { height: 6, borderRadius: 3 },
-});
+}));
 
 export default StageRows;

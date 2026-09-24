@@ -1,16 +1,14 @@
 import React from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 export default function MedicationsScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
 
@@ -53,7 +51,7 @@ export default function MedicationsScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -73,9 +71,9 @@ export default function MedicationsScreen() {
                 {/* Illustration */}
                 <View style={styles.illustrationContainer}>
                     <View style={styles.illustrationPlaceholder}>
-                        <Ionicons name="medkit-outline" size={80} color="#7C3AED" />
+                        <Ionicons name="medkit-outline" size={80} color={Palette.primary} />
                         <View style={styles.heartBadge}>
-                            <Ionicons name="heart" size={24} color="#EF4444" />
+                            <Ionicons name="heart" size={24} color={tone('#EF4444')} />
                         </View>
                     </View>
                 </View>
@@ -85,7 +83,7 @@ export default function MedicationsScreen() {
             <View style={styles.bottomContainer}>
                 <TouchableOpacity style={styles.yesButton} onPress={handleYes}>
                     <Text style={styles.yesButtonText}>Yes, I take it</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                    <Ionicons name="arrow-forward" size={20} color={Palette.white} />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.noButton} onPress={handleNo}>
@@ -96,15 +94,15 @@ export default function MedicationsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -120,17 +118,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -142,14 +140,14 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 14,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         textAlign: 'center',
         marginBottom: 48,
     },
@@ -161,7 +159,7 @@ const styles = StyleSheet.create({
     illustrationPlaceholder: {
         width: 200,
         height: 200,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
         borderRadius: 100,
         alignItems: 'center',
         justifyContent: 'center',
@@ -174,7 +172,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#FEE2E2',
+        backgroundColor: tone('#FEE2E2'),
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -183,7 +181,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     yesButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -192,7 +190,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     yesButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
@@ -203,11 +201,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 14,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
     },
     noButtonText: {
         fontSize: 15,
-        color: '#7C3AED',
+        color: Palette.primary,
     },
-});
+}));

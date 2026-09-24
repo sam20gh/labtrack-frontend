@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Dimensions,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const { width } = Dimensions.get('window');
 
 export default function HealthAssessmentWelcome() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [userName, setUserName] = useState('');
 
@@ -68,7 +65,7 @@ export default function HealthAssessmentWelcome() {
             <View style={styles.content}>
                 {/* Icon */}
                 <View style={styles.iconContainer}>
-                    <Ionicons name="add" size={40} color="#7C3AED" />
+                    <Ionicons name="add" size={40} color={Palette.primary} />
                 </View>
 
                 {/* Title */}
@@ -86,11 +83,11 @@ export default function HealthAssessmentWelcome() {
             <View style={styles.bottomContainer}>
                 <TouchableOpacity style={styles.primaryButton} onPress={handleReady}>
                     <Text style={styles.primaryButtonText}>I'm Ready</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                    <Ionicons name="arrow-forward" size={20} color={Palette.white} />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.helpButton} onPress={handleNeedHelp}>
-                    <Ionicons name="help-circle-outline" size={20} color="#7C3AED" />
+                    <Ionicons name="help-circle-outline" size={20} color={Palette.primary} />
                     <Text style={styles.helpButtonText}>I need help</Text>
                 </TouchableOpacity>
             </View>
@@ -98,15 +95,15 @@ export default function HealthAssessmentWelcome() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#7C3AED',
+        color: Palette.primary,
         textAlign: 'center',
         paddingTop: 8,
         marginBottom: 8,
@@ -127,34 +124,34 @@ const styles = StyleSheet.create({
         height: 24,
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 8,
     },
     stepActive: {
-        borderColor: '#7C3AED',
-        backgroundColor: '#7C3AED',
+        borderColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
     },
     stepDotInner: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     stepLine: {
         width: 40,
         height: 2,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         marginHorizontal: 8,
         marginBottom: 24,
     },
     stepText: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: Palette.textMuted,
     },
     stepTextActive: {
-        color: '#1F2937',
+        color: Palette.text,
         fontWeight: '600',
     },
     content: {
@@ -166,7 +163,7 @@ const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 16,
-        backgroundColor: '#F3E8FF',
+        backgroundColor: Palette.primarySurface,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 32,
@@ -174,13 +171,13 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         lineHeight: 38,
         marginBottom: 16,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         lineHeight: 24,
     },
     bottomContainer: {
@@ -188,7 +185,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     primaryButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -197,7 +194,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     primaryButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
@@ -209,9 +206,9 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     helpButtonText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 14,
         fontWeight: '500',
         marginLeft: 8,
     },
-});
+}));

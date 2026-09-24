@@ -15,11 +15,7 @@
  * owns its own top inset.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable,
-    ActivityIndicator, RefreshControl, useWindowDimensions, LayoutAnimation,
-    Platform, UIManager,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, Pressable, ActivityIndicator, RefreshControl, useWindowDimensions, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -38,7 +34,8 @@ import {
 import ScoreGauge from '@/components/score/ScoreGauge';
 import ScoreRadar from '@/components/home/ScoreRadar';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /**
  * The six the radar plots, in axis order from twelve o'clock.
@@ -73,6 +70,8 @@ const ago = (iso: string) => {
 };
 
 export default function ScoreBreakdownScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -387,9 +386,9 @@ export default function ScoreBreakdownScreen() {
                                 <Ionicons
                                     name={trend.change >= 0 ? 'trending-up' : 'trending-down'}
                                     size={14}
-                                    color={trend.change >= 0 ? Palette.success : '#FB7185'}
+                                    color={trend.change >= 0 ? Palette.success : tone('#FB7185')}
                                 />
-                                <Text style={[styles.changeText, { color: trend.change >= 0 ? '#10B981' : '#FB7185' }]}>
+                                <Text style={[styles.changeText, { color: trend.change >= 0 ? tone('#10B981') : tone('#FB7185') }]}>
                                     {trend.change > 0 ? '+' : ''}{trend.change}%
                                 </Text>
                             </View>
@@ -431,16 +430,16 @@ export default function ScoreBreakdownScreen() {
                         <Text style={styles.cardTitle}>What moved</Text>
                         {score.change.improved.map((m) => (
                             <View key={m.key} style={styles.moverRow}>
-                                <Ionicons name="arrow-up" size={14} color="#10B981" />
+                                <Ionicons name="arrow-up" size={14} color={tone('#10B981')} />
                                 <Text style={styles.moverLabel}>{m.label}</Text>
-                                <Text style={[styles.moverDelta, { color: '#10B981' }]}>+{m.delta}</Text>
+                                <Text style={[styles.moverDelta, { color: tone('#10B981') }]}>+{m.delta}</Text>
                             </View>
                         ))}
                         {score.change.declined.map((m) => (
                             <View key={m.key} style={styles.moverRow}>
-                                <Ionicons name="arrow-down" size={14} color="#FB7185" />
+                                <Ionicons name="arrow-down" size={14} color={tone('#FB7185')} />
                                 <Text style={styles.moverLabel}>{m.label}</Text>
-                                <Text style={[styles.moverDelta, { color: '#FB7185' }]}>{m.delta}</Text>
+                                <Text style={[styles.moverDelta, { color: tone('#FB7185') }]}>{m.delta}</Text>
                             </View>
                         ))}
                     </View>
@@ -520,6 +519,8 @@ const BandRow = ({ band, current, open, onToggle }: {
     open: boolean;
     onToggle: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const meta = bandMeta(band.key as never);
     const expandable = Boolean(band.description);
     const disclosed = expandable && open;
@@ -561,60 +562,68 @@ const BandRow = ({ band, current, open, onToggle }: {
  * mark and spends its space on the three things a person actually needs to know: what the
  * number is over, what moves it, and what it is not.
  */
-const ScoreExplainer = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-        <Pressable style={styles.backdrop} onPress={onClose}>
-            <Pressable style={styles.sheet} onPress={() => {}}>
-                <View style={styles.sheetMark}>
-                    <Ionicons name="sparkles" size={26} color={Palette.textSecondary} />
-                </View>
+const ScoreExplainer = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+            <Pressable style={styles.backdrop} onPress={onClose}>
+                <Pressable style={styles.sheet} onPress={() => {}}>
+                    <View style={styles.sheetMark}>
+                        <Ionicons name="sparkles" size={26} color={Palette.textSecondary} />
+                    </View>
 
-                <Text style={styles.sheetTitle}>What is the Predyqt score?</Text>
-                <Text style={styles.sheetBody}>
-                    One number over everything Predyqt holds for you — your labs, activity, sleep,
-                    nutrition, medication and vitals — weighted by how much each one says about your
-                    health.
-                </Text>
+                    <Text style={styles.sheetTitle}>What is the Predyqt score?</Text>
+                    <Text style={styles.sheetBody}>
+                        One number over everything Predyqt holds for you — your labs, activity, sleep,
+                        nutrition, medication and vitals — weighted by how much each one says about your
+                        health.
+                    </Text>
 
-                <View style={styles.sheetPoints}>
-                    <SheetPoint
-                        icon="pulse-outline"
-                        title="Measured beats reported"
-                        body="Anything your devices and logs record replaces what you told us at onboarding — it does not average with it."
-                    />
-                    <SheetPoint
-                        icon="remove-circle-outline"
-                        title="Blank is not zero"
-                        body="A pillar with no data scores nothing and drops out, rather than counting against you."
-                    />
-                    <SheetPoint
-                        icon="medkit-outline"
-                        title="Not a diagnosis"
-                        body="It summarises your records. Anything that worries you is a conversation with a clinician."
-                    />
-                </View>
+                    <View style={styles.sheetPoints}>
+                        <SheetPoint
+                            icon="pulse-outline"
+                            title="Measured beats reported"
+                            body="Anything your devices and logs record replaces what you told us at onboarding — it does not average with it."
+                        />
+                        <SheetPoint
+                            icon="remove-circle-outline"
+                            title="Blank is not zero"
+                            body="A pillar with no data scores nothing and drops out, rather than counting against you."
+                        />
+                        <SheetPoint
+                            icon="medkit-outline"
+                            title="Not a diagnosis"
+                            body="It summarises your records. Anything that worries you is a conversation with a clinician."
+                        />
+                    </View>
 
-                <TouchableOpacity style={styles.sheetButton} onPress={onClose}>
-                    <Text style={styles.sheetButtonText}>Great, thanks!</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity style={styles.sheetButton} onPress={onClose}>
+                        <Text style={styles.sheetButtonText}>Great, thanks!</Text>
+                    </TouchableOpacity>
+                </Pressable>
             </Pressable>
-        </Pressable>
-    </Modal>
-);
+        </Modal>
+    );
+};
 
 const SheetPoint = ({ icon, title, body }: {
     icon: React.ComponentProps<typeof Ionicons>['name']; title: string; body: string;
-}) => (
-    <View style={styles.sheetPoint}>
-        <View style={styles.sheetPointIcon}>
-            <Ionicons name={icon} size={16} color={Palette.textSecondary} />
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.sheetPoint}>
+            <View style={styles.sheetPointIcon}>
+                <Ionicons name={icon} size={16} color={Palette.textSecondary} />
+            </View>
+            <View style={styles.flex}>
+                <Text style={styles.sheetPointTitle}>{title}</Text>
+                <Text style={styles.sheetPointBody}>{body}</Text>
+            </View>
         </View>
-        <View style={styles.flex}>
-            <Text style={styles.sheetPointTitle}>{title}</Text>
-            <Text style={styles.sheetPointBody}>{body}</Text>
-        </View>
-    </View>
-);
+    );
+};
 
 /**
  * One pillar.
@@ -625,6 +634,8 @@ const SheetPoint = ({ icon, title, body }: {
  * says how to fill it.
  */
 const PillarRow = ({ pillar, last, onPress }: { pillar: Pillar; last: boolean; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const source = SOURCE_META[pillar.source];
     const meta = pillar.band ? bandMeta(pillar.band) : null;
 
@@ -673,7 +684,7 @@ const PillarRow = ({ pillar, last, onPress }: { pillar: Pillar; last: boolean; o
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
@@ -779,7 +790,7 @@ const styles = StyleSheet.create({
 
     rangeRow: { flexDirection: 'row', gap: 6, marginTop: Spacing.xs },
     rangeChip: { flex: 1, paddingVertical: 7, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Palette.borderLight },
-    rangeChipActive: { backgroundColor: Palette.primary },
+    rangeChipActive: { backgroundColor: Palette.primaryFill },
     rangeText: { ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary },
     rangeTextActive: { color: Palette.white },
 
@@ -881,8 +892,8 @@ const styles = StyleSheet.create({
         color: Palette.textSecondary, marginTop: 2,
     },
     sheetButton: {
-        backgroundColor: Palette.primary, borderRadius: Radius.md,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.md,
         paddingVertical: 14, alignItems: 'center', marginTop: Spacing.sm,
     },
     sheetButtonText: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.white },
-});
+}));

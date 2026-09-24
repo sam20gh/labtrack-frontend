@@ -31,15 +31,13 @@
  *    screen is a model's opinion about somebody's training.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, useWindowDimensions,
-    ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, useWindowDimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { Avatar } from '@/components/Avatar';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
@@ -124,6 +122,8 @@ const PERIOD_LABEL: Record<MetricRange, string> = {
 interface HeaderUser { firstName?: string; lastName?: string; profileImage?: string | null }
 
 export default function ActivityDashboard() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
@@ -915,7 +915,7 @@ export default function ActivityDashboard() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     content: { paddingBottom: 120 },
 
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
         width: 38,
         height: 38,
         borderRadius: 19,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -1006,7 +1006,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',
@@ -1015,4 +1015,4 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         elevation: 4,
     },
-});
+}));

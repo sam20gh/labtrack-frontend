@@ -12,10 +12,7 @@
  * this screen that does write.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable,
-    ActivityIndicator, useWindowDimensions, Modal,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Pressable, ActivityIndicator, useWindowDimensions, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,11 +26,14 @@ import { ForecastChart, type ScrubPoint } from '@/components/predict/ForecastCha
 import { DirectionCalendar } from '@/components/predict/DirectionCalendar';
 import { HorizonTabs, ConfidenceChip, BandChip, PredictionDisclaimer } from '@/components/predict/Chips';
 import { NotEnoughDataIllustration } from '@/components/predict/NotEnoughDataIllustration';
-import { Palette, Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 type View_ = 'chart' | 'calendar';
 
 export default function PredictionInsightScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const params = useLocalSearchParams<{ metric?: string; horizon?: string }>();
@@ -282,7 +282,7 @@ export default function PredictionInsightScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { paddingVertical: 80, alignItems: 'center' },
     topBar: {
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     },
     captionStrong: { fontFamily: Fonts.bold, color: Palette.text },
     calendarCard: {
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg,
     },
 
@@ -347,20 +347,20 @@ const styles = StyleSheet.create({
     },
     picker: {
         flexDirection: 'row', alignItems: 'center', gap: 7,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
+        backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.border,
         paddingHorizontal: Spacing.md, paddingVertical: 11, borderRadius: Radius.lg,
         ...Shadow.card,
     },
     pickerText: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.text },
     save: {
-        width: 52, height: 52, borderRadius: 26, backgroundColor: Palette.primary,
+        width: 52, height: 52, borderRadius: 26, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center', ...Shadow.card,
     },
     saveDisabled: { opacity: 0.4 },
 
     sheetBackdrop: { flex: 1, backgroundColor: 'rgba(17,17,17,0.4)', justifyContent: 'flex-end' },
     sheet: {
-        backgroundColor: Palette.white, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+        backgroundColor: Palette.background, borderTopLeftRadius: 20, borderTopRightRadius: 20,
         padding: Spacing.xl, paddingBottom: Spacing.xxxl, gap: 2,
     },
     sheetTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.text, marginBottom: Spacing.md },
@@ -377,4 +377,4 @@ const styles = StyleSheet.create({
     sheetLabel: { flex: 1, fontSize: 14, fontFamily: Fonts.semibold, color: Palette.text },
     sheetLabelDim: { color: Palette.textMuted },
     sheetMeta: { fontSize: 12, ...BodyFont.regular, color: Palette.textMuted },
-});
+}));

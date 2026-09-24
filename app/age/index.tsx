@@ -41,7 +41,8 @@ import {
 import { ApiError } from '@/lib/api';
 import { describeError } from '@/lib/appState';
 import StateView from '@/components/errors/StateView';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const isHalf = (h: AgeHalf | AgeHalfRefusal | null | undefined): h is AgeHalf => Boolean(h?.ok);
 
@@ -52,6 +53,8 @@ const SOURCE_LABEL: Record<AgeSource, string> = {
 };
 
 export default function PredyqtAgeScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [age, setAge] = useState<PredyqtAge | null>(null);
     const [levers, setLevers] = useState<AgeLever[] | null>(null);
@@ -214,17 +217,21 @@ export default function PredyqtAgeScreen() {
     );
 }
 
-const Header = ({ onBack, onHow }: { onBack: () => void; onHow: () => void }) => (
-    <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} hitSlop={12} accessibilityLabel="Back">
-            <Ionicons name="chevron-back" size={24} color={Palette.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Predyqt Age</Text>
-        <TouchableOpacity onPress={onHow} hitSlop={12} accessibilityLabel="How this works">
-            <Ionicons name="information-circle-outline" size={22} color={Palette.textSecondary} />
-        </TouchableOpacity>
-    </View>
-);
+const Header = ({ onBack, onHow }: { onBack: () => void; onHow: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} hitSlop={12} accessibilityLabel="Back">
+                <Ionicons name="chevron-back" size={24} color={Palette.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Predyqt Age</Text>
+            <TouchableOpacity onPress={onHow} hitSlop={12} accessibilityLabel="How this works">
+                <Ionicons name="information-circle-outline" size={22} color={Palette.textSecondary} />
+            </TouchableOpacity>
+        </View>
+    );
+};
 
 /**
  * Which evidence the number rests on.
@@ -234,6 +241,8 @@ const Header = ({ onBack, onHow }: { onBack: () => void; onHow: () => void }) =>
  * book a blood test is entitled to know which.
  */
 const SourceChip = ({ source, weights }: { source: AgeSource; weights?: Partial<Record<AgeSource, number>> }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const split = source === 'blended' && weights?.lab !== undefined
         ? ` · ${Math.round((weights.lab ?? 0) * 100)}% bloods`
         : '';
@@ -252,6 +261,8 @@ const SourceChip = ({ source, weights }: { source: AgeSource; weights?: Partial<
  * all** — not one parked at 1.0 — for the reason in the file header.
  */
 const PaceCard = ({ age, tint }: { age: PredyqtAge; tint: string }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const pace = age.pace;
     const fraction = paceFraction(pace);
     const provisional = pace?.state === 'provisional';
@@ -308,6 +319,8 @@ const HalfCard = ({ half, title, icon, onFix, fixLabel }: {
     onFix: () => void;
     fixLabel: string;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!half) return null;
 
     if (!isHalf(half)) {
@@ -357,51 +370,61 @@ const HalfCard = ({ half, title, icon, onFix, fixLabel }: {
     );
 };
 
-const LeverRow = ({ lever, onPress }: { lever: AgeLever; onPress: () => void }) => (
-    <TouchableOpacity style={styles.leverRow} onPress={onPress} accessibilityRole="button">
-        <View style={styles.leverSaving}>
-            <Text style={styles.leverYears}>−{lever.years.toFixed(1)}</Text>
-            <Text style={styles.leverUnit}>yrs</Text>
-        </View>
-        <View style={styles.leverBody}>
-            <Text style={styles.leverLabel}>{lever.label}</Text>
-            <Text style={styles.leverDetail}>
-                {lever.display ?? lever.value} → {lever.target} {lever.unit}
-            </Text>
-        </View>
-        {/*
-          A clinical lever is a conversation to have, not a task to do. The word is the whole
-          difference between "walk more" and "ask about your RDW", and a screen that dressed
-          the second as the first would be handing somebody homework they cannot complete.
-        */}
-        {lever.modifiable === 'clinical' && (
-            <View style={styles.clinicalChip}><Text style={styles.clinicalText}>Ask about</Text></View>
-        )}
-        <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
-    </TouchableOpacity>
-);
+const LeverRow = ({ lever, onPress }: { lever: AgeLever; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={styles.leverRow} onPress={onPress} accessibilityRole="button">
+            <View style={styles.leverSaving}>
+                <Text style={styles.leverYears}>−{lever.years.toFixed(1)}</Text>
+                <Text style={styles.leverUnit}>yrs</Text>
+            </View>
+            <View style={styles.leverBody}>
+                <Text style={styles.leverLabel}>{lever.label}</Text>
+                <Text style={styles.leverDetail}>
+                    {lever.display ?? lever.value} → {lever.target} {lever.unit}
+                </Text>
+            </View>
+            {/*
+              A clinical lever is a conversation to have, not a task to do. The word is the whole
+              difference between "walk more" and "ask about your RDW", and a screen that dressed
+              the second as the first would be handing somebody homework they cannot complete.
+            */}
+            {lever.modifiable === 'clinical' && (
+                <View style={styles.clinicalChip}><Text style={styles.clinicalText}>Ask about</Text></View>
+            )}
+            <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
+        </TouchableOpacity>
+    );
+};
 
-const LeverSkeleton = () => (
-    <Section title="What would move it">
-        {[0, 1, 2].map((i) => <View key={i} style={styles.skeletonRow} />)}
-    </Section>
-);
+const LeverSkeleton = () => {
+    const styles = useStyles();
+    return (
+        <Section title="What would move it">
+            {[0, 1, 2].map((i) => <View key={i} style={styles.skeletonRow} />)}
+        </Section>
+    );
+};
 
 const Section = ({ title, action, onAction, children }: {
     title: string; action?: string; onAction?: () => void; children: React.ReactNode;
-}) => (
-    <View style={styles.section}>
-        <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>{title}</Text>
-            {!!action && (
-                <TouchableOpacity onPress={onAction}><Text style={styles.sectionAction}>{action}</Text></TouchableOpacity>
-            )}
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.section}>
+            <View style={styles.sectionHead}>
+                <Text style={styles.sectionTitle}>{title}</Text>
+                {!!action && (
+                    <TouchableOpacity onPress={onAction}><Text style={styles.sectionAction}>{action}</Text></TouchableOpacity>
+                )}
+            </View>
+            {children}
         </View>
-        {children}
-    </View>
-);
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -493,4 +516,4 @@ const styles = StyleSheet.create({
         ...BodyFont.regular, fontSize: 11, color: Palette.textMuted,
         lineHeight: 17, marginTop: Spacing.xl,
     },
-});
+}));

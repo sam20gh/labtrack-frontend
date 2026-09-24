@@ -23,13 +23,12 @@
  * doing something sensible. What it contributes to the day is in the analysis instead.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { Hypnogram, StageLegend } from '@/components/sleep/Hypnogram';
 import { StageRows } from '@/components/sleep/StageRows';
@@ -57,6 +56,8 @@ function Stat({
     icon: React.ComponentProps<typeof Ionicons>['name'];
     label: string; value: string; unit?: string;
 }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <View style={styles.stat}>
             <Ionicons name={icon} size={18} color={Palette.textSecondary} />
@@ -70,6 +71,8 @@ function Stat({
 }
 
 export default function SleepDetailScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -285,7 +288,7 @@ export default function SleepDetailScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xl },
 
@@ -324,7 +327,7 @@ const styles = StyleSheet.create({
         flex: 1, height: 10, borderRadius: 5,
         backgroundColor: Palette.borderLight, overflow: 'hidden',
     },
-    progressFill: { height: 10, borderRadius: 5, backgroundColor: Palette.primary },
+    progressFill: { height: 10, borderRadius: 5, backgroundColor: Palette.primaryFill },
     progressNap: { position: 'absolute', top: 0, height: 10, backgroundColor: NAP_META.tint },
     progressValue: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
 
@@ -347,4 +350,4 @@ const styles = StyleSheet.create({
         backgroundColor: Palette.primarySurface,
     },
     assistantLabel: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
-});
+}));

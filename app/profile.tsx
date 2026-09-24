@@ -45,9 +45,7 @@
  * it double-confirms, and it is the only row on the screen drawn in the danger colour.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import {
-    View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet, Alert, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -68,8 +66,10 @@ import {
 } from '@/components/achievements/TrophyCase';
 import { getSummary as getActivitySummary, getWearableStatus } from '@/lib/activity';
 import { getPermissionStatus } from '@/lib/notifications';
+import { APPEARANCE_OPTIONS, useAppearancePreference } from '@/lib/appearance';
 import { Avatar } from '@/components/Avatar';
-import { Palette, Fonts, Radius, Spacing, BodyFont } from '@/constants/theme';
+import { Fonts, Radius, Spacing, BodyFont, tone, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { User } from '@/types/api';
 
 /** `createdAt` comes from the model's `timestamps: true` and is not in the `User` type. */
@@ -121,7 +121,10 @@ const NOTIFICATION_LABEL: Record<string, string> = {
 };
 
 export default function ProfileScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
+    const appearance = useAppearancePreference();
 
     const [user, setUser] = useState<ProfileUser>({});
     const [score, setScore] = useState<HealthScore | null>(null);
@@ -316,7 +319,7 @@ export default function ProfileScreen() {
                             accessibilityRole="button"
                             accessibilityLabel="Go back"
                         >
-                            <Ionicons name="chevron-back" size={22} color={Palette.white} />
+                            <Ionicons name="chevron-back" size={22} color={Palettes.light.white} />
                         </Pressable>
 
                         <Pressable
@@ -333,7 +336,7 @@ export default function ProfileScreen() {
                             {score?.value != null ? (
                                 <Text style={styles.coverScore}>{score.value}</Text>
                             ) : (
-                                <Ionicons name="pie-chart-outline" size={19} color={Palette.white} />
+                                <Ionicons name="pie-chart-outline" size={19} color={Palettes.light.white} />
                             )}
                         </Pressable>
                     </View>
@@ -442,6 +445,12 @@ export default function ProfileScreen() {
                             icon="options-outline"
                             label="Units & metrics"
                             onPress={() => router.push('/settings/units')}
+                        />
+                        <Row
+                            icon="contrast-outline"
+                            label="Appearance"
+                            value={APPEARANCE_OPTIONS.find((o) => o.value === appearance)?.label}
+                            onPress={() => router.push('/settings/appearance')}
                         />
                         <Row
                             icon="sparkles-outline"
@@ -574,6 +583,8 @@ export default function ProfileScreen() {
  * `null` means the request failed, and the card sits out entirely rather than claiming zero.
  */
 const StreakCard = ({ streak, onPress }: { streak: number | null; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (streak === null) return null;
     const active = streak > 0;
 
@@ -635,36 +646,43 @@ const StreakCard = ({ streak, onPress }: { streak: number | null; onPress: () =>
  * Shown to everyone: it cannot tell whether a test exists without a second request, so it
  * is written as an invitation rather than as a status.
  */
-const PromoCard = ({ onPress }: { onPress: () => void }) => (
-    <Pressable
-        style={({ pressed }) => [styles.promo, pressed && styles.promoPressed]}
-        onPress={onPress}
-        accessibilityRole="button"
-    >
-        <View style={styles.promoText}>
-            <Text style={styles.promoTitle}>Order a test to see more</Text>
-            <Text style={styles.promoBlurb}>
-                Every result you add sharpens your plan and your score.
-            </Text>
-            <View style={styles.promoLink}>
-                <Text style={styles.promoLinkText}>Browse tests</Text>
-                <Ionicons name="arrow-forward" size={14} color={Palette.primary} />
+const PromoCard = ({ onPress }: { onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <Pressable
+            style={({ pressed }) => [styles.promo, pressed && styles.promoPressed]}
+            onPress={onPress}
+            accessibilityRole="button"
+        >
+            <View style={styles.promoText}>
+                <Text style={styles.promoTitle}>Order a test to see more</Text>
+                <Text style={styles.promoBlurb}>
+                    Every result you add sharpens your plan and your score.
+                </Text>
+                <View style={styles.promoLink}>
+                    <Text style={styles.promoLinkText}>Browse tests</Text>
+                    <Ionicons name="arrow-forward" size={14} color={Palette.primary} />
+                </View>
             </View>
-        </View>
-        <View style={styles.promoGlyph}>
-            <Ionicons name="flask-outline" size={30} color={Palette.textSecondary} />
-        </View>
-    </Pressable>
-);
+            <View style={styles.promoGlyph}>
+                <Ionicons name="flask-outline" size={30} color={Palette.textSecondary} />
+            </View>
+        </Pressable>
+    );
+};
 
 const Group = ({
     title, children, danger,
-}: { title: string; children: React.ReactNode; danger?: boolean }) => (
-    <View style={styles.group}>
-        <Text style={[styles.groupTitle, danger && styles.groupTitleDanger]}>{title}</Text>
-        <View style={[styles.groupCard, danger && styles.groupCardDanger]}>{children}</View>
-    </View>
-);
+}: { title: string; children: React.ReactNode; danger?: boolean }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.group}>
+            <Text style={[styles.groupTitle, danger && styles.groupTitleDanger]}>{title}</Text>
+            <View style={[styles.groupCard, danger && styles.groupCardDanger]}>{children}</View>
+        </View>
+    );
+};
 
 const Row = ({
     icon, label, value, onPress, last, danger,
@@ -675,29 +693,33 @@ const Row = ({
     onPress: () => void;
     last?: boolean;
     danger?: boolean;
-}) => (
-    <Pressable
-        style={({ pressed }) => [styles.row, last && styles.rowLast, pressed && styles.rowPressed]}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={value ? `${label}, ${value}` : label}
-    >
-        <View style={[styles.rowIcon, danger && styles.rowIconDanger]}>
-            <Ionicons
-                name={icon as never}
-                size={18}
-                color={danger ? Palette.danger : Palette.primary}
-            />
-        </View>
-        <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]} numberOfLines={1}>
-            {label}
-        </Text>
-        {!!value && (
-            <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
-        )}
-        <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-    </Pressable>
-);
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <Pressable
+            style={({ pressed }) => [styles.row, last && styles.rowLast, pressed && styles.rowPressed]}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={value ? `${label}, ${value}` : label}
+        >
+            <View style={[styles.rowIcon, danger && styles.rowIconDanger]}>
+                <Ionicons
+                    name={icon as never}
+                    size={18}
+                    color={danger ? Palette.danger : Palette.primary}
+                />
+            </View>
+            <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]} numberOfLines={1}>
+                {label}
+            </Text>
+            {!!value && (
+                <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
+            )}
+            <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+        </Pressable>
+    );
+};
 
 const AVATAR = 92;
 /**
@@ -708,7 +730,7 @@ const AVATAR = 92;
  */
 const RING_GAP = 9;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     center: { alignItems: 'center', justifyContent: 'center' },
     scroll: { paddingBottom: 56 },
@@ -724,7 +746,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.22)',
         alignItems: 'center', justifyContent: 'center',
     },
-    coverScore: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white, includeFontPadding: false },
+    coverScore: { fontSize: 16, fontFamily: Fonts.bold, color: Palettes.light.white, includeFontPadding: false },
 
     identity: {
         alignItems: 'center',
@@ -749,7 +771,7 @@ const styles = StyleSheet.create({
     avatarBadge: {
         position: 'absolute', right: 0, bottom: 0,
         width: 30, height: 30, borderRadius: 15,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 3, borderColor: Palette.canvas,
     },
@@ -774,7 +796,7 @@ const styles = StyleSheet.create({
     streakCard: {
         backgroundColor: Palette.warningSurface,
         borderRadius: Radius.xl,
-        borderWidth: 1, borderColor: '#FDE68A',
+        borderWidth: 1, borderColor: tone('#FDE68A'),
         padding: Spacing.lg,
         gap: Spacing.md,
     },
@@ -788,13 +810,13 @@ const styles = StyleSheet.create({
     },
     streakIconIdle: { backgroundColor: Palette.borderLight },
     streakText: { flex: 1, gap: 2 },
-    streakTitle: { fontSize: 15, fontFamily: Fonts.bold, color: '#92400E' },
+    streakTitle: { fontSize: 15, fontFamily: Fonts.bold, color: tone('#92400E') },
     streakTitleIdle: { color: Palette.text },
     streakBlurb: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary },
     streakDivider: { height: 1, backgroundColor: 'rgba(146,64,14,0.14)' },
     streakFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     streakFootLabel: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
-    streakFootValue: { fontSize: 22, fontFamily: Fonts.bold, color: '#92400E', includeFontPadding: false },
+    streakFootValue: { fontSize: 22, fontFamily: Fonts.bold, color: tone('#92400E'), includeFontPadding: false },
     streakFootValueIdle: { color: Palette.textSecondary },
 
     promo: {
@@ -824,7 +846,7 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Palette.borderSlate,
         overflow: 'hidden',
     },
-    groupCardDanger: { borderColor: '#FECACA' },
+    groupCardDanger: { borderColor: tone('#FECACA') },
 
     row: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -861,4 +883,4 @@ const styles = StyleSheet.create({
     },
     footerVersion: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.textSecondary },
     footerRights: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
-});
+}));

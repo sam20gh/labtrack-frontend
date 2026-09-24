@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { parseArrayParam } from './params';
 import { exerciseTypes } from './options';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 
 export default function ExerciseTypeScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [selectedTypes, setSelectedTypes] = useState<string[]>(parseArrayParam(params.exerciseTypes));
@@ -57,7 +55,7 @@ export default function ExerciseTypeScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -83,13 +81,13 @@ export default function ExerciseTypeScreen() {
                                 <Ionicons
                                     name={type.icon}
                                     size={20}
-                                    color={isSelected ? '#7C3AED' : '#6B7280'}
+                                    color={isSelected ? activePalette().primary : activePalette().textSecondary}
                                 />
                                 <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
                                     {type.label}
                                 </Text>
                                 <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                                    {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                    {isSelected && <Ionicons name="checkmark" size={14} color={Palette.white} />}
                                 </View>
                             </TouchableOpacity>
                         );
@@ -110,7 +108,7 @@ export default function ExerciseTypeScreen() {
                     <Ionicons
                         name="arrow-forward"
                         size={20}
-                        color={selectedTypes.length > 0 ? '#fff' : '#9CA3AF'}
+                        color={selectedTypes.length > 0 ? '#fff' : activePalette().textMuted}
                     />
                 </TouchableOpacity>
             </View>
@@ -118,15 +116,15 @@ export default function ExerciseTypeScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         paddingVertical: 12,
     },
@@ -142,17 +140,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -163,7 +161,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 32,
@@ -177,22 +175,22 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 16,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     optionItemSelected: {
-        borderColor: '#7C3AED',
-        backgroundColor: '#FAF5FF',
+        borderColor: Palette.primary,
+        backgroundColor: tone('#FAF5FF'),
     },
     optionLabel: {
         flex: 1,
         fontSize: 15,
-        color: '#4B5563',
+        color: tone('#4B5563'),
         marginLeft: 12,
     },
     optionLabelSelected: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontWeight: '500',
     },
     checkbox: {
@@ -200,13 +198,13 @@ const styles = StyleSheet.create({
         height: 22,
         borderRadius: 11,
         borderWidth: 2,
-        borderColor: '#D1D5DB',
+        borderColor: tone('#D1D5DB'),
         alignItems: 'center',
         justifyContent: 'center',
     },
     checkboxSelected: {
-        backgroundColor: '#7C3AED',
-        borderColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
+        borderColor: Palette.primary,
     },
     bottomContainer: {
         paddingHorizontal: 24,
@@ -214,7 +212,7 @@ const styles = StyleSheet.create({
         paddingTop: 16,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -222,15 +220,15 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     continueButtonDisabled: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
     continueButtonTextDisabled: {
-        color: '#9CA3AF',
+        color: Palette.textMuted,
     },
-});
+}));

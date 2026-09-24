@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-} from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { paramString } from './params';
 import { checkupFrequencies as frequencies } from './options';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { activePalette, tone } from '@/constants/theme';
 
 
 export default function CheckupFrequencyScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams();
     const [selectedFrequency, setSelectedFrequency] = useState<string | null>(paramString(params.checkupFrequency) ?? 'monthly');
@@ -56,7 +55,7 @@ export default function CheckupFrequencyScreen() {
             <Text style={styles.screenTitle}>Health Assessment</Text>
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <View style={styles.progressBarContainer}>
                     <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -91,7 +90,7 @@ export default function CheckupFrequencyScreen() {
                 {/* Illustration */}
                 <View style={styles.illustrationContainer}>
                     <View style={styles.illustration}>
-                        <Ionicons name="calendar-outline" size={48} color="#7C3AED" />
+                        <Ionicons name="calendar-outline" size={48} color={Palette.primary} />
                     </View>
                 </View>
             </View>
@@ -109,12 +108,12 @@ export default function CheckupFrequencyScreen() {
                     <Ionicons
                         name="arrow-forward"
                         size={20}
-                        color={selectedFrequency ? '#fff' : '#9CA3AF'}
+                        color={selectedFrequency ? '#fff' : activePalette().textMuted}
                     />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.neverButton} onPress={handleNever}>
-                    <Ionicons name="close" size={16} color="#6B7280" />
+                    <Ionicons name="close" size={16} color={Palette.textSecondary} />
                     <Text style={styles.neverButtonText}>I never do health checkup</Text>
                 </TouchableOpacity>
             </View>
@@ -122,15 +121,15 @@ export default function CheckupFrequencyScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: Palette.background,
     },
     screenTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#7C3AED',
+        color: Palette.primary,
         textAlign: 'center',
         paddingTop: 8,
         marginBottom: 8,
@@ -147,17 +146,17 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: Palette.border,
         borderRadius: 2,
         marginHorizontal: 16,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 2,
     },
     skipText: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -168,7 +167,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 40,
@@ -180,20 +179,20 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 20,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
         alignItems: 'center',
     },
     frequencyItemSelected: {
-        borderColor: '#7C3AED',
-        backgroundColor: '#FAF5FF',
+        borderColor: Palette.primary,
+        backgroundColor: tone('#FAF5FF'),
     },
     frequencyText: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
     },
     frequencyTextSelected: {
-        color: '#7C3AED',
+        color: Palette.primary,
         fontWeight: '600',
     },
     illustrationContainer: {
@@ -205,7 +204,7 @@ const styles = StyleSheet.create({
         width: 120,
         height: 120,
         borderRadius: 60,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -214,7 +213,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     continueButton: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -223,16 +222,16 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     continueButtonDisabled: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: Palette.borderLight,
     },
     continueButtonText: {
-        color: '#fff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
     continueButtonTextDisabled: {
-        color: '#9CA3AF',
+        color: Palette.textMuted,
     },
     neverButton: {
         flexDirection: 'row',
@@ -240,12 +239,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 14,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
     },
     neverButtonText: {
         fontSize: 15,
-        color: '#7C3AED',
+        color: Palette.primary,
         marginLeft: 8,
     },
-});
+}));

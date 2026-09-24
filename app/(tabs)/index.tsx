@@ -115,7 +115,9 @@ import SymptomCheckerCard from '@/components/home/SymptomCheckerCard';
 import { PredictionCard } from '@/components/home/PredictionCard';
 import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { DoseRow } from '@/components/medications/DoseRow';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, schemed, tone, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { HeroStatusBar } from '@/components/ui/HeroStatusBar';
 import type {
     BiomarkerSummary, MedicationScheduleDay, NutritionDay, NutritionTargets, Product, User,
     Appointment, PlanItem,
@@ -229,6 +231,8 @@ const formatSince = (iso: string) => {
 };
 
 export default function HomeScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
@@ -725,7 +729,8 @@ export default function HomeScreen() {
         }
 
         return out.slice(0, 3);
-    }, [crisis, planDue, analysis, imminent, generating, handleGenerate, router]);
+    // Palette is a dependency: these colours are computed, and a scheme change must recompute them.
+    }, [crisis, planDue, analysis, imminent, generating, handleGenerate, router, Palette]);
 
     const firstName = user?.firstName?.trim() || 'there';
     const initials = ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase();
@@ -993,6 +998,8 @@ export default function HomeScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={[]}>
+            {/* The header's deep violet runs under the status bar. */}
+            <HeroStatusBar />
             <ScrollView
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
@@ -1250,67 +1257,71 @@ const HomeHeader = ({
     onSearch: () => void;
     onPressAvatar: () => void;
     onPressStreak: () => void;
-}) => (
-    <LinearGradient
-        colors={Palette.heroGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.header, { paddingTop: topInset + Spacing.lg }]}
-    >
-        <View style={styles.headerRow}>
-            <View style={styles.flex}>
-                <View style={styles.dateRow}>
-                    <Text style={styles.headerDate}>{formatToday()}</Text>
-                    {streak !== null && (
-                        <TouchableOpacity
-                            style={[styles.streakChip, streak === 0 && styles.streakChipIdle]}
-                            onPress={onPressStreak}
-                            hitSlop={8}
-                            accessibilityLabel={streak > 0 ? `${streak} day streak` : 'Start a streak'}
-                        >
-                            <Ionicons
-                                name={streak > 0 ? 'flame' : 'flame-outline'}
-                                size={12}
-                                color={Palette.white}
-                            />
-                            <Text style={styles.streakText}>
-                                {streak > 0 ? streak : 'Start a streak'}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <LinearGradient
+            colors={Palette.heroGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.header, { paddingTop: topInset + Spacing.lg }]}
+        >
+            <View style={styles.headerRow}>
+                <View style={styles.flex}>
+                    <View style={styles.dateRow}>
+                        <Text style={styles.headerDate}>{formatToday()}</Text>
+                        {streak !== null && (
+                            <TouchableOpacity
+                                style={[styles.streakChip, streak === 0 && styles.streakChipIdle]}
+                                onPress={onPressStreak}
+                                hitSlop={8}
+                                accessibilityLabel={streak > 0 ? `${streak} day streak` : 'Start a streak'}
+                            >
+                                <Ionicons
+                                    name={streak > 0 ? 'flame' : 'flame-outline'}
+                                    size={12}
+                                    color={Palettes.light.white}
+                                />
+                                <Text style={styles.streakText}>
+                                    {streak > 0 ? streak : 'Start a streak'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <Text style={styles.headerGreeting} numberOfLines={1}>Hello, {name}!</Text>
                 </View>
-                <Text style={styles.headerGreeting} numberOfLines={1}>Hello, {name}!</Text>
+
+                <TouchableOpacity style={styles.headerSearch} onPress={onSearch} accessibilityLabel="Search">
+                    <Ionicons name="search" size={20} color={Palettes.light.primaryDark} />
+                </TouchableOpacity>
+
+                {/* The notification centre. It counts its own unread and refreshes on focus —
+                    see `components/notifications/NotificationBell.tsx`. Placed between search
+                    and the avatar because it is a *destination*, like the profile, rather than
+                    a control on this screen. */}
+                <NotificationBell />
+
+                {/* Photo, then initials, then the generic glyph — and a photo that fails to
+                    load falls back the same way. See `components/Avatar.tsx`. */}
+                <TouchableOpacity onPress={onPressAvatar} accessibilityLabel="Your profile">
+                    <Avatar uri={photo} initials={initials} size={44} style={styles.headerAvatar} textStyle={{ fontSize: 15 }} />
+                </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.headerSearch} onPress={onSearch} accessibilityLabel="Search">
-                <Ionicons name="search" size={20} color={Palette.primaryDark} />
-            </TouchableOpacity>
+            {/*
+                The day in one line, composed from data the screen has already loaded — doses
+                left, an appointment today, calories remaining. It fetches nothing.
 
-            {/* The notification centre. It counts its own unread and refreshes on focus —
-                see `components/notifications/NotificationBell.tsx`. Placed between search
-                and the avatar because it is a *destination*, like the profile, rather than
-                a control on this screen. */}
-            <NotificationBell />
-
-            {/* Photo, then initials, then the generic glyph — and a photo that fails to
-                load falls back the same way. See `components/Avatar.tsx`. */}
-            <TouchableOpacity onPress={onPressAvatar} accessibilityLabel="Your profile">
-                <Avatar uri={photo} initials={initials} size={44} style={styles.headerAvatar} textStyle={{ fontSize: 15 }} />
-            </TouchableOpacity>
-        </View>
-
-        {/*
-            The day in one line, composed from data the screen has already loaded — doses
-            left, an appointment today, calories remaining. It fetches nothing.
-
-            It is the answer to the question the greeting raises and never used to answer.
-            "Hello, Hessam!" over a date is a screen that knows who you are and has nothing
-            to tell you; a person who opens the app twice before lunch needs the second
-            visit to differ from the first.
-        */}
-        <Text style={styles.headerToday} numberOfLines={2}>{today}</Text>
-    </LinearGradient>
-);
+                It is the answer to the question the greeting raises and never used to answer.
+                "Hello, Hessam!" over a date is a screen that knows who you are and has nothing
+                to tell you; a person who opens the app twice before lunch needs the second
+                visit to differ from the first.
+            */}
+            <Text style={styles.headerToday} numberOfLines={2}>{today}</Text>
+        </LinearGradient>
+    );
+};
 
 /**
  * The score card, overlapping the header.
@@ -1332,6 +1343,8 @@ const HomeHeader = ({
 const ScoreCard = React.memo(({ score, attention, onPress }: {
     score: HealthScore; attention: number; onPress: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const band = bandMeta(score.band);
     const mostlyReported = isMostlyReported(score);
     const change = score.change;
@@ -1435,6 +1448,8 @@ ScoreCard.displayName = 'ScoreCard';
  * was wrong, which is exactly why that judgement lives in `lib/biomarkers.ts` and not here.
  */
 const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const meta = FLAG_META[marker.flag];
     const movement = describeMovement(marker);
     const plain = plainName(marker);
@@ -1532,19 +1547,23 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
  * button inside a row that is itself tappable gives two hit areas for one destination, and
  * the smaller of them is the one people miss.
  */
-const ActionRow = ({ action }: { action: HomeAction }) => (
-    <TouchableOpacity style={styles.actionRow} onPress={action.onPress} activeOpacity={0.85}>
-        <View style={[styles.actionIcon, { backgroundColor: action.surface }]}>
-            <Ionicons name={action.icon} size={20} color={action.color} />
-        </View>
-        <View style={styles.flex}>
-            <Text style={styles.actionTitle} numberOfLines={2}>{action.title}</Text>
-            <Text style={styles.cardBody} numberOfLines={2}>{action.body}</Text>
-            <Text style={[styles.actionCta, { color: action.color }]}>{action.cta}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-    </TouchableOpacity>
-);
+const ActionRow = ({ action }: { action: HomeAction }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={styles.actionRow} onPress={action.onPress} activeOpacity={0.85}>
+            <View style={[styles.actionIcon, { backgroundColor: action.surface }]}>
+                <Ionicons name={action.icon} size={20} color={action.color} />
+            </View>
+            <View style={styles.flex}>
+                <Text style={styles.actionTitle} numberOfLines={2}>{action.title}</Text>
+                <Text style={styles.cardBody} numberOfLines={2}>{action.body}</Text>
+                <Text style={[styles.actionCta, { color: action.color }]}>{action.cta}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+        </TouchableOpacity>
+    );
+};
 
 // ---------------------------------------------------------------------------
 // Health metrics
@@ -1561,6 +1580,7 @@ const METRIC_CARD_WIDTH = 152;
 const METRIC_CARD_PITCH = METRIC_CARD_WIDTH + Spacing.md;
 
 const MetricsRail = React.memo(({ cards, router }: { cards: MetricCardData[]; router: Router }) => {
+    const styles = useStyles();
     const [page, setPage] = useState(0);
     const lastPage = useRef(0);
 
@@ -1612,6 +1632,8 @@ MetricsRail.displayName = 'MetricsRail';
  * claims.
  */
 const MetricTile = ({ card, onPress }: { card: MetricCardData; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const tint = METRIC_TINT[card.key];
     const value = card.value ?? card.fallback?.value ?? null;
     const reported = card.value == null && card.fallback != null;
@@ -1646,6 +1668,8 @@ const MetricTile = ({ card, onPress }: { card: MetricCardData; onPress: () => vo
 const ProgressRing = ({ done, total, size = 66, stroke = 6 }: {
     done: number; total: number; size?: number; stroke?: number;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const r = (size - stroke) / 2;
     const c = 2 * Math.PI * r;
     const ratio = total > 0 ? Math.min(1, done / total) : 0;
@@ -1687,6 +1711,7 @@ const ActivityCard = React.memo(({ summary, sessions, onLog, onSession }: {
     onLog: () => void;
     onSession: (id: string) => void;
 }) => {
+    const styles = useStyles();
     const goal = summary?.goal;
     const done = goal?.sessions.done ?? 0;
     const target = goal?.sessions.target ?? 0;
@@ -1738,6 +1763,8 @@ const SESSION_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 const SessionRow = ({ session, onPress }: { session: ActivitySession; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const when = new Date(session.startedAt);
     const distance = formatDistance(session.distanceM);
 
@@ -1758,7 +1785,7 @@ const SessionRow = ({ session, onPress }: { session: ActivitySession; onPress: (
                 <View style={styles.statRow}>
                     <Stat icon="time-outline" tint={Palette.textSecondary} text={formatDuration(session.durationSec)} />
                     {session.activeKcal != null && (
-                        <Stat icon="flame-outline" tint="#F59E0B" text={`${Math.round(session.activeKcal)} kcal`} />
+                        <Stat icon="flame-outline" tint={tone('#F59E0B')} text={`${Math.round(session.activeKcal)} kcal`} />
                     )}
                     {distance && <Stat icon="location-outline" tint={Palette.danger} text={distance} />}
                     {session.scoreDelta > 0 && (
@@ -1773,12 +1800,15 @@ const SessionRow = ({ session, onPress }: { session: ActivitySession; onPress: (
 
 const Stat = ({ icon, tint, text }: {
     icon: keyof typeof Ionicons.glyphMap; tint: string; text: string;
-}) => (
-    <View style={styles.stat}>
-        <Ionicons name={icon} size={13} color={tint} />
-        <Text style={styles.statText}>{text}</Text>
-    </View>
-);
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.stat}>
+            <Ionicons name={icon} size={13} color={tint} />
+            <Text style={styles.statText}>{text}</Text>
+        </View>
+    );
+};
 
 // ---------------------------------------------------------------------------
 // Sleep
@@ -1802,6 +1832,8 @@ const Stat = ({ icon, tint, text }: {
 const SleepCard = React.memo(({ card, today, onOpen }: {
     card: MetricCardData | null; today: DayMetrics | null; onOpen: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const hours = typeof card?.value === 'number' ? card.value : null;
     const nights = (card?.series ?? []).slice(-7);
     const peak = Math.max(1, ...nights.map((n) => n.value ?? 0));
@@ -1895,6 +1927,8 @@ SleepCard.displayName = 'SleepCard';
 const NutritionCard = React.memo(({ day, onOpen, onLog }: {
     day: NutritionDay | null; onOpen: () => void; onLog: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const target = day?.targets && 'calories' in day.targets ? day.targets.calories : 0;
     const consumed = day?.totals.calories ?? 0;
     const pattern = day?.plan?.guidance?.find((g) => g.kind === 'pattern')?.label
@@ -1935,7 +1969,7 @@ const NutritionCard = React.memo(({ day, onOpen, onLog }: {
                             <Ionicons
                                 name={pattern ? 'leaf-outline' : 'flag-outline'}
                                 size={12}
-                                color={Palette.white}
+                                color={Palettes.light.white}
                             />
                             {/* The plan's own words, not a paraphrase. Without this the ring
                                 is a calorie counter that happens to live in a health app. */}
@@ -1958,7 +1992,7 @@ const NutritionCard = React.memo(({ day, onOpen, onLog }: {
                                 : `${remaining.toLocaleString()} left`}
                         />
                         <View style={styles.macroList}>
-                            <Macro label="Protein" grams={day.totals.protein} target={macroTargets.protein} tint={Palette.white} />
+                            <Macro label="Protein" grams={day.totals.protein} target={macroTargets.protein} tint={Palettes.light.white} />
                             <Macro label="Fat" grams={day.totals.fat} target={macroTargets.fat} tint="#FDA4AF" />
                             <Macro label="Carbs" grams={day.totals.carbs} target={macroTargets.carbs} tint="#FCD34D" />
                         </View>
@@ -2005,6 +2039,7 @@ NutritionCard.displayName = 'NutritionCard';
 const Macro = ({ label, grams, target, tint }: {
     label: string; grams: number; target?: number; tint: string;
 }) => {
+    const styles = useStyles();
     const value = Math.round(grams);
     const hasTarget = typeof target === 'number' && target > 0;
     const ratio = hasTarget ? Math.min(1, grams / target) : 0;
@@ -2043,6 +2078,8 @@ const Macro = ({ label, grams, target, tint }: {
 const AppointmentsCard = React.memo(({ appointments, onOpen, onBook }: {
     appointments: Appointment[]; onOpen: () => void; onBook: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     // The caller only renders this section when there is a live appointment — an empty
     // diary is a row in "Get more from Predyqt" instead. This guard is here so the
     // destructure below cannot read a professional off `undefined` if it is ever reused.
@@ -2150,6 +2187,7 @@ const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen 
     onAdd: () => void;
     onOpen: (id: string) => void;
 }) => {
+    const styles = useStyles();
     // Gated by the caller: a day with no doses is a setup row, not a card. See the
     // tracker/setup split in `HomeScreen`.
     const doses = schedule?.doses ?? [];
@@ -2222,6 +2260,8 @@ const AskCard = React.memo(({ conversation, onOpen }: {
     conversation: Conversation | null;
     onOpen: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const last = [...(conversation?.messages ?? [])].reverse().find((m) => m.role === 'assistant');
     const unavailable = conversation?.available === false;
 
@@ -2274,15 +2314,19 @@ const AskCard = React.memo(({ conversation, onOpen }: {
 AskCard.displayName = 'AskCard';
 
 /** The kit's underlined footer action — "Log Activity +" — above a hairline rule. */
-const CardFooterAction = ({ label, onPress }: { label: string; onPress: () => void }) => (
-    <>
-        <View style={styles.divider} />
-        <TouchableOpacity style={styles.footerAction} onPress={onPress} activeOpacity={0.8}>
-            <Text style={styles.footerActionText}>{label}</Text>
-            <Ionicons name="add" size={18} color={Palette.primary} />
-        </TouchableOpacity>
-    </>
-);
+const CardFooterAction = ({ label, onPress }: { label: string; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.footerAction} onPress={onPress} activeOpacity={0.8}>
+                <Text style={styles.footerActionText}>{label}</Text>
+                <Ionicons name="add" size={18} color={Palette.primary} />
+            </TouchableOpacity>
+        </>
+    );
+};
 
 // ---------------------------------------------------------------------------
 // Latest analysis
@@ -2297,11 +2341,11 @@ const CardFooterAction = ({ label, onPress }: { label: string; onPress: () => vo
  * surveillance read that a clinician has not necessarily signed, and a red card on a home
  * screen says something this product is careful never to say.
  */
-const TONE_META: Record<string, { icon: React.ComponentProps<typeof Ionicons>['name']; color: string; bg: string }> = {
+const TONE_META: Record<string, { icon: React.ComponentProps<typeof Ionicons>['name']; color: string; bg: string }> = schemed((Palette) => ({
     good: { icon: 'checkmark-circle', color: Palette.success, bg: Palette.successSurface },
     watch: { icon: 'eye-outline', color: Palette.textSecondary, bg: Palette.surface },
     act: { icon: 'flag-outline', color: Palette.warning, bg: Palette.warningSurface },
-};
+}));
 
 /**
  * Latest AI analysis.
@@ -2327,6 +2371,8 @@ const AnalysisCard = React.memo(({
     onGenerate: () => void;
     onRegenerate: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const { interpretation, latestResult, source, isForLatestResult, available, verification } = analysis;
 
     // The version written for the reader rather than for a clinician. Absent on analyses
@@ -2612,44 +2658,54 @@ const AnalysisCard = React.memo(({
 });
 AnalysisCard.displayName = 'AnalysisCard';
 
-const AnalysisBlock = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <View style={styles.analysisBlock}>
-        <Text style={styles.analysisBlockTitle}>{title}</Text>
-        {children}
-    </View>
-);
+const AnalysisBlock = ({ title, children }: { title: string; children: React.ReactNode }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.analysisBlock}>
+            <Text style={styles.analysisBlockTitle}>{title}</Text>
+            {children}
+        </View>
+    );
+};
 
 const Section = ({ title, action, onAction, children }: {
     title: string; action?: string; onAction?: () => void; children: React.ReactNode;
-}) => (
-    <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{title}</Text>
-            {action && onAction && (
-                <TouchableOpacity onPress={onAction} hitSlop={8}>
-                    <Text style={styles.sectionAction}>{action}</Text>
-                </TouchableOpacity>
-            )}
+}) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{title}</Text>
+                {action && onAction && (
+                    <TouchableOpacity onPress={onAction} hitSlop={8}>
+                        <Text style={styles.sectionAction}>{action}</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+            {children}
         </View>
-        {children}
-    </View>
-);
+    );
+};
 
 // ---------------------------------------------------------------------------
 // Signed out
 // ---------------------------------------------------------------------------
 
-const ProductCard = ({ product, onPress }: { product: Product; onPress: () => void }) => (
-    <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.85}>
-        {product.image
-            ? <Image source={{ uri: product.image }} style={styles.productImage} />
-            : <View style={[styles.productImage, styles.productPlaceholder]}>
-                <Ionicons name="flask-outline" size={26} color={Palette.textSecondary} />
-            </View>}
-        <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-        <Text style={styles.productPrice}>£{product.price}</Text>
-    </TouchableOpacity>
-);
+const ProductCard = ({ product, onPress }: { product: Product; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.85}>
+            {product.image
+                ? <Image source={{ uri: product.image }} style={styles.productImage} />
+                : <View style={[styles.productImage, styles.productPlaceholder]}>
+                    <Ionicons name="flask-outline" size={26} color={Palette.textSecondary} />
+                </View>}
+            <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+            <Text style={styles.productPrice}>£{product.price}</Text>
+        </TouchableOpacity>
+    );
+};
 
 const BENEFITS: { icon: React.ComponentProps<typeof Ionicons>['name']; title: string; body: string }[] = [
     { icon: 'sparkles-outline', title: 'AI interpretation', body: 'Your results explained in plain language.' },
@@ -2660,58 +2716,62 @@ const BENEFITS: { icon: React.ComponentProps<typeof Ionicons>['name']; title: st
 
 const SignedOut = ({ products, router, topInset }: {
     products: Product[]; router: Router; topInset: number;
-}) => (
-    <>
-        <LinearGradient
-            colors={Palette.heroGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.welcomeHero, { paddingTop: topInset + Spacing.xxl }]}
-        >
-            <Text style={styles.heroEyebrow}>Predyqt</Text>
-            <Text style={styles.welcomeTitle}>Understand what your results actually mean</Text>
-            <Text style={styles.heroHeadline}>
-                Upload a lab report and get an interpretation, a tracked history, and a plan you can act on.
-            </Text>
-            <View style={styles.ctaRow}>
-                <TouchableOpacity style={styles.ctaPrimary} onPress={() => router.push('/signup')}>
-                    <Text style={styles.ctaPrimaryText}>Create account</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.ctaSecondary} onPress={() => router.push('/(auth)/loginscreen')}>
-                    <Text style={styles.ctaSecondaryText}>Sign in</Text>
-                </TouchableOpacity>
-            </View>
-        </LinearGradient>
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <>
+            <LinearGradient
+                colors={Palette.heroGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.welcomeHero, { paddingTop: topInset + Spacing.xxl }]}
+            >
+                <Text style={styles.heroEyebrow}>Predyqt</Text>
+                <Text style={styles.welcomeTitle}>Understand what your results actually mean</Text>
+                <Text style={styles.heroHeadline}>
+                    Upload a lab report and get an interpretation, a tracked history, and a plan you can act on.
+                </Text>
+                <View style={styles.ctaRow}>
+                    <TouchableOpacity style={styles.ctaPrimary} onPress={() => router.push('/signup')}>
+                        <Text style={styles.ctaPrimaryText}>Create account</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.ctaSecondary} onPress={() => router.push('/(auth)/loginscreen')}>
+                        <Text style={styles.ctaSecondaryText}>Sign in</Text>
+                    </TouchableOpacity>
+                </View>
+            </LinearGradient>
 
-        <Section title="Why Predyqt">
-            <View style={styles.benefitGrid}>
-                {BENEFITS.map((b) => (
-                    <View key={b.title} style={styles.benefitCard}>
-                        <View style={styles.benefitIcon}>
-                            <Ionicons name={b.icon} size={20} color={Palette.textSecondary} />
+            <Section title="Why Predyqt">
+                <View style={styles.benefitGrid}>
+                    {BENEFITS.map((b) => (
+                        <View key={b.title} style={styles.benefitCard}>
+                            <View style={styles.benefitIcon}>
+                                <Ionicons name={b.icon} size={20} color={Palette.textSecondary} />
+                            </View>
+                            <Text style={styles.benefitTitle}>{b.title}</Text>
+                            <Text style={styles.benefitBody}>{b.body}</Text>
                         </View>
-                        <Text style={styles.benefitTitle}>{b.title}</Text>
-                        <Text style={styles.benefitBody}>{b.body}</Text>
-                    </View>
-                ))}
-            </View>
-        </Section>
-
-        {products.length > 0 && (
-            <Section title="Popular tests" action="See All" onAction={() => router.push('/(tabs)/orders')}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-                    {products.map((p) => (
-                        <ProductCard
-                            key={p._id}
-                            product={p}
-                            onPress={() => router.push({ pathname: '/ProductDetails', params: { productId: p._id } })}
-                        />
                     ))}
-                </ScrollView>
+                </View>
             </Section>
-        )}
-    </>
-);
+
+            {products.length > 0 && (
+                <Section title="Popular tests" action="See All" onAction={() => router.push('/(tabs)/orders')}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                        {products.map((p) => (
+                            <ProductCard
+                                key={p._id}
+                                product={p}
+                                onPress={() => router.push({ pathname: '/ProductDetails', params: { productId: p._id } })}
+                            />
+                        ))}
+                    </ScrollView>
+                </Section>
+            )}
+        </>
+    );
+};
 
 // ---------------------------------------------------------------------------
 // Styles — 16pt gutter and the kit's card radius.
@@ -2719,7 +2779,7 @@ const SignedOut = ({ products, router, topInset }: {
 
 const GUTTER = Spacing.lg;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.background },
     center: { alignItems: 'center', justifyContent: 'center' },
     content: { paddingBottom: Spacing.xxxl },
@@ -2738,20 +2798,21 @@ const styles = StyleSheet.create({
     headerDate: { fontSize: 13, color: 'rgba(255,255,255,0.85)', ...BodyFont.medium },
     streakChip: {
         flexDirection: 'row', alignItems: 'center', gap: 3,
-        backgroundColor: '#F59E0B', borderRadius: Radius.sm,
+        backgroundColor: '#F59E0B', borderRadius: Radius.sm, // the streak chip, on the deep hero
         paddingHorizontal: 7, paddingVertical: 2,
     },
     // A streak of zero is an invitation, not a failure — so it keeps the shape and loses
     // the amber. The same call `app/profile.tsx` makes about its own streak card.
     streakChipIdle: { backgroundColor: 'rgba(255,255,255,0.22)' },
-    streakText: { fontSize: 12, color: Palette.white, fontFamily: Fonts.bold },
-    headerGreeting: { fontSize: 26, color: Palette.white, fontFamily: Fonts.bold, marginTop: 6 },
+    streakText: { fontSize: 12, color: Palettes.light.white, fontFamily: Fonts.bold },
+    headerGreeting: { fontSize: 26, color: Palettes.light.white, fontFamily: Fonts.bold, marginTop: 6 },
     headerToday: {
         fontSize: 14, lineHeight: 20, marginTop: Spacing.sm,
         color: 'rgba(255,255,255,0.92)', ...BodyFont.medium,
     },
     headerSearch: {
-        width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.white,
+        // On the deep hero, which does not change with the scheme — so neither does this.
+        width: 44, height: 44, borderRadius: 22, backgroundColor: Palettes.light.background,
         alignItems: 'center', justifyContent: 'center',
     },
     headerAvatar: { borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' },
@@ -2763,7 +2824,7 @@ const styles = StyleSheet.create({
         gap: Spacing.md,
         marginHorizontal: GUTTER, marginTop: -Spacing.xxxl - Spacing.md,
         padding: Spacing.lg, borderRadius: Radius.xl,
-        backgroundColor: Palette.white, ...Shadow.card,
+        backgroundColor: Palette.background, ...Shadow.card,
         shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
     },
     scoreTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
@@ -2808,7 +2869,7 @@ const styles = StyleSheet.create({
     divider: { height: 1, backgroundColor: Palette.border },
     subHeading: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
     roundButton: {
-        width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.primary,
+        width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
     },
     footerAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
@@ -2853,7 +2914,7 @@ const styles = StyleSheet.create({
     actionRow: {
         flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md,
         padding: Spacing.lg, borderRadius: Radius.xl,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
+        backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.border,
         ...Shadow.card,
     },
     actionIcon: {
@@ -2887,7 +2948,7 @@ const styles = StyleSheet.create({
     unit: { fontSize: 12, color: Palette.textMuted, ...BodyFont.regular },
     dots: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: Spacing.md },
     dot: { width: 18, height: 5, borderRadius: Radius.pill, backgroundColor: Palette.border },
-    dotActive: { width: 26, backgroundColor: Palette.primary },
+    dotActive: { width: 26, backgroundColor: Palette.primaryFill },
 
     // Activity -------------------------------------------------------------
     ringCentre: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
@@ -2898,7 +2959,7 @@ const styles = StyleSheet.create({
     sleepColumn: { flex: 1, alignItems: 'center', gap: 5 },
     sleepTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
     sleepBar: {
-        width: '100%', borderRadius: Radius.sm, backgroundColor: Palette.primary, minHeight: 4,
+        width: '100%', borderRadius: Radius.sm, backgroundColor: Palette.primaryFill, minHeight: 4,
     },
     sleepLabel: { fontSize: 11, color: Palette.textMuted, ...BodyFont.medium },
 
@@ -2928,14 +2989,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: Radius.pill,
         paddingHorizontal: Spacing.md, paddingVertical: 5,
     },
-    heroChipText: { flexShrink: 1, fontSize: 12, color: Palette.white, ...BodyFont.medium },
+    heroChipText: { flexShrink: 1, fontSize: 12, color: Palettes.light.white, ...BodyFont.medium },
     nutritionTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
     macroList: { flex: 1, gap: Spacing.lg },
     macro: { gap: 6 },
     macroHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.sm },
     macroLabel: { fontSize: 12, color: 'rgba(255,255,255,0.82)', ...BodyFont.regular },
     macroValue: { fontSize: 16, color: Palette.white, fontFamily: Fonts.bold },
-    macroValueOver: { color: '#FDE68A' },
+    macroValueOver: { color: '#FDE68A' }, // on the deep hero in both schemes
     macroTarget: { fontSize: 11, color: 'rgba(255,255,255,0.72)', ...BodyFont.regular },
     macroTrack: {
         height: 6, borderRadius: Radius.pill,
@@ -2954,7 +3015,7 @@ const styles = StyleSheet.create({
     upcomingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     dateChip: {
         width: 46, height: 46, borderRadius: Radius.md, borderWidth: 1,
-        borderColor: Palette.border, backgroundColor: Palette.white,
+        borderColor: Palette.border, backgroundColor: Palette.background,
         alignItems: 'center', justifyContent: 'center',
     },
     dateChipDay: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
@@ -2967,7 +3028,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     bubble: {
-        flex: 1, backgroundColor: Palette.white, borderRadius: Radius.lg,
+        flex: 1, backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.borderLight,
         padding: Spacing.md, gap: 4,
     },
@@ -2978,7 +3039,7 @@ const styles = StyleSheet.create({
     // Latest analysis ------------------------------------------------------
     analysisCard: {
         marginHorizontal: GUTTER, padding: Spacing.lg, borderRadius: Radius.xl,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border,
+        backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.border,
         gap: Spacing.md,
     },
     analysisHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
@@ -3078,7 +3139,7 @@ const styles = StyleSheet.create({
     },
 
     primaryButton: {
-        backgroundColor: Palette.primary, borderRadius: Radius.md,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.md,
         paddingVertical: 14, paddingHorizontal: Spacing.xxl, alignItems: 'center', marginTop: Spacing.sm,
         alignSelf: 'stretch',
     },
@@ -3093,24 +3154,24 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', fontFamily: Fonts.bold,
     },
     heroHeadline: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.88)', ...BodyFont.regular },
-    welcomeTitle: { fontSize: 26, lineHeight: 34, color: Palette.white, fontFamily: Fonts.bold },
+    welcomeTitle: { fontSize: 26, lineHeight: 34, color: Palettes.light.white, fontFamily: Fonts.bold },
     ctaRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
     ctaPrimary: {
-        flex: 1, backgroundColor: Palette.white, borderRadius: Radius.md,
+        flex: 1, backgroundColor: Palettes.light.background, borderRadius: Radius.md,
         paddingVertical: 13, alignItems: 'center',
     },
-    ctaPrimaryText: { color: Palette.primaryDark, fontSize: 14, fontFamily: Fonts.semibold },
+    ctaPrimaryText: { color: Palettes.light.primaryDark, fontSize: 14, fontFamily: Fonts.semibold },
     ctaSecondary: {
         flex: 1, borderRadius: Radius.md, paddingVertical: 13, alignItems: 'center',
         borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)',
     },
-    ctaSecondaryText: { color: Palette.white, fontSize: 14, fontFamily: Fonts.semibold },
+    ctaSecondaryText: { color: Palettes.light.white, fontSize: 14, fontFamily: Fonts.semibold },
     benefitGrid: {
         flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, paddingHorizontal: GUTTER,
     },
     benefitCard: {
         flexGrow: 1, flexBasis: '46%', padding: Spacing.lg, borderRadius: Radius.lg,
-        backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border, gap: Spacing.sm,
+        backgroundColor: Palette.background, borderWidth: 1, borderColor: Palette.border, gap: Spacing.sm,
     },
     benefitIcon: {
         width: 48, height: 48, borderRadius: Radius.lg, backgroundColor: Palette.borderLight,
@@ -3125,4 +3186,4 @@ const styles = StyleSheet.create({
     productPlaceholder: { alignItems: 'center', justifyContent: 'center' },
     productName: { fontSize: 13, color: Palette.text, fontFamily: Fonts.semibold },
     productPrice: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.bold },
-});
+}));

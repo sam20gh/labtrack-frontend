@@ -1,0 +1,12 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.labtrack.jstyleble" >
+4    <!--
+5      No permissions are declared here on purpose. This module never opens a socket: it
+6      turns commands into bytes and bytes into dictionaries. The Bluetooth permissions
+7      belong to whatever owns the radio, which is `react-native-ble-plx`, declared by the
+8      app's own manifest through the Expo config plugin.
+9    -->
+10    <uses-sdk android:minSdkVersion="26" />
+11
+12</manifest>

@@ -10,9 +10,10 @@
  * caption says how many days reported.
  */
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Svg, { Path, Line, Circle, Text as SvgText } from 'react-native-svg';
-import { Palette, BodyFont } from '@/constants/theme';
+import { BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export interface MetricPoint {
     day: string;
@@ -99,11 +100,17 @@ export function MetricAreaChart({
     points,
     width,
     height = 180,
-    color = Palette.primary,
-    fillColor = Palette.primarySurface,
+    color: colorProp,
+    fillColor: fillColorProp,
     unit,
     maxXLabels = 7,
 }: Props) {
+    const Palette = usePalette();
+    // Resolved here rather than as parameter defaults: a default runs before the hook, and
+    // would read the light palette whatever the person chose.
+    const color = colorProp ?? Palette.primary;
+    const fillColor = fillColorProp ?? Palette.primarySurface;
+    const styles = useStyles();
     const chart = useMemo(() => {
         const plotW = width - PADDING.left - PADDING.right;
         const plotH = height - PADDING.top - PADDING.bottom;
@@ -233,7 +240,7 @@ export function MetricAreaChart({
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     empty: {
         alignItems: 'center',
         justifyContent: 'center',
@@ -251,4 +258,4 @@ const styles = StyleSheet.create({
         ...BodyFont.regular,
         color: Palette.textMuted,
     },
-});
+}));

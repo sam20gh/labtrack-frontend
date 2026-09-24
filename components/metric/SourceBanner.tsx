@@ -14,9 +14,10 @@
  * logging rather than showing a Connect button that cannot work.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { HealthCapability } from '@/lib/health';
 import type { WearableStatus } from '@/lib/activity';
 
@@ -41,6 +42,8 @@ const relativeTime = (iso: string | null): string => {
 };
 
 export function SourceBanner({ capability, sources, onConnect, onManage, onLogManually }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const connected = sources.filter((s) => s.status === 'connected');
 
     if (connected.length > 0) {
@@ -103,7 +106,7 @@ export function SourceBanner({ capability, sources, onConnect, onManage, onLogMa
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         flexDirection: 'row',
         gap: Spacing.md,
@@ -119,4 +122,4 @@ const styles = StyleSheet.create({
     detail: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary, lineHeight: 18 },
     actions: { flexDirection: 'row', gap: Spacing.lg, marginTop: Spacing.sm },
     action: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
-});
+}));

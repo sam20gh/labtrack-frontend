@@ -16,10 +16,7 @@
  * no affordance.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -32,11 +29,14 @@ import {
     getOverview, METRIC_TINT, METRIC_ROUTE,
     type MetricCard, type MetricsOverview,
 } from '@/lib/metrics';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont, Palettes, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const WINDOW_DAYS = 30;
 
 export default function MetricsInsightScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -89,10 +89,10 @@ export default function MetricsInsightScreen() {
                     style={styles.hero}
                 >
                     <TouchableOpacity style={styles.back} onPress={() => router.back()} hitSlop={12}>
-                        <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+                        <Ionicons name="chevron-back" size={22} color={Palettes.light.white} />
                     </TouchableOpacity>
                     <View style={styles.heroIcon}>
-                        <Ionicons name="bulb-outline" size={22} color={Palette.textSecondary} />
+                        <Ionicons name="bulb-outline" size={22} color={Palettes.light.textSecondary} />
                     </View>
                     <Text style={styles.heroTitle}>Health Metrics Insight</Text>
                     <Text style={styles.heroBlurb}>
@@ -127,6 +127,8 @@ export default function MetricsInsightScreen() {
 const InsightCard = ({ metric, width, onOpen, onSuggestion }: {
     metric: MetricCard; width: number; onOpen: () => void; onSuggestion: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const tint = METRIC_TINT[metric.key];
     const reading = readingFor(metric);
 
@@ -141,7 +143,7 @@ const InsightCard = ({ metric, width, onOpen, onSuggestion }: {
                 {metric.value ?? '--'}
                 <Text style={styles.unit}> {metric.unit}</Text>
             </Text>
-            <Text style={[styles.status, metric.statusColour ? { color: metric.statusColour } : null]}>
+            <Text style={[styles.status, metric.statusColour ? { color: tone(metric.statusColour) } : null]}>
                 {metric.status}
             </Text>
 
@@ -216,7 +218,7 @@ const promptFor = (metric: MetricCard) =>
     `My ${metric.label.toLowerCase()} is currently ${metric.value ?? 'not recorded'} ${metric.unit} `
     + `(${metric.status.toLowerCase()}). What does that mean for me, and what should I do about it?`;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     content: { paddingBottom: Spacing.xl * 2, gap: Spacing.md },
@@ -224,10 +226,10 @@ const styles = StyleSheet.create({
     hero: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.xl, alignItems: 'center', gap: Spacing.sm },
     back: { position: 'absolute', left: Spacing.lg, top: Spacing.lg },
     heroIcon: {
-        width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF',
+        width: 44, height: 44, borderRadius: 22, backgroundColor: Palettes.light.background,
         alignItems: 'center', justifyContent: 'center', marginTop: Spacing.md,
     },
-    heroTitle: { fontFamily: Fonts.bold, fontSize: 24, color: '#FFFFFF', textAlign: 'center' },
+    heroTitle: { fontFamily: Fonts.bold, fontSize: 24, color: Palettes.light.white, textAlign: 'center' },
     heroBlurb: { ...BodyFont.regular, fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 19 },
 
     card: {
@@ -246,4 +248,4 @@ const styles = StyleSheet.create({
     },
     suggestionText: { fontFamily: Fonts.semibold, fontSize: 13 },
     empty: { ...BodyFont.regular, fontSize: 13, color: Palette.textMuted, textAlign: 'center', lineHeight: 19, paddingVertical: Spacing.lg },
-});
+}));

@@ -17,10 +17,7 @@
  * useful half of it.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-    View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
-    ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,11 +29,14 @@ import {
 } from '@/lib/resources';
 import { AutoCard } from '@/components/resources/ResourceCards';
 import FilterSheet, { EMPTY_FILTERS, countActive, toQuery, type Filters } from '@/components/resources/FilterSheet';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const PAGE_SIZE = 12;
 
 export default function ResourceListScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{ type?: string; category?: string; title?: string }>();
 
@@ -259,7 +259,7 @@ export default function ResourceListScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     topBar: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
     content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl * 2 },
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     searchInput: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text, padding: 0 },
     filterDot: {
         position: 'absolute', top: -2, right: -2,
-        width: 8, height: 8, borderRadius: 4, backgroundColor: Palette.primary,
+        width: 8, height: 8, borderRadius: 4, backgroundColor: Palette.primaryFill,
     },
 
     tagRow: { gap: Spacing.sm, paddingVertical: Spacing.lg },
@@ -307,11 +307,11 @@ const styles = StyleSheet.create({
     loadMore: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
         marginTop: Spacing.lg, paddingVertical: Spacing.lg,
-        borderRadius: Radius.lg, backgroundColor: Palette.primary,
+        borderRadius: Radius.lg, backgroundColor: Palette.primaryFill,
     },
     loadMoreText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
     endNote: {
         textAlign: 'center', marginTop: Spacing.xl,
         fontSize: 13, ...BodyFont.regular, color: Palette.textMuted,
     },
-});
+}));

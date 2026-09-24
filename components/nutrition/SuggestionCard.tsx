@@ -22,17 +22,18 @@ import { View, Text, StyleSheet, TouchableOpacity, Pressable, Linking } from 're
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont, activePalette, tone, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { MEAL_TYPE_LABEL } from '@/lib/nutrition';
 import type { MealSuggestion, MealType } from '@/types/api';
 
 /** Slot → tile wash. Warm through the day, matching how the kit's photographs read. */
-const SLOT_WASH: Record<MealType, [string, string]> = {
-    breakfast: ['#FDE68A', '#FCA5A5'],
-    lunch: ['#A7F3D0', '#93C5FD'],
-    dinner: ['#C4B5FD', '#818CF8'],
-    snack: ['#FBCFE8', '#C4B5FD'],
-};
+const SLOT_WASH: Record<MealType, [string, string]> = schemed((_, scheme) => ({
+    breakfast: [tone('#FDE68A', scheme), tone('#FCA5A5', scheme)],
+    lunch: [tone('#A7F3D0', scheme), tone('#93C5FD', scheme)],
+    dinner: [activePalette().primaryPale, tone('#818CF8', scheme)],
+    snack: [tone('#FBCFE8', scheme), activePalette().primaryPale],
+}));
 
 const SLOT_ICON: Record<MealType, string> = {
     breakfast: 'sunny-outline',
@@ -59,6 +60,8 @@ interface HeroProps {
  * Shared by the card and the detail sheet so the two cannot disagree about the label.
  */
 export function SuggestionHero({ suggestion, height, credit = 'compact', children }: HeroProps) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const slot = suggestion.mealType || 'lunch';
     const image = suggestion.image;
 
@@ -122,6 +125,8 @@ interface Props {
 }
 
 export function SuggestionCard({ suggestion, onPress, variant = 'rail' }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const slot = suggestion.mealType || 'lunch';
     // The panel only needs room for chips; a photograph needs room to be a picture
     const height = suggestion.image?.url ? (variant === 'rail' ? 132 : 168) : 96;
@@ -166,14 +171,18 @@ export function SuggestionCard({ suggestion, onPress, variant = 'rail' }: Props)
     );
 }
 
-const Stat = ({ icon, value }: { icon: string; value: string }) => (
-    <View style={styles.stat}>
-        <Ionicons name={icon as any} size={13} color={Palette.textSecondary} />
-        <Text style={styles.statText}>{value}</Text>
-    </View>
-);
+const Stat = ({ icon, value }: { icon: string; value: string }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.stat}>
+            <Ionicons name={icon as any} size={13} color={Palette.textSecondary} />
+            <Text style={styles.statText}>{value}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         backgroundColor: Palette.background,
         borderRadius: Radius.lg,
@@ -218,4 +227,4 @@ const styles = StyleSheet.create({
     stats: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.xs },
     stat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
     statText: { fontFamily: Fonts.semibold, fontSize: 11, color: Palette.text },
-});
+}));

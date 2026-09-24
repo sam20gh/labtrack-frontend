@@ -16,10 +16,11 @@
  * reading on this dashboard comes from `utils/activityInsight.js`, a deterministic table.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { RunnerHeroArt, RUNNER_HERO_ART } from './art';
 
 interface Props {
@@ -29,13 +30,15 @@ interface Props {
 }
 
 export function WelcomeCard({ onLog, onConnect }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const { width } = useWindowDimensions();
     // Held to a size where the figure reads as a figure and the card stays one screen.
     const artWidth = Math.min(RUNNER_HERO_ART.width, width * 0.5);
 
     return (
         <LinearGradient
-            colors={[Palette.primaryTint, Palette.white]}
+            colors={[Palette.primaryTint, Palette.background]}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
             style={styles.card}
@@ -78,7 +81,7 @@ export function WelcomeCard({ onLog, onConnect }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         borderRadius: Radius.xl,
         borderWidth: 1,
@@ -103,7 +106,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
         borderRadius: Radius.md,
         paddingVertical: Spacing.md,
     },
@@ -114,7 +117,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         borderWidth: 1,
         borderColor: Palette.primaryPale,
         borderRadius: Radius.md,
@@ -122,4 +125,4 @@ const styles = StyleSheet.create({
     },
     secondaryText: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
     pressed: { opacity: 0.8 },
-});
+}));

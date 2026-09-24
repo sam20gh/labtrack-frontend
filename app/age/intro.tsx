@@ -13,7 +13,7 @@
  * screen the person lands on.
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,9 +21,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import AgeOrb from '@/components/age/AgeOrb';
 import { AGE_INTRO_KEY } from '@/lib/age';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function AgeIntroScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const start = async () => {
@@ -89,19 +92,23 @@ export default function AgeIntroScreen() {
 
 const Point = ({ icon, title, body }: {
     icon: React.ComponentProps<typeof Ionicons>['name']; title: string; body: string;
-}) => (
-    <View style={styles.point}>
-        <View style={styles.pointIcon}>
-            <Ionicons name={icon} size={17} color={Palette.primary} />
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.point}>
+            <View style={styles.pointIcon}>
+                <Ionicons name={icon} size={17} color={Palette.primary} />
+            </View>
+            <View style={styles.pointBody}>
+                <Text style={styles.pointTitle}>{title}</Text>
+                <Text style={styles.pointText}>{body}</Text>
+            </View>
         </View>
-        <View style={styles.pointBody}>
-            <Text style={styles.pointTitle}>{title}</Text>
-            <Text style={styles.pointText}>{body}</Text>
-        </View>
-    </View>
-);
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.background },
     topBar: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
     body: { flex: 1, alignItems: 'center', paddingHorizontal: Spacing.xl },
@@ -126,7 +133,7 @@ const styles = StyleSheet.create({
     footer: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },
     cta: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.primary, paddingVertical: Spacing.lg, borderRadius: Radius.pill,
+        backgroundColor: Palette.primaryFill, paddingVertical: Spacing.lg, borderRadius: Radius.pill,
     },
     ctaText: { fontFamily: Fonts.bold, fontSize: 15, color: Palette.white },
-});
+}));

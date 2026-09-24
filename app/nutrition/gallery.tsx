@@ -23,7 +23,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import { getGallery, ALIGNMENT_META, MEAL_TYPE_LABEL } from '@/lib/nutrition';
-import { Palette, Fonts, Spacing, Radius, Shadow, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, Shadow, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { NutritionGalleryItem } from '@/types/api';
 
 const PAGE = 30;
@@ -56,6 +57,8 @@ const time = (iso: string) =>
     new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
 export default function NutritionGalleryScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -289,7 +292,7 @@ export default function NutritionGalleryScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row',
@@ -372,11 +375,11 @@ const styles = StyleSheet.create({
         height: 44,
         paddingHorizontal: Spacing.xl,
         borderRadius: Radius.lg,
-        backgroundColor: Palette.primary,
+        backgroundColor: Palette.primaryFill,
     },
     emptyButtonText: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.white },
 
-    viewer: { flex: 1, backgroundColor: '#0B0B0F' },
+    viewer: { flex: 1, backgroundColor: tone('#0B0B0F') },
     viewerImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     viewerTop: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
     viewerClose: {
@@ -417,4 +420,4 @@ const styles = StyleSheet.create({
     statValue: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
     statUnit: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
     statLabel: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted },
-});
+}));

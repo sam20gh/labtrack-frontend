@@ -22,7 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Router } from 'expo-router';
 import { api, ApiError } from './api';
 import { METRIC_ROUTE as TRACKER_ROUTE, METRIC_TINT as TRACKER_TINT } from './metrics';
-import { Palette } from '@/constants/theme';
+import { activePalette, schemed } from '@/constants/theme';
 import type { Ionicons } from '@expo/vector-icons';
 
 /* ------------------------------------------------------------------ *
@@ -361,20 +361,22 @@ export const METRIC_ROUTE: Record<string, string> = {
  * and these must never be used for that. The three that are new here are the three the metrics
  * dashboard has no card for.
  */
-export const METRIC_TINT: Record<string, string> = {
+// Dark values are the set searched with lib/metrics.ts — see the note on METRIC_TINTS there.
+// The spread runs inside the factory, per scheme: at module level it would freeze at light.
+export const METRIC_TINT = schemed<Record<string, string>>((Palette, scheme) => ({
     ...TRACKER_TINT,
     /**
      * The deep brand violet — the one metric allowed a brand colour, because the score *is*
      * the product's own number rather than a measurement of the body. The darkest point of the
      * ramp, not `Palette.primary`, so it never reads as a button.
      */
-    turing_score: Palette.primaryDeep,
+    turing_score: scheme === 'dark' ? '#B183F1' : Palette.primaryDeep,
     /**
      * Orange rather than `Palette.amber`. Weight is `#F59E0B` and sits two rows away; at glyph
      * size the two ambers are one colour. This is warm enough to separate from it and reads
      * with the flame.
      */
-    calories: '#F97316',
+    calories: scheme === 'dark' ? '#F19E99' : '#F97316',
     /** Resting heart rate shares the heart-rate rose; it is the same measurement, at rest. */
     resting_heart_rate: TRACKER_TINT.heart_rate,
     /**
@@ -390,14 +392,14 @@ export const METRIC_TINT: Record<string, string> = {
      * 9.2 ΔE from; the teal was also under the validator's chroma floor, reading as grey.
      * Olive clears BP at 20.6, steps at 18.1 and the score at 36.9.
      */
-    age_delta: Palette.lime,
-};
+    age_delta: scheme === 'dark' ? '#A6A347' : Palette.lime,
+}));
 
 /**
  * A metric with no tint of its own is drawn neutral, never in the brand: a violet fallback is
  * how a data glyph ends up looking like a button.
  */
-export const tintFor = (metric: string) => METRIC_TINT[metric] ?? Palette.textSecondary;
+export const tintFor = (metric: string) => METRIC_TINT[metric] ?? activePalette().textSecondary;
 
 /**
  * The soft wash behind a metric's icon.
@@ -418,14 +420,14 @@ export const tintSurface = (metric: string) => `${tintFor(metric)}1F`;
  * that decision from the server so the two halves cannot disagree.
  */
 export const toneColour = (direction: Direction, betterWhen: BetterWhen): string => {
-    if (!betterWhen || direction === 'flat') return Palette.textSecondary;
-    return direction === betterWhen ? Palette.successDeep : Palette.danger;
+    if (!betterWhen || direction === 'flat') return activePalette().textSecondary;
+    return direction === betterWhen ? activePalette().successDeep : activePalette().danger;
 };
 
 /** The tint behind a chip drawn in `toneColour`. */
 export const toneSurface = (direction: Direction, betterWhen: BetterWhen): string => {
-    if (!betterWhen || direction === 'flat') return Palette.surface;
-    return direction === betterWhen ? Palette.successSurface : Palette.dangerSurface;
+    if (!betterWhen || direction === 'flat') return activePalette().surface;
+    return direction === betterWhen ? activePalette().successSurface : activePalette().dangerSurface;
 };
 
 export const DIRECTION_ICON: Record<Direction, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -443,10 +445,10 @@ export const DIRECTION_ICON: Record<Direction, React.ComponentProps<typeof Ionic
  * comment.
  */
 export const confidenceLabel = (c: number): { label: string; colour: string; weak: boolean } => {
-    if (c >= 0.8) return { label: 'High confidence', colour: Palette.successDeep, weak: false };
-    if (c >= 0.6) return { label: 'Moderate confidence', colour: Palette.info, weak: false };
-    if (c >= 0.45) return { label: 'Low confidence', colour: Palette.warning, weak: true };
-    return { label: 'Very low confidence', colour: Palette.danger, weak: true };
+    if (c >= 0.8) return { label: 'High confidence', colour: activePalette().successDeep, weak: false };
+    if (c >= 0.6) return { label: 'Moderate confidence', colour: activePalette().info, weak: false };
+    if (c >= 0.45) return { label: 'Low confidence', colour: activePalette().warning, weak: true };
+    return { label: 'Very low confidence', colour: activePalette().danger, weak: true };
 };
 
 export const confidencePct = (c: number) => `${Math.round(c * 100)}%`;
@@ -459,13 +461,13 @@ export const confidencePct = (c: number) => `${Math.round(c * 100)}%`;
  * honour that or the property is lost at the last step.
  */
 export const bandColour = (band: Band | null): string => {
-    if (!band) return Palette.textSecondary;
-    if (band.crisis) return Palette.danger;
+    if (!band) return activePalette().textSecondary;
+    if (band.crisis) return activePalette().danger;
     switch (band.key) {
-        case 'healthy': case 'normal': return Palette.successDeep;
-        case 'suboptimal': case 'elevated': return Palette.warning;
-        case 'attention': case 'stage_1': case 'stage_2': case 'low': return Palette.danger;
-        default: return Palette.textSecondary;
+        case 'healthy': case 'normal': return activePalette().successDeep;
+        case 'suboptimal': case 'elevated': return activePalette().warning;
+        case 'attention': case 'stage_1': case 'stage_2': case 'low': return activePalette().danger;
+        default: return activePalette().textSecondary;
     }
 };
 
@@ -501,8 +503,8 @@ export const withUnit = (value: string, unit: string | null) => (unit ? `${value
 export const outcomeOf = (r: Resolution | null): { label: string; colour: string } | null => {
     if (!r?.resolvedAt || r.withinInterval === null) return null;
     return r.withinInterval
-        ? { label: 'Landed in range', colour: Palette.successDeep }
-        : { label: 'Missed the range', colour: Palette.warning };
+        ? { label: 'Landed in range', colour: activePalette().successDeep }
+        : { label: 'Missed the range', colour: activePalette().warning };
 };
 
 /* ------------------------------------------------------------------ *

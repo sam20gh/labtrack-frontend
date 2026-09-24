@@ -32,11 +32,10 @@
  *    did not choose, sometimes.
  */
 import React, { memo, useEffect, useRef } from 'react';
-import {
-    View, Text, StyleSheet, Pressable, TouchableOpacity, Image, Animated, Easing,
-} from 'react-native';
+import { View, Text, Pressable, TouchableOpacity, Image, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { relativeTime, tintOf, type NotificationCard as Card } from '@/lib/notificationCentre';
 
 const GUTTER = 16;
@@ -50,6 +49,8 @@ interface Props {
 }
 
 function NotificationCardView({ card, onPress, onAction, index }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     const tint = tintOf(card.tint);
     const unread = !card.read;
 
@@ -226,7 +227,7 @@ export default memo(NotificationCardView, (a, b) =>
     // captured on mount, so a card whose position shifted has nothing new to draw.
 );
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         flexDirection: 'row',
         gap: Spacing.md,
@@ -276,4 +277,4 @@ const styles = StyleSheet.create({
     actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xl, marginTop: 4 },
     actionSecondary: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold },
     actionPrimary: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.semibold },
-});
+}));

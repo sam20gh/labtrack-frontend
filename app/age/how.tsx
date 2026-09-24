@@ -16,13 +16,16 @@
  * the disclaimers, the refusal messages — stays server-side for exactly the opposite reason.
  */
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function AgeHowScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     return (
@@ -152,33 +155,44 @@ const Block = ({ icon, title, strength, strong, warn, children }: {
     strong?: boolean;
     warn?: boolean;
     children: React.ReactNode;
-}) => (
-    <View style={[styles.block, warn && styles.blockWarn]}>
-        <View style={styles.blockHead}>
-            <Ionicons name={icon} size={18} color={warn ? Palette.warning : Palette.primary} />
-            <Text style={styles.blockTitle}>{title}</Text>
-        </View>
-        {!!strength && (
-            <View style={[styles.strengthChip, strong ? styles.strengthStrong : styles.strengthSoft]}>
-                <Text style={[styles.strengthText, strong ? styles.strengthTextStrong : styles.strengthTextSoft]}>
-                    {strength}
-                </Text>
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={[styles.block, warn && styles.blockWarn]}>
+            <View style={styles.blockHead}>
+                <Ionicons name={icon} size={18} color={warn ? Palette.warning : Palette.primary} />
+                <Text style={styles.blockTitle}>{title}</Text>
             </View>
-        )}
-        {children}
-    </View>
-);
+            {!!strength && (
+                <View style={[styles.strengthChip, strong ? styles.strengthStrong : styles.strengthSoft]}>
+                    <Text style={[styles.strengthText, strong ? styles.strengthTextStrong : styles.strengthTextSoft]}>
+                        {strength}
+                    </Text>
+                </View>
+            )}
+            {children}
+        </View>
+    );
+};
 
-const P = ({ children }: { children: React.ReactNode }) => <Text style={styles.p}>{children}</Text>;
+const P = ({ children }: { children: React.ReactNode }) => {
+    const styles = useStyles();
+    return <Text style={styles.p}>{children}</Text>;
+};
 
-const Limit = ({ text }: { text: string }) => (
-    <View style={styles.limitRow}>
-        <Ionicons name="remove" size={14} color={Palette.textMuted} />
-        <Text style={styles.limitText}>{text}</Text>
-    </View>
-);
+const Limit = ({ text }: { text: string }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <View style={styles.limitRow}>
+            <Ionicons name="remove" size={14} color={Palette.textMuted} />
+            <Text style={styles.limitText}>{text}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -209,4 +223,4 @@ const styles = StyleSheet.create({
     limitText: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary, lineHeight: 19, flex: 1 },
 
     source: { ...BodyFont.regular, fontSize: 10.5, color: Palette.textMuted, lineHeight: 16, marginTop: Spacing.xl },
-});
+}));

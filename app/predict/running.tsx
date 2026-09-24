@@ -13,7 +13,7 @@
  * on a spinner that would immediately run a second, billable prediction.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +21,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { ApiError } from '@/lib/api';
 import { predict, type MetricKey } from '@/lib/prediction';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont, Palettes } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 const STAGES = [
     'Checking our database…',
@@ -33,6 +34,8 @@ const STAGES = [
 const STAGE_MS = 1100;
 
 export default function RunningPredictionScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{ metric: string; horizon: string }>();
 
@@ -103,7 +106,7 @@ export default function RunningPredictionScreen() {
 
     return (
         <LinearGradient
-            colors={[Palette.primaryDark, Palette.primary, Palette.primaryLight]}
+            colors={[Palettes.light.primaryDark, Palettes.light.primary, Palettes.light.primaryLight]} // a brand moment, identical in both schemes
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
             style={styles.screen}
@@ -133,7 +136,7 @@ export default function RunningPredictionScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1 },
     safe: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 60 },
     stages: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.xxl },
@@ -156,8 +159,8 @@ const styles = StyleSheet.create({
         color: Palette.textSecondary, textAlign: 'center',
     },
     failCta: {
-        marginTop: Spacing.lg, backgroundColor: Palette.primary,
+        marginTop: Spacing.lg, backgroundColor: Palette.primaryFill,
         paddingHorizontal: Spacing.xxl, paddingVertical: 14, borderRadius: Radius.lg,
     },
     failCtaText: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.white },
-});
+}));

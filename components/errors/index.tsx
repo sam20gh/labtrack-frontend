@@ -21,10 +21,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { Pressable, Text, ViewStyle } from 'react-native';
 
 import StateView, { StateAction } from '@/components/errors/StateView';
-import { Palette, Radius, Spacing, BodyFont } from '@/constants/theme';
+import { Radius, Spacing, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { describeError, describeState, DescribeOptions, StateKey } from '@/lib/appState';
 
 export { default as StateView } from '@/components/errors/StateView';
@@ -108,19 +109,23 @@ export const ErrorState = ({
  * at the top, or nothing, in which case it was transient and naming a status code would be
  * the server's wording in the middle of somebody's shopping.
  */
-export const StaleNotice = ({ onRetry }: { onRetry: () => void }) => (
-    <Pressable
-        onPress={onRetry}
-        accessibilityRole="button"
-        accessibilityLabel="This did not refresh. Tap to try again."
-        style={({ pressed }) => [staleStyles.row, pressed && { opacity: 0.7 }]}
-    >
-        <Ionicons name="refresh-outline" size={14} color={Palette.textSecondary} />
-        <Text style={staleStyles.label}>Showing what we had — tap to refresh</Text>
-    </Pressable>
-);
+export const StaleNotice = ({ onRetry }: { onRetry: () => void }) => {
+    const Palette = usePalette();
+    const staleStyles = useStaleStyles();
+    return (
+        <Pressable
+            onPress={onRetry}
+            accessibilityRole="button"
+            accessibilityLabel="This did not refresh. Tap to try again."
+            style={({ pressed }) => [staleStyles.row, pressed && { opacity: 0.7 }]}
+        >
+            <Ionicons name="refresh-outline" size={14} color={Palette.textSecondary} />
+            <Text style={staleStyles.label}>Showing what we had — tap to refresh</Text>
+        </Pressable>
+    );
+};
 
-const staleStyles = StyleSheet.create({
+const useStaleStyles = makeStyles((Palette) => ({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -133,7 +138,7 @@ const staleStyles = StyleSheet.create({
         alignSelf: 'center',
     },
     label: { fontSize: 12, ...BodyFont.medium, color: Palette.textSecondary },
-});
+}));
 
 type EmptyStateProps = {
     /** Which drawing. `empty` unless the emptiness has a cause worth naming. */

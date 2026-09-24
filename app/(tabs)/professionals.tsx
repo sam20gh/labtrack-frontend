@@ -16,10 +16,7 @@
  * it, and the list is short enough today that a static taxonomy would be mostly dead ends.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-    View, Text, FlatList, StyleSheet, ActivityIndicator,
-    TouchableOpacity, RefreshControl, TextInput, ScrollView,
-} from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl, TextInput, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -32,7 +29,8 @@ import {
     getAppointments, bookableDays, splitByTime, professionalIdOf, isLive,
     formatRelativeDay, type BookableDay,
 } from '@/lib/appointments';
-import { Palette, Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { Appointment, Professional } from '@/types/api';
 
 const ALL = '__all__';
@@ -44,6 +42,8 @@ const initialsOf = (p: Professional) =>
     `${p.firstname?.[0] ?? ''}${p.lastname?.[0] ?? ''}`.toUpperCase() || '?';
 
 const ProfessionalsScreen = () => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
 
     const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -271,18 +271,21 @@ const ProfessionalsScreen = () => {
 
 const Chip = ({ label, count, active, onPress }: {
     label: string; count: number; active: boolean; onPress: () => void;
-}) => (
-    <TouchableOpacity
-        style={[styles.chip, active && styles.chipActive]}
-        onPress={onPress}
-        activeOpacity={0.75}
-        accessibilityRole="button"
-        accessibilityState={{ selected: active }}
-    >
-        <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>{label}</Text>
-        <Text style={[styles.chipCount, active && styles.chipCountActive]}>{count}</Text>
-    </TouchableOpacity>
-);
+}) => {
+    const styles = useStyles();
+    return (
+        <TouchableOpacity
+            style={[styles.chip, active && styles.chipActive]}
+            onPress={onPress}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+        >
+            <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>{label}</Text>
+            <Text style={[styles.chipCount, active && styles.chipCountActive]}>{count}</Text>
+        </TouchableOpacity>
+    );
+};
 
 /**
  * The kit's Doctor Card, 343 wide: identity on top, then the day strip.
@@ -298,6 +301,8 @@ const DoctorCard = ({ professional, appointments, booked, onOpen, onPickDay, onB
     onPickDay: (day: BookableDay) => void;
     onBook: () => void;
 }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const specialities = professional.speciality ?? [];
     // Two chips plus an overflow count: a practitioner with six specialities would
     // otherwise push the rate off the card.
@@ -409,7 +414,7 @@ const DoctorCard = ({ professional, appointments, booked, onOpen, onPickDay, onB
 
 const GUTTER = Spacing.lg;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     flex: { flex: 1 },
     center: { alignItems: 'center', justifyContent: 'center' },
@@ -430,7 +435,7 @@ const styles = StyleSheet.create({
         position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18,
         paddingHorizontal: 4, borderRadius: Radius.pill,
         alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.primary, borderWidth: 2, borderColor: Palette.canvas,
+        backgroundColor: Palette.primaryFill, borderWidth: 2, borderColor: Palette.canvas,
     },
     diaryBadgeText: { fontSize: 9, color: Palette.white, fontFamily: Fonts.bold },
 
@@ -443,7 +448,7 @@ const styles = StyleSheet.create({
 
     searchRow: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.white, borderRadius: Radius.md,
+        backgroundColor: Palette.background, borderRadius: Radius.md,
         borderWidth: 1, borderColor: Palette.borderSlate,
         paddingHorizontal: Spacing.md, height: 46,
     },
@@ -455,10 +460,10 @@ const styles = StyleSheet.create({
     chip: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
         paddingHorizontal: Spacing.md, paddingVertical: 7,
-        borderRadius: Radius.pill, backgroundColor: Palette.white,
+        borderRadius: Radius.pill, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
-    chipActive: { backgroundColor: Palette.primary, borderColor: Palette.primary },
+    chipActive: { backgroundColor: Palette.primaryFill, borderColor: Palette.primary },
     chipText: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.semibold },
     chipTextActive: { color: Palette.white },
     chipCount: { fontSize: 11, color: Palette.textMuted, fontFamily: Fonts.semibold },
@@ -466,7 +471,7 @@ const styles = StyleSheet.create({
 
     card: {
         marginHorizontal: GUTTER, marginTop: Spacing.md,
-        borderRadius: Radius.lg, backgroundColor: Palette.white,
+        borderRadius: Radius.lg, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
         overflow: 'hidden', ...Shadow.card,
     },
@@ -482,7 +487,7 @@ const styles = StyleSheet.create({
     bookedDot: {
         position: 'absolute', right: -2, bottom: -2, width: 18, height: 18,
         borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.success, borderWidth: 2, borderColor: Palette.white,
+        backgroundColor: Palette.successFill, borderWidth: 2, borderColor: Palette.white,
     },
     cardBody: { flex: 1, gap: 5 },
     name: { fontSize: 15, color: Palette.text, fontFamily: Fonts.bold },
@@ -527,14 +532,14 @@ const styles = StyleSheet.create({
     slotCell: {
         minWidth: 76, alignItems: 'center', justifyContent: 'center', gap: 1,
         paddingVertical: 7, paddingHorizontal: Spacing.md,
-        borderRadius: Radius.md, backgroundColor: Palette.white,
+        borderRadius: Radius.md, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
     slotDay: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.medium },
     slotDate: { fontSize: 13, color: Palette.text, fontFamily: Fonts.bold },
     slotBookedDot: {
         position: 'absolute', top: 6, right: 6,
-        width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: Palette.success,
+        width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: Palette.successFill,
     },
     slotMore: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -546,7 +551,7 @@ const styles = StyleSheet.create({
     empty: {
         alignItems: 'center', gap: Spacing.sm,
         marginHorizontal: GUTTER, marginTop: Spacing.xxl,
-        padding: Spacing.xxl, borderRadius: Radius.lg, backgroundColor: Palette.white,
+        padding: Spacing.xxl, borderRadius: Radius.lg, backgroundColor: Palette.background,
         borderWidth: 1, borderColor: Palette.borderSlate,
     },
     emptyTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
@@ -556,9 +561,9 @@ const styles = StyleSheet.create({
     },
     clearButton: {
         marginTop: Spacing.sm, paddingVertical: 10, paddingHorizontal: Spacing.xl,
-        borderRadius: Radius.md, backgroundColor: Palette.primary,
+        borderRadius: Radius.md, backgroundColor: Palette.primaryFill,
     },
     clearButtonText: { color: Palette.white, fontSize: 14, fontFamily: Fonts.semibold },
-});
+}));
 
 export default ProfessionalsScreen;

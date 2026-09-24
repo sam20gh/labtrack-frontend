@@ -15,9 +15,10 @@
  * on the screen they opened to feel better about moving.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 /**
  * The export's frame for the badge and its rings: centre (7398, 503), outer ring r 77.5.
@@ -41,6 +42,8 @@ const RINGS = [
 const digitSize = (days: number) => (days < 10 ? 28 : days < 100 ? 22 : 17);
 
 function StreakBadge({ days }: { days: number }) {
+    const Palette = usePalette();
+    const styles = useStyles();
     return (
         <View style={styles.slot}>
             <Svg
@@ -103,6 +106,7 @@ interface Props {
 }
 
 export function StreakCard({ days, best }: Props) {
+    const styles = useStyles();
     if (!days || days <= 0) return null;
 
     // Only claimed when it is a fact the server sent. "Your longest streak" over a figure
@@ -129,7 +133,7 @@ export function StreakCard({ days, best }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     card: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -157,4 +161,4 @@ const styles = StyleSheet.create({
     body: { flex: 1, paddingVertical: Spacing.lg, paddingRight: Spacing.lg, gap: 4 },
     title: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.text },
     copy: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textOnWarm, lineHeight: 18 },
-});
+}));

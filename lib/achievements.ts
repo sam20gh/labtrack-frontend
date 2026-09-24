@@ -22,7 +22,7 @@ import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import type { Router } from 'expo-router';
 import { api } from './api';
-import { Palette } from '@/constants/theme';
+import { activePalette } from '@/constants/theme';
 import type { BadgeGlyph, BadgeShape } from '@/components/achievements/badgeArt';
 import { BADGE_TONES, type BadgeTone } from '@/components/achievements/BadgeMedal';
 
@@ -370,8 +370,8 @@ export const CATEGORY_ORDER: AchievementCategory[] = [
 ];
 
 export const surfaceFor = (tone: BadgeTone) => ({
-    amber: Palette.warningSurface,
-    violet: Palette.primarySurface,
-    green: Palette.successSurface,
-    rose: Palette.dangerSurface,
+    amber: activePalette().warningSurface,
+    violet: activePalette().primarySurface,
+    green: activePalette().successSurface,
+    rose: activePalette().dangerSurface,
 }[tone]);

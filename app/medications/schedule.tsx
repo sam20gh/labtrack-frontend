@@ -10,30 +10,31 @@
  * mark — see `medicationSchedule.byDay`.
  */
 import React, { useCallback, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getSchedule, getCalendar, updateDose, today, addDays } from '@/lib/medications';
 import { DoseRow } from '@/components/medications/DoseRow';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont, schemed } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { MedicationScheduleDay, MedicationCalendar, CalendarDay } from '@/types/api';
 
 type View_ = 'day' | 'month';
 
 /** How each day status is drawn in the month grid. */
-const DAY_STATUS: Record<CalendarDay['status'], { colour: string; icon: string | null }> = {
+const DAY_STATUS: Record<CalendarDay['status'], { colour: string; icon: string | null }> = schemed((Palette) => ({
     taken: { colour: Palette.success, icon: 'checkmark' },
     partial: { colour: Palette.warning, icon: 'remove' },
     missed: { colour: Palette.danger, icon: 'close' },
     skipped: { colour: Palette.textMuted, icon: 'close' },
     upcoming: { colour: Palette.border, icon: null },
-};
+}));
 
 export default function ScheduleScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [view, setView] = useState<View_>('day');
     const [selected, setSelected] = useState(today());
@@ -223,21 +224,27 @@ export default function ScheduleScreen() {
     );
 }
 
-const MonthStat = ({ value, label, colour }: { value: number; label: string; colour: string }) => (
-    <View style={styles.monthStat}>
-        <Text style={[styles.monthStatValue, { color: colour }]}>{value}</Text>
-        <Text style={styles.monthStatLabel}>{label}</Text>
-    </View>
-);
+const MonthStat = ({ value, label, colour }: { value: number; label: string; colour: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.monthStat}>
+            <Text style={[styles.monthStatValue, { color: colour }]}>{value}</Text>
+            <Text style={styles.monthStatLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const LegendItem = ({ colour, label }: { colour: string; label: string }) => (
-    <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: colour }]} />
-        <Text style={styles.legendLabel}>{label}</Text>
-    </View>
-);
+const LegendItem = ({ colour, label }: { colour: string; label: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colour }]} />
+            <Text style={styles.legendLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -246,13 +253,13 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 17, color: Palette.text, fontFamily: Fonts.semibold },
     toggle: { flexDirection: 'row', gap: 2, backgroundColor: Palette.borderLight, borderRadius: Radius.sm, padding: 2 },
     toggleButton: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: Radius.sm },
-    toggleActive: { backgroundColor: Palette.white },
+    toggleActive: { backgroundColor: Palette.background },
 
     weekStrip: { paddingHorizontal: Spacing.xl, gap: 8, paddingBottom: Spacing.md },
     weekDay: {
         width: 46, paddingVertical: 8, borderRadius: Radius.md,
         alignItems: 'center', gap: 2,
-        borderWidth: 1, borderColor: Palette.border, backgroundColor: Palette.white,
+        borderWidth: 1, borderColor: Palette.border, backgroundColor: Palette.background,
     },
     weekDaySelected: { backgroundColor: Palette.primarySurface, borderColor: Palette.primary },
     weekDayName: { fontSize: 10, color: Palette.textSecondary, ...BodyFont.regular },
@@ -266,7 +273,7 @@ const styles = StyleSheet.create({
     monthStats: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
     monthStat: {
         flex: 1, alignItems: 'center', gap: 2,
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, paddingVertical: Spacing.lg,
     },
     monthStatValue: { fontSize: 22, fontFamily: Fonts.bold },
@@ -292,4 +299,4 @@ const styles = StyleSheet.create({
         fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular,
         textAlign: 'center', lineHeight: 19, paddingHorizontal: Spacing.xl,
     },
-});
+}));

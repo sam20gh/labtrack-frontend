@@ -13,10 +13,11 @@
  * meal; a second empty state under it says the same thing twice.
  */
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Fonts, Spacing, Radius } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { NutritionGalleryItem } from '@/types/api';
 
 interface Props {
@@ -28,6 +29,8 @@ interface Props {
 }
 
 export function MealGallery({ items, total, onPressItem, onSeeAll }: Props) {
+    const Palette = usePalette();
+    const styles = useStyles();
     if (!items.length) return null;
 
     return (
@@ -77,7 +80,7 @@ export function MealGallery({ items, total, onPressItem, onSeeAll }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     section: { gap: Spacing.md },
     sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
@@ -118,4 +121,4 @@ const styles = StyleSheet.create({
         borderTopColor: Palette.borderLight,
     },
     count: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.text },
-});
+}));

@@ -11,7 +11,7 @@
  * day sections `Design/notification.svg` draws.
  */
 import { api } from './api';
-import { Palette } from '@/constants/theme';
+import { schemed } from '@/constants/theme';
 
 /* ------------------------------------------------------------------ *
  * Shapes — these mirror `utils/notificationCatalogue.js` on the server
@@ -125,15 +125,15 @@ export const dismiss = (id: string) =>
  * say so, because `utils/bloodPressure.js` is what decides that and it keeps `isCrisis` off
  * the colour ladder for exactly this reason.
  */
-export const TINT_COLOURS: Record<NotificationTint, { fg: string; bg: string }> = {
+export const TINT_COLOURS: Record<NotificationTint, { fg: string; bg: string }> = schemed((Palette) => ({
     violet: { fg: Palette.primary, bg: Palette.primarySurface },
-    indigo: { fg: Palette.indigo, bg: '#EEF2FF' },
+    indigo: { fg: Palette.indigo, bg: Palette.indigoSurface },
     blue: { fg: Palette.info, bg: Palette.infoSurface },
     green: { fg: Palette.successDeep, bg: Palette.successSurface },
     rose: { fg: Palette.alert, bg: Palette.alertSurface },
     amber: { fg: Palette.warning, bg: Palette.warningSurface },
     slate: { fg: Palette.textSecondary, bg: Palette.borderLight },
-};
+}));
 
 export const tintOf = (tint: NotificationTint) => TINT_COLOURS[tint] ?? TINT_COLOURS.slate;
 

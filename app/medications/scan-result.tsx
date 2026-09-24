@@ -18,19 +18,20 @@
  *     rules-only, so it is instant and free.
  */
 import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { previewInteractions, SEVERITY_META } from '@/lib/medications';
 import { FindingCard } from '@/components/medications/FindingCard';
-import { Palette, Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
+import { Fonts, Spacing, Radius, BodyFont, tone } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { MedicationIdentifyResult, InteractionPreview } from '@/types/api';
 
 export default function ScanResultScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const params = useLocalSearchParams<{ payload?: string; imageUri?: string }>();
 
@@ -253,14 +254,17 @@ export default function ScanResultScreen() {
     );
 }
 
-const Fact = ({ label, value }: { label: string; value: string }) => (
-    <View style={styles.fact}>
-        <Text style={styles.factValue}>{value}</Text>
-        <Text style={styles.factLabel}>{label}</Text>
-    </View>
-);
+const Fact = ({ label, value }: { label: string; value: string }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.fact}>
+            <Text style={styles.factValue}>{value}</Text>
+            <Text style={styles.factLabel}>{label}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: { flex: 1, backgroundColor: Palette.canvas },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -274,7 +278,7 @@ const styles = StyleSheet.create({
     photo: { width: '100%', height: 180, borderRadius: Radius.lg, backgroundColor: Palette.borderLight },
 
     card: {
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border,
         padding: Spacing.xl, gap: Spacing.xs,
     },
@@ -299,7 +303,7 @@ const styles = StyleSheet.create({
 
     uncertainCard: {
         backgroundColor: Palette.warningSurface, borderRadius: Radius.lg,
-        borderWidth: 1, borderColor: '#FDE68A', padding: Spacing.lg, gap: Spacing.sm,
+        borderWidth: 1, borderColor: tone('#FDE68A'), padding: Spacing.lg, gap: Spacing.sm,
     },
     uncertainHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     uncertainTitle: { fontSize: 14, color: Palette.warning, fontFamily: Fonts.bold },
@@ -308,7 +312,7 @@ const styles = StyleSheet.create({
     altHead: { fontSize: 12, color: Palette.textSecondary, fontFamily: Fonts.semibold },
     altRow: {
         flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-        backgroundColor: Palette.white, borderRadius: Radius.md, padding: Spacing.md,
+        backgroundColor: Palette.background, borderRadius: Radius.md, padding: Spacing.md,
     },
     altName: { fontSize: 14, color: Palette.text, fontFamily: Fonts.semibold, textTransform: 'capitalize' },
     altWhy: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 1 },
@@ -328,18 +332,18 @@ const styles = StyleSheet.create({
     introducedNote: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
     neutralCard: {
         flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start',
-        backgroundColor: Palette.white, borderRadius: Radius.lg,
+        backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg,
     },
     neutralText: { flex: 1, fontSize: 13, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 19 },
 
     primaryButton: {
         flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Palette.primary, borderRadius: Radius.md, paddingVertical: 15,
+        backgroundColor: Palette.primaryFill, borderRadius: Radius.md, paddingVertical: 15,
     },
     primaryButtonText: { fontSize: 15, color: Palette.white, fontFamily: Fonts.semibold },
     escapeRow: { flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center' },
     escape: { fontSize: 13, color: Palette.primary, ...BodyFont.medium },
     escapeDivider: { fontSize: 13, color: Palette.textMuted },
     footer: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular, lineHeight: 17 },
-});
+}));

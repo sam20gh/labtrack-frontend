@@ -6,8 +6,9 @@
  * start drifting apart a pixel at a time.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Palette, Fonts, BodyFont } from '@/constants/theme';
+import { View, Text, Pressable } from 'react-native';
+import { Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles } from '@/hooks/useTheme';
 
 export type MetricRange = '1d' | '1w' | '1m' | '1y' | 'all';
 
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function RangeTabs({ value, onChange }: Props) {
+    const styles = useStyles();
     return (
         <View style={styles.track}>
             {ORDER.map((range) => {
@@ -50,7 +52,7 @@ export function RangeTabs({ value, onChange }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     track: {
         flexDirection: 'row',
         backgroundColor: Palette.borderLight,
@@ -65,7 +67,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     tabActive: {
-        backgroundColor: Palette.white,
+        backgroundColor: Palette.background,
         // The kit lifts the selected segment rather than colouring it, so the control reads
         // as a physical switch instead of five buttons one of which is highlighted.
         shadowColor: '#000',
@@ -83,4 +85,4 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semibold,
         color: Palette.text,
     },
-});
+}));

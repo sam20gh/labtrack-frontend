@@ -12,18 +12,19 @@
  * checker holds when it refuses to name a condition.
  */
 import React, { useCallback, useRef, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getAgeLevers, deltaLabel, type AgeLever, type AgeLevers } from '@/lib/age';
-import { Palette, Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
 
 export default function AgeLeversScreen() {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const [data, setData] = useState<AgeLevers | null>(null);
     const [loading, setLoading] = useState(true);
@@ -133,31 +134,38 @@ export default function AgeLeversScreen() {
     );
 }
 
-const Group = ({ title, note, children }: { title: string; note: string; children: React.ReactNode }) => (
-    <View style={styles.group}>
-        <Text style={styles.groupTitle}>{title}</Text>
-        <Text style={styles.groupNote}>{note.replace(/\s+/g, ' ')}</Text>
-        {children}
-    </View>
-);
-
-const Row = ({ lever, onPress }: { lever: AgeLever; onPress: () => void }) => (
-    <TouchableOpacity style={styles.row} onPress={onPress} accessibilityRole="button">
-        <View style={styles.saving}>
-            <Text style={styles.years}>−{lever.years.toFixed(1)}</Text>
-            <Text style={styles.unit}>yrs</Text>
+const Group = ({ title, note, children }: { title: string; note: string; children: React.ReactNode }) => {
+    const styles = useStyles();
+    return (
+        <View style={styles.group}>
+            <Text style={styles.groupTitle}>{title}</Text>
+            <Text style={styles.groupNote}>{note.replace(/\s+/g, ' ')}</Text>
+            {children}
         </View>
-        <View style={styles.rowBody}>
-            <Text style={styles.label}>{lever.label}</Text>
-            <Text style={styles.detail}>
-                Now {lever.display ?? lever.value}{lever.unit ? ` ${lever.unit}` : ''} · aim for {lever.target}
-            </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
-    </TouchableOpacity>
-);
+    );
+};
 
-const styles = StyleSheet.create({
+const Row = ({ lever, onPress }: { lever: AgeLever; onPress: () => void }) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    return (
+        <TouchableOpacity style={styles.row} onPress={onPress} accessibilityRole="button">
+            <View style={styles.saving}>
+                <Text style={styles.years}>−{lever.years.toFixed(1)}</Text>
+                <Text style={styles.unit}>yrs</Text>
+            </View>
+            <View style={styles.rowBody}>
+                <Text style={styles.label}>{lever.label}</Text>
+                <Text style={styles.detail}>
+                    Now {lever.display ?? lever.value}{lever.unit ? ` ${lever.unit}` : ''} · aim for {lever.target}
+                </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
+        </TouchableOpacity>
+    );
+};
+
+const useStyles = makeStyles((Palette) => ({
     screen: { flex: 1, backgroundColor: Palette.canvas },
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
@@ -190,4 +198,4 @@ const styles = StyleSheet.create({
 
     footnote: { ...BodyFont.regular, fontSize: 11.5, color: Palette.textMuted, lineHeight: 17 },
     disclaimer: { ...BodyFont.regular, fontSize: 11, color: Palette.textMuted, lineHeight: 17, marginTop: Spacing.lg },
-});
+}));

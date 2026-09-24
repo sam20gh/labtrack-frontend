@@ -1,22 +1,16 @@
 import React, { useState, useRef } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    StyleSheet,
-    TouchableOpacity,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    ActivityIndicator,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { verifyPhoneOtp } from '@/lib/auth';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { tone } from '@/constants/theme';
 
 const ResetPassword2FAScreen = () => {
+    const Palette = usePalette();
+    const styles = useStyles();
     const router = useRouter();
     const { phone } = useLocalSearchParams();
     const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -81,7 +75,7 @@ const ResetPassword2FAScreen = () => {
                         style={styles.backButton}
                         onPress={() => router.back()}
                     >
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={24} color={Palette.text} />
                     </TouchableOpacity>
                 </View>
 
@@ -94,9 +88,9 @@ const ResetPassword2FAScreen = () => {
                     <View style={styles.illustrationContainer}>
                         <View style={styles.illustration}>
                             <View style={styles.shieldContainer}>
-                                <Ionicons name="shield-checkmark" size={60} color="#7C3AED" />
+                                <Ionicons name="shield-checkmark" size={60} color={Palette.primary} />
                                 <View style={styles.keyIcon}>
-                                    <Ionicons name="key" size={20} color="#FCD34D" />
+                                    <Ionicons name="key" size={20} color={tone('#FCD34D')} />
                                 </View>
                             </View>
                         </View>
@@ -132,11 +126,11 @@ const ResetPassword2FAScreen = () => {
                         disabled={loading || !isCodeComplete}
                     >
                         {loading ? (
-                            <ActivityIndicator size="small" color="#fff" />
+                            <ActivityIndicator size="small" color={Palette.white} />
                         ) : (
                             <>
                                 <Text style={styles.verifyButtonText}>Verify Code</Text>
-                                <Ionicons name="arrow-forward" size={20} color="#fff" />
+                                <Ionicons name="arrow-forward" size={20} color={Palette.white} />
                             </>
                         )}
                     </TouchableOpacity>
@@ -155,10 +149,10 @@ const ResetPassword2FAScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((Palette) => ({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: Palette.background,
     },
     keyboardView: {
         flex: 1,
@@ -196,20 +190,20 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: -10,
         right: -15,
-        backgroundColor: '#FEF3C7',
+        backgroundColor: tone('#FEF3C7'),
         borderRadius: 16,
         padding: 8,
     },
     title: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#1F2937',
+        color: Palette.text,
         textAlign: 'center',
         marginBottom: 12,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         textAlign: 'center',
         lineHeight: 24,
         marginBottom: 32,
@@ -224,34 +218,34 @@ const styles = StyleSheet.create({
         width: 48,
         height: 56,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: Palette.border,
         borderRadius: 12,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: tone('#F9FAFB'),
         textAlign: 'center',
         fontSize: 24,
         fontWeight: '600',
-        color: '#1F2937',
+        color: Palette.text,
     },
     codeInputFilled: {
-        borderColor: '#7C3AED',
-        backgroundColor: '#F3E8FF',
+        borderColor: Palette.primary,
+        backgroundColor: Palette.primarySurface,
     },
     verifyButton: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#7C3AED',
+        backgroundColor: Palette.primaryFill,
         borderRadius: 12,
         paddingVertical: 16,
         gap: 8,
     },
     verifyButtonDisabled: {
-        backgroundColor: '#D1D5DB',
+        backgroundColor: tone('#D1D5DB'),
     },
     verifyButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#FFFFFF',
+        color: Palette.white,
     },
     helpContainer: {
         marginTop: 32,
@@ -260,14 +254,14 @@ const styles = StyleSheet.create({
     },
     helpText: {
         fontSize: 14,
-        color: '#6B7280',
+        color: Palette.textSecondary,
         textAlign: 'center',
     },
     helpLink: {
         fontSize: 14,
-        color: '#7C3AED',
+        color: Palette.primary,
         textDecorationLine: 'underline',
     },
-});
+}));
 
 export default ResetPassword2FAScreen;
