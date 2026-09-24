@@ -23,9 +23,24 @@
  * alternative.
  *
  * After this, editing an npm script never breaks an update again.
+ *
+ * `ignorePaths` covers the second way a local machine drifts from EAS: **build output inside
+ * `node_modules`**. The defaults ignore `android/build`, but `react-native-health-connect` also
+ * ships an `android-expo` module, and a local `expo run:android` writes ~4 MB of Gradle output
+ * into `android-expo/build`. That directory is hashed, so the local fingerprint stops matching
+ * the one EAS computes from a clean install — "Runtime version calculated on local machine not
+ * equal to runtime version calculated during build" — and an update published from that machine
+ * would never reach the build. Verified 2026-09-24: with the folder, the package hashed to
+ * `0844ecc2…`; without it, to EAS's `ea4f852a…`. Ignoring it makes both agree whether or not a
+ * local build has run. The pattern is general because any library with a non-standard Android
+ * module directory can do the same.
  */
 const { SourceSkips } = require('@expo/fingerprint');
 
 module.exports = {
     sourceSkips: SourceSkips.PackageJsonScriptsAll,
+    ignorePaths: [
+        '**/android-expo/build/**/*',
+        '**/android-expo/.cxx/**/*',
+    ],
 };
