@@ -3041,10 +3041,12 @@ const useStyles = makeStyles((Palette) => ({
         gap: Spacing.sm,
         overflow: 'hidden',   // clips the watermark drop to half
     },
-    // Centred on the right edge, so exactly half the drop is inside the card.
+    // Centred on the right edge, so half the drop's width is inside the card, and dropped
+    // below the bottom edge so its base is clipped too. The drop fills ~90% of the PNG's
+    // height and ~57% of its width, which is what `right` and `bottom` are measured against.
     markerDrop: {
-        position: 'absolute', right: -52, top: '50%', marginTop: -52,
-        width: 104, height: 104, opacity: 0.1,
+        position: 'absolute', right: -92, bottom: -56,
+        width: 184, height: 184, opacity: 0.1,
     },
     markerHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.sm },
     markerFlag: {
