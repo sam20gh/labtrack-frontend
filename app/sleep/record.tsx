@@ -23,19 +23,17 @@
  * 5. **Stale content stays up while the next window loads.** Switching range dims the page
  *    rather than blanking it; replacing real content with a spinner to report that more is
  *    coming is the flicker `StaleNotice` exists to avoid.
- * 6. **The hero collapses as you scroll.** Expanded it is almost half the screen, which is
- *    right for the first glance and wrong for reading the cards under it. The controls —
- *    back, range, ‹ › — stay pinned; the big figure fades out and its value moves into the
- *    title, so the one number the hero exists for never leaves the screen. It is measured
- *    rather than hard-coded, because the chips wrap and a Dynamic Type setting changes
- *    every height in it. Built on core `Animated`, not Reanimated: a scroll-linked height
- *    on one view does not need a worklet, and the hero sits in the layout flow rather than
- *    floating over the list so that pull-to-refresh stays visible below it.
+ * 6. **The hero folds away as you scroll, and does it natively.** Expanded it is almost half
+ *    the screen, which is right for the first glance and wrong for reading the cards under
+ *    it. The controls — back, range, ‹ › — are a sticky header and stay pinned; the figure
+ *    is an ordinary block that scrolls away under them, and its value crossfades into the
+ *    title so the one number the hero exists for never leaves the screen. See the note on
+ *    the hero in the body for why its height is not animated.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Animated,
-    useWindowDimensions, type ScrollView, type LayoutChangeEvent, type NativeSyntheticEvent, type NativeScrollEvent,
+    type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -374,195 +372,120 @@ export default function SleepRecordScreen() {
     );
     const mainNight = data?.timeline?.find((t) => t.kind === 'night') ?? null;
 
-    /* ------------------------------------------------ the collapsing hero */
-    const { height: windowHeight } = useWindowDimensions();
+    /* ---------------------------------------------- the collapsing hero
+
+       Nothing here animates layout. The controls are a **sticky header** and the figure is
+       an ordinary block above the cards, so folding it away is the scroll view's own native
+       behaviour — the smoothest possible version of it, and free. `scrollY` drives opacity
+       only, on the native driver.
+
+       The obvious way to write this is to animate the hero's `height`, and it is wrong:
+       height is a layout property, so the native driver cannot carry it, and every scroll
+       event then ran a layout pass on the JS thread, resized the list underneath, and fed
+       the resulting `onLayout` back into React state. That loop flickered under a slow drag
+       and looked fine under a flick — which is what a feedback loop always looks like. */
     const scrollY = useRef(new Animated.Value(0)).current;
-    const scrollRef = useRef<ScrollView>(null);
-    const lastY = useRef(0);
-    const [topH, setTopH] = useState(0);
     const [figureH, setFigureH] = useState(0);
-
-    const onTopLayout = (e: LayoutChangeEvent) => setTopH(Math.round(e.nativeEvent.layout.height));
     const onFigureLayout = (e: LayoutChangeEvent) => setFigureH(Math.round(e.nativeEvent.layout.height));
-
-    const expanded = HERO_PAD_TOP + topH + figureH;
-    const collapsed = HERO_PAD_TOP + topH + HERO_PAD_COLLAPSED;
-    const collapseBy = Math.max(0, expanded - collapsed);
-    const measured = topH > 0 && figureH > 0 && collapseBy > 0;
-    // Guard against a zero-length input range before the first layout pass.
-    const range0 = Math.max(1, collapseBy);
+    /** How far the figure has to travel before it is gone. Guarded: it is 0 until measured. */
+    const fold = Math.max(1, figureH);
 
     const anim = useMemo(() => {
         const clamp = { extrapolate: 'clamp' as const };
         return {
-            heroHeight: scrollY.interpolate({ inputRange: [0, range0], outputRange: [expanded, collapsed], ...clamp }),
-            figureOpacity: scrollY.interpolate({ inputRange: [0, range0 * 0.6], outputRange: [1, 0], ...clamp }),
-            figureShift: scrollY.interpolate({ inputRange: [0, range0], outputRange: [0, -24], ...clamp }),
-            figureScale: scrollY.interpolate({ inputRange: [0, range0], outputRange: [1, 0.9], ...clamp }),
-            titleOpacity: scrollY.interpolate({ inputRange: [range0 * 0.55, range0 * 0.9], outputRange: [1, 0], ...clamp }),
-            compactOpacity: scrollY.interpolate({ inputRange: [range0 * 0.6, range0], outputRange: [0, 1], ...clamp }),
-            compactShift: scrollY.interpolate({ inputRange: [range0 * 0.6, range0], outputRange: [8, 0], ...clamp }),
+            titleOpacity: scrollY.interpolate({ inputRange: [fold * 0.3, fold * 0.65], outputRange: [1, 0], ...clamp }),
+            compactOpacity: scrollY.interpolate({ inputRange: [fold * 0.45, fold * 0.85], outputRange: [0, 1], ...clamp }),
+            compactShift: scrollY.interpolate({ inputRange: [fold * 0.45, fold * 0.85], outputRange: [10, 0], ...clamp }),
+            /** The bar earns an edge only once something has scrolled under it. */
+            edgeOpacity: scrollY.interpolate({ inputRange: [fold * 0.5, fold], outputRange: [0, 1], ...clamp }),
         };
-    }, [scrollY, range0, expanded, collapsed]);
-    const heroHeight = measured ? anim.heroHeight : null;
-    const { figureOpacity, figureShift, figureScale, titleOpacity, compactOpacity, compactShift } = anim;
+    }, [scrollY, fold]);
 
-    // JS driver: `height` is a layout property and the native driver cannot animate it.
     const onScroll = useMemo(() => Animated.event(
         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        {
-            useNativeDriver: false,
-            listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => { lastY.current = e.nativeEvent.contentOffset.y; },
-        }
+        { useNativeDriver: true }
     ), [scrollY]);
-
-    /** Never leave the hero stuck half-folded: settle to whichever end is nearer. */
-    const snap = () => {
-        const y = lastY.current;
-        if (!collapseBy || y <= 0 || y >= collapseBy) return;
-        scrollRef.current?.scrollTo({ y: y < collapseBy / 2 ? 0 : collapseBy, animated: true });
-    };
 
     const compactLabel = heroMinutes !== null
         ? `${formatMinutes(heroMinutes)} · ${range === '1d' ? 'total sleep' : 'avg night'}`
         : 'Sleep record';
 
+    /** Back, range, period — sticky, so they stay reachable however far the page scrolls. */
+    const controls = (
+        <View style={styles.heroBar}>
+            <View style={styles.heroRow}>
+                <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Back">
+                    <Ionicons name="chevron-back" size={24} color={Palette.white} />
+                </Pressable>
+                <View style={styles.heroTitleSlot}>
+                    <Animated.Text style={[styles.heroTitle, { opacity: anim.titleOpacity }]}>
+                        Sleep record
+                    </Animated.Text>
+                    {/* The figure, carried up into the bar once it has scrolled away. */}
+                    <Animated.Text
+                        numberOfLines={1}
+                        style={[
+                            styles.heroTitle, styles.heroCompact,
+                            { opacity: anim.compactOpacity, transform: [{ translateY: anim.compactShift }] },
+                        ]}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
+                    >
+                        {compactLabel}
+                    </Animated.Text>
+                </View>
+                <Pressable onPress={() => router.push('/sleep/history')} hitSlop={10} accessibilityLabel="Sleep history">
+                    <Ionicons name="list-outline" size={22} color={Palette.white} />
+                </Pressable>
+            </View>
+
+            <RangeTabs value={range} onChange={changeRange} />
+
+            <View style={styles.stepper}>
+                <Pressable
+                    onPress={() => data?.previousEnd && setEnd(data.previousEnd)}
+                    disabled={!data?.previousEnd}
+                    hitSlop={10}
+                    style={[styles.stepButton, !data?.previousEnd && styles.stepDisabled]}
+                    accessibilityLabel="Earlier"
+                >
+                    <Ionicons name="chevron-back" size={16} color={Palette.white} />
+                </Pressable>
+                <Text style={styles.stepLabel}>{periodLabel(data, range)}</Text>
+                <Pressable
+                    onPress={() => data?.nextEnd && setEnd(data.nextEnd)}
+                    disabled={!data?.nextEnd}
+                    hitSlop={10}
+                    style={[styles.stepButton, !data?.nextEnd && styles.stepDisabled]}
+                    accessibilityLabel="Later"
+                >
+                    <Ionicons name="chevron-forward" size={16} color={Palette.white} />
+                </Pressable>
+            </View>
+
+            <Animated.View pointerEvents="none" style={[styles.heroEdge, { opacity: anim.edgeOpacity }]} />
+        </View>
+    );
+
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
-            {/* ------------------------------------------------------ night-sky hero */}
-            <Animated.View style={[styles.hero, heroHeight ? { height: heroHeight } : null]}>
-                <LinearGradient
-                    colors={Palette.heroGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                />
-                {STARS.map((s, i) => (
-                    <View
-                        key={i}
-                        pointerEvents="none"
-                        style={[styles.star, { top: `${s.t}%`, left: `${s.l}%`, width: s.s, height: s.s }]}
-                    />
-                ))}
-                <Animated.View pointerEvents="none" style={[styles.heroMoon, { opacity: figureOpacity }]}>
-                    <Ionicons name="moon" size={78} color="rgba(255,255,255,0.07)" />
-                </Animated.View>
-
-                <View style={styles.heroTop} onLayout={onTopLayout}>
-                    <View style={styles.heroRow}>
-                        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Back">
-                            <Ionicons name="chevron-back" size={24} color={Palette.white} />
-                        </Pressable>
-                        <View style={styles.heroTitleSlot}>
-                            <Animated.Text style={[styles.heroTitle, { opacity: titleOpacity }]}>
-                                Sleep record
-                            </Animated.Text>
-                            {/* The figure, carried up into the bar once the hero has folded. */}
-                            <Animated.Text
-                                numberOfLines={1}
-                                style={[
-                                    styles.heroTitle, styles.heroCompact,
-                                    { opacity: compactOpacity, transform: [{ translateY: compactShift }] },
-                                ]}
-                                accessibilityElementsHidden
-                                importantForAccessibility="no-hide-descendants"
-                            >
-                                {compactLabel}
-                            </Animated.Text>
-                        </View>
-                        <Pressable onPress={() => router.push('/sleep/history')} hitSlop={10} accessibilityLabel="Sleep history">
-                            <Ionicons name="list-outline" size={22} color={Palette.white} />
-                        </Pressable>
-                    </View>
-
-                    <RangeTabs value={range} onChange={changeRange} />
-
-                    <View style={styles.stepper}>
-                        <Pressable
-                            onPress={() => data?.previousEnd && setEnd(data.previousEnd)}
-                            disabled={!data?.previousEnd}
-                            hitSlop={10}
-                            style={[styles.stepButton, !data?.previousEnd && styles.stepDisabled]}
-                            accessibilityLabel="Earlier"
-                        >
-                            <Ionicons name="chevron-back" size={16} color={Palette.white} />
-                        </Pressable>
-                        <Text style={styles.stepLabel}>{periodLabel(data, range)}</Text>
-                        <Pressable
-                            onPress={() => data?.nextEnd && setEnd(data.nextEnd)}
-                            disabled={!data?.nextEnd}
-                            hitSlop={10}
-                            style={[styles.stepButton, !data?.nextEnd && styles.stepDisabled]}
-                            accessibilityLabel="Later"
-                        >
-                            <Ionicons name="chevron-forward" size={16} color={Palette.white} />
-                        </Pressable>
-                    </View>
-                </View>
-
-                <Animated.View
-                    onLayout={onFigureLayout}
-                    style={[
-                        styles.heroBody,
-                        { opacity: figureOpacity, transform: [{ translateY: figureShift }, { scale: figureScale }] },
-                    ]}
-                >
-                    <View style={styles.heroFigure}>
-                        {hero ? (
-                            <Text style={styles.heroValue}>
-                                {hero.hours}
-                                <Text style={styles.heroUnit}>h </Text>
-                                {hero.mins}
-                                <Text style={styles.heroUnit}>m</Text>
-                            </Text>
-                        ) : (
-                            <Text style={styles.heroValue}>—</Text>
-                        )}
-                        <Text style={styles.heroCaption}>
-                            {range === '1d'
-                                ? (dayNaps && finite(dayBar?.asleepMin)
-                                    ? `total sleep · ${formatMinutes(dayBar?.asleepMin)} night + ${formatMinutes(dayNaps)} ${dayBar?.napCount === 1 ? 'nap' : 'naps'}`
-                                    : dayNaps ? 'total sleep · naps only' : 'asleep that night')
-                                : summary && summary.nights
-                                    ? `average night · ${summary.nights} of ${summary.dayCount} nights recorded`
-                                    : 'average night'}
-                        </Text>
-                        <DeltaChip comparison={summary?.comparison?.asleepMin} period={PERIOD_WORD[range]} />
-                    </View>
-
-                    {summary && !empty ? (
-                        <View style={styles.heroChips}>
-                            {finite(summary.avgScore) ? <HeroChip icon="star" label={`Score ${summary.avgScore}`} /> : null}
-                            {summary.goal && summary.goal.nights ? (
-                                <HeroChip icon="flag" label={`Goal ${summary.goal.met}/${summary.goal.nights}`} />
-                            ) : null}
-                            {summary.naps.count ? (
-                                <HeroChip
-                                    icon="partly-sunny"
-                                    label={`${summary.naps.count} ${summary.naps.count === 1 ? 'nap' : 'naps'} · ${formatMinutes(summary.naps.totalMin)}`}
-                                />
-                            ) : null}
-                        </View>
-                    ) : null}
-                </Animated.View>
-            </Animated.View>
-
             {!data && loading ? (
-                <View style={styles.centre}><ActivityIndicator color={Palette.primary} /></View>
+                <>
+                    {controls}
+                    <View style={styles.centre}><ActivityIndicator color={Palette.primary} /></View>
+                </>
             ) : !data && error ? (
-                <ErrorState error={error} subject="your sleep record" onRetry={load} />
+                <>
+                    {controls}
+                    <ErrorState error={error} subject="your sleep record" onRetry={load} />
+                </>
             ) : data && summary ? (
                 <Animated.ScrollView
-                    ref={scrollRef}
-                    contentContainerStyle={[styles.content, { minHeight: windowHeight + collapseBy }]}
                     showsVerticalScrollIndicator={false}
                     style={loading && !refreshing ? styles.dimmed : undefined}
+                    stickyHeaderIndices={[0]}
                     onScroll={onScroll}
                     scrollEventThrottle={16}
-                    onScrollEndDrag={(e) => {
-                        if (Math.abs(e.nativeEvent.velocity?.y ?? 0) < 0.2) snap();
-                    }}
-                    onMomentumScrollEnd={snap}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
@@ -571,254 +494,316 @@ export default function SleepRecordScreen() {
                         />
                     }
                 >
-                    {error ? <StaleNotice onRetry={load} /> : null}
+                    {controls}
 
-                    {empty ? (
-                        <View style={[styles.card, styles.empty]}>
-                            <BedIllustration width={180} />
-                            <Text style={styles.emptyTitle}>No sleep recorded here</Text>
-                            <Text style={styles.emptyBody}>
-                                {data.previousEnd
-                                    ? 'Nothing synced or logged for this period. Go back to see earlier nights.'
-                                    : 'Once your watch or phone syncs a night — or you log one — it appears here in its stages.'}
-                            </Text>
-                            <View style={styles.emptyActions}>
-                                {data.previousEnd ? (
-                                    <Pressable style={styles.secondaryButton} onPress={() => setEnd(data.previousEnd)}>
-                                        <Text style={styles.secondaryButtonText}>Earlier</Text>
-                                    </Pressable>
-                                ) : null}
-                                <Pressable style={styles.primaryButton} onPress={() => router.push('/sleep/log')}>
-                                    <Text style={styles.primaryButtonText}>Log a night</Text>
-                                </Pressable>
-                            </View>
+                    {/* ------------------------------------------------ night-sky figure */}
+                    <View style={styles.heroBody} onLayout={onFigureLayout}>
+                        <LinearGradient
+                            colors={Palette.heroGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 0, y: 1 }}
+                            style={StyleSheet.absoluteFill}
+                        />
+                        {STARS.map((s, i) => (
+                            <View
+                                key={i}
+                                pointerEvents="none"
+                                style={[styles.star, { top: `${s.t}%`, left: `${s.l}%`, width: s.s, height: s.s }]}
+                            />
+                        ))}
+                        <View pointerEvents="none" style={styles.heroMoon}>
+                            <Ionicons name="moon" size={78} color="rgba(255,255,255,0.07)" />
                         </View>
-                    ) : (
-                        <>
-                            {/* -------------------------------------------- the chart */}
-                            {range === '1d' ? (
-                                <Card title="The day at a glance" subtitle="Your night in its stages, and any naps, on the clock.">
-                                    {data.timeline && data.timeline.length ? (
-                                        <>
-                                            <DayTimeline sessions={data.timeline} />
-                                            <View style={{ gap: Spacing.sm }}>
-                                                {data.timeline.map((t) => (
-                                                    <Pressable key={t.id} style={styles.sessionRow} onPress={() => openNight(t.id)}>
-                                                        <View style={[styles.sessionIcon, { backgroundColor: t.kind === 'nap' ? Palette.pinkSurface : Palette.primarySurface }]}>
-                                                            <Ionicons
-                                                                name={t.kind === 'nap' ? 'partly-sunny' : 'moon'}
-                                                                size={15}
-                                                                color={t.kind === 'nap' ? NAP_META.tint : Palette.primary}
-                                                            />
-                                                        </View>
-                                                        <View style={{ flex: 1 }}>
-                                                            <Text style={styles.sessionTitle}>{t.kind === 'nap' ? 'Nap' : 'Night'}</Text>
-                                                            <Text style={styles.sessionMeta}>
-                                                                {`${new Date(t.startedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} – ${new Date(t.endedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
-                                                            </Text>
-                                                        </View>
-                                                        <Text style={styles.sessionValue}>{formatMinutes(t.asleepMin)}</Text>
-                                                        <Ionicons name="chevron-forward" size={14} color={Palette.textMuted} />
-                                                    </Pressable>
-                                                ))}
-                                            </View>
-                                            <StackLegend bars={data.series} />
-                                        </>
-                                    ) : null}
-                                </Card>
+
+                        <View style={styles.heroFigure}>
+                            {hero ? (
+                                <Text style={styles.heroValue}>
+                                    {hero.hours}
+                                    <Text style={styles.heroUnit}>h </Text>
+                                    {hero.mins}
+                                    <Text style={styles.heroUnit}>m</Text>
+                                </Text>
                             ) : (
-                                <Card title="Nightly sleep" subtitle={BUCKET_NOTE[data.bucket]}>
-                                    {selectedBar ? (
-                                        <SelectedPanel bar={selectedBar} bucket={data.bucket} onOpen={openNight} />
-                                    ) : null}
-                                    <StackedSleepBars
-                                        bars={data.series}
-                                        bucket={data.bucket}
-                                        goalMinutes={summary.goal?.minutes ?? null}
-                                        selected={selected}
-                                        onSelect={setSelected}
-                                    />
-                                    <StackLegend bars={data.series} />
-                                </Card>
+                                <Text style={styles.heroValue}>—</Text>
                             )}
+                            <Text style={styles.heroCaption}>
+                                {range === '1d'
+                                    ? (dayNaps && finite(dayBar?.asleepMin)
+                                        ? `total sleep · ${formatMinutes(dayBar?.asleepMin)} night + ${formatMinutes(dayNaps)} ${dayBar?.napCount === 1 ? 'nap' : 'naps'}`
+                                        : dayNaps ? 'total sleep · naps only' : 'asleep that night')
+                                    : summary.nights
+                                        ? `average night · ${summary.nights} of ${summary.dayCount} nights recorded`
+                                        : 'average night'}
+                            </Text>
+                            <DeltaChip comparison={summary.comparison?.asleepMin} period={PERIOD_WORD[range]} />
+                        </View>
 
-                            {range === '1d' && mainNight && mainNight.segments.length ? (
-                                <Card title="Stages through the night">
-                                    <Hypnogram segments={mainNight.segments} />
-                                </Card>
-                            ) : null}
-
-                            {/* -------------------------------------------- the numbers */}
-                            <View style={styles.grid}>
-                                <StatTile
-                                    icon="moon" tint={Palette.primary} surface={Palette.primarySurface}
-                                    label={range === '1d' ? 'Night sleep' : 'Avg night'}
-                                    value={formatMinutes(summary.avgAsleepMin)}
-                                    note={range === '1d'
-                                        ? (dayNaps ? `${formatMinutes(dayBar?.totalAsleepMin)} with naps` : null)
-                                        : finite(summary.totalSleep?.avgMin) && summary.naps.count
-                                            ? `${formatMinutes(summary.totalSleep.avgMin)} a day with naps`
-                                            : finite(summary.totalAsleepMin) ? `${formatMinutes(summary.totalAsleepMin)} in total` : null}
-                                />
-                                <StatTile
-                                    icon="bed" tint={Palette.indigo} surface={Palette.indigoSurface}
-                                    label="Time in bed"
-                                    value={formatMinutes(summary.avgInBedMin)}
-                                    note={finite(summary.avgInBedMin) && finite(summary.avgAsleepMin)
-                                        ? `${formatMinutes(Math.max(0, summary.avgInBedMin - summary.avgAsleepMin))} not asleep`
-                                        : null}
-                                />
-                                <StatTile
-                                    icon="speedometer" tint={Palette.sky} surface={Palette.skySurface}
-                                    label="Efficiency"
-                                    value={finite(summary.avgEfficiency) ? `${summary.avgEfficiency}%` : '—'}
-                                    note={finite(summary.avgEfficiency) ? 'of time in bed spent asleep' : 'Your source does not report time awake'}
-                                />
-                                <StatTile
-                                    icon="star" tint={Palette.amber} surface={Palette.warningSurface}
-                                    label="Sleep score"
-                                    value={finite(summary.avgScore) ? `${summary.avgScore}` : '—'}
-                                    note={finite(summary.avgScore) ? (range === '1d' ? 'out of 100' : 'average, out of 100') : null}
-                                />
-                                <StatTile
-                                    icon="cloudy-night" tint={Palette.primaryDark} surface={Palette.primaryTint}
-                                    label={range === '1d' ? 'Fell asleep' : 'Typical bedtime'}
-                                    value={formatClock(summary.bedtime.avgMin)}
-                                    note={finite(summary.bedtime.spreadMin) ? `varies by ±${formatMinutes(summary.bedtime.spreadMin)}` : null}
-                                />
-                                <StatTile
-                                    icon="sunny" tint={Palette.orange} surface={Palette.orangeSurface}
-                                    label={range === '1d' ? 'Woke up' : 'Typical wake-up'}
-                                    value={formatClock(summary.wake.avgMin)}
-                                    note={finite(summary.wake.spreadMin) ? `varies by ±${formatMinutes(summary.wake.spreadMin)}` : null}
-                                />
-                                <StatTile
-                                    icon="flag" tint={Palette.success} surface={Palette.successSurface}
-                                    label="Goal reached"
-                                    value={summary.goal && summary.goal.nights
-                                        ? (range === '1d'
-                                            ? (summary.goal.met ? 'Yes' : 'Not quite')
-                                            : `${summary.goal.met} of ${summary.goal.nights}`)
-                                        : '—'}
-                                    note={summary.goal ? `goal ${formatMinutes(summary.goal.minutes)} a day, naps included` : 'No sleep goal set'}
-                                />
-                                <StatTile
-                                    icon="partly-sunny" tint={NAP_META.tint} surface={Palette.pinkSurface}
-                                    label="Naps"
-                                    value={summary.naps.count ? formatMinutes(summary.naps.totalMin) : 'None'}
-                                    note={summary.naps.count
-                                        ? `${summary.naps.count} ${summary.naps.count === 1 ? 'nap' : 'naps'}, ${formatMinutes(summary.naps.avgMin)} each on average`
-                                        : null}
-                                />
-                            </View>
-
-                            {/* -------------------------------------------- composition */}
-                            {summary.stagedNights > 0 ? (
-                                <Card
-                                    title="Where the night goes"
-                                    subtitle={range === '1d'
-                                        ? 'Time in each stage.'
-                                        : `A typical night, from ${summary.stagedNights} ${summary.stagedNights === 1 ? 'night' : 'nights'} with stage data.`}
-                                >
-                                    <CompositionBar stages={summary.stages} />
-                                </Card>
-                            ) : summary.nights > 0 ? (
-                                <View style={styles.note}>
-                                    <Ionicons name="information-circle-outline" size={16} color={Palette.textSecondary} />
-                                    <Text style={styles.noteText}>
-                                        Your source reported how long you slept but not your stages, so the bars
-                                        are grey. A watch that tracks stages fills them in.
-                                    </Text>
-                                </View>
-                            ) : null}
-
-                            {/* -------------------------------------------- sleep window */}
-                            {range !== '1d' && summary.nights >= 2 ? (
-                                <Card title="Your sleep window" subtitle="When you were asleep — from bedtime at the top to waking at the bottom.">
-                                    <SleepWindowChart
-                                        bars={data.series}
-                                        bucket={data.bucket}
-                                        bedtimeMin={summary.bedtime.avgMin}
-                                        wakeMin={summary.wake.avgMin}
+                        {!empty ? (
+                            <View style={styles.heroChips}>
+                                {finite(summary.avgScore) ? <HeroChip icon="star" label={`Score ${summary.avgScore}`} /> : null}
+                                {summary.goal && summary.goal.nights ? (
+                                    <HeroChip icon="flag" label={`Goal ${summary.goal.met}/${summary.goal.nights}`} />
+                                ) : null}
+                                {summary.naps.count ? (
+                                    <HeroChip
+                                        icon="partly-sunny"
+                                        label={`${summary.naps.count} ${summary.naps.count === 1 ? 'nap' : 'naps'} · ${formatMinutes(summary.naps.totalMin)}`}
                                     />
-                                </Card>
-                            ) : null}
+                                ) : null}
+                            </View>
+                        ) : null}
+                    </View>
 
-                            {/* -------------------------------------------- highlights */}
-                            {range !== '1d' && summary.nights >= 2 ? (
-                                <Card title="Highlights">
-                                    {([
-                                        { key: 'longest', icon: 'trending-up', tint: Palette.success, label: 'Longest night', fmt: formatMinutes },
-                                        { key: 'shortest', icon: 'trending-down', tint: Palette.warning, label: 'Shortest night', fmt: formatMinutes },
-                                        { key: 'bestScore', icon: 'trophy', tint: Palette.amber, label: 'Best score', fmt: (v: number) => `${v}` },
-                                        { key: 'mostDeep', icon: 'water', tint: STAGE_META.deep.tint, label: 'Most deep sleep', fmt: formatMinutes },
-                                    ] as const).map((h) => {
-                                        const item = summary.highlights[h.key];
-                                        if (!item) return null;
-                                        return (
-                                            <Pressable key={h.key} style={styles.highlight} onPress={() => openNight(item.id)}>
-                                                <Ionicons name={h.icon} size={17} color={h.tint} />
-                                                <View style={{ flex: 1 }}>
-                                                    <Text style={styles.highlightLabel}>{h.label}</Text>
-                                                    <Text style={styles.highlightDay}>{dayLabel(item.day)}</Text>
-                                                </View>
-                                                <Text style={styles.highlightValue}>{h.fmt(item.value)}</Text>
-                                                <Ionicons name="chevron-forward" size={14} color={Palette.textMuted} />
-                                            </Pressable>
-                                        );
-                                    })}
-                                </Card>
-                            ) : null}
+                    <View style={styles.content}>
+                        {error ? <StaleNotice onRetry={load} /> : null}
 
-                            {/* -------------------------------------------- naps */}
-                            {range !== '1d' ? (
-                                <Card
-                                    title="Naps"
-                                    right={summary.naps.count ? (
-                                        <Text style={styles.cardCount}>{summary.naps.count}</Text>
-                                    ) : undefined}
-                                >
-                                    {data.naps.length ? data.naps.slice(0, 8).map((nap) => (
-                                        <Pressable key={nap.id} style={styles.napRow} onPress={() => openNight(nap.id)}>
-                                            <View style={styles.napAccent} />
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.highlightLabel}>{nap.day ? dayLabel(nap.day) : 'Nap'}</Text>
-                                                <Text style={styles.highlightDay}>
-                                                    {`${formatClock(nap.startMin)} – ${formatClock(nap.endMin)}`}
-                                                </Text>
-                                            </View>
-                                            <Text style={styles.highlightValue}>{formatMinutes(nap.minutes)}</Text>
-                                        </Pressable>
-                                    )) : (
-                                        <Text style={styles.cardSubtitle}>
-                                            No naps in this period. A nap is a sleep of up to three hours during
-                                            the day, at least an hour apart from your night.
-                                        </Text>
-                                    )}
-                                </Card>
-                            ) : null}
-
-                            {/* -------------------------------------------- night by night */}
-                            {range !== '1d' && listBars.length ? (
-                                <Card title={data.bucket === 'day' ? 'Night by night' : data.bucket === 'week' ? 'Week by week' : 'Month by month'}>
-                                    {listBars.slice(0, 31).map((bar) => (
-                                        <NightStrip
-                                            key={bar.from}
-                                            bar={bar}
-                                            bucket={data.bucket}
-                                            scale={stripScale}
-                                            onPress={bar.nightId ? () => openNight(bar.nightId as string) : undefined}
-                                        />
-                                    ))}
-                                    {data.bucket === 'day' && listBars.length > 31 ? (
-                                        <Pressable onPress={() => router.push('/sleep/history')}>
-                                            <Text style={styles.link}>See every night in Sleep History</Text>
+                        {empty ? (
+                            <View style={[styles.card, styles.empty]}>
+                                <BedIllustration width={180} />
+                                <Text style={styles.emptyTitle}>No sleep recorded here</Text>
+                                <Text style={styles.emptyBody}>
+                                    {data.previousEnd
+                                        ? 'Nothing synced or logged for this period. Go back to see earlier nights.'
+                                        : 'Once your watch or phone syncs a night — or you log one — it appears here in its stages.'}
+                                </Text>
+                                <View style={styles.emptyActions}>
+                                    {data.previousEnd ? (
+                                        <Pressable style={styles.secondaryButton} onPress={() => setEnd(data.previousEnd)}>
+                                            <Text style={styles.secondaryButtonText}>Earlier</Text>
                                         </Pressable>
                                     ) : null}
-                                </Card>
-                            ) : null}
-                        </>
-                    )}
+                                    <Pressable style={styles.primaryButton} onPress={() => router.push('/sleep/log')}>
+                                        <Text style={styles.primaryButtonText}>Log a night</Text>
+                                    </Pressable>
+                                </View>
+                            </View>
+                        ) : (
+                            <>
+                                {/* -------------------------------------------- the chart */}
+                                {range === '1d' ? (
+                                    <Card title="The day at a glance" subtitle="Your night in its stages, and any naps, on the clock.">
+                                        {data.timeline && data.timeline.length ? (
+                                            <>
+                                                <DayTimeline sessions={data.timeline} />
+                                                <View style={{ gap: Spacing.sm }}>
+                                                    {data.timeline.map((t) => (
+                                                        <Pressable key={t.id} style={styles.sessionRow} onPress={() => openNight(t.id)}>
+                                                            <View style={[styles.sessionIcon, { backgroundColor: t.kind === 'nap' ? Palette.pinkSurface : Palette.primarySurface }]}>
+                                                                <Ionicons
+                                                                    name={t.kind === 'nap' ? 'partly-sunny' : 'moon'}
+                                                                    size={15}
+                                                                    color={t.kind === 'nap' ? NAP_META.tint : Palette.primary}
+                                                                />
+                                                            </View>
+                                                            <View style={{ flex: 1 }}>
+                                                                <Text style={styles.sessionTitle}>{t.kind === 'nap' ? 'Nap' : 'Night'}</Text>
+                                                                <Text style={styles.sessionMeta}>
+                                                                    {`${new Date(t.startedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} – ${new Date(t.endedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                                                                </Text>
+                                                            </View>
+                                                            <Text style={styles.sessionValue}>{formatMinutes(t.asleepMin)}</Text>
+                                                            <Ionicons name="chevron-forward" size={14} color={Palette.textMuted} />
+                                                        </Pressable>
+                                                    ))}
+                                                </View>
+                                                <StackLegend bars={data.series} />
+                                            </>
+                                        ) : null}
+                                    </Card>
+                                ) : (
+                                    <Card title="Nightly sleep" subtitle={BUCKET_NOTE[data.bucket]}>
+                                        {selectedBar ? (
+                                            <SelectedPanel bar={selectedBar} bucket={data.bucket} onOpen={openNight} />
+                                        ) : null}
+                                        <StackedSleepBars
+                                            bars={data.series}
+                                            bucket={data.bucket}
+                                            goalMinutes={summary.goal?.minutes ?? null}
+                                            selected={selected}
+                                            onSelect={setSelected}
+                                        />
+                                        <StackLegend bars={data.series} />
+                                    </Card>
+                                )}
+
+                                {range === '1d' && mainNight && mainNight.segments.length ? (
+                                    <Card title="Stages through the night">
+                                        <Hypnogram segments={mainNight.segments} />
+                                    </Card>
+                                ) : null}
+
+                                {/* -------------------------------------------- the numbers */}
+                                <View style={styles.grid}>
+                                    <StatTile
+                                        icon="moon" tint={Palette.primary} surface={Palette.primarySurface}
+                                        label={range === '1d' ? 'Night sleep' : 'Avg night'}
+                                        value={formatMinutes(summary.avgAsleepMin)}
+                                        note={range === '1d'
+                                            ? (dayNaps ? `${formatMinutes(dayBar?.totalAsleepMin)} with naps` : null)
+                                            : finite(summary.totalSleep?.avgMin) && summary.naps.count
+                                                ? `${formatMinutes(summary.totalSleep.avgMin)} a day with naps`
+                                                : finite(summary.totalAsleepMin) ? `${formatMinutes(summary.totalAsleepMin)} in total` : null}
+                                    />
+                                    <StatTile
+                                        icon="bed" tint={Palette.indigo} surface={Palette.indigoSurface}
+                                        label="Time in bed"
+                                        value={formatMinutes(summary.avgInBedMin)}
+                                        note={finite(summary.avgInBedMin) && finite(summary.avgAsleepMin)
+                                            ? `${formatMinutes(Math.max(0, summary.avgInBedMin - summary.avgAsleepMin))} not asleep`
+                                            : null}
+                                    />
+                                    <StatTile
+                                        icon="speedometer" tint={Palette.sky} surface={Palette.skySurface}
+                                        label="Efficiency"
+                                        value={finite(summary.avgEfficiency) ? `${summary.avgEfficiency}%` : '—'}
+                                        note={finite(summary.avgEfficiency) ? 'of time in bed spent asleep' : 'Your source does not report time awake'}
+                                    />
+                                    <StatTile
+                                        icon="star" tint={Palette.amber} surface={Palette.warningSurface}
+                                        label="Sleep score"
+                                        value={finite(summary.avgScore) ? `${summary.avgScore}` : '—'}
+                                        note={finite(summary.avgScore) ? (range === '1d' ? 'out of 100' : 'average, out of 100') : null}
+                                    />
+                                    <StatTile
+                                        icon="cloudy-night" tint={Palette.primaryDark} surface={Palette.primaryTint}
+                                        label={range === '1d' ? 'Fell asleep' : 'Typical bedtime'}
+                                        value={formatClock(summary.bedtime.avgMin)}
+                                        note={finite(summary.bedtime.spreadMin) ? `varies by ±${formatMinutes(summary.bedtime.spreadMin)}` : null}
+                                    />
+                                    <StatTile
+                                        icon="sunny" tint={Palette.orange} surface={Palette.orangeSurface}
+                                        label={range === '1d' ? 'Woke up' : 'Typical wake-up'}
+                                        value={formatClock(summary.wake.avgMin)}
+                                        note={finite(summary.wake.spreadMin) ? `varies by ±${formatMinutes(summary.wake.spreadMin)}` : null}
+                                    />
+                                    <StatTile
+                                        icon="flag" tint={Palette.success} surface={Palette.successSurface}
+                                        label="Goal reached"
+                                        value={summary.goal && summary.goal.nights
+                                            ? (range === '1d'
+                                                ? (summary.goal.met ? 'Yes' : 'Not quite')
+                                                : `${summary.goal.met} of ${summary.goal.nights}`)
+                                            : '—'}
+                                        note={summary.goal ? `goal ${formatMinutes(summary.goal.minutes)} a day, naps included` : 'No sleep goal set'}
+                                    />
+                                    <StatTile
+                                        icon="partly-sunny" tint={NAP_META.tint} surface={Palette.pinkSurface}
+                                        label="Naps"
+                                        value={summary.naps.count ? formatMinutes(summary.naps.totalMin) : 'None'}
+                                        note={summary.naps.count
+                                            ? `${summary.naps.count} ${summary.naps.count === 1 ? 'nap' : 'naps'}, ${formatMinutes(summary.naps.avgMin)} each on average`
+                                            : null}
+                                    />
+                                </View>
+
+                                {/* -------------------------------------------- composition */}
+                                {summary.stagedNights > 0 ? (
+                                    <Card
+                                        title="Where the night goes"
+                                        subtitle={range === '1d'
+                                            ? 'Time in each stage.'
+                                            : `A typical night, from ${summary.stagedNights} ${summary.stagedNights === 1 ? 'night' : 'nights'} with stage data.`}
+                                    >
+                                        <CompositionBar stages={summary.stages} />
+                                    </Card>
+                                ) : summary.nights > 0 ? (
+                                    <View style={styles.note}>
+                                        <Ionicons name="information-circle-outline" size={16} color={Palette.textSecondary} />
+                                        <Text style={styles.noteText}>
+                                            Your source reported how long you slept but not your stages, so the bars
+                                            are grey. A watch that tracks stages fills them in.
+                                        </Text>
+                                    </View>
+                                ) : null}
+
+                                {/* -------------------------------------------- sleep window */}
+                                {range !== '1d' && summary.nights >= 2 ? (
+                                    <Card title="Your sleep window" subtitle="When you were asleep — from bedtime at the top to waking at the bottom.">
+                                        <SleepWindowChart
+                                            bars={data.series}
+                                            bucket={data.bucket}
+                                            bedtimeMin={summary.bedtime.avgMin}
+                                            wakeMin={summary.wake.avgMin}
+                                        />
+                                    </Card>
+                                ) : null}
+
+                                {/* -------------------------------------------- highlights */}
+                                {range !== '1d' && summary.nights >= 2 ? (
+                                    <Card title="Highlights">
+                                        {([
+                                            { key: 'longest', icon: 'trending-up', tint: Palette.success, label: 'Longest night', fmt: formatMinutes },
+                                            { key: 'shortest', icon: 'trending-down', tint: Palette.warning, label: 'Shortest night', fmt: formatMinutes },
+                                            { key: 'bestScore', icon: 'trophy', tint: Palette.amber, label: 'Best score', fmt: (v: number) => `${v}` },
+                                            { key: 'mostDeep', icon: 'water', tint: STAGE_META.deep.tint, label: 'Most deep sleep', fmt: formatMinutes },
+                                        ] as const).map((h) => {
+                                            const item = summary.highlights[h.key];
+                                            if (!item) return null;
+                                            return (
+                                                <Pressable key={h.key} style={styles.highlight} onPress={() => openNight(item.id)}>
+                                                    <Ionicons name={h.icon} size={17} color={h.tint} />
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={styles.highlightLabel}>{h.label}</Text>
+                                                        <Text style={styles.highlightDay}>{dayLabel(item.day)}</Text>
+                                                    </View>
+                                                    <Text style={styles.highlightValue}>{h.fmt(item.value)}</Text>
+                                                    <Ionicons name="chevron-forward" size={14} color={Palette.textMuted} />
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </Card>
+                                ) : null}
+
+                                {/* -------------------------------------------- naps */}
+                                {range !== '1d' ? (
+                                    <Card
+                                        title="Naps"
+                                        right={summary.naps.count ? (
+                                            <Text style={styles.cardCount}>{summary.naps.count}</Text>
+                                        ) : undefined}
+                                    >
+                                        {data.naps.length ? data.naps.slice(0, 8).map((nap) => (
+                                            <Pressable key={nap.id} style={styles.napRow} onPress={() => openNight(nap.id)}>
+                                                <View style={styles.napAccent} />
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.highlightLabel}>{nap.day ? dayLabel(nap.day) : 'Nap'}</Text>
+                                                    <Text style={styles.highlightDay}>
+                                                        {`${formatClock(nap.startMin)} – ${formatClock(nap.endMin)}`}
+                                                    </Text>
+                                                </View>
+                                                <Text style={styles.highlightValue}>{formatMinutes(nap.minutes)}</Text>
+                                            </Pressable>
+                                        )) : (
+                                            <Text style={styles.cardSubtitle}>
+                                                No naps in this period. A nap is a sleep of up to three hours during
+                                                the day, at least an hour apart from your night.
+                                            </Text>
+                                        )}
+                                    </Card>
+                                ) : null}
+
+                                {/* -------------------------------------------- night by night */}
+                                {range !== '1d' && listBars.length ? (
+                                    <Card title={data.bucket === 'day' ? 'Night by night' : data.bucket === 'week' ? 'Week by week' : 'Month by month'}>
+                                        {listBars.slice(0, 31).map((bar) => (
+                                            <NightStrip
+                                                key={bar.from}
+                                                bar={bar}
+                                                bucket={data.bucket}
+                                                scale={stripScale}
+                                                onPress={bar.nightId ? () => openNight(bar.nightId as string) : undefined}
+                                            />
+                                        ))}
+                                        {data.bucket === 'day' && listBars.length > 31 ? (
+                                            <Pressable onPress={() => router.push('/sleep/history')}>
+                                                <Text style={styles.link}>See every night in Sleep History</Text>
+                                            </Pressable>
+                                        ) : null}
+                                    </Card>
+                                ) : null}
+                            </>
+                        )}
+                    </View>
                 </Animated.ScrollView>
             ) : null}
         </SafeAreaView>
@@ -830,17 +815,26 @@ const useStyles = makeStyles((Palette) => ({
     centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     dimmed: { opacity: 0.55 },
 
-    hero: {
-        paddingHorizontal: Spacing.xl, paddingTop: HERO_PAD_TOP,
-        overflow: 'hidden', zIndex: 2,
+    /** The sticky bar. Opaque — content scrolls under it — and flat, so the figure's
+     *  gradient can start from the same colour and the join is invisible. */
+    heroBar: {
+        paddingHorizontal: Spacing.xl, paddingTop: HERO_PAD_TOP, paddingBottom: HERO_PAD_COLLAPSED,
+        gap: Spacing.lg, zIndex: 2,
+        backgroundColor: Palette.heroGradient[0],
+    },
+    heroEdge: {
+        position: 'absolute', left: 0, right: 0, bottom: 0, height: 1,
+        backgroundColor: 'rgba(255,255,255,0.16)',
+    },
+    heroBody: {
+        paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg, paddingBottom: Spacing.xl,
+        gap: Spacing.lg, overflow: 'hidden',
         borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
     },
-    heroTop: { gap: Spacing.lg },
-    heroBody: { paddingTop: Spacing.lg, paddingBottom: Spacing.xl, gap: Spacing.lg },
     heroTitleSlot: { flex: 1, alignItems: 'center', justifyContent: 'center', marginHorizontal: Spacing.md },
     heroCompact: { position: 'absolute', fontSize: 15 },
     star: { position: 'absolute', borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)' },
-    heroMoon: { position: 'absolute', right: -8, top: 86 },
+    heroMoon: { position: 'absolute', right: -8, top: 0 },
     heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     heroTitle: { fontSize: 16, fontFamily: Fonts.bold, color: Palette.white },
 
