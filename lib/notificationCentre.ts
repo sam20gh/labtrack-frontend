@@ -19,7 +19,8 @@ import { schemed } from '@/constants/theme';
 
 export type NotificationCategory =
     | 'plan' | 'medication' | 'sleep' | 'hydration' | 'activity' | 'nutrition'
-    | 'vitals' | 'results' | 'insight' | 'appointment' | 'order' | 'achievement' | 'account';
+    | 'vitals' | 'vitals_review' | 'results' | 'insight' | 'appointment' | 'order'
+    | 'achievement' | 'account';
 
 export type NotificationTint =
     | 'violet' | 'indigo' | 'blue' | 'green' | 'rose' | 'amber' | 'slate';
