@@ -6,20 +6,32 @@
  * logged walk has three of those. Rows for the rest are omitted rather than dashed, because
  * a table of em-dashes reads as a broken screen.
  *
- * The route map and the phase breakdown need GPS tracking (phase 11.6). The Insight and
- * Consult AI Assistant actions need the insight engine (phase 11.5). Neither is stubbed
- * with a dead button here — the app has removed two of those already.
+ * A GPS session (`source: 'live'`) also draws its route — the Ember trail on the
+ * monochrome map, fitted to the route, with the ramp's two ends as a legend — its splits as
+ * bars, and its climb as a profile. The track is fetched *after* the first paint: the key
+ * stats come from the session row, and a two-hour track should not hold them behind a
+ * spinner (the rule `app/nutrition/index.tsx` documents). "Replay" opens the flyover.
+ *
+ * The Insight and Consult AI Assistant actions need the insight engine (phase 11.5) and are
+ * not stubbed with a dead button here — the app has removed two of those already.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
-import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { makeStyles, usePalette, useTheme } from '@/hooks/useTheme';
+import RunMap from '@/components/run/RunMap';
+import ElevationProfile from '@/components/run/ElevationProfile';
+import { LinearGradient } from 'expo-linear-gradient';
+import { trailFromTrack, rampColor, EMBER_DARK, EMBER_LIGHT } from '@/lib/run/afterglow';
+import { elevationSeries, TRACKABLE_TYPES, type Track, type TrackableType } from '@/lib/run/trackMath';
+import { paceParts } from '@/lib/run/format';
+import { formatDistanceIn, useUnits } from '@/lib/units';
 import { ErrorState } from '@/components/errors';
 import {
-    getSession, updateSession, deleteSession,
+    getSession, getSessionTrack, updateSession, deleteSession,
     formatDuration, formatDistance, formatPace, formatType, type ActivitySession,
 } from '@/lib/activity';
 import { ApiError } from '@/lib/api';
@@ -32,7 +44,12 @@ export default function ActivityDetail() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
 
+    const { scheme } = useTheme();
+    const units = useUnits();
     const [session, setSession] = useState<ActivitySession | null>(null);
+    const [track, setTrack] = useState<Track | null>(null);
+    const [chartWidth, setChartWidth] = useState(0);
+    const trackFor = useRef<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<unknown>(null);
 
@@ -54,6 +71,28 @@ export default function ActivityDetail() {
     }, [id, router]);
 
     useFocusEffect(useCallback(() => { load(); }, [load]));
+
+    // The track after the first paint, once, and only for a session that has a route.
+    const hasRoute = (session?.route?.coordinates?.length ?? 0) >= 2;
+    useEffect(() => {
+        if (!session || !hasRoute || trackFor.current === session._id) return undefined;
+        trackFor.current = session._id;
+        let mounted = true;
+        getSessionTrack(session._id)
+            .then((r) => { if (mounted) setTrack(r.track as Track); })
+            .catch(() => { /* the map falls back to the stored route; nothing else needs it */ });
+        return () => { mounted = false; };
+    }, [session, hasRoute]);
+
+    const type: TrackableType = session && TRACKABLE_TYPES.includes(session.type as TrackableType)
+        ? session.type as TrackableType : 'jogging';
+    const ramp = scheme === 'dark' ? EMBER_DARK : EMBER_LIGHT;
+    const trail = useMemo(() => {
+        if (track) return trailFromTrack(track, type, ramp);
+        // Before the track arrives: the stored route, in one colour.
+        return { coordinates: session?.route?.coordinates ?? [], gradient: null, tail: null, paceRange: null };
+    }, [track, type, ramp, session?.route?.coordinates]);
+    const profile = useMemo(() => (track ? elevationSeries(track, type) : null), [track, type]);
 
     const setEffort = async (value: number) => {
         if (!session) return;
@@ -188,6 +227,49 @@ export default function ActivityDetail() {
                     )}
                 </View>
 
+                {hasRoute && (
+                    <>
+                        <View style={styles.mapCard}>
+                            <RunMap
+                                mode="overview"
+                                trail={trail}
+                                accent={ramp[ramp.length - 2]}
+                                // A static route map follows the app's scheme, not the sun: it is
+                                // read indoors, later, and has to match the screen around it.
+                                lightPreset={scheme === 'dark' ? 'night' : 'day'}
+                                interactive={false}
+                            />
+                            {track && (
+                                <Pressable
+                                    onPress={() => router.push({ pathname: '/activity/run/summary/[id]', params: { id: session._id, replay: '1' } })}
+                                    style={styles.replayBtn}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Replay this route"
+                                >
+                                    <Ionicons name="play" size={14} color={Palette.white} />
+                                    <Text style={styles.replayText}>Replay</Text>
+                                </Pressable>
+                            )}
+                        </View>
+                        {trail.paceRange && (
+                            <View style={styles.legend} accessible accessibilityLabel="Route colour: dimmer where you were slower, brighter where you were faster">
+                                <Text style={styles.legendText}>
+                                    {paceParts(trail.paceRange[0], type, units)?.value ?? ''} slower
+                                </Text>
+                                <LinearGradient
+                                    colors={ramp as unknown as [string, string, ...string[]]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.legendBar}
+                                />
+                                <Text style={styles.legendText}>
+                                    faster {paceParts(trail.paceRange[1], type, units)?.value ?? ''}
+                                </Text>
+                            </View>
+                        )}
+                    </>
+                )}
+
                 <Text style={styles.sectionTitle}>Key stats</Text>
                 <View style={styles.card}>
                     {stats.map((s, i) => (
@@ -198,6 +280,49 @@ export default function ActivityDetail() {
                         </View>
                     ))}
                 </View>
+
+                {(session.splits?.length ?? 0) > 0 && (() => {
+                    const speeds = session.splits!.map((sp) => (sp.pacePerKm ? 1000 / sp.pacePerKm : 0));
+                    const fastest = Math.max(0.1, ...speeds);
+                    const positive = speeds.filter((v) => v > 0);
+                    const slowest = positive.length ? Math.min(...positive) : fastest;
+                    const span = fastest - slowest;
+                    return (
+                        <>
+                            <Text style={styles.sectionTitle}>Splits</Text>
+                            <View style={[styles.card, styles.splits]}>
+                                {session.splits!.map((sp, i) => {
+                                    const p = paceParts(sp.pacePerKm ?? null, type, units);
+                                    const t = span < 0.05 ? 0.5 : (speeds[i] - slowest) / span;
+                                    return (
+                                        <View key={sp.order ?? i} style={styles.split} accessible accessibilityLabel={`${sp.label}, ${p ? `${p.value} ${p.unit}` : 'no pace'}`}>
+                                            <Text style={styles.splitLabel}>{sp.label}</Text>
+                                            <View style={styles.splitTrack}>
+                                                <View style={[styles.splitBar, { width: `${Math.max(10, (speeds[i] / fastest) * 100)}%`, backgroundColor: rampColor(t, ramp) }]} />
+                                            </View>
+                                            <Text style={styles.splitPace}>{p ? `${p.value}` : '—'}</Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </>
+                    );
+                })()}
+
+                {profile && Number.isFinite(session.elevationM as number) && (session.elevationM as number) > 0 && (
+                    <>
+                        <Text style={styles.sectionTitle}>Elevation</Text>
+                        <View style={[styles.card, styles.elevation]} onLayout={(e) => setChartWidth(e.nativeEvent.layout.width - Spacing.lg * 2)}>
+                            <ElevationProfile
+                                series={profile}
+                                width={chartWidth}
+                                stroke={Palette.textSecondary}
+                                label={`${Math.round(session.elevationM as number)} m climbed`}
+                                formatDistance={(m) => formatDistanceIn(m, units) ?? ''}
+                            />
+                        </View>
+                    </>
+                )}
 
                 <Text style={styles.sectionTitle}>How did it feel?</Text>
                 <View style={styles.efforts}>
@@ -237,18 +362,20 @@ export default function ActivityDetail() {
 
                 <View style={styles.provenance}>
                     <Ionicons
-                        name={session.source === 'manual' ? 'create-outline' : 'watch-outline'}
+                        name={session.source === 'manual' ? 'create-outline' : session.source === 'live' ? 'navigate-outline' : 'watch-outline'}
                         size={14}
                         color={Palette.textMuted}
                     />
                     <Text style={styles.provenanceText}>
                         {session.source === 'manual'
                             ? 'Logged by you'
-                            : `From ${session.sourceDevice?.name || 'your health app'}`}
+                            : session.source === 'live'
+                                ? 'Recorded with GPS on this phone'
+                                : `From ${session.sourceDevice?.name || 'your health app'}`}
                     </Text>
                 </View>
 
-                {session.source !== 'manual' && (
+                {session.source !== 'manual' && session.source !== 'live' && (
                     <Text style={styles.locked}>
                         Measured values on a synced activity can’t be edited here — only your effort
                         rating and notes.
@@ -341,4 +468,23 @@ const useStyles = makeStyles((Palette) => ({
     },
 
     link: { fontSize: 13, fontFamily: Fonts.semibold, color: Palette.primary },
+
+    mapCard: { height: 240, borderRadius: Radius.xl, overflow: 'hidden', backgroundColor: Palette.surface },
+    replayBtn: {
+        position: 'absolute', right: Spacing.md, bottom: Spacing.md,
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.pill,
+        backgroundColor: Palette.primaryFill,
+    },
+    replayText: { fontSize: 13, fontFamily: Fonts.bold, color: Palette.white },
+    legend: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm },
+    legendBar: { flex: 1, height: 6, borderRadius: 3 },
+    legendText: { fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, fontVariant: ['tabular-nums'] },
+    splits: { paddingVertical: Spacing.md, gap: Spacing.sm },
+    split: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    splitLabel: { width: 52, fontSize: 13, fontFamily: Fonts.semibold, color: Palette.textSecondary },
+    splitTrack: { flex: 1, height: 14, borderRadius: 4, backgroundColor: Palette.borderLight, overflow: 'hidden' },
+    splitBar: { height: '100%', borderRadius: 4 },
+    splitPace: { width: 48, textAlign: 'right', fontSize: 13, ...BodyFont.semibold, color: Palette.text, fontVariant: ['tabular-nums'] },
+    elevation: { paddingVertical: Spacing.lg },
 }));

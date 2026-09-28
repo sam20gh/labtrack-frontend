@@ -120,7 +120,7 @@ const toPoint = (f: Partial<Fix>): Point | null => {
 // ---------------------------------------------------------------------------------------
 // Splits, online
 
-const createSplitter = () => {
+const createSplitter = (unitM = SPLIT_M) => {
     const splits: Split[] = [];
     let splitDist = 0;
     let splitSec = 0;
@@ -130,7 +130,9 @@ const createSplitter = () => {
         const order = splits.length + 1;
         const avg = mean(splitHr);
         splits.push({
-            label: distanceM >= SPLIT_M ? `Km ${order}` : `${round1(distanceM / 1000)} km`,
+            label: distanceM >= unitM
+                ? `${unitM === SPLIT_M ? 'Km' : 'Mile'} ${order}`
+                : `${round1(distanceM / unitM)} ${unitM === SPLIT_M ? 'km' : 'mi'}`,
             order,
             distanceM: round1(distanceM),
             durationSec: Math.round(durationSec),
@@ -144,12 +146,12 @@ const createSplitter = () => {
         add(seg: Segment) {
             let remainingD = seg.distanceM;
             let remainingT = seg.durationSec;
-            while (splitDist + remainingD >= SPLIT_M) {
-                const need = SPLIT_M - splitDist;
+            while (splitDist + remainingD >= unitM) {
+                const need = unitM - splitDist;
                 const frac = remainingD > 0 ? need / remainingD : 0;
                 const tPart = remainingT * frac;
                 if (finite(seg.hr)) splitHr.push(seg.hr);
-                close(SPLIT_M, splitSec + tPart);
+                close(unitM, splitSec + tPart);
                 splitDist = 0;
                 splitSec = 0;
                 remainingD -= need;
@@ -170,6 +172,18 @@ const createSplitter = () => {
             return splits.slice();
         },
     };
+};
+
+/**
+ * Splits at any unit over segments already recorded — the Splits face's miles. Same
+ * interpolation as the kilometre splits the record stores, so a mile boundary and a km
+ * boundary are found the same way. `pacePerKm` stays per km whatever the unit; only the
+ * label and the boundaries move.
+ */
+export const splitSegments = (segments: readonly Segment[], unitM = SPLIT_M) => {
+    const splitter = createSplitter(unitM);
+    for (const seg of segments) splitter.add(seg);
+    return { closed: splitter.closed(), current: splitter.current() };
 };
 
 // ---------------------------------------------------------------------------------------
@@ -397,6 +411,62 @@ const inPause = (ms: number, pauses: [number, number][]) => pauses.some(([s, e])
 const crossesPause = (a: number, b: number, pauses: [number, number][]) =>
     pauses.some(([s, e]) => a <= e && b >= s);
 
+/**
+ * The climb as a profile: smoothed altitude against distance, for the detail screen's chart.
+ * The same smoothing the elevation *gain* uses, so the chart and the number agree. Null when
+ * the track carried no altitude — a flat line would claim a flat route.
+ */
+export const elevationSeries = (track: Partial<Track> | undefined, type: TrackableType = 'jogging'): { d: number; alt: number }[] | null => {
+    const kept = keptPoints(track, type);
+    const alts = smoothAltitudes(kept);
+    const out: { d: number; alt: number }[] = [];
+    let d = 0;
+    for (let i = 0; i < kept.length; i += 1) {
+        if (i > 0) d += haversine(kept[i - 1].lat, kept[i - 1].lng, kept[i].lat, kept[i].lng);
+        const a = alts[i];
+        if (finite(a)) out.push({ d, alt: a });
+    }
+    return out.length >= 2 ? out : null;
+};
+
+/** Run a stored track through the accumulator and hand back the kept fixes and segments. */
+export const replayTrack = (track: Partial<Track> | undefined, type: TrackableType = 'jogging') => {
+    const acc = createAccumulator(type);
+    feed(acc, track);
+    return { points: acc.points(), segments: acc.segments() };
+};
+
+const keptPoints = (track: Partial<Track> | undefined, type: TrackableType) => {
+    const acc = createAccumulator(type);
+    feed(acc, track);
+    return acc.points();
+};
+
+/** The batch feeding `computeTrack` does: sorted, filtered, pauses applied. */
+const feed = (acc: Accumulator, track: Partial<Track> | undefined) => {
+    const n = Array.isArray(track?.t) ? track!.t.length : 0;
+    const pauses = (Array.isArray(track?.pauses) ? track!.pauses : [])
+        .filter((p) => Array.isArray(p) && finite(p[0]) && finite(p[1]) && p[1] >= p[0])
+        .map(([s, e]) => [s, e] as [number, number]);
+    const raw: Fix[] = [];
+    for (let i = 0; i < n; i += 1) {
+        const fix = {
+            t: track!.t![i], lat: track!.lat?.[i], lng: track!.lng?.[i],
+            alt: track!.alt?.[i], acc: track!.acc?.[i], hr: track!.hr?.[i],
+        };
+        if (toPoint(fix)) raw.push(fix as Fix);
+    }
+    raw.sort((a, b) => a.t - b.t);
+    for (const fix of raw) {
+        const points = acc.points();
+        const lastT = points.length ? points[points.length - 1].t : null;
+        acc.push(fix, {
+            paused: inPause(fix.t, pauses),
+            breakBefore: lastT != null && crossesPause(lastT, fix.t, pauses),
+        });
+    }
+};
+
 export interface TrackResult {
     distanceM: number;
     movingSec: number;
@@ -439,14 +509,7 @@ export const computeTrack = (track: Partial<Track> | undefined, { type = 'joggin
     if (raw.length < 2) return empty;
 
     const acc = createAccumulator(type);
-    for (const fix of raw) {
-        const points = acc.points();
-        const lastT = points.length ? points[points.length - 1].t : null;
-        acc.push(fix, {
-            paused: inPause(fix.t, pauses),
-            breakBefore: lastT != null && crossesPause(lastT, fix.t, pauses),
-        });
-    }
+    feed(acc, track);
 
     const kept = acc.points();
     const alts = smoothAltitudes(kept);

@@ -30,6 +30,9 @@ import ConnectionBanner from '@/components/errors/ConnectionBanner';
 // wake — or the event finds no task and the fix is dropped. See lib/run/recorder.ts.
 import '@/lib/run/recorder';
 import { uploadPending } from '@/lib/run/upload';
+import { hydrateRunSettings } from '@/lib/run/settings';
+import { attachCoach } from '@/lib/run/coach';
+import RunInProgressPill from '@/components/run/RunInProgressPill';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 ExpoSplashScreen.preventAutoHideAsync();
@@ -75,6 +78,11 @@ export default function RootLayout() {
   // A finished run whose upload could not reach the server is still on the phone; send it.
   // Never throws, and a run that still cannot go simply waits for the next launch.
   useEffect(() => { uploadPending().catch(() => { /* retried next launch */ }); }, []);
+
+  // Run preferences are read synchronously during a run (countdown, cues, contrast), like
+  // units. The coach listens to the recorder for the whole app's life, so a split is spoken
+  // whichever screen is showing — or none.
+  useEffect(() => { hydrateRunSettings(); attachCoach(); }, []);
 
   // A tapped notification should land on the thing it is about, not the home screen
   useEffect(() => {
@@ -239,6 +247,8 @@ function ThemedRoot({ publishableKey }: { publishableKey: string | null }) {
             content. `ErrorState` keeps the full-screen "No Internet" for a surface that has
             nothing else to show. See `components/errors/ConnectionBanner.tsx`. */}
         <ConnectionBanner />
+        {/* The way back into a run from anywhere else in the app. Draws nothing unless one is going. */}
+        <RunInProgressPill />
         {/* One instance at the root, so a screen that reports an outage or a rate limit is
             actually heard. Several screens still mount their own `<Toast />`; the library
             keeps a stack of refs and the last mounted wins, so those keep working and this

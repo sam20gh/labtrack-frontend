@@ -27,7 +27,8 @@ import { createAccumulator, type Accumulator, type Fix, type LiveSnapshot, type 
 import { segmentKcal } from './energy';
 import * as journal from './journal';
 import { RUN_LOCATION_TASK, isTracking, startTracking, stopTracking } from './gps';
-import { prepareSteps, stepsForWindow } from './steps';
+import { stepsForWindow } from './steps';
+import type { RunGoal } from './goal';
 
 export type RunPhase = 'idle' | 'recording' | 'paused' | 'finished';
 
@@ -189,9 +190,13 @@ export class RunAlreadyActiveError extends Error {
     }
 }
 
-export const start = async ({ type, weightKg }: { type: TrackableType; weightKg: number | null }): Promise<string> => {
+/**
+ * Begin recording. Permissions — location and motion — are the launch pad's to ask before
+ * this is called: by now a countdown has run, and a system sheet over "GO" is the worst
+ * moment to ask for anything.
+ */
+export const start = async ({ type, weightKg, goal }: { type: TrackableType; weightKg: number | null; goal?: RunGoal }): Promise<string> => {
     if (hydrate() && run && run.phase !== 'finished') throw new RunAlreadyActiveError();
-    await prepareSteps();
 
     const meta: journal.RunMeta = {
         v: journal.JOURNAL_VERSION,
@@ -199,6 +204,7 @@ export const start = async ({ type, weightKg }: { type: TrackableType; weightKg:
         type,
         startedAt: Date.now(),
         weightKg,
+        goal: goal && goal.kind !== 'free' ? goal : undefined,
     };
     journal.createRun(meta);
     run = rebuild(meta, []);
@@ -317,13 +323,14 @@ export interface RecorderState {
     /** Metres, from the last fix the OS delivered, filtered or not. */
     accuracyM: number | null;
     lastFixAt: number | null;
+    goal: RunGoal | null;
 }
 
 export const getState = (now = Date.now()): RecorderState => {
     if (!run) {
         return {
             phase: 'idle', clientId: null, type: null, startedAt: null, activeSec: 0, live: null,
-            kcal: null, weightKnown: false, accuracyM: null, lastFixAt: null,
+            kcal: null, weightKnown: false, accuracyM: null, lastFixAt: null, goal: null,
         };
     }
     const openPause = run.pausedAt != null ? now - run.pausedAt : 0;
@@ -339,11 +346,18 @@ export const getState = (now = Date.now()): RecorderState => {
         weightKnown: run.meta.weightKg != null,
         accuracyM: run.lastFix?.acc ?? null,
         lastFixAt: run.lastFix?.t ?? null,
+        goal: run.meta.goal ?? null,
     };
 };
 
 /** `[lng, lat]` of every kept fix, for the map. Read-only; rebuild the line from it. */
 export const routeCoordinates = (): number[][] => (run ? run.acc.points().map((p) => [p.lng, p.lat]) : []);
+
+/** The kept fixes and moving segments, for the Afterglow trail and the pace ribbon. Read-only. */
+export const trackView = () => ({
+    points: run ? run.acc.points() : [],
+    segments: run ? run.acc.segments() : [],
+});
 
 export const getVersion = () => version;
 

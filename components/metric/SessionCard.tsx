@@ -19,6 +19,7 @@ import { Fonts, Spacing, Radius, BodyFont, activePalette } from '@/constants/the
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { formatDuration, formatDistance, formatPace, formatType, type ActivitySession } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
+import RouteGlyph from '@/components/run/RouteGlyph';
 
 interface Stat {
     icon: keyof typeof Ionicons.glyphMap;
@@ -103,7 +104,10 @@ export function SessionCard({ session, onPress }: Props) {
                     </Text>
                 </View>
 
-                <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+                {/* A GPS session's shape, drawn from its stored route — no map, no tiles. */}
+                {(session.route?.coordinates?.length ?? 0) >= 2
+                    ? <RouteGlyph coordinates={session.route!.coordinates} tint={look.tint} />
+                    : <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />}
             </View>
 
             <View style={styles.stats}>

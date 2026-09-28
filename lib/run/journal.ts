@@ -25,6 +25,7 @@
  */
 import { Directory, File, Paths } from 'expo-file-system';
 import type { Track, TrackableType } from './trackMath';
+import type { RunGoal } from './goal';
 
 export const JOURNAL_VERSION = 1;
 
@@ -36,6 +37,8 @@ export interface RunMeta {
     startedAt: number;
     /** Body mass the live calorie estimate is priced with; the server re-prices anyway. */
     weightKg: number | null;
+    /** What the runner set out to do. A lens on the live screen; never uploaded. */
+    goal?: RunGoal;
 }
 
 /**
