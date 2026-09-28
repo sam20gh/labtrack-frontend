@@ -23,7 +23,7 @@ export const today = (): string => {
 };
 
 export type MetricKey =
-    | 'weight' | 'blood_pressure' | 'heart_rate' | 'spo2' | 'temperature'
+    | 'weight' | 'blood_pressure' | 'heart_rate' | 'hrv' | 'spo2' | 'temperature'
     | 'sleep' | 'hydration' | 'steps';
 
 /** The three that accept a manual entry. The rest are device-fed. */
@@ -43,6 +43,8 @@ export interface MetricCard {
     unit: string;
     value: number | string | null;
     target?: number | null;
+    /** HRV only: the median of the person's previous 28 days, once five exist. */
+    baseline?: number | null;
     at: string | null;
     status: string;
     statusColour?: string | null;
@@ -220,6 +222,8 @@ export const METRIC_ICON: Record<MetricKey, string> = {
     weight: 'barbell-outline',
     blood_pressure: 'pulse-outline',
     heart_rate: 'heart-outline',
+    // The same glyph `DayStats` gives HRV on the activity screen.
+    hrv: 'git-compare-outline',
     // Filled, where hydration's drop is an outline: a blood drop, not a glass of water. The
     // colour and the label carry the rest.
     spo2: 'water',
@@ -272,7 +276,7 @@ export const METRIC_ICON: Record<MetricKey, string> = {
  * gives any glyph that is not an action — the skill's "fold it, don't invent a hue". An
  * eighth *hue* would have to come from re-stepping the whole set, not from squeezing one in.
  */
-const METRIC_TINTS: Record<'light' | 'dark', Record<Exclude<MetricKey, 'temperature'>, string>> = {
+const METRIC_TINTS: Record<'light' | 'dark', Record<Exclude<MetricKey, 'temperature' | 'hrv'>, string>> = {
     light: {
         weight: '#F59E0B', blood_pressure: '#0C6EA0', heart_rate: '#FB7185', spo2: '#911342',
         sleep: '#6366F1', hydration: '#38BDF8', steps: '#10B981',
@@ -283,9 +287,16 @@ const METRIC_TINTS: Record<'light' | 'dark', Record<Exclude<MetricKey, 'temperat
     },
 };
 
+/**
+ * **HRV folds to `textSecondary` too, for temperature's reason.** It is the ninth metric on a
+ * screen whose searched set already had no room for an eighth hue. `info`, which the
+ * activity chart draws HRV in, is a status colour and sits 12.7 ΔE from blood pressure, the
+ * closest pair on this list already. The glyph and label carry it.
+ */
 export const METRIC_TINT = schemed((Palette, scheme): Record<MetricKey, string> => ({
     ...METRIC_TINTS[scheme],
     temperature: Palette.textSecondary,
+    hrv: Palette.textSecondary,
 }));
 
 /** Which detail route a card opens. Device-fed metrics point at their own trackers. */
@@ -294,6 +305,8 @@ export const METRIC_ROUTE: Record<MetricKey, string> = {
     blood_pressure: '/metrics/blood-pressure',
     hydration: '/metrics/water',
     heart_rate: '/activity',
+    // Charted over time on the activity screen, beside heart rate.
+    hrv: '/activity',
     // The bracelet screen, where the latest reading is and a new one can be taken.
     spo2: '/bracelet',
     temperature: '/bracelet',
