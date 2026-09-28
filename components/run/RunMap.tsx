@@ -17,29 +17,36 @@
  *
  *   live      camera follows the puck at 45°
  *   overview  camera fitted to the route, flat, free to pan — the detail screen
- *   replay    camera flies the route at 60° while the trail draws itself up to `progress`
- *             (`lineTrimOffset` hides the part not yet run) behind a glowing dot
+ *   replay    the caller flies the camera through `cameraRef` (imperatively, every frame —
+ *             not through props, which re-render the tree and stutter); the trail draws
+ *             itself up to `progress` with `lineTrimOffset`. The runner's dot is the caller's
+ *             screen overlay at the camera's focus, so it costs the map nothing per frame.
  *
  * Pedestrian paths are shown (they are where people run) and shop labels are not. Mapbox's
  * logo and attribution stay: its terms require them.
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, type Ref } from 'react';
+import type { CameraStop } from '@rnmapbox/maps';
+
 import { View, Text, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BodyFont, Palettes, Radius, Spacing } from '@/constants/theme';
+import { BodyFont, Radius, Spacing } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { loadMapbox, mapUnavailableReason } from '@/lib/run/map';
 import { boundsOf } from '@/lib/run/replay';
 import type { Trail } from '@/lib/run/afterglow';
 import type { LightPreset } from '@/lib/run/sun';
 
+/** What the replay drives the camera through. The package does not export its ref type. */
+export interface CameraHandle {
+    setCamera: (stop: CameraStop) => void;
+}
+
 export interface ReplayCamera {
-    center: number[];
-    heading: number;
     /** 0–1 of the route drawn so far. */
     progress: number;
-    /** How long the camera takes to reach this frame; the frame interval. */
-    durationMs: number;
+    /** Where the camera starts; after that the caller moves it through `cameraRef`. */
+    start: { center: number[]; heading: number; zoom: number; paddingTop: number };
 }
 
 interface Props {
@@ -49,6 +56,7 @@ interface Props {
     accent: string;
     mode?: 'live' | 'overview' | 'replay';
     replay?: ReplayCamera;
+    cameraRef?: Ref<CameraHandle>;
     /** Live only: off lets the person pan without being dragged back. */
     follow?: boolean;
     interactive?: boolean;
@@ -69,7 +77,7 @@ const line = (coordinates: number[][]) => ({
 });
 
 export default function RunMap({
-    trail, lightPreset, accent, mode = 'live', replay, follow = true, interactive = true, style,
+    trail, lightPreset, accent, mode = 'live', replay, cameraRef, follow = true, interactive = true, style,
 }: Props) {
     const Palette = usePalette();
     const styles = useStyles();
@@ -91,7 +99,7 @@ export default function RunMap({
         );
     }
 
-    const { MapView, Camera, LocationPuck, ShapeSource, LineLayer, CircleLayer, StyleImport } = Mapbox;
+    const { MapView, Camera, LocationPuck, ShapeSource, LineLayer, StyleImport } = Mapbox;
     const paint = trail.gradient ? { lineGradient: trail.gradient as never } : { lineColor: accent };
     const trim = mode === 'replay' && replay ? { lineTrimOffset: [Math.min(1, replay.progress), 1] } : {};
 
@@ -136,12 +144,14 @@ export default function RunMap({
             )}
             {mode === 'replay' && replay && (
                 <Camera
-                    centerCoordinate={replay.center}
-                    heading={replay.heading}
-                    pitch={60}
-                    zoomLevel={16.2}
-                    animationMode="linearTo"
-                    animationDuration={replay.durationMs}
+                    ref={cameraRef as never}
+                    defaultSettings={{
+                        centerCoordinate: replay.start.center,
+                        heading: replay.start.heading,
+                        pitch: 58,
+                        zoomLevel: replay.start.zoom,
+                        padding: { paddingTop: replay.start.paddingTop, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+                    }}
                 />
             )}
 
@@ -172,12 +182,6 @@ export default function RunMap({
                             lineWidth: 3, lineCap: 'round', lineJoin: 'round', lineEmissiveStrength: 1,
                         }}
                     />
-                </ShapeSource>
-            )}
-            {mode === 'replay' && replay && (
-                <ShapeSource id="replay-dot" shape={{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: replay.center } }}>
-                    <CircleLayer id="replay-dot-glow" style={{ circleRadius: 16, circleColor: accent, circleOpacity: 0.3, circleBlur: 0.8, circleEmissiveStrength: 1 }} />
-                    <CircleLayer id="replay-dot-core" aboveLayerID="replay-dot-glow" style={{ circleRadius: 6, circleColor: accent, circleStrokeWidth: 2, circleStrokeColor: Palettes.light.white, circleEmissiveStrength: 1 }} />
                 </ShapeSource>
             )}
         </MapView>

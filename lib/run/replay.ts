@@ -79,21 +79,63 @@ export const bearing = (a: number[], b: number[]): number => {
 };
 
 /**
- * Where the replay camera is at `progress` (0–1 of the distance), and which way it looks.
- * Heading is taken towards a point ~150 m ahead and not the next fix, so the camera turns
- * with the road rather than twitching with every GPS wobble.
+ * The point `d` metres along the route, **interpolated between fixes**. Snapping to the
+ * nearest fix is what made the first replay judder: at replay speed consecutive frames
+ * landed on the same fix, then jumped to the next one.
  */
-export const replayFrame = (coords: number[][], cum: number[], progress: number) => {
+export const pointAt = (coords: number[][], cum: number[], d: number): number[] => {
+    const n = coords.length;
+    if (n === 0) return [0, 0];
+    if (d <= 0 || n === 1) return coords[0];
+    const total = cum[n - 1];
+    if (d >= total) return coords[n - 1];
+    let lo = 0;
+    let hi = n - 1;
+    while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (cum[mid] <= d) lo = mid; else hi = mid;
+    }
+    const span = cum[hi] - cum[lo];
+    const f = span > 0 ? (d - cum[lo]) / span : 0;
+    return [coords[lo][0] + (coords[hi][0] - coords[lo][0]) * f, coords[lo][1] + (coords[hi][1] - coords[lo][1]) * f];
+};
+
+/**
+ * How long the replay runs: longer for a longer route, within bounds. The first version was
+ * eight seconds whatever the distance, so an 80-minute ride went past at kilometres a second.
+ */
+export const REPLAY_MIN_MS = 15_000;
+export const REPLAY_MAX_MS = 45_000;
+export const replayDurationMs = (distanceM: number): number =>
+    Math.round(Math.max(REPLAY_MIN_MS, Math.min(REPLAY_MAX_MS, REPLAY_MIN_MS + (distanceM / 1000) * 1200)));
+
+/**
+ * Turn from `current` towards `target` by at most `maxDelta` degrees, **the short way round**.
+ * Without the wrap a camera going from 350° to 10° spins through 340 degrees the long way,
+ * which is the lurch the first replay made on every northward turn.
+ */
+export const turnToward = (current: number, target: number, maxDelta: number): number => {
+    const diff = ((target - current + 540) % 360) - 180; // −180…180
+    const step = Math.max(-maxDelta, Math.min(maxDelta, diff));
+    return (current + step + 360) % 360;
+};
+
+/**
+ * Which way the camera should look at `d` metres: along the chord from a little behind to
+ * `ahead` metres in front. A chord across a window ignores the GPS wiggles a fix-to-fix
+ * bearing follows, and looks into a bend before the dot reaches it.
+ */
+export const lookHeading = (coords: number[][], cum: number[], d: number, ahead = 250, behind = 40): number => {
+    const from = pointAt(coords, cum, d - behind);
+    const to = pointAt(coords, cum, d + ahead);
+    return from[0] === to[0] && from[1] === to[1] ? 0 : bearing(from, to);
+};
+
+/** Where the replay camera is at `progress` (0–1 of the distance), and which way it looks. */
+export const replayFrame = (coords: number[][], cum: number[], progress: number, ahead = 250) => {
     const total = cum[cum.length - 1] || 0;
-    const target = Math.max(0, Math.min(1, progress)) * total;
-    let i = 0;
-    while (i < cum.length - 1 && cum[i + 1] < target) i += 1;
-    const aheadTarget = Math.min(total, target + 150);
-    let j = i;
-    while (j < cum.length - 1 && cum[j] < aheadTarget) j += 1;
-    const here = coords[i];
-    const ahead = coords[Math.max(j, Math.min(i + 1, coords.length - 1))];
-    return { center: here, heading: here === ahead ? 0 : bearing(here, ahead), distanceM: target };
+    const d = Math.max(0, Math.min(1, progress)) * total;
+    return { center: pointAt(coords, cum, d), heading: lookHeading(coords, cum, d, ahead), distanceM: d };
 };
 
 export { cumulative };

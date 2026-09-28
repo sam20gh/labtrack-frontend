@@ -2,7 +2,10 @@
  * The geometry behind the replay, the poster and the route glyphs. The one that protects
  * somebody is the privacy trim: a shared picture must not start at their front door.
  */
-import { boundsOf, cumulative, replayFrame, routePath, trimForPrivacy } from '../replay';
+import {
+    boundsOf, cumulative, pointAt, replayDurationMs, replayFrame, routePath, trimForPrivacy, turnToward,
+    REPLAY_MAX_MS, REPLAY_MIN_MS,
+} from '../replay';
 import { elevationSeries } from '../trackMath';
 import { trailFromTrack, EMBER_DARK } from '../afterglow';
 
@@ -69,6 +72,32 @@ describe('the replay camera', () => {
         expect(half.distanceM).toBeCloseTo(cum[cum.length - 1] / 2, 3);
         expect(half.heading).toBeCloseTo(90, 0); // due east
         expect(replayFrame(coords, cum, 2).distanceM).toBeCloseTo(cum[cum.length - 1], 0);
+    });
+});
+
+describe('a smooth replay', () => {
+    it('glides between fixes instead of snapping to them', () => {
+        const coords = line(100, 50); // fixes at 0, 50, 100 m
+        const cum = cumulative(coords);
+        const mid = pointAt(coords, cum, 25);
+        expect(mid[0]).toBeGreaterThan(coords[0][0]);
+        expect(mid[0]).toBeLessThan(coords[1][0]);
+        expect(mid[0]).toBeCloseTo((coords[0][0] + coords[1][0]) / 2, 6);
+    });
+
+    it('turns the short way round north, and never faster than allowed', () => {
+        expect(turnToward(350, 10, 45)).toBeCloseTo(10);
+        expect(turnToward(10, 350, 45)).toBeCloseTo(350);
+        expect(turnToward(0, 170, 30)).toBeCloseTo(30);
+        expect(turnToward(0, 190, 30)).toBeCloseTo(330);
+        expect(turnToward(90, 91, 30)).toBeCloseTo(91);
+    });
+
+    it('takes longer for a longer route, within bounds', () => {
+        expect(replayDurationMs(0)).toBe(REPLAY_MIN_MS);
+        expect(replayDurationMs(5000)).toBe(21_000);
+        expect(replayDurationMs(25000)).toBe(REPLAY_MAX_MS); // the 80-minute ride
+        expect(replayDurationMs(200_000)).toBe(REPLAY_MAX_MS);
     });
 });
 

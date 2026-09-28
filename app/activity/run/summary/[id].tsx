@@ -1,10 +1,21 @@
 /**
  * After the run — the replay, then the poster (plan §2.4).
  *
- * 1. **Replay.** The camera pitches to 60° and flies the route while the Ember trail draws
- *    itself up to the dot and the numbers count up with it. About eight seconds; drag the
- *    scrubber to move through it, or skip. Reduce Motion, or a build without the map, goes
- *    straight to the poster — nothing the replay shows is lost there.
+ * 1. **Replay.** The camera pitches down and flies the route while the Ember trail draws
+ *    itself up to the dot and the numbers count up with it. 15–45 s, scaled to the distance
+ *    (`replayDurationMs`), at 1× or 2×; drag the scrubber to move through it, or skip.
+ *    Reduce Motion, or a build without the map, goes straight to the poster.
+ *
+ *    **How it stays smooth** — each of these fixed a judder the first version had on a real
+ *    80-minute ride:
+ *    - a `requestAnimationFrame` loop on real elapsed time, not a timer that drifts;
+ *    - the camera is driven through its ref (`setCamera`, ~30 Hz, each a short `linearTo`
+ *      the native side interpolates) rather than through props, which re-rendered the tree;
+ *    - the position is interpolated along the route, never snapped to the nearest fix;
+ *    - the heading looks along a chord ahead, and turns at a limited rate the short way
+ *      round (`turnToward`), so a bend is a sweep and north is not a 340° spin;
+ *    - React state (numbers, trail trim, scrubber) updates at ~20 Hz, and the dot is a screen
+ *      overlay at the camera's focus, so the map is never redrawn to move it.
  * 2. **The poster.** The route as neon line art on the violet, the distance huge, and Share.
  *    Privacy-trimmed: the first and last 250 m are not in the picture. Share is outside the
  *    captured view (anything inside would be in the image).
@@ -25,13 +36,13 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useReducedMotion } from 'react-native-reanimated';
 import { BodyFont, Fonts, Palettes, Radius, Spacing } from '@/constants/theme';
-import RunMap from '@/components/run/RunMap';
+import RunMap, { type CameraHandle } from '@/components/run/RunMap';
 import RoutePoster from '@/components/run/RoutePoster';
 import TickerNumber from '@/components/run/TickerNumber';
 import { getSession, getSessionTrack, updateSession, type ActivitySession } from '@/lib/activity';
 import { ApiError } from '@/lib/api';
 import { trailFromTrack, EMBER_DARK, withAlpha, type Trail } from '@/lib/run/afterglow';
-import { cumulative, replayFrame } from '@/lib/run/replay';
+import { cumulative, lookHeading, replayDurationMs, replayFrame, turnToward } from '@/lib/run/replay';
 import { lightPresetFor } from '@/lib/run/sun';
 import { mapUnavailableReason } from '@/lib/run/map';
 import { shareRunImage } from '@/lib/run/share';
@@ -39,8 +50,10 @@ import { distanceParts, formatClock, paceParts, TYPE_LABEL } from '@/lib/run/for
 import { TRACKABLE_TYPES, type Track, type TrackableType } from '@/lib/run/trackMath';
 import { formatEnergy, useUnits } from '@/lib/units';
 
-const REPLAY_MS = 8000;
-const FRAME_MS = 66; // ~15 fps: the camera animates linearly between frames, so it reads smooth
+const CAMERA_EVERY_MS = 33; // ~30 Hz, each a short linear animation the native side smooths
+const UI_EVERY_MS = 50; // ~20 Hz for the numbers, the trail trim and the scrubber
+const TURN_DEG_PER_S = 90; // at 1×; a bend becomes a sweep, never a snap
+const FOCUS_FROM_TOP = 0.38; // the camera's focus sits in the lower third, looking ahead
 const EFFORT_LABELS = ['', 'Very light', 'Light', 'Moderate', 'High effort', 'Maximum'];
 
 // The replay and the poster are a brand surface: dark, violet, Ember. Fixed in both schemes.
@@ -52,7 +65,7 @@ export default function RunSummary() {
     const router = useRouter();
     const units = useUnits();
     const insets = useSafeAreaInsets();
-    const { width } = useWindowDimensions();
+    const { width, height } = useWindowDimensions();
     const focused = useIsFocused();
     const reduceMotion = useReducedMotion();
 
@@ -62,6 +75,14 @@ export default function RunSummary() {
     const [stage, setStage] = useState<'loading' | 'replay' | 'poster'>('loading');
     const [progress, setProgress] = useState(0);
     const [playing, setPlaying] = useState(true);
+    const [speed, setSpeed] = useState<1 | 2>(1);
+    const cameraRef = useRef<CameraHandle>(null);
+    const progressRef = useRef(0);
+    const headingRef = useRef(0);
+    const playingRef = useRef(true);
+    const speedRef = useRef<1 | 2>(1);
+    playingRef.current = playing;
+    speedRef.current = speed;
     const [sharing, setSharing] = useState(false);
     const poster = useRef<View>(null);
 
@@ -95,14 +116,72 @@ export default function RunSummary() {
     );
     const cum = useMemo(() => cumulative(trail.coordinates), [trail.coordinates]);
 
-    // Autoplay: advance the progress on a timer; the camera animates between frames.
+    /**
+     * The flight plan, from the route's length: how long it takes, how fast the camera moves,
+     * and therefore how far ahead it looks and how high it flies. A fast camera close to the
+     * ground is a blur; one that looks only 150 m ahead at 500 m/s turns too late.
+     */
+    const plan = useMemo(() => {
+        const total = cum[cum.length - 1] || 0;
+        const durationMs = replayDurationMs(total);
+        const metresPerSec = total / (durationMs / 1000);
+        return {
+            total,
+            durationMs,
+            ahead: Math.max(150, Math.min(900, metresPerSec * 1.2)),
+            zoom: Math.max(14.3, Math.min(16.8, 17.2 - Math.log2(Math.max(1, metresPerSec / 40)))),
+            paddingTop: Math.round(height * FOCUS_FROM_TOP),
+        };
+    }, [cum, height]);
+
+    const startHeading = useMemo(
+        () => (trail.coordinates.length >= 2 ? lookHeading(trail.coordinates, cum, 0, plan.ahead) : 0),
+        [trail.coordinates, cum, plan.ahead],
+    );
+
+    /** Put the camera at `p` at once — a scrub, a restart. */
+    const snapTo = useCallback((p: number) => {
+        progressRef.current = p;
+        const f = replayFrame(trail.coordinates, cum, p, plan.ahead);
+        headingRef.current = f.heading;
+        cameraRef.current?.setCamera({ centerCoordinate: f.center, heading: f.heading, animationDuration: 0 });
+        setProgress(p);
+    }, [trail.coordinates, cum, plan.ahead]);
+
+    // The flight: one animation-frame loop for as long as the replay is on screen.
     useEffect(() => {
-        if (stage !== 'replay' || !playing) return undefined;
-        const id2 = setInterval(() => {
-            setProgress((p) => Math.min(1, p + FRAME_MS / REPLAY_MS));
-        }, FRAME_MS);
-        return () => clearInterval(id2);
-    }, [stage, playing]);
+        if (stage !== 'replay' || trail.coordinates.length < 2) return undefined;
+        headingRef.current = startHeading;
+        let raf = 0;
+        let last: number | null = null;
+        let lastCamera = 0;
+        let lastUi = 0;
+        const tick = (ts: number) => {
+            const dt = last == null ? 0 : Math.min(64, ts - last);
+            last = ts;
+            if (playingRef.current && progressRef.current < 1) {
+                progressRef.current = Math.min(1, progressRef.current + (dt * speedRef.current) / plan.durationMs);
+            }
+            const f = replayFrame(trail.coordinates, cum, progressRef.current, plan.ahead);
+            headingRef.current = turnToward(headingRef.current, f.heading, (TURN_DEG_PER_S * speedRef.current * dt) / 1000);
+            if (playingRef.current && ts - lastCamera >= CAMERA_EVERY_MS) {
+                lastCamera = ts;
+                cameraRef.current?.setCamera({
+                    centerCoordinate: f.center,
+                    heading: headingRef.current,
+                    animationDuration: CAMERA_EVERY_MS + 10,
+                    animationMode: 'linearTo',
+                });
+            }
+            if (ts - lastUi >= UI_EVERY_MS || progressRef.current >= 1) {
+                lastUi = ts;
+                setProgress(progressRef.current);
+            }
+            raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, [stage, trail.coordinates, cum, plan, startHeading]);
 
     // The end of an autoplay: a beat on the finished route, then the poster. A scrub to the
     // end does not trigger it — the person is looking at something.
@@ -157,10 +236,10 @@ export default function RunSummary() {
 
     // ---- replay ---------------------------------------------------------------------------
     if (stage === 'replay' && trail.coordinates.length >= 2) {
-        const frame = replayFrame(trail.coordinates, cum, progress);
-        const total = cum[cum.length - 1] || 1;
-        const shownDistance = distanceParts((session.distanceM ?? 0) * (frame.distanceM / total), units);
+        const shownDistance = distanceParts((session.distanceM ?? 0) * progress, units);
         const first = trail.coordinates[0];
+        // The camera keeps the current position at the centre of the padded viewport.
+        const focusY = plan.paddingTop + (height - plan.paddingTop) / 2;
         return (
             <View style={[styles.fill, { backgroundColor: P.canvas }]}>
                 {focused && <StatusBar style="light" />}
@@ -169,8 +248,17 @@ export default function RunSummary() {
                     trail={trail}
                     accent={EMBER_DARK[3]}
                     lightPreset={lightPresetFor(new Date(session.startedAt), first[1], first[0])}
-                    replay={{ center: frame.center, heading: frame.heading, progress, durationMs: FRAME_MS }}
+                    replay={{
+                        progress,
+                        start: { center: first, heading: startHeading, zoom: plan.zoom, paddingTop: plan.paddingTop },
+                    }}
+                    cameraRef={cameraRef}
                 />
+                {/* The rider: fixed on screen at the camera's focus, so the map never redraws to move it. */}
+                <View pointerEvents="none" style={[styles.dotWrap, { top: focusY - 22, left: width / 2 - 22 }]}>
+                    <View style={[styles.dotGlow, { backgroundColor: withAlpha(EMBER_DARK[3], 0.3) }]} />
+                    <View style={[styles.dotCore, { backgroundColor: EMBER_DARK[3], borderColor: HERO.white }]} />
+                </View>
                 <View style={[styles.replayTop, { paddingTop: insets.top + Spacing.md }]} pointerEvents="none">
                     <Text style={[styles.replayTitle, { color: HERO.white }]}>{title}</Text>
                     <View style={styles.row}>
@@ -182,13 +270,13 @@ export default function RunSummary() {
                 <View style={[styles.replayBottom, { paddingBottom: insets.bottom + Spacing.lg }]}>
                     <Scrubber
                         value={progress}
-                        onScrub={(v) => { setPlaying(false); setProgress(v); }}
+                        onScrub={(v) => { setPlaying(false); snapTo(v); }}
                         onRelease={() => undefined}
                     />
                     <View style={styles.replayActions}>
                         <Pressable
                             onPress={() => {
-                                if (progress >= 1) setProgress(0);
+                                if (progressRef.current >= 1) snapTo(0);
                                 setPlaying((p) => !p);
                             }}
                             style={styles.iconBtn}
@@ -196,6 +284,14 @@ export default function RunSummary() {
                             accessibilityLabel={playing ? 'Pause replay' : 'Play replay'}
                         >
                             <Ionicons name={playing ? 'pause' : 'play'} size={20} color={HERO.white} />
+                        </Pressable>
+                        <Pressable
+                            onPress={() => setSpeed((v) => (v === 1 ? 2 : 1))}
+                            style={[styles.pill, styles.ghost]}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Replay speed ${speed} times. Tap to change.`}
+                        >
+                            <Text style={styles.pillText}>{speed}×</Text>
                         </Pressable>
                         <Pressable onPress={() => setStage('poster')} style={[styles.pill, styles.ghost]} accessibilityRole="button">
                             <Text style={styles.pillText}>Skip</Text>
@@ -255,7 +351,7 @@ export default function RunSummary() {
                         )}
                     </Pressable>
                     {track && mapUnavailableReason() == null && (
-                        <Pressable onPress={() => { setProgress(0); setPlaying(true); setStage('replay'); }} style={[styles.share, styles.ghost]} accessibilityRole="button">
+                        <Pressable onPress={() => { progressRef.current = 0; setProgress(0); setPlaying(true); setStage('replay'); }} style={[styles.share, styles.ghost]} accessibilityRole="button">
                             <Ionicons name="refresh" size={18} color={HERO.white} />
                             <Text style={styles.pillText}>Replay</Text>
                         </Pressable>
@@ -336,6 +432,9 @@ const styles = StyleSheet.create({
     replayClock: { ...BodyFont.semibold, fontSize: 18, fontVariant: ['tabular-nums'], opacity: 0.85 },
     replayBottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: Spacing.xl, gap: Spacing.lg },
     replayActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    dotWrap: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    dotGlow: { position: 'absolute', width: 44, height: 44, borderRadius: 22 },
+    dotCore: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
     iconBtn: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: withAlpha(P.canvas, 0.55) },
     scrub: { height: 32, justifyContent: 'center' },
     scrubTrack: { height: 4, borderRadius: 2, overflow: 'hidden' },
