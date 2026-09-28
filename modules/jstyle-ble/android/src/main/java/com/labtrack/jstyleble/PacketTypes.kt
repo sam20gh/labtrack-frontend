@@ -25,6 +25,8 @@ internal object PacketTypes {
         "11" to "version",
         "15" to "deviceName",
         "63" to "macAddress",
+        "16" to "autoMonitoring",
+        "17" to "autoMonitoringSet",
 
         // ── history ─────────────────────────────────────────────────────────
         "23" to "realTimeStep",
@@ -65,6 +67,9 @@ internal object PacketTypes {
         "73" to "deviceMeasurementHrv",
         "74" to "deviceMeasurementHr",
         "75" to "deviceMeasurementSpo2",
+        "76" to "measurementStopped",
+        "77" to "measurementStopped",
+        "78" to "measurementStopped",
 
         // ── unprompted ──────────────────────────────────────────────────────
         "31" to "deviceSendData",

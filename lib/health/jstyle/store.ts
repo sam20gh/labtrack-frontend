@@ -29,6 +29,34 @@ export interface PairedBracelet {
     lastBattery?: number;
     /** The bracelet's MAC, which *is* stable and identifies the hardware across phones. */
     mac?: string;
+    /**
+     * When the bracelet's own timed readings were switched on. Unset means never, and the
+     * next sync does it — which is how a band paired before this existed gets it too.
+     */
+    monitoringSetAt?: string;
+    /** The newest reading of each kind the last sync brought over. */
+    latest?: LatestReadings;
+}
+
+/** One reading and when the bracelet took it. */
+export interface Stamped<T = number> {
+    value: T;
+    at: string;
+}
+
+/**
+ * The newest of each family, kept on the phone so the bracelet screen can show them
+ * without a round trip — the same reason `lastBattery` is here. Absent families stay
+ * absent: a V8 has no axillary temperature and a band that measured no SpO2 today has not
+ * measured 0%.
+ */
+export interface LatestReadings {
+    heartRate?: Stamped;
+    spo2?: Stamped;
+    temperature?: Stamped;
+    hrv?: Stamped;
+    bloodPressure?: Stamped<{ systolic: number; diastolic: number }>;
+    steps?: Stamped;
 }
 
 let cached: PairedBracelet | null | undefined;

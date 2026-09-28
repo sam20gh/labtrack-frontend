@@ -3,9 +3,13 @@ package com.labtrack.jstyleble
 import android.util.Base64
 import com.jstyle.blesdk2208a.Util.BleSDK as Sdk2208A
 import com.jstyle.blesdk2208a.callback.DataListener2025
+import com.jstyle.blesdk2208a.model.AutoMode as AutoMode2208A
 import com.jstyle.blesdk2208a.model.MyPersonalInfo as PersonalInfo2208A
 import com.jstyle.blesdkv8.Util.BleSDK as SdkV8
 import com.jstyle.blesdkv8.callback.DataListener2301
+import com.jstyle.blesdkv8.model.AutoMode as AutoModeV8
+import com.jstyle.blesdkv8.model.AutoTestMode as AutoTestModeV8
+import com.jstyle.blesdkv8.model.MyAutomaticHRMonitoring as AutoMonitoringV8
 import com.jstyle.blesdkv8.model.MyPersonalInfo as PersonalInfoV8
 
 /**
@@ -75,7 +79,7 @@ internal object Codec {
             "getStaticHr", "getDynamicHr", "getHrv",
             "getAutoSpo2", "getManualSpo2",
             "getTemperature", "getAxillaryTemperature",
-            "ppg",
+            "ppg", "liveData", "measure", "setAutoMonitoring",
         ),
         "v8" to listOf(
             "getDeviceTime", "setDeviceTime", "getPersonalInfo", "setPersonalInfo",
@@ -86,7 +90,7 @@ internal object Codec {
             "getAutoSpo2",
             // No `getAxillaryTemperature`: the V8 SDK has no such command.
             "getTemperature",
-            "ppg",
+            "ppg", "liveData", "measure", "setAutoMonitoring",
         ),
     )
 
@@ -129,6 +133,18 @@ internal object Codec {
             "getTemperature" -> Sdk2208A.GetTemperature_historyDataWithMode(mode, date)
             "getAxillaryTemperature" -> Sdk2208A.GetAxillaryTemperatureDataWithMode(mode, date)
             "ppg" -> Sdk2208A.OpenECGPPG(intArg(args, "ppgMode", 1), intArg(args, "ppgStatus", 0))
+            // Temperature rides along with the steps and heart rate only when asked for.
+            "liveData" -> boolArg(args, "live").let { Sdk2208A.RealTimeStep(it, it) }
+            // The 2208A numbers these 1 HRV, 2 HR, 3 SpO2 and measures for as long as the
+            // firmware decides; it takes no duration.
+            "measure" -> Sdk2208A.StartDeviceMeasurementWithType(
+                when (args["measure"]) { "hrv" -> 1; "spo2" -> 3; else -> 2 },
+                boolArg(args, "open"),
+            )
+            "setAutoMonitoring" -> intArg(args, "intervalMinutes", 0).let { minutes ->
+                // All day, every day: the SDK hard-codes 00:00–23:59 and all seven days.
+                Sdk2208A.SetAutomatic(minutes > 0, minutes, autoMode2208A(args["monitor"]))
+            }
             else -> throw IllegalArgumentException("Unhandled command '$cmd'.")
         }
 
@@ -151,6 +167,20 @@ internal object Codec {
             "getAutoSpo2" -> SdkV8.Oxygen_data(mode, date)
             "getTemperature" -> SdkV8.GetTemperature_historyData(mode, date)
             "ppg" -> SdkV8.ppgWithMode(intArg(args, "ppgMode", 1), intArg(args, "ppgStatus", 0))
+            "liveData" -> boolArg(args, "live").let { SdkV8.RealTimeStep(it, it) }
+            "measure" -> SdkV8.SetDeviceMeasurementWithType(
+                when (args["measure"]) {
+                    "hrv" -> AutoTestModeV8.AutoHRV
+                    "spo2" -> AutoTestModeV8.AutoSpo2
+                    else -> AutoTestModeV8.AutoHeartRate
+                },
+                intArg(args, "seconds", 60).toLong(),
+                boolArg(args, "open"),
+            )
+            "setAutoMonitoring" -> SdkV8.SetAutomaticHRMonitoring(
+                autoMonitoringV8(intArg(args, "intervalMinutes", 0)),
+                autoModeV8(args["monitor"]),
+            )
             else -> throw IllegalArgumentException("Unhandled command '$cmd'.")
         }
 
@@ -214,6 +244,40 @@ internal object Codec {
 
     private fun intArg(args: Map<String, Any?>, key: String, fallback: Int): Int =
         (args[key] as? Number)?.toInt() ?: fallback
+
+    private fun boolArg(args: Map<String, Any?>, key: String): Boolean = args[key] == true
+
+    private fun autoMode2208A(monitor: Any?) = when (monitor) {
+        "spo2" -> AutoMode2208A.AutoSpo2
+        "hrv" -> AutoMode2208A.AutoHrv
+        "temperature" -> AutoMode2208A.AutoTemp
+        else -> AutoMode2208A.AutoHeartRate
+    }
+
+    private fun autoModeV8(monitor: Any?) = when (monitor) {
+        "spo2" -> AutoModeV8.AutoSpo2
+        "hrv" -> AutoModeV8.AutoHrv
+        "temperature" -> AutoModeV8.AutoTemp
+        else -> AutoModeV8.AutoHeartRate
+    }
+
+    /**
+     * All day, every day, one reading every `minutes`.
+     *
+     * Mode 2 is "at intervals within the window" and 0 is off; 1 would measure continuously
+     * across the window, which is the battery drain nobody asked for. The week is a bitmask
+     * with one bit per day, so 127 is all seven — the value the vendor demo builds from its
+     * day picker when every day is ticked.
+     */
+    private fun autoMonitoringV8(minutes: Int) = AutoMonitoringV8().apply {
+        open = if (minutes > 0) 2 else 0
+        startHour = 0
+        startMinute = 0
+        endHour = 23
+        endMinute = 59
+        week = 127
+        time = minutes
+    }
 
     private fun deviceTime2208A() = com.jstyle.blesdk2208a.model.MyDeviceTime().apply {
         val now = java.util.Calendar.getInstance()

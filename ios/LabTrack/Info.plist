@@ -51,6 +51,10 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>LabTrack uses Bluetooth to sync activity, sleep and heart data from your health bracelet.</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>LabTrack uses Bluetooth to sync activity, sleep and heart data from your health bracelet.</string>
     <key>NSCameraUsageDescription</key>
     <string>LabTrack needs camera access so you can photograph a lab report or show the assistant a symptom.</string>
     <key>NSHealthShareUsageDescription</key>

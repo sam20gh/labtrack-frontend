@@ -16,7 +16,7 @@
  * replay is idempotent.
  */
 import {
-    capabilities, isAvailable, type JstyleVariant,
+    capabilities, isAvailable, supports, type JstyleVariant,
 } from '@/modules/jstyle-ble';
 import type {
     HealthCapability, HealthReader, SyncBatch, SourceDevice,
@@ -24,7 +24,24 @@ import type {
 import * as transport from './transport';
 import * as session from './session';
 import * as map from './mapping';
-import { getPaired, updatePaired, type PairedBracelet } from './store';
+import {
+    getPaired, updatePaired, type LatestReadings, type PairedBracelet, type Stamped,
+} from './store';
+import { isLive } from './live';
+
+/**
+ * The bracelet's own timed readings, switched on once per pairing.
+ *
+ * Without this a band takes no spot readings between syncs — only the continuous heart
+ * stream, which is a day's spread and has no resting figure — so the Health Metrics card
+ * had nothing newer than a phone reading to show. Heart rate every ten minutes is what the
+ * vendor app ships with; SpO2 hourly because a reading is a thirty-second optical sweep and
+ * doing it more often is most of the battery.
+ */
+const MONITORING: { monitor: 'hr' | 'spo2'; intervalMinutes: number }[] = [
+    { monitor: 'hr', intervalMinutes: 10 },
+    { monitor: 'spo2', intervalMinutes: 60 },
+];
 
 export const LABEL = 'Health bracelet';
 
@@ -116,6 +133,9 @@ const deviceFor = (paired: PairedBracelet): SourceDevice => ({
 const readSince = async (cursor: string | null): Promise<SyncBatch> => {
     const paired = await getPaired();
     if (!paired) throw new Error('No bracelet is paired.');
+    // The live view holds the one connection these bracelets allow, and a sync would
+    // disconnect it mid-reading. The screen syncs itself when live view closes.
+    if (isLive()) throw new Error('Live view is open — it will sync when you close it.');
 
     const { variant } = paired;
     const ctx: map.MapContext = { deviceId: paired.id, variant, device: deviceFor(paired) };
@@ -149,6 +169,13 @@ const readSince = async (cursor: string | null): Promise<SyncBatch> => {
         const battery = map.readBattery((await session.ask(variant, 'getBattery')).packets);
         if (battery !== null) await updatePaired({ lastBattery: battery });
 
+        if (!paired.monitoringSetAt && supports(variant, 'setAutoMonitoring')) {
+            for (const setting of MONITORING) {
+                await session.ask(variant, 'setAutoMonitoring', setting);
+            }
+            await updatePaired({ monitoringSetAt: new Date().toISOString() });
+        }
+
         const read = (command: Parameters<typeof session.readSeries>[1]) =>
             session.readSeries(variant, command);
 
@@ -179,9 +206,50 @@ const readSince = async (cursor: string | null): Promise<SyncBatch> => {
         session.reset(variant);
     }
 
-    await updatePaired({ lastSyncAt: batch.cursor ?? undefined });
+    // From the whole replay, not the filtered batch: the newest reading is worth showing
+    // even when the server already has it.
+    await updatePaired({ lastSyncAt: batch.cursor ?? undefined, latest: latestOf(batch, paired.latest) });
     return since ? dropOlderThan(batch, since) : batch;
 };
+
+/** The newest of `rows` by `at`, or the one already held when that is newer. */
+const newest = <R, T>(
+    rows: R[] | undefined, at: (r: R) => string, value: (r: R) => T, held?: Stamped<T>,
+): Stamped<T> | undefined => {
+    let best = held;
+    for (const row of rows ?? []) {
+        const when = at(row);
+        if (!best || when > best.at) best = { value: value(row), at: when };
+    }
+    return best;
+};
+
+/**
+ * The newest reading of each family.
+ *
+ * Merged with what was held rather than replacing it, because the bracelet frees what an
+ * acknowledged sync read, and the next replay can be empty of a family it measured
+ * yesterday. Losing yesterday's SpO2 from the screen because nothing new arrived would be
+ * the screen forgetting, not the bracelet.
+ */
+const latestOf = (batch: SyncBatch, held: LatestReadings = {}): LatestReadings => ({
+    heartRate: newest(batch.heart, (r) => r.measuredAt, (r) => r.bpm, held.heartRate),
+    spo2: newest(batch.spo2, (r) => r.measuredAt, (r) => r.spo2, held.spo2),
+    temperature: newest(
+        batch.temperature?.filter((r) => r.site === 'wrist'),
+        (r) => r.measuredAt, (r) => r.celsius, held.temperature,
+    ),
+    hrv: newest(
+        batch.days.filter((d) => d.hrvMs != null), (d) => d.day, (d) => d.hrvMs!, held.hrv,
+    ),
+    bloodPressure: newest(
+        batch.bloodPressure, (r) => r.measuredAt,
+        (r) => ({ systolic: r.systolic, diastolic: r.diastolic }), held.bloodPressure,
+    ),
+    steps: newest(
+        batch.days.filter((d) => d.steps != null), (d) => d.day, (d) => d.steps!, held.steps,
+    ),
+});
 
 /**
  * Drop what the server has already seen.

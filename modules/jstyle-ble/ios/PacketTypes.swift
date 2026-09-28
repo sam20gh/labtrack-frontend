@@ -19,6 +19,7 @@ enum JstylePacketTypes {
     static let j2208a: [Int: String] = [
         0: "deviceTime", 2: "personalInfo", 4: "deviceInfo",
         9: "battery", 10: "macAddress", 11: "version", 15: "deviceName",
+        17: "autoMonitoring", 18: "autoMonitoringSet",
         24: "realTimeStep", 25: "totalActivity", 26: "detailActivity", 27: "detailSleep",
         28: "dynamicHr", 29: "staticHr", 30: "activityModeData",
         33: "deviceSendData", 38: "hrv",
@@ -38,6 +39,7 @@ enum JstylePacketTypes {
     static let v8: [Int: String] = [
         0: "deviceTime", 2: "personalInfo", 4: "deviceInfo",
         9: "battery", 10: "macAddress", 11: "version", 15: "deviceName",
+        17: "autoMonitoring", 18: "autoMonitoringSet",
         24: "realTimeStep", 25: "totalActivity", 26: "detailActivity", 27: "detailSleep",
         28: "dynamicHr", 29: "staticHr", 30: "activityModeData",
         36: "deviceSendData", 41: "hrv",
@@ -48,7 +50,7 @@ enum JstylePacketTypes {
         58: "deviceMeasurementHr", 59: "deviceMeasurementHrv", 60: "deviceMeasurementSpo2",
         70: "ppgRaw", 71: "ppgStarted", 72: "ppgStartFailed", 73: "ppgResult",
         74: "ppgStopped", 75: "ppgStopped", 76: "ppgProgress",
-        81: "detailSleep",
+        80: "deviceMeasurement", 81: "detailSleep",
         255: "error",
     ]
 

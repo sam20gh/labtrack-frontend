@@ -403,7 +403,7 @@ export const deleteSession = (id: string) =>
 export interface WearableStatus {
     sources: {
         id: string;
-        platform: 'apple_health' | 'health_connect' | 'aggregator';
+        platform: 'apple_health' | 'health_connect' | 'aggregator' | 'jstyle_bracelet';
         providerLabel?: string;
         permissions: string[];
         devices: { name?: string; model?: string; manufacturer?: string; lastSeenAt?: string }[];

@@ -42,6 +42,8 @@ import DevicePhoto, { hasPhoto } from '@/components/bracelet/DevicePhoto';
 import StatusChips from '@/components/bracelet/StatusChips';
 import DiscoveredRow from '@/components/bracelet/DiscoveredRow';
 import ReadsList from '@/components/bracelet/ReadsList';
+import LatestReadings from '@/components/bracelet/LatestReadings';
+import LivePanel from '@/components/bracelet/LivePanel';
 
 /**
  * How long a scan runs before stopping on its own.
@@ -70,6 +72,7 @@ export default function BraceletScreen() {
     const [connecting, setConnecting] = useState<string | null>(null);
     const [syncing, setSyncing] = useState(false);
     const [note, setNote] = useState<string | null>(null);
+    const [liveOn, setLiveOn] = useState(false);
 
     const stopScan = useRef<(() => void) | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -295,9 +298,14 @@ export default function BraceletScreen() {
                         ? <Paired
                             device={paired}
                             syncing={syncing}
+                            liveOn={liveOn}
                             note={note}
                             onSync={() => sync()}
                             onForget={forget}
+                            onLiveChange={setLiveOn}
+                            // Closing live view is the moment to bring over whatever the
+                            // bracelet recorded meanwhile, and to refresh the tiles.
+                            onLiveStopped={() => { void sync(true); }}
                         />
                         : <Unpaired
                             scanning={scanning}
@@ -327,13 +335,16 @@ const relative = (iso?: string): string => {
 };
 
 const Paired = ({
-    device, syncing, note, onSync, onForget,
+    device, syncing, liveOn, note, onSync, onForget, onLiveChange, onLiveStopped,
 }: {
     device: PairedBracelet;
     syncing: boolean;
+    liveOn: boolean;
     note: string | null;
     onSync: () => void;
     onForget: () => void;
+    onLiveChange: (on: boolean) => void;
+    onLiveStopped: () => void;
 }) => {
     const Palette = usePalette();
     const styles = useStyles();
@@ -357,12 +368,12 @@ const Paired = ({
 
             <Pressable
                 onPress={onSync}
-                disabled={syncing}
+                disabled={syncing || liveOn}
                 accessibilityRole="button"
                 style={({ pressed }) => [
                     styles.primary,
                     pressed && styles.primaryPressed,
-                    syncing && styles.disabled,
+                    (syncing || liveOn) && styles.disabled,
                 ]}
             >
                 {syncing
@@ -370,6 +381,10 @@ const Paired = ({
                     : <Ionicons name="sync" size={18} color={Palette.white} />}
                 <Text style={styles.primaryLabel}>{syncing ? 'Syncing…' : 'Sync now'}</Text>
             </Pressable>
+
+            <LatestReadings latest={device.latest} />
+
+            <LivePanel busy={syncing} onLiveChange={onLiveChange} onStopped={onLiveStopped} />
 
             {/*
               * Destructive as a text link rather than a second filled button, exactly as the

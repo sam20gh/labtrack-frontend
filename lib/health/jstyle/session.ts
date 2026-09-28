@@ -105,11 +105,22 @@ export const makePacketHandler = (variant: JstyleVariant) => (base64: string): v
  * result and the rows in it are as good as the rows in a complete one, so the caller
  * decides what a short read means rather than losing what arrived.
  */
+/**
+ * Which packets count as this command's reply.
+ *
+ * Needed once the bracelet is streaming: live data arrives every second on the same
+ * characteristic, and without a filter the first live packet after a `measure` would be
+ * taken as its answer. Anything the filter refuses goes to `onUnsolicited`, where the live
+ * screen is listening for exactly those packets.
+ */
+type Accepts = (packet: JstylePacket) => boolean;
+
 const exchange = async (
     variant: JstyleVariant,
     command: JstyleCommand,
     args: Parameters<typeof buildCommand>[2],
     maxPackets: number,
+    accepts?: Accepts,
 ): Promise<ReadResult> => {
     const packets: JstylePacket[] = [];
     let complete = false;
@@ -139,7 +150,7 @@ const exchange = async (
         activeSink = (packet) => {
             // A reply to something else entirely — most often a button press mid-read.
             // Passed on rather than counted, so it cannot end this read early.
-            if (packet.type === 'unknown' && !packets.length) {
+            if ((packet.type === 'unknown' && !packets.length) || (accepts && !accepts(packet))) {
                 unsolicited?.(packet);
                 return;
             }
@@ -220,7 +231,23 @@ export const ask = (
     variant: JstyleVariant,
     command: JstyleCommand,
     args: Parameters<typeof buildCommand>[2] = {},
-): Promise<ReadResult> => exclusive(() => exchange(variant, command, args, PACKETS_PER_BATCH));
+    accepts?: Accepts,
+): Promise<ReadResult> => exclusive(
+    () => exchange(variant, command, args, PACKETS_PER_BATCH, accepts),
+);
+
+/**
+ * Write a command and wait for nothing.
+ *
+ * For the ones whose reply either never comes or is not worth eight seconds of a person
+ * watching a spinner — stopping a stream, stopping a measurement. Still inside the mutex,
+ * because building the bytes touches the codec's flags as surely as a read does.
+ */
+export const send = (
+    variant: JstyleVariant,
+    command: JstyleCommand,
+    args: Parameters<typeof buildCommand>[2] = {},
+): Promise<void> => exclusive(() => transport.write(buildCommand(variant, command, args)));
 
 /**
  * Tell the bracelet a series is safely stored, so it can free the space.

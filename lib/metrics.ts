@@ -23,7 +23,8 @@ export const today = (): string => {
 };
 
 export type MetricKey =
-    | 'weight' | 'blood_pressure' | 'heart_rate' | 'sleep' | 'hydration' | 'steps';
+    | 'weight' | 'blood_pressure' | 'heart_rate' | 'spo2' | 'temperature'
+    | 'sleep' | 'hydration' | 'steps';
 
 /** The three that accept a manual entry. The rest are device-fed. */
 export type LoggableKind = 'weight' | 'water' | 'blood-pressure';
@@ -219,6 +220,10 @@ export const METRIC_ICON: Record<MetricKey, string> = {
     weight: 'barbell-outline',
     blood_pressure: 'pulse-outline',
     heart_rate: 'heart-outline',
+    // Filled, where hydration's drop is an outline: a blood drop, not a glass of water. The
+    // colour and the label carry the rest.
+    spo2: 'water',
+    temperature: 'thermometer-outline',
     sleep: 'moon-outline',
     hydration: 'water-outline',
     steps: 'walk-outline',
@@ -248,19 +253,40 @@ export const METRIC_ICON: Record<MetricKey, string> = {
  * It deliberately sits above the validator's dark lightness band (L 0.70–0.80 against a 0.67
  * ceiling). That band stops an area fill dominating a chart; these are glyphs, sparkline
  * strokes and labelled marks, which have to be bright enough to read on near-black.
+ *
+ * **SpO2 is the one tint whose hue moves between schemes**, and it was searched, not picked.
+ * Light `#911342` (wine) clears all six plus `danger`, `warning`, `success`, `info`, `alert`,
+ * the brand and prediction's calories orange: ≥14.2 CVD, ≥16.8 normal. No dark tint within
+ * ±24° of it clears 15 normal-vision — heart rate's pink and `danger` hold that corner — so
+ * dark takes `#C340DB` (magenta), 15.5 normal / 11.4 CVD against everything on the metrics
+ * screen, 4.35:1 on the card. Keeping the hue would have meant a pair below the one floor
+ * secondary encoding does not excuse. Both were run through `validate_palette.js`; the
+ * failures `--pairs all` still reports are pairs that predate it.
+ *
+ * **Temperature has no hue, because there is none left.** Searched the same way against the
+ * seven here plus the brand, with the floors split — ≥15 normal-vision against everything,
+ * ≥8 CVD against its list neighbours and ≥6 against the rest. In light mode the only passes
+ * were the brand's own lavender and a band of oranges, and every one of those oranges sits
+ * within 8 of `warning` (#B45309): an orange thermometer on a health screen reads as an
+ * alert, and status colours are reserved. So it takes `textSecondary`, the ink this app
+ * gives any glyph that is not an action — the skill's "fold it, don't invent a hue". An
+ * eighth *hue* would have to come from re-stepping the whole set, not from squeezing one in.
  */
-const METRIC_TINTS: Record<'light' | 'dark', Record<MetricKey, string>> = {
+const METRIC_TINTS: Record<'light' | 'dark', Record<Exclude<MetricKey, 'temperature'>, string>> = {
     light: {
-        weight: '#F59E0B', blood_pressure: '#0C6EA0', heart_rate: '#FB7185',
+        weight: '#F59E0B', blood_pressure: '#0C6EA0', heart_rate: '#FB7185', spo2: '#911342',
         sleep: '#6366F1', hydration: '#38BDF8', steps: '#10B981',
     },
     dark: {
-        weight: '#F59E0B', blood_pressure: '#54D0EC', heart_rate: '#DF76AC',
+        weight: '#F59E0B', blood_pressure: '#54D0EC', heart_rate: '#DF76AC', spo2: '#C340DB',
         sleep: '#A3BBFF', hydration: '#20B2C4', steps: '#59B934',
     },
 };
 
-export const METRIC_TINT = schemed((_, scheme) => ({ ...METRIC_TINTS[scheme] }));
+export const METRIC_TINT = schemed((Palette, scheme): Record<MetricKey, string> => ({
+    ...METRIC_TINTS[scheme],
+    temperature: Palette.textSecondary,
+}));
 
 /** Which detail route a card opens. Device-fed metrics point at their own trackers. */
 export const METRIC_ROUTE: Record<MetricKey, string> = {
@@ -268,6 +294,9 @@ export const METRIC_ROUTE: Record<MetricKey, string> = {
     blood_pressure: '/metrics/blood-pressure',
     hydration: '/metrics/water',
     heart_rate: '/activity',
+    // The bracelet screen, where the latest reading is and a new one can be taken.
+    spo2: '/bracelet',
+    temperature: '/bracelet',
     sleep: '/sleep/record',
     steps: '/activity',
 };

@@ -145,8 +145,22 @@ const EMPTY_SCORE: HealthScore = {
     bands: [],
 };
 
-/** The six the kit's carousel shows, in its order. Anything the server omits drops out. */
-const METRIC_ORDER = ['heart_rate', 'blood_pressure', 'weight', 'sleep', 'hydration', 'steps'] as const;
+/**
+ * The six the kit's carousel shows, in its order, plus the bracelet's blood oxygen and
+ * temperature beside heart rate.
+ * Anything the server omits drops out.
+ */
+const METRIC_ORDER = [
+    'heart_rate', 'spo2', 'temperature', 'blood_pressure', 'weight', 'sleep', 'hydration', 'steps',
+] as const;
+
+/**
+ * Only a bracelet measures blood oxygen and temperature, so their cards are earned by a
+ * reading rather than shown to everyone as an empty "Connect a bracelet" — the rule every
+ * other section of this screen follows. The kit's six keep their empty states, as they
+ * always have.
+ */
+const EARNED_METRICS = new Set<string>(['spo2', 'temperature']);
 
 /**
  * The Symptom Checker card's "Most Common" rail. The kit's chips read "headache / fever /
@@ -570,7 +584,8 @@ export default function HomeScreen() {
     const metricCards = useMemo(
         () => METRIC_ORDER
             .map((key) => metrics.find((m) => m.key === key))
-            .filter((m): m is MetricCardData => Boolean(m)),
+            .filter((m): m is MetricCardData => Boolean(m))
+            .filter((m) => !EARNED_METRICS.has(m.key) || m.value !== null),
         [metrics],
     );
 

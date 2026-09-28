@@ -48,7 +48,24 @@ export type JstyleCommand =
     | 'getTemperature'
     | 'getAxillaryTemperature'
     // ── live measurement, driven by a screen someone is looking at ──────────
-    | 'ppg';
+    | 'ppg'
+    /** Start or stop the bracelet streaming steps, heart rate and temperature. `live`. */
+    | 'liveData'
+    /** Start or stop a spot measurement on the bracelet. `measure`, `open`, `seconds`. */
+    | 'measure'
+    // ── settings ────────────────────────────────────────────────────────────
+    /**
+     * Turn on the bracelet's own timed readings for one family. `monitor`,
+     * `intervalMinutes`. Without it a band takes no spot readings between syncs, and a
+     * resting heart rate never exists to be shown.
+     */
+    | 'setAutoMonitoring';
+
+/** What a spot measurement measures. Encoded differently by each SDK — see the codecs. */
+export type JstyleMeasure = 'hr' | 'spo2' | 'hrv';
+
+/** A family the bracelet can sample on its own timer. */
+export type JstyleMonitor = 'hr' | 'spo2' | 'hrv' | 'temperature';
 
 /**
  * Where a history read is in its conversation.
@@ -102,7 +119,8 @@ export type JstylePacketType =
     | 'ecgHistory' | 'ecgRaw' | 'ecgResult' | 'ecgStatus' | 'ecgFailed'
     | 'ppgRaw' | 'ppgResult' | 'ppgProgress' | 'ppgStarted' | 'ppgStartFailed' | 'ppgStopped'
     | 'deviceMeasurementHr' | 'deviceMeasurementHrv' | 'deviceMeasurementSpo2'
-    | 'deviceMeasurementTemperature'
+    | 'deviceMeasurementTemperature' | 'deviceMeasurement' | 'measurementStopped'
+    | 'autoMonitoring' | 'autoMonitoringSet'
     | 'sos' | 'findPhone' | 'deviceSendData'
     | 'error'
     /** A packet this build has no name for. Reported, never guessed at. */
@@ -119,6 +137,18 @@ export interface JstyleCommandArgs {
     /** `ppg`: 1 start, 2 send result, 3 stop, 4 progress, 5 quit. */
     ppgMode?: number;
     ppgStatus?: number;
+    /** `liveData`: stream on or off. */
+    live?: boolean;
+    /** `measure`: which reading. */
+    measure?: JstyleMeasure;
+    /** `measure`: start (true) or stop (false). */
+    open?: boolean;
+    /** `measure`: how long the bracelet measures for. The iOS SDK's floor is 30. */
+    seconds?: number;
+    /** `setAutoMonitoring`: which family. */
+    monitor?: JstyleMonitor;
+    /** `setAutoMonitoring`: minutes between readings. 0 turns the family off. */
+    intervalMinutes?: number;
 }
 
 /**
