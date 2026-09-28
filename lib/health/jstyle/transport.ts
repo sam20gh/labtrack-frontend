@@ -10,8 +10,14 @@
  *
  * Both bracelets expose one service, `fff0`, with a write characteristic at `fff6` and a
  * notify characteristic at `fff7`. Read out of the vendor demos — `BleService.java` on
- * Android names all three, and the iOS demos scan for `0xfff0` — rather than guessed, and
- * identical across the 2208A and the V8 because they are the same vendor's firmware.
+ * Android names all three — rather than guessed, and identical across the 2208A and the V8
+ * because they are the same vendor's firmware.
+ *
+ * **The service is there once connected, not in the advertisement.** The V8 does not put
+ * `fff0` in what it broadcasts, so a scan filtered on it never hears the bracelet at all —
+ * no error, just an empty list, while the maker's app finds it instantly. Both vendor demos
+ * scan with no filter (`startScan(null, …)` on Android, `startScanningWithServices:nil` on
+ * iOS) and pick the bracelet out by name, which is what `scan` below does too.
  *
  * ## One device at a time
  *
@@ -22,7 +28,7 @@
  * of.
  */
 import { BleManager, Device, Characteristic, Subscription, State } from 'react-native-ble-plx';
-import { Platform } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
 
 import type { JstyleVariant } from '@/modules/jstyle-ble';
 
@@ -36,16 +42,26 @@ export const GATT = {
 /**
  * How a bracelet advertises itself.
  *
- * The vendor ships these under many retail names, so the match is on the GATT service
- * rather than on the name — a filter on "J-Style" would miss most of the boxes the same
- * hardware is sold in. The names below only pick the *variant* once a device is found, and
- * an unrecognised name is not an error: `identify` falls back to asking the person, because
- * a wrong guess pairs the device against the wrong SDK and every reading after that is
- * decoded with the wrong table.
+ * The vendor ships these under many retail names, and the advertisement does not carry the
+ * service (see the header), so recognition is a name match with the service as a bonus for
+ * firmware that does advertise it. `2301` is the V8's internal model number — its SDK is
+ * `blesdk_2301` — and JCVital is the brand the V8 ships under today.
+ *
+ * A name that matches nothing is not discarded; it is reported as unrecognised, because the
+ * next retail box will carry a name nobody has seen yet and the person must still be able
+ * to reach it. `connect` refuses anything without the vendor's data channel, so picking the
+ * wrong one costs a clear error rather than a bad pairing.
+ */
+const BRACELET_NAME = /2208|2301|\bv8\b|j-?style|jcvital|predyqt/i;
+
+/**
+ * Which model a name means. Separate from recognition on purpose, and narrower: a wrong
+ * guess pairs the device against the wrong SDK and every reading after that is decoded with
+ * the wrong table, so anything short of a model number falls back to asking the person.
  */
 const NAME_HINTS: { pattern: RegExp; variant: JstyleVariant }[] = [
     { pattern: /2208|j-?style\s*2208/i, variant: 'j2208a' },
-    { pattern: /\bv8\b|jstyle\s*v8/i, variant: 'v8' },
+    { pattern: /2301|\bv8\b|jstyle\s*v8/i, variant: 'v8' },
 ];
 
 export interface DiscoveredBracelet {
@@ -54,6 +70,11 @@ export interface DiscoveredBracelet {
     rssi: number | null;
     /** Null when the advertisement does not say. The pairing screen then asks. */
     variant: JstyleVariant | null;
+    /**
+     * Advertises the vendor service or carries a known bracelet name. False for any other
+     * named device nearby, which the pairing screen keeps behind a "show others" control.
+     */
+    recognised: boolean;
 }
 
 export const identify = (name: string | null): JstyleVariant | null => {
@@ -115,13 +136,46 @@ export const scanBlockedReason = async (): Promise<string | null> => {
 };
 
 /**
+ * Ask for Android's "Nearby devices" permission.
+ *
+ * The manifest declaring it is not enough: from Android 12 it is a runtime grant, and
+ * `react-native-ble-plx` never asks — a scan without it fails as "Unauthorized". Below 12
+ * the scan needs location instead. Called from the pairing screen's button, never earlier,
+ * for the same reason `getManager` is lazy. iOS asks by itself on the first scan.
+ */
+export const requestScanPermission = async (): Promise<boolean> => {
+    if (Platform.OS !== 'android') return true;
+
+    const { PERMISSIONS, RESULTS } = PermissionsAndroid;
+    const wanted = Number(Platform.Version) >= 31
+        ? [PERMISSIONS.BLUETOOTH_SCAN, PERMISSIONS.BLUETOOTH_CONNECT]
+        : [PERMISSIONS.ACCESS_FINE_LOCATION];
+
+    try {
+        const result = await PermissionsAndroid.requestMultiple(wanted);
+        return wanted.every((p) => result[p] === RESULTS.GRANTED);
+    } catch {
+        return false;
+    }
+};
+
+const advertisesProfile = (device: Device): boolean =>
+    (device.serviceUUIDs ?? []).some((uuid) => {
+        const id = uuid.toLowerCase();
+        return id === GATT.service || id === 'fff0';
+    });
+
+/**
  * Scan for bracelets.
  *
- * Filters on the vendor service UUID rather than the name. Calls `onFound` each time a
- * device is seen — including repeatedly for the same one as its RSSI changes, which is what
- * lets a pairing screen sort by proximity — and de-duplicates by id so the list does not
- * grow. The returned function stops the scan and must be called: a scan left running is a
- * measurable battery drain and Android will eventually throttle it away.
+ * Unfiltered at the radio, as the vendor's own apps scan — see the header for why a service
+ * filter finds nothing. Devices with no name and no vendor service are dropped here; that is
+ * most of what a busy room broadcasts, and none of it can be a bracelet somebody could pick.
+ *
+ * Calls `onFound` each time a device is seen — including repeatedly for the same one as its
+ * RSSI changes, which is what lets a pairing screen sort by proximity — and de-duplicates by
+ * id so the list does not grow. The returned function stops the scan and must be called: a
+ * scan left running is a measurable battery drain and Android will eventually throttle it.
  */
 export const scan = (
     onFound: (device: DiscoveredBracelet) => void,
@@ -129,12 +183,16 @@ export const scan = (
 ): (() => void) => {
     const seen = new Map<string, number>();
 
-    getManager().startDeviceScan([GATT.service], { allowDuplicates: true }, (error, device) => {
+    getManager().startDeviceScan(null, { allowDuplicates: true }, (error, device) => {
         if (error) {
             onError?.(error.message);
             return;
         }
         if (!device) return;
+
+        const name = device.name ?? device.localName ?? null;
+        const recognised = advertisesProfile(device) || (!!name && BRACELET_NAME.test(name));
+        if (!recognised && !name) return;
 
         // Same device, no meaningful change in signal: nothing for a list to redraw.
         const previous = seen.get(device.id);
@@ -143,9 +201,10 @@ export const scan = (
 
         onFound({
             id: device.id,
-            name: device.name ?? device.localName ?? null,
+            name,
             rssi: device.rssi,
-            variant: identify(device.name ?? device.localName ?? null),
+            variant: identify(name),
+            recognised,
         });
     });
 

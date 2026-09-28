@@ -22,7 +22,7 @@
  * screen pretending to be a manager.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -95,6 +95,20 @@ export default function BraceletScreen() {
     }, [endScan]);
 
     const startScan = useCallback(async () => {
+        if (!(await transport.requestScanPermission())) {
+            // An alert rather than `blocked`, which disables the button: once the person has
+            // allowed it in Settings they need that button to try again.
+            Alert.alert(
+                'Allow Nearby devices',
+                'Predyqt needs the Nearby devices permission to find your bracelet.',
+                [
+                    { text: 'Not now', style: 'cancel' },
+                    { text: 'Open Settings', onPress: () => { void Linking.openSettings(); } },
+                ],
+            );
+            return;
+        }
+
         const reason = await transport.scanBlockedReason();
         setBlocked(reason);
         if (reason) return;
@@ -387,6 +401,15 @@ const Unpaired = ({
 }) => {
     const Palette = usePalette();
     const styles = useStyles();
+    const [showOthers, setShowOthers] = useState(false);
+
+    // Earbuds, TVs and a neighbour's phone are all named devices too. They stay one tap away
+    // rather than hidden, because a bracelet sold under a name nobody has seen yet is exactly
+    // what would otherwise be unreachable.
+    const recognised = found.filter((d) => d.recognised);
+    const others = found.filter((d) => !d.recognised);
+    const listed = showOthers ? [...recognised, ...others] : recognised;
+
     return (
         <View style={styles.panel}>
             <Text style={styles.deviceName}>
@@ -425,12 +448,12 @@ const Unpaired = ({
                 </Text>
             </Pressable>
 
-            {found.length ? (
+            {listed.length ? (
                 <View style={styles.results}>
                     <Text style={styles.resultsHead}>
-                        {found.length} found · nearest first
+                        {listed.length} found · nearest first
                     </Text>
-                    {found.map((device) => (
+                    {listed.map((device) => (
                         <DiscoveredRow
                             key={device.id}
                             name={device.name}
@@ -444,7 +467,21 @@ const Unpaired = ({
                 </View>
             ) : null}
 
-            {!scanning && !found.length && !blocked ? (
+            {others.length ? (
+                <Pressable
+                    onPress={() => setShowOthers((v) => !v)}
+                    accessibilityRole="button"
+                    style={styles.othersToggle}
+                >
+                    <Text style={styles.othersLabel}>
+                        {showOthers
+                            ? 'Hide other nearby devices'
+                            : `Not listed? Show ${others.length} other nearby device${others.length === 1 ? '' : 's'}`}
+                    </Text>
+                </Pressable>
+            ) : null}
+
+            {!scanning && !recognised.length && !blocked ? (
                 <View style={styles.tips}>
                     <Tip icon="battery-charging-outline" text="Make sure it is charged and awake." />
                     <Tip
@@ -527,6 +564,9 @@ const useStyles = makeStyles((Palette) => ({
         ...BodyFont.medium, fontSize: 13, color: Palette.textMuted,
         marginBottom: 2,
     },
+
+    othersToggle: { alignSelf: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs },
+    othersLabel: { ...BodyFont.medium, fontSize: 14, color: Palette.primary },
 
     tips: { width: '100%', gap: Spacing.sm, marginTop: Spacing.xl },
     tip: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
