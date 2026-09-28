@@ -300,7 +300,7 @@ export default function LiveRunScreen() {
                                 {hero !== 'pace' && <MiniStat hud={hud} label={paceLabel} value={pace?.value ?? '—'} unit={pace?.unit} />}
                                 {state.heartRate != null
                                     ? <MiniStat hud={hud} label={zone ? `Heart · zone ${zone}` : 'Heart'} value={String(state.heartRate)} unit="bpm" />
-                                    : <MiniStat hud={hud} label={kcal ? 'Calories' : 'Calories · needs weight'} value={kcal ?? '—'} />}
+                                    : <MiniStat hud={hud} label={state.weightStatus === 'missing' ? 'Calories · needs weight' : 'Calories'} value={kcal ?? '—'} />}
                             </View>
                             <View onLayout={(e) => setRibbonWidth(e.nativeEvent.layout.width)}>
                                 <PaceRibbon

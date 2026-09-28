@@ -131,8 +131,9 @@ export default function RunLaunchPad() {
             getLiveContext()
                 .then((ctx) => { if (mounted) { setWeight(ctx.weightKg); setMaxHr(ctx.maxHr ?? null); } })
                 .catch((err) => {
+                    // A failed lookup is not a missing weight: stay 'unknown', ask nothing, and
+                    // let the recorder look it up again once the run starts.
                     if (err instanceof ApiError && err.isAuthError) router.replace('/(auth)/loginscreen');
-                    else if (mounted) setWeight(null);
                 });
         })();
         return () => {

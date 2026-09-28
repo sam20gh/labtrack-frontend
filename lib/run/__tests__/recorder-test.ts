@@ -60,6 +60,7 @@ jest.mock('expo-task-manager', () => {
     const tasks: Record<string, (body: any) => Promise<void>> = {};
     return { tasks, defineTask: (name: string, fn: any) => { tasks[name] = fn; } };
 });
+jest.mock('../../activity', () => ({ getLiveContext: jest.fn(async () => ({ weightKg: 70, maxHr: 180, weightSource: 'profile' })) }));
 let mockUuid = 0;
 jest.mock('expo-crypto', () => ({ randomUUID: () => `run-${(mockUuid += 1).toString().padStart(4, '0')}` }));
 
@@ -286,5 +287,46 @@ describe('the bracelet during a run', () => {
         expect(recorder.getState().heartRate).toBe(150);
         recorder.setHeartLink('lost');
         expect(recorder.getState().heartRate).toBeNull();
+    });
+});
+
+describe('the weight calories are priced with', () => {
+    const activity = jest.requireMock('../../activity');
+    const settle = () => new Promise((r) => setTimeout(r, 5));
+
+    it('is looked up by the recorder itself when Start was pressed before the launch pad had it', async () => {
+        const id = await recorder.start({ type: 'jogging', weightKg: null });
+        recorder.ingest(locations(0, 120) as any);
+        expect(recorder.getState().weightStatus).toBe('loading'); // not "needs weight"
+        expect(recorder.getState().kcal).toBeNull();
+
+        await settle();
+        const state = recorder.getState();
+        expect(state.weightStatus).toBe('known');
+        expect(state.kcal).toBeGreaterThan(0); // re-priced from the first metre
+        expect(state.maxHr).toBe(180);
+        expect(journal.readRun(id)!.meta.weightKg).toBe(70); // survives a restart
+    });
+
+    it('asks the person only when the server says there is no weight on record', async () => {
+        activity.getLiveContext.mockResolvedValueOnce({ weightKg: null, maxHr: null, weightSource: null });
+        await recorder.start({ type: 'jogging', weightKg: null });
+        await settle();
+        expect(recorder.getState().weightStatus).toBe('missing');
+    });
+
+    it('never asks when the lookup failed — a bad connection is not a missing weight', async () => {
+        activity.getLiveContext.mockRejectedValueOnce(new Error('network'));
+        await recorder.start({ type: 'jogging', weightKg: null });
+        await settle();
+        expect(recorder.getState().weightStatus).toBe('loading');
+    });
+
+    it('does not look it up again when the launch pad already had it', async () => {
+        activity.getLiveContext.mockClear();
+        await recorder.start({ type: 'jogging', weightKg: 64 });
+        await settle();
+        expect(activity.getLiveContext).not.toHaveBeenCalled();
+        expect(recorder.getState().weightStatus).toBe('known');
     });
 });

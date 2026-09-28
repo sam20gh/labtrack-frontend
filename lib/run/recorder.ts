@@ -153,6 +153,46 @@ const rebuild = (meta: journal.RunMeta, events: readonly journal.RunEvent[]): Ac
 };
 
 /**
+ * Ask the server for the weight (and heart-rate maximum) the run should be priced with.
+ *
+ * The recorder asks for itself rather than trusting whatever the launch pad had fetched by
+ * the time Start was pressed: that request may not have returned yet, or may have failed on
+ * a bad connection, and neither means the person has no weight on record. Retries a few
+ * times; the answer is written to the journal's meta, so a restart does not ask again, and
+ * the calories counted so far are re-priced with it.
+ */
+const CONTEXT_RETRY_MS = [0, 5_000, 20_000, 60_000];
+const resolveContext = (clientId: string, attempt = 0) => {
+    const delay = CONTEXT_RETRY_MS[attempt];
+    if (delay == null) return;
+    setTimeout(async () => {
+        if (!run || run.meta.clientId !== clientId || run.meta.contextLoaded) return;
+        try {
+            // Required lazily: `lib/activity` pulls the API client and its auth.
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { getLiveContext } = require('../activity') as typeof import('../activity');
+            const ctx = await getLiveContext();
+            if (!run || run.meta.clientId !== clientId) return;
+            const r = run;
+            r.meta = {
+                ...r.meta,
+                weightKg: r.meta.weightKg ?? ctx.weightKg ?? null,
+                maxHr: r.meta.maxHr ?? ctx.maxHr ?? null,
+                contextLoaded: true,
+            };
+            journal.updateMeta(r.meta);
+            // Re-price everything so far with the weight that has just arrived.
+            r.kcal = r.meta.weightKg != null ? 0 : null;
+            r.pricedSegments = 0;
+            priceNewSegments(r);
+            notify();
+        } catch {
+            resolveContext(clientId, attempt + 1);
+        }
+    }, delay);
+};
+
+/**
  * Bring the recorder back from the journal if it has nothing in memory. Cheap when it does.
  * Returns whether a run is loaded.
  */
@@ -166,6 +206,7 @@ export const hydrate = (): boolean => {
         return false;
     }
     run = rebuild(saved.meta, saved.events);
+    if (!saved.meta.contextLoaded && saved.meta.weightKg == null) resolveContext(saved.meta.clientId);
     notify();
     return true;
 };
@@ -229,6 +270,8 @@ export const start = async ({ type, weightKg, goal, maxHr }: {
         weightKg,
         goal: goal && goal.kind !== 'free' ? goal : undefined,
         maxHr: maxHr ?? null,
+        // A weight handed over by the launch pad is the server's answer already.
+        contextLoaded: weightKg != null,
     };
     journal.createRun(meta);
     run = rebuild(meta, []);
@@ -240,6 +283,7 @@ export const start = async ({ type, weightKg, goal, maxHr }: {
         notify();
         throw err;
     }
+    if (!meta.contextLoaded) resolveContext(meta.clientId);
     notify();
     return meta.clientId;
 };
@@ -387,6 +431,11 @@ export interface RecorderState {
     /** Live estimate, grade 0. Null without a weight — never a guess. */
     kcal: number | null;
     weightKnown: boolean;
+    /**
+     * `missing` only when the server has said there is no weight on record — the one case
+     * that may ask the person for it. `loading` while it has not answered, which must not.
+     */
+    weightStatus: 'known' | 'loading' | 'missing';
     /** Metres, from the last fix the OS delivered, filtered or not. */
     accuracyM: number | null;
     lastFixAt: number | null;
@@ -403,7 +452,7 @@ export const getState = (now = Date.now()): RecorderState => {
     if (!run) {
         return {
             phase: 'idle', clientId: null, type: null, startedAt: null, activeSec: 0, live: null,
-            kcal: null, weightKnown: false, accuracyM: null, lastFixAt: null, goal: null,
+            kcal: null, weightKnown: false, weightStatus: 'loading', accuracyM: null, lastFixAt: null, goal: null,
             maxHr: null, heartRate: null, heartLink, cadence: null,
         };
     }
@@ -418,6 +467,7 @@ export const getState = (now = Date.now()): RecorderState => {
         live: run.acc.snapshot(),
         kcal: run.kcal == null ? null : Math.round(run.kcal),
         weightKnown: run.meta.weightKg != null,
+        weightStatus: run.meta.weightKg != null ? 'known' : run.meta.contextLoaded ? 'missing' : 'loading',
         accuracyM: run.lastFix?.acc ?? null,
         lastFixAt: run.lastFix?.t ?? null,
         goal: run.meta.goal ?? null,

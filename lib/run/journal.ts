@@ -41,6 +41,12 @@ export interface RunMeta {
     goal?: RunGoal;
     /** Estimated maximum heart rate for the zones, from the server. Null without a birth date. */
     maxHr?: number | null;
+    /**
+     * True once the server has *answered* the weight question — so a null `weightKg` means
+     * "none on record" rather than "not asked yet" or "the request failed". Only the first
+     * of those may ever put a "needs your weight" prompt on screen.
+     */
+    contextLoaded?: boolean;
 }
 
 /**
@@ -155,6 +161,11 @@ export const createRun = (meta: RunMeta) => {
     dir.create({ intermediates: true, idempotent: true });
     new File(dir, 'meta.json').write(JSON.stringify(meta));
     activeFile().write(JSON.stringify({ clientId: meta.clientId }));
+};
+
+/** Rewrite meta.json — once, when the server's answer about weight arrives mid-run. */
+export const updateMeta = (meta: RunMeta) => {
+    new File(runDir(meta.clientId), 'meta.json').write(JSON.stringify(meta));
 };
 
 /** The number of the next chunk, so a restarted recorder never overwrites one. */
