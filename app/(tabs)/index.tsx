@@ -88,7 +88,7 @@ import { getScore, bandMeta, isMostlyReported, type HealthScore } from '@/lib/sc
 import { getAge, openAge, type PredyqtAge } from '@/lib/age';
 import AgeCard, { AgeCardSkeleton } from '@/components/home/AgeCard';
 import {
-    getOverview, METRIC_ICON, METRIC_TINT, METRIC_ROUTE,
+    getOverview, metricIcon, metricTint, metricRoute,
     type MetricCard as MetricCardData,
 } from '@/lib/metrics';
 import {
@@ -689,7 +689,7 @@ export default function HomeScreen() {
                 title: 'A reading needs attention',
                 body: `Your ${crisis.label.toLowerCase()} recorded a crisis-range value. This is not a diagnosis — speak to a clinician.`,
                 cta: 'See the reading',
-                onPress: () => router.push(METRIC_ROUTE[crisis.key] as never),
+                onPress: () => router.push((metricRoute(crisis.key) ?? '/metrics') as never),
             });
         }
 
@@ -1693,7 +1693,8 @@ const MetricsRail = React.memo(({ cards, router }: { cards: MetricCardData[]; ro
                     <MetricTile
                         key={card.key}
                         card={card}
-                        onPress={() => router.push(METRIC_ROUTE[card.key] as any)}
+                        // An unknown key opens the metrics list rather than `push(undefined)`.
+                        onPress={() => router.push((metricRoute(card.key) ?? '/metrics') as any)}
                     />
                 ))}
             </ScrollView>
@@ -1722,14 +1723,14 @@ MetricsRail.displayName = 'MetricsRail';
 const MetricTile = ({ card, onPress }: { card: MetricCardData; onPress: () => void }) => {
     const Palette = usePalette();
     const styles = useStyles();
-    const tint = METRIC_TINT[card.key];
+    const tint = metricTint(card.key, Palette);
     const value = card.value ?? card.fallback?.value ?? null;
     const reported = card.value == null && card.fallback != null;
 
     return (
         <TouchableOpacity style={styles.metricTile} onPress={onPress} activeOpacity={0.85}>
             <View style={[styles.metricTileIcon, { backgroundColor: `${tint}1A` }]}>
-                <Ionicons name={METRIC_ICON[card.key] as any} size={22} color={tint} />
+                <Ionicons name={metricIcon(card.key) as any} size={22} color={tint} />
             </View>
 
             <View style={styles.valueRow}>

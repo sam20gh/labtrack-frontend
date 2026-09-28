@@ -314,6 +314,25 @@ export const METRIC_ROUTE: Record<MetricKey, string> = {
     steps: '/activity',
 };
 
+/**
+ * The server decides which cards exist, and it deploys independently of this app.
+ *
+ * So a card can arrive whose key this build has never heard of. The HRV card did exactly
+ * that: the API shipped it while installed builds were still on a bundle without `hrv` in
+ * these tables, and `router.push(METRIC_ROUTE.hrv)` was `router.push(undefined)`. That
+ * throws in the press handler, and a release build answers an uncaught error with a white
+ * screen. Every lookup a screen makes by a server-sent key goes through these three, which
+ * answer something drawable, or null for "no destination", rather than `undefined`.
+ */
+export const metricRoute = (key: string): string | null =>
+    (METRIC_ROUTE as Record<string, string | undefined>)[key] ?? null;
+
+export const metricIcon = (key: string): string =>
+    (METRIC_ICON as Record<string, string | undefined>)[key] ?? 'stats-chart-outline';
+
+export const metricTint = (key: string, palette: { textSecondary: string }): string =>
+    (METRIC_TINT as Record<string, string | undefined>)[key] ?? palette.textSecondary;
+
 /** The log route for a loggable card. */
 export const LOG_ROUTE: Partial<Record<MetricKey, string>> = {
     weight: '/metrics/log/weight',

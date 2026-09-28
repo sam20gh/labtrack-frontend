@@ -26,7 +26,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ApiError } from '@/lib/api';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import {
-    getOverview, METRIC_TINT, METRIC_ROUTE,
+    getOverview, metricTint, metricRoute,
     type MetricCard, type MetricsOverview,
 } from '@/lib/metrics';
 import { Spacing, Radius, Shadow, Fonts, BodyFont, Palettes, tone } from '@/constants/theme';
@@ -112,7 +112,9 @@ export default function MetricsInsightScreen() {
                         key={m.key}
                         metric={m}
                         width={width - Spacing.lg * 2 - Spacing.md * 2}
-                        onOpen={() => router.push(METRIC_ROUTE[m.key] as never)}
+                        onOpen={metricRoute(m.key)
+                            ? () => router.push(metricRoute(m.key) as never)
+                            : undefined}
                         onSuggestion={() => router.push({
                             pathname: '/(tabs)/assistant',
                             params: { prompt: promptFor(m) },
@@ -125,18 +127,18 @@ export default function MetricsInsightScreen() {
 }
 
 const InsightCard = ({ metric, width, onOpen, onSuggestion }: {
-    metric: MetricCard; width: number; onOpen: () => void; onSuggestion: () => void;
+    metric: MetricCard; width: number; onOpen?: () => void; onSuggestion: () => void;
 }) => {
     const Palette = usePalette();
     const styles = useStyles();
-    const tint = METRIC_TINT[metric.key];
+    const tint = metricTint(metric.key, Palette);
     const reading = readingFor(metric);
 
     return (
         <View style={styles.card}>
-            <TouchableOpacity style={styles.cardHead} onPress={onOpen} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.cardHead} onPress={onOpen} disabled={!onOpen} activeOpacity={0.7}>
                 <Text style={styles.cardTitle}>{metric.label}</Text>
-                <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
+                {onOpen && <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />}
             </TouchableOpacity>
 
             <Text style={styles.value}>

@@ -24,7 +24,7 @@ import Svg, { Polyline, Circle } from 'react-native-svg';
 
 import { ApiError } from '@/lib/api';
 import {
-    getOverview, METRIC_ICON, METRIC_TINT, METRIC_ROUTE, LOG_ROUTE,
+    getOverview, metricIcon, metricTint, metricRoute, LOG_ROUTE,
     type MetricCard, type MetricsOverview,
 } from '@/lib/metrics';
 import { presentMetric, useUnits } from '@/lib/units';
@@ -97,7 +97,9 @@ export default function HealthMetricsScreen() {
                     <MetricRow
                         key={m.key}
                         metric={m}
-                        onOpen={() => router.push(METRIC_ROUTE[m.key] as never)}
+                        onOpen={metricRoute(m.key)
+                            ? () => router.push(metricRoute(m.key) as never)
+                            : undefined}
                         onLog={() => {
                             const route = LOG_ROUTE[m.key];
                             if (route) router.push(route as never);
@@ -120,12 +122,13 @@ export default function HealthMetricsScreen() {
     );
 }
 
-const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen: () => void; onLog: () => void }) => {
+/** `onOpen` is absent for a card with nowhere to go: drawn, not tappable, no chevron. */
+const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen?: () => void; onLog: () => void }) => {
     const Palette = usePalette();
     const styles = useStyles();
     const { width } = useWindowDimensions();
     const units = useUnits();
-    const tint = METRIC_TINT[metric.key];
+    const tint = metricTint(metric.key, Palette);
     const sparkWidth = Math.min(120, Math.max(70, width - 260));
     const hasValue = metric.value !== null;
 
@@ -140,10 +143,10 @@ const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen: () =
         : null;
 
     return (
-        <TouchableOpacity style={styles.card} onPress={onOpen} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.card} onPress={onOpen} disabled={!onOpen} activeOpacity={0.8}>
             <View style={styles.cardTop}>
                 <View style={styles.cardLabelRow}>
-                    <Ionicons name={METRIC_ICON[metric.key] as never} size={16} color={tint} />
+                    <Ionicons name={metricIcon(metric.key) as never} size={16} color={tint} />
                     <Text style={styles.cardLabel}>{metric.label}</Text>
                     {/*
                       * A crisis-range reading anywhere in the window is surfaced here, not
@@ -159,7 +162,7 @@ const MetricRow = ({ metric, onOpen, onLog }: { metric: MetricCard; onOpen: () =
                 </View>
                 <View style={styles.cardTopRight}>
                     <Text style={styles.cardWhen}>{metric.at ? whenLabel(metric.at) : ''}</Text>
-                    <Ionicons name="chevron-forward" size={15} color={Palette.textMuted} />
+                    {onOpen && <Ionicons name="chevron-forward" size={15} color={Palette.textMuted} />}
                 </View>
             </View>
 
