@@ -2,9 +2,10 @@
  * The home screen's "Looking ahead" card.
  *
  * Earned, like every other section on that screen: it is drawn only when this person actually
- * has a prediction, and `HomeScreen` pushes a `SetupItem` row instead when they do not. A card
- * saying "try our predictor" would take exactly as much of the screen as one showing a real
- * forecast, which is the trade the home screen's header comment refuses.
+ * has a prediction, and nothing is drawn when they do not — Predict is in the quick actions,
+ * and the score screen offers "Predict my score". A card saying "try our predictor" would take
+ * exactly as much of the screen as one showing a real forecast, which is the trade the home
+ * screen's header comment refuses.
  *
  * It shows the **range**, never the point estimate. The whole feature's honesty rests on the
  * interval being what is claimed, and the one surface where a bare number would be most
@@ -94,7 +95,10 @@ export function PredictionCard({ predictions, accuracy, onOpen, onSeeAll }: Prop
 }
 
 const useStyles = makeStyles((Palette) => ({
+    // The 16pt gutter every other home card carries on its own container. `Section` pads
+    // only its heading, so without it this card ran edge to edge.
     card: {
+        marginHorizontal: Spacing.lg,
         backgroundColor: Palette.background, borderRadius: Radius.lg,
         borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg,
     },

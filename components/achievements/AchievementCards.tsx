@@ -147,8 +147,8 @@ export function FeaturedBadge({ achievement: a, onPress, size = 64 }: TileProps)
  * The row that offers a tracker a badge lives in.
  *
  * Shown under "Get started" for a category the person has never used, on the same terms as
- * the home screen's `SetupItem`: a category with nothing in it earns a way in, not a wall of
- * locked squares explaining what it could have been.
+ * the score screen's unmeasured pillars: a category with nothing in it earns a way in, not a
+ * wall of locked squares explaining what it could have been.
  */
 export function CategoryPrompt({
     label, blurb, onPress,

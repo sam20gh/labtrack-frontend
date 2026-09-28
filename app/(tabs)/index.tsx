@@ -11,8 +11,10 @@
  *   1. **Header, with the day in one line.** Doses left, an appointment today, calories
  *      remaining — composed from state this screen has already loaded, fetching nothing.
  *      A greeting over a date is a screen that knows who you are and has nothing to say.
- *   2. **Score, with its movement.** The delta and the pillar that moved, not the band
- *      printed twice. `HealthScore.change` was fetched and thrown away for months.
+ *   2. **Score, with its movement, and Predyqt Age under it.** The delta and the pillar that
+ *      moved, not the band printed twice — `HealthScore.change` was fetched and thrown away
+ *      for months. The age is the score's sibling and rides in the same card as one line;
+ *      see `components/home/AgeRow.tsx`.
  *   3. **Markers to watch.** The score card counts out-of-range markers; this names them,
  *      each with the direction it is heading. A count is not an answer.
  *   4. **Needs you.** Ranked across features by what happens if it is ignored — a crisis
@@ -21,18 +23,27 @@
  *      This is the only part of the page that differs between two visits on one day, and
  *      it is why the plan is fetched here at all.
  *   5. **Latest Analysis**, collapsed to a headline, three lines and one next step.
- *   6. **The trackers that have data**, most time-sensitive first.
- *   7. **Symptom Checker** — the illustration, the search, the common symptoms and the
+ *   6. **The trackers that have data**, most time-sensitive first. A booked appointment is
+ *      one of them, drawn as `Design/drAppoitment.svg` does.
+ *   7. **Doctor Appointment, before there is one** — `Design/doctors.svg`, the directory's
+ *      own faces and one way into it.
+ *   8. **Symptom Checker** — the illustration, the search, the common symptoms and the
  *      checks already run, as `Design/sympt.svg` draws them.
- *   8. **Ask Predyqt AI** — the assistant, and the last thing it said.
- *   9. **Get more from Predyqt** — every tracker with nothing in it, as one list of rows
- *      rather than as six full cards each saying "connect a watch".
- *  10. **News & Resources.**
+ *   9. **News & Resources.**
  *
- * The tracker/setup split is the load-bearing idea. A card is earned by having something to
- * report; a feature nobody has started is a row. `HomeScreen` decides which, so the cards
- * themselves no longer carry empty states — they guard and return null, and the guard can
- * never fire from here.
+ * A card is earned by having something to report, which is why the cards guard and return
+ * null rather than carrying empty states. What the page no longer draws, and where it went:
+ *
+ *   - **Ask Predyqt AI.** The assistant is a tab, one tap from here, and the card was a
+ *     second door to it that echoed its last reply. The sentence that travelled with it —
+ *     the checker does not diagnose — moved onto the Symptom Checker card, which is the half
+ *     of the pair that still needs saying it.
+ *   - **Get more from Predyqt.** Up to eight rows about trackers nobody had started, and the
+ *     longest section on a new person's page. Every one of them is a pillar the score screen
+ *     already lists as unmeasured with a link to the tracker that fills it, which is where
+ *     the score card now points, and every tracker is in the quick actions. The appointment
+ *     row became the card in 7, and the Predyqt Age row became the age line's invitation.
+ *   - **Predyqt Age as a section.** Now a line on the score card; the orb lives on `/age`.
  *
  * Two places the mockup is deliberately not reproduced, both for the reason this codebase
  * keeps giving — a control or a number the backend cannot honestly back is worse than none:
@@ -86,7 +97,7 @@ import {
 } from '@/lib/interpretation';
 import { getScore, bandMeta, isMostlyReported, type HealthScore } from '@/lib/score';
 import { getAge, openAge, type PredyqtAge } from '@/lib/age';
-import AgeCard, { AgeCardSkeleton } from '@/components/home/AgeCard';
+import AgeRow from '@/components/home/AgeRow';
 import {
     getOverview, metricIcon, metricTint, metricRoute,
     type MetricCard as MetricCardData,
@@ -100,19 +111,20 @@ import {
     getSchedule as getMedicationSchedule, updateDose,
 } from '@/lib/medications';
 import {
-    getAppointments, professionalOf, nameOf, initialsOf, isLive,
+    getAppointments, professionalOf, nameOf, isLive,
     formatTime as formatApptTime, formatRelativeDay,
 } from '@/lib/appointments';
-import { getConversation, messageTime, type Conversation } from '@/lib/assistant';
 import { listChecks, type SymptomCheck } from '@/lib/symptomChecks';
 import {
-    getOverview as getPredictionOverview, openPredictions,
+    getOverview as getPredictionOverview,
     type Overview as PredictionOverview,
 } from '@/lib/prediction';
 import { listResources, routeFor, openResourcesHub, type ResourceCard as ResourceCardType } from '@/lib/resources';
 import { ArticleCard } from '@/components/resources/ResourceCards';
 import SymptomCheckerCard from '@/components/home/SymptomCheckerCard';
 import { PredictionCard } from '@/components/home/PredictionCard';
+import AppointmentCard from '@/components/home/AppointmentCard';
+import ExploreDoctorsCard from '@/components/home/ExploreDoctorsCard';
 import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { Spacing, Radius, Shadow, Fonts, BodyFont, schemed, tone, Palettes } from '@/constants/theme';
@@ -122,7 +134,7 @@ import { FadeIn } from '@/components/ui/FadeIn';
 import { SkeletonGroup, SkeletonBlock } from '@/components/nutrition/Skeleton';
 import type {
     BiomarkerSummary, MedicationScheduleDay, NutritionDay, NutritionTargets, Product, User,
-    Appointment, PlanItem,
+    Appointment, PlanItem, Professional,
 } from '@/types/api';
 
 /**
@@ -204,27 +216,6 @@ interface HomeAction {
     onPress: () => void;
 }
 
-/**
- * One row of the "Get more from Predyqt" list.
- *
- * A tracker nobody has started. It is a row rather than the card that feature would draw,
- * because six cards each saying "connect a watch" is a screen about what the person has
- * *not* done, stacked on top of what they have.
- */
-interface SetupItem {
-    id: string;
-    icon: React.ComponentProps<typeof Ionicons>['name'];
-    title: string;
-    body: string;
-    route: string;
-    /**
-     * For a destination behind a first-run gate, which has to read AsyncStorage and therefore
-     * cannot be expressed as a route string. Only Predict needs it; the gate itself lives in
-     * `lib/prediction.ts` beside the key it reads, the way Resources' does.
-     */
-    open?: () => void;
-}
-
 /** How a plan item's date reads once it is asking for something. */
 const dueLabel = (item: PlanItem) => {
     const due = new Date(item.dueDate);
@@ -270,14 +261,12 @@ export default function HomeScreen() {
     const [resources, setResources] = useState<ResourceCardType[]>([]);
     const [score, setScore] = useState<HealthScore>(EMPTY_SCORE);
     /**
-     * Predyqt Age.
+     * Predyqt Age, the last line of the score card.
      *
-     * `null` means not loaded yet and draws a skeleton; a loaded refusal is a real answer and
-     * sends the feature to the setup list. The two are distinguished because a card that
-     * vanished mid-load would make the sections under it jump.
+     * `null` means not loaded yet and draws a bar in the line's place; a loaded refusal is a
+     * real answer and draws an invitation. See `components/home/AgeRow.tsx`.
      */
     const [age, setAge] = useState<PredyqtAge | null>(null);
-    const [ageLoaded, setAgeLoaded] = useState(false);
     const [metrics, setMetrics] = useState<MetricCardData[]>([]);
     const [activity, setActivity] = useState<ActivitySummary | null>(null);
     const [sessions, setSessions] = useState<ActivitySession[]>([]);
@@ -285,7 +274,12 @@ export default function HomeScreen() {
     const [medications, setMedications] = useState<MedicationScheduleDay | null>(null);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [plan, setPlan] = useState<PlanItem[]>([]);
-    const [conversation, setConversation] = useState<Conversation | null>(null);
+    /**
+     * The professionals directory, for the faces on the explore card. `null` until it is read
+     * — and it is only read at all when there is no live appointment, which is the only time
+     * that card is drawn. See the effect after the first load.
+     */
+    const [directory, setDirectory] = useState<Professional[] | null>(null);
     const [symptomChecks, setSymptomChecks] = useState<SymptomCheck[]>([]);
     const [predictions, setPredictions] = useState<PredictionOverview | null>(null);
     const [generating, setGenerating] = useState(false);
@@ -331,7 +325,6 @@ export default function HomeScreen() {
             // consultations. It is the only thing on this screen that says what to *do*,
             // which is why the "Needs you" list is built from it first.
             getPlan(),
-            getConversation(),
             // The newest of the library, for the rail at the foot of the screen. Six cards,
             // because this is a rail and nobody scrolls twenty of them sideways.
             listResources({ limit: 6, sort: 'newest' }),
@@ -348,7 +341,7 @@ export default function HomeScreen() {
         const [
             userRes, biomarkerRes, analysisRes, nutritionRes, scoreRes, metricsRes,
             activityRes, activityDayRes, medicationRes, appointmentRes, planRes,
-            conversationRes, resourceRes, checksRes, predictionRes,
+            resourceRes, checksRes, predictionRes,
         ] = results;
 
         if (userRes.status === 'fulfilled') setUser(userRes.value as User);
@@ -365,7 +358,6 @@ export default function HomeScreen() {
         if (medicationRes.status === 'fulfilled') setMedications(medicationRes.value);
         if (appointmentRes.status === 'fulfilled') setAppointments(appointmentRes.value ?? []);
         if (planRes.status === 'fulfilled') setPlan(planRes.value.items ?? []);
-        if (conversationRes.status === 'fulfilled') setConversation(conversationRes.value);
         if (resourceRes.status === 'fulfilled') setResources(resourceRes.value.items ?? []);
         if (checksRes.status === 'fulfilled') setSymptomChecks(checksRes.value);
         if (predictionRes.status === 'fulfilled') setPredictions(predictionRes.value);
@@ -419,8 +411,9 @@ export default function HomeScreen() {
      * slow. That is the failure `app/nutrition/index.tsx` documents and `TrophyCase` repeats
      * for the same query-weight reason.
      *
-     * A `mounted` ref guards the write, and a failure leaves the card absent rather than
-     * surfacing an error: the age is the one thing on this screen that is not time-sensitive.
+     * A `mounted` ref guards the write, and a failure draws the age line's invitation rather
+     * than surfacing an error: the age is the one thing on this screen that is not
+     * time-sensitive, and `/age` retries on its own.
      */
     const ageMounted = useRef(true);
 
@@ -430,8 +423,6 @@ export default function HomeScreen() {
             if (ageMounted.current) setAge(data);
         } catch {
             if (ageMounted.current) setAge({ ok: false, disclaimer: '' } as PredyqtAge);
-        } finally {
-            if (ageMounted.current) setAgeLoaded(true);
         }
     }, []);
 
@@ -541,6 +532,7 @@ export default function HomeScreen() {
      * object expo-router hands back on every render, so these only need to be created once.
      */
     const openScore = useCallback(() => router.push('/score'), [router]);
+    const openAgeHub = useCallback(() => { openAge(router); }, [router]);
     const openMedicationAdd = useCallback(() => router.push('/medications/add'), [router]);
     const openMedication = useCallback(
         (id: string) => router.push({ pathname: '/medications/[id]', params: { id } }),
@@ -556,7 +548,6 @@ export default function HomeScreen() {
     const openNutrition = useCallback(() => router.push('/nutrition'), [router]);
     const openNutritionLog = useCallback(() => router.push('/nutrition/log'), [router]);
     const openSleep = useCallback(() => router.push('/sleep'), [router]);
-    const openAssistant = useCallback(() => router.push('/(tabs)/assistant'), [router]);
     const toggleAnalysis = useCallback(() => setAnalysisExpanded((v) => !v), []);
     const runGenerate = useCallback(() => handleGenerate(false), [handleGenerate]);
     const runRegenerate = useCallback(() => handleGenerate(true), [handleGenerate]);
@@ -597,6 +588,25 @@ export default function HomeScreen() {
             .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime()),
         [appointments],
     );
+
+    /**
+     * The directory, read only when the explore card is going to be drawn.
+     *
+     * After the first paint and on its own timeline, like the age: the card sits below the
+     * trackers, its faces are decoration, and its tap works without them — the directory
+     * screen loads its own. Once per mount rather than on every focus, because a roster does
+     * not change between two tab switches. A failure leaves `null`, which draws the slots as
+     * empty frames rather than retrying on every render.
+     */
+    const wantsDirectory = !loading && signedIn === true && liveAppointments.length === 0;
+    useEffect(() => {
+        if (!wantsDirectory || directory !== null) return;
+        let alive = true;
+        api.get<Professional[]>('/professionals')
+            .then((roster) => { if (alive) setDirectory(Array.isArray(roster) ? roster : []); })
+            .catch(() => { /* the slots stay frames, and the tap still works */ });
+        return () => { alive = false; };
+    }, [wantsDirectory, directory]);
 
     /** Doses still to come today. Neither taken nor missed — see **Medication checker**. */
     const pendingDoses = useMemo(
@@ -761,14 +771,16 @@ export default function HomeScreen() {
     const initials = ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase();
 
     /**
-     * Which trackers get a section, in what order, and which become a setup row.
+     * Which trackers get a section, and in what order.
      *
      * Two decisions, both of which the old screen made by hardcoding a list:
      *
      * 1. **A tracker with no data does not earn a card.** Sleep saying "connect a watch"
      *    used to occupy exactly as much of the screen as nutrition showing a real day. Six
      *    such cards is most of a scroll spent on things the person has not started, above
-     *    the things they have.
+     *    the things they have. Nor does it earn a row any more: the score screen lists every
+     *    unmeasured pillar with the tracker that fills it, and the quick actions reach all of
+     *    them — see the header of this file.
      * 2. **Time-sensitivity outranks the kit's order.** Doses still due today and an
      *    appointment inside 48 hours move to the top; everything else keeps the order the
      *    mockup draws. A fixed order is a screen that reads the same at 8am and at 11pm.
@@ -782,60 +794,13 @@ export default function HomeScreen() {
         ? nutrition.targets.calories : 0;
 
     const trackers: { id: string; order: number; node: React.ReactNode }[] = [];
-    const setup: SetupItem[] = [];
-
-    /**
-     * Predyqt Age.
-     *
-     * Earned like everything else here: a section only once there is an answer, a setup row
-     * otherwise. While it is still loading it draws a skeleton in its slot rather than
-     * nothing, because this one arrives after the first paint and a card appearing later
-     * would shove every section below it down the screen.
-     *
-     * **`order: 1.5`, and the fraction is load-bearing.** It sits above the individual
-     * trackers, for the reason the score does — a summary before its parts — but *below* the
-     * two slots that are time-sensitive: doses still due today take 0, and an appointment
-     * inside 48 hours takes 1. A number computed over a six-month window, which cannot
-     * meaningfully move between two app opens, must never push something happening tomorrow
-     * down the screen. That is rule 5 of this file's header, and at a whole number it would
-     * have tied with the imminent appointment and won on push order alone — silently, and
-     * only for the people who had one.
-     */
-    if (!ageLoaded) {
-        trackers.push({ id: 'age', order: 1.5, node: <Section title="Predyqt Age"><AgeCardSkeleton /></Section> });
-    } else if (age?.ok) {
-        trackers.push({
-            id: 'age',
-            order: 1.5,
-            node: (
-                <Section title="Predyqt Age" action="See All" onAction={() => { openAge(router); }}>
-                    {/* Arrives after the rest of the page, into the skeleton's slot — so it
-                        fades in rather than cutting from grey block to card. */}
-                    <FadeIn>
-                        <AgeCard age={age} onPress={() => { openAge(router); }} />
-                    </FadeIn>
-                </Section>
-            ),
-        });
-    } else {
-        setup.push({
-            id: 'age',
-            icon: 'hourglass-outline',
-            title: 'Find your Predyqt Age',
-            body: 'How old your blood results and your habits say you are, and the things that '
-                + 'would lower it. A blood test or a connected watch is enough to start.',
-            route: '/age',
-            open: () => { openAge(router); },
-        });
-    }
 
     /**
      * Looking ahead.
      *
-     * Earned like every other section here: drawn only when a prediction actually exists,
-     * and pushed into `setup` otherwise. `order` puts it after the trackers that report
-     * measurements — a projection is worth less than a reading taken today, and it must not
-     * sit above doses that are due.
+     * Earned like every other section here: drawn only when a prediction actually exists.
+     * `order` puts it after the trackers that report measurements — a projection is worth
+     * less than a reading taken today, and it must not sit above doses that are due.
      */
     const livePredictions = [
         ...(predictions?.scorePrediction ? [predictions.scorePrediction] : []),
@@ -857,15 +822,6 @@ export default function HomeScreen() {
                 </Section>
             ),
         });
-    } else {
-        setup.push({
-            id: 'predictions',
-            icon: 'sparkles-outline',
-            title: 'Predict a metric',
-            body: 'Project your own readings forward and see the range they are heading for. Three entries is enough to start.',
-            route: '/predict',
-            open: () => { openPredictions(router); },
-        });
     }
 
     if (metricCards.some((c) => c.value !== null)) {
@@ -877,14 +833,6 @@ export default function HomeScreen() {
                     <MetricsRail cards={metricCards} router={router} />
                 </Section>
             ),
-        });
-    } else {
-        setup.push({
-            id: 'metrics',
-            icon: 'analytics-outline',
-            title: 'Log a metric',
-            body: 'Weight, hydration and blood pressure. Three pillars, and nothing on this phone measures them for you.',
-            route: '/metrics',
         });
     }
 
@@ -904,37 +852,19 @@ export default function HomeScreen() {
                 </Section>
             ),
         });
-    } else {
-        setup.push({
-            id: 'medications',
-            icon: 'medkit-outline',
-            title: 'Add a medication',
-            body: 'Track doses, and have anything you already take checked against it.',
-            route: '/medications/add',
-        });
     }
 
+    // With nothing booked the section is the explore card instead, drawn after the trackers
+    // because it is an invitation rather than a report — see the render below.
     if (liveAppointments.length > 0) {
         trackers.push({
             id: 'appointments',
             order: imminent ? 1 : 5,
             node: (
-                <Section title="Appointments" action="See All" onAction={() => router.push('/appointments')}>
-                    <AppointmentsCard
-                        appointments={liveAppointments}
-                        onOpen={openAppointments}
-                        onBook={openProfessionals}
-                    />
+                <Section title="Doctor Appointment" action="See All" onAction={openAppointments}>
+                    <AppointmentCard appointments={liveAppointments} onOpen={openAppointments} />
                 </Section>
             ),
-        });
-    } else {
-        setup.push({
-            id: 'appointments',
-            icon: 'calendar-outline',
-            title: 'Book a consultation',
-            body: 'Browse specialists and ask one of them to review your results.',
-            route: '/(tabs)/professionals',
         });
     }
 
@@ -953,14 +883,6 @@ export default function HomeScreen() {
                 </Section>
             ),
         });
-    } else {
-        setup.push({
-            id: 'activity',
-            icon: 'fitness-outline',
-            title: 'Log a workout',
-            body: 'Or set a weekly target, and the activity pillar starts measuring against it.',
-            route: '/activity/log',
-        });
     }
 
     if (nutrition?.plan && nutritionTarget > 0) {
@@ -977,14 +899,6 @@ export default function HomeScreen() {
                 </Section>
             ),
         });
-    } else {
-        setup.push({
-            id: 'nutrition',
-            icon: 'restaurant-outline',
-            title: 'Set up nutrition',
-            body: 'Targets built from your profile and from the dietary advice on your plan.',
-            route: '/nutrition',
-        });
     }
 
     if (typeof sleepCard?.value === 'number' || (sleepCard?.series ?? []).some((n) => (n.value ?? 0) > 0)) {
@@ -1000,18 +914,6 @@ export default function HomeScreen() {
                     />
                 </Section>
             ),
-        });
-    } else {
-        setup.push({
-            id: 'sleep',
-            icon: 'moon-outline',
-            title: 'Connect a health store',
-            body: 'Sleep, steps and heart rate come from a watch or your phone. Nothing here measures them alone.',
-            // The sleep tracker rather than the sources list: it explains what is missing,
-            // carries the connect banner, and offers adding a night by hand for a phone
-            // with no health store. A bare sources screen is a dead end for anyone that
-            // describes.
-            route: '/sleep',
         });
     }
 
@@ -1052,16 +954,18 @@ export default function HomeScreen() {
                           Skeleton until the first load resolves, then the page fades in.
 
                           Rendering the page from empty state while the batch was in flight
-                          drew every tracker as a setup row, "No score yet" and "Hello,
-                          there!" — the screen of somebody who has done nothing — and then
-                          cut to the real one. That is two false statements and a jump.
+                          drew "No score yet" and "Hello, there!" — the screen of somebody who
+                          has done nothing — and then cut to the real one. That is two false
+                          statements and a jump.
                         */}
                         {loading ? <HomeSkeleton /> : (
                             <FadeIn style={styles.bodyLift}>
                                 <ScoreCard
                                     score={score}
                                     attention={attention.length}
+                                    age={age}
                                     onPress={openScore}
+                                    onAge={openAgeHub}
                                 />
 
                                 {/*
@@ -1156,10 +1060,30 @@ export default function HomeScreen() {
                                 ))}
 
                                 {/*
-                                  Symptom Checker, from `Design/sympt.svg`. It sits directly above
-                                  Ask Predyqt AI because the two are one act — the symptom screen
-                                  composes what you pick into a message and posts it to the
-                                  assistant — and the card below is where the answer comes back.
+                                  Doctor Appointment, before anything is booked — `Design/doctors.svg`.
+
+                                  After the trackers because it is an invitation rather than a
+                                  report, and above the Symptom Checker because it is where the
+                                  kit puts the section. Not drawn when the directory is known to be
+                                  empty: an invitation into an empty list is a dead end. While the
+                                  directory is unread it draws with empty frames, since the tap
+                                  works regardless.
+                                */}
+                                {liveAppointments.length === 0 && directory?.length !== 0 && (
+                                    <Section title="Doctor Appointment">
+                                        <ExploreDoctorsCard
+                                            professionals={directory}
+                                            first={appointments.length === 0}
+                                            onExplore={openProfessionals}
+                                        />
+                                    </Section>
+                                )}
+
+                                {/*
+                                  Symptom Checker, from `Design/sympt.svg`. It composes what you pick
+                                  into a message for the assistant, so it carries the sentence that
+                                  the assistant does not diagnose — the Ask Predyqt AI card below it
+                                  used to, and is gone: the assistant is a tab.
 
                                   The search and the chips live here and only here. They were drawn
                                   on the assistant card too until this card existed, which put two
@@ -1178,53 +1102,6 @@ export default function HomeScreen() {
                                         })}
                                     />
                                 </Section>
-
-                                <Section title="Ask Predyqt AI">
-                                    <AskCard
-                                        conversation={conversation}
-                                        onOpen={openAssistant}
-                                    />
-                                </Section>
-
-                                {/*
-                                  The trackers with nothing in them, as one list rather than as six
-                                  full-height cards saying "connect a watch".
-
-                                  Each row names the pillar it fills, because that is the true answer
-                                  to "why should I bother" — the score above genuinely cannot move
-                                  until one of these has data. See **The Predyqt score**.
-                                */}
-                                {setup.length > 0 && (
-                                    <Section title="Get more from Predyqt">
-                                        <View style={styles.card}>
-                                            <Text style={styles.cardBody}>
-                                                Each of these fills a pillar of your score. Until one has data,
-                                                that pillar is counted as unknown rather than as a failure.
-                                            </Text>
-                                            <View style={styles.rowList}>
-                                                {setup.map((item) => (
-                                                    <TouchableOpacity
-                                                        key={item.id}
-                                                        style={styles.setupRow}
-                                                        onPress={() => (item.open
-                                                            ? item.open()
-                                                            : router.push(item.route as never))}
-                                                        activeOpacity={0.8}
-                                                    >
-                                                        <View style={styles.setupIcon}>
-                                                            <Ionicons name={item.icon} size={18} color={Palette.textSecondary} />
-                                                        </View>
-                                                        <View style={styles.flex}>
-                                                            <Text style={styles.rowTitle}>{item.title}</Text>
-                                                            <Text style={styles.rowMeta} numberOfLines={2}>{item.body}</Text>
-                                                        </View>
-                                                        <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </View>
-                                        </View>
-                                    </Section>
-                                )}
 
                                 {/*
                                     News & Resources.
@@ -1401,10 +1278,21 @@ const HomeHeader = ({
  * 2. **It does not invent a movement.** `score.change` is null until there are two
  *    snapshots to compare, and a delta of zero is drawn as "no change", not as "+0".
  * 3. **It does not describe a null score as a bad one.** No score is a statement about
- *    coverage — see **The Predyqt score** in CLAUDE.md.
+ *    coverage — see **The Predyqt score** in CLAUDE.md. It says what unlocks one instead,
+ *    and how many areas already have data: this card is now the home screen's way to the
+ *    score screen's list of what is unmeasured, since the page's own setup list is gone.
+ *
+ * Its last line is Predyqt Age, the other aggregate number, and a separate target: the card
+ * is two buttons stacked rather than one, so the age opens `/age` and everything above it
+ * opens the breakdown. See `components/home/AgeRow.tsx`.
  */
-const ScoreCard = React.memo(({ score, attention, onPress }: {
-    score: HealthScore; attention: number; onPress: () => void;
+const ScoreCard = React.memo(({ score, attention, age, onPress, onAge }: {
+    score: HealthScore;
+    attention: number;
+    /** `null` until `GET /age` resolves — it loads after the first paint. */
+    age: PredyqtAge | null;
+    onPress: () => void;
+    onAge: () => void;
 }) => {
     const Palette = usePalette();
     const styles = useStyles();
@@ -1422,83 +1310,104 @@ const ScoreCard = React.memo(({ score, attention, onPress }: {
         : null;
 
     return (
-        <TouchableOpacity style={styles.scoreCard} onPress={onPress} activeOpacity={0.85}>
-            <View style={styles.scoreTop}>
-                <View style={styles.scoreBox}>
-                    <Text style={styles.scoreValue}>{score.value ?? '--'}</Text>
-                </View>
-
-                <View style={styles.flex}>
-                    <Text style={styles.scoreBand} numberOfLines={1}>
-                        {score.value === null ? 'No score yet' : band.headline}
-                    </Text>
-
-                    <View style={styles.scoreMetaRow}>
-                        {score.value !== null && change && (
-                            <View style={styles.scoreMeta}>
-                                <Ionicons
-                                    name={delta > 0 ? 'trending-up' : delta < 0 ? 'trending-down' : 'remove'}
-                                    size={14}
-                                    color={delta > 0 ? Palette.success : delta < 0 ? Palette.warning : Palette.textMuted}
-                                />
-                                <Text style={[
-                                    styles.scoreMetaText,
-                                    delta > 0 && { color: Palette.success },
-                                    delta < 0 && { color: Palette.warning },
-                                ]}>
-                                    {delta === 0
-                                        ? `No change ${formatSince(change.since)}`
-                                        : `${delta > 0 ? '+' : ''}${delta} ${formatSince(change.since)}`}
-                                </Text>
-                            </View>
-                        )}
-
-                        {score.value !== null && change && <Text style={styles.scoreDot}>·</Text>}
-
-                        {score.value !== null && (attention > 0 ? (
-                            <View style={styles.scoreMeta}>
-                                <Ionicons name="alert-circle" size={14} color={Palette.danger} />
-                                <Text style={[styles.scoreMetaText, { color: Palette.danger }]}>
-                                    {attention} need{attention === 1 ? 's' : ''} attention
-                                </Text>
-                            </View>
-                        ) : (
-                            <View style={styles.scoreMeta}>
-                                <Ionicons
-                                    name={mostlyReported ? 'clipboard-outline' : 'pulse'}
-                                    size={14}
-                                    color={mostlyReported ? Palette.warning : Palette.success}
-                                />
-                                <Text style={styles.scoreMetaText}>
-                                    {score.coverage.observedWeight}% measured
-                                </Text>
-                            </View>
-                        ))}
+        <View style={styles.scoreCard}>
+            <TouchableOpacity style={styles.scoreMain} onPress={onPress} activeOpacity={0.85} accessibilityRole="button">
+                <View style={styles.scoreTop}>
+                    <View style={styles.scoreBox}>
+                        <Text style={styles.scoreValue}>{score.value ?? '--'}</Text>
                     </View>
+
+                    <View style={styles.flex}>
+                        <Text style={styles.scoreBand} numberOfLines={1}>
+                            {score.value === null ? 'No score yet' : band.headline}
+                        </Text>
+
+                        <View style={styles.scoreMetaRow}>
+                            {score.value !== null && change && (
+                                <View style={styles.scoreMeta}>
+                                    <Ionicons
+                                        name={delta > 0 ? 'trending-up' : delta < 0 ? 'trending-down' : 'remove'}
+                                        size={14}
+                                        color={delta > 0 ? Palette.success : delta < 0 ? Palette.warning : Palette.textMuted}
+                                    />
+                                    <Text style={[
+                                        styles.scoreMetaText,
+                                        delta > 0 && { color: Palette.success },
+                                        delta < 0 && { color: Palette.warning },
+                                    ]}>
+                                        {delta === 0
+                                            ? `No change ${formatSince(change.since)}`
+                                            : `${delta > 0 ? '+' : ''}${delta} ${formatSince(change.since)}`}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {score.value !== null && change && <Text style={styles.scoreDot}>·</Text>}
+
+                            {score.value !== null && (attention > 0 ? (
+                                <View style={styles.scoreMeta}>
+                                    <Ionicons name="alert-circle" size={14} color={Palette.danger} />
+                                    <Text style={[styles.scoreMetaText, { color: Palette.danger }]}>
+                                        {attention} need{attention === 1 ? 's' : ''} attention
+                                    </Text>
+                                </View>
+                            ) : (
+                                <View style={styles.scoreMeta}>
+                                    <Ionicons
+                                        name={mostlyReported ? 'clipboard-outline' : 'pulse'}
+                                        size={14}
+                                        color={mostlyReported ? Palette.warning : Palette.success}
+                                    />
+                                    <Text style={styles.scoreMetaText}>
+                                        {score.coverage.observedWeight}% measured
+                                    </Text>
+                                </View>
+                            ))}
+
+                            {/* The server's own sentence for what unlocks a score. */}
+                            {score.value === null && (
+                                <Text style={styles.scoreMetaText} numberOfLines={2}>{score.headline}</Text>
+                            )}
+                        </View>
+                    </View>
+
+                    <Ionicons name="chevron-forward" size={22} color={Palette.textMuted} />
                 </View>
 
-                <Ionicons name="chevron-forward" size={22} color={Palette.textMuted} />
-            </View>
+                {/* What actually moved. The number alone is a verdict; this is the reason for
+                    it, and it is the difference between a score somebody watches and a score
+                    somebody stops believing. */}
+                {moved && (
+                    <View style={styles.scoreFoot}>
+                        <Ionicons
+                            name={moved.up ? 'arrow-up-circle' : 'arrow-down-circle'}
+                            size={14}
+                            color={moved.up ? Palette.success : Palette.warning}
+                        />
+                        <Text style={styles.scoreFootText} numberOfLines={1}>
+                            {moved.label} {moved.up ? 'improved' : 'slipped'}
+                            {change && change.improved.length + change.declined.length > 1
+                                ? ` · ${change.improved.length + change.declined.length - 1} other pillar${change.improved.length + change.declined.length === 2 ? '' : 's'} moved`
+                                : ''}
+                        </Text>
+                    </View>
+                )}
 
-            {/* What actually moved. The number alone is a verdict; this is the reason for
-                it, and it is the difference between a score somebody watches and a score
-                somebody stops believing. */}
-            {moved && (
-                <View style={styles.scoreFoot}>
-                    <Ionicons
-                        name={moved.up ? 'arrow-up-circle' : 'arrow-down-circle'}
-                        size={14}
-                        color={moved.up ? Palette.success : Palette.warning}
-                    />
-                    <Text style={styles.scoreFootText} numberOfLines={1}>
-                        {moved.label} {moved.up ? 'improved' : 'slipped'}
-                        {change && change.improved.length + change.declined.length > 1
-                            ? ` · ${change.improved.length + change.declined.length - 1} other pillar${change.improved.length + change.declined.length === 2 ? '' : 's'} moved`
-                            : ''}
-                    </Text>
-                </View>
-            )}
-        </TouchableOpacity>
+                {/* Before there is a score, how close it is. The breakdown this opens lists every
+                    area with no data and the tracker that fills it. */}
+                {score.value === null && score.coverage.total > 0 && (
+                    <View style={styles.scoreFoot}>
+                        <Ionicons name="pie-chart-outline" size={14} color={Palette.textSecondary} />
+                        <Text style={styles.scoreFootText} numberOfLines={1}>
+                            {score.coverage.scored} of {score.coverage.total} areas have data
+                        </Text>
+                        <Text style={styles.scoreFootLink}>What's missing</Text>
+                    </View>
+                )}
+            </TouchableOpacity>
+
+            <AgeRow age={age} onPress={onAge} />
+        </View>
     );
 });
 ScoreCard.displayName = 'ScoreCard';
@@ -1936,8 +1845,8 @@ const SleepCard = React.memo(({ card, today, onOpen }: {
     // with another night's number.
     const efficiency = card?.at && card.at === today?.day ? today.sleep.efficiency : null;
 
-    // Gated by the caller: nights nobody has recorded are a setup row pointing at
-    // `/activity/sources`, which is where connecting a health store actually happens.
+    // Gated by the caller: with no nights recorded there is no sleep section at all, and the
+    // score screen lists sleep as unmeasured with the tracker that fills it.
     if (hours === null && !hasNights) return null;
 
     const whole = hours === null ? null : Math.floor(hours);
@@ -2027,7 +1936,7 @@ const NutritionCard = React.memo(({ day, onOpen, onLog }: {
     const pattern = day?.plan?.guidance?.find((g) => g.kind === 'pattern')?.label
         ?? day?.plan?.guidance?.[0]?.label;
 
-    // Gated by the caller: an unconfigured tracker is a setup row rather than a card that
+    // Gated by the caller: an unconfigured tracker draws no section rather than a card that
     // is mostly an invitation. The guard keeps the non-null assertions below honest.
     if (!day?.plan || !target) return null;
 
@@ -2157,109 +2066,6 @@ const Macro = ({ label, grams, target, tint }: {
 };
 
 // ---------------------------------------------------------------------------
-// Appointments
-// ---------------------------------------------------------------------------
-
-/**
- * Doctor Appointment.
- *
- * The kit labels its featured doctor "Available Remotely" and gives every card a star
- * rating. Neither is modelled — nothing holds a professional's working hours and there is
- * no patient review model (see **Roadmap** in CLAUDE.md) — so the card shows the booking's
- * own status, which is the one per-appointment signal the API can actually back.
- */
-const AppointmentsCard = React.memo(({ appointments, onOpen, onBook }: {
-    appointments: Appointment[]; onOpen: () => void; onBook: () => void;
-}) => {
-    const Palette = usePalette();
-    const styles = useStyles();
-    // The caller only renders this section when there is a live appointment — an empty
-    // diary is a row in "Get more from Predyqt" instead. This guard is here so the
-    // destructure below cannot read a professional off `undefined` if it is ever reused.
-    if (appointments.length === 0) return null;
-
-    const [next, ...rest] = appointments;
-    const professional = professionalOf(next);
-    const when = new Date(next.scheduledFor);
-
-    return (
-        <View style={styles.card}>
-            <TouchableOpacity style={styles.doctorRow} onPress={onOpen} activeOpacity={0.85}>
-                <Avatar
-                    uri={professional?.profile_image ?? null}
-                    initials={initialsOf(professional)}
-                    size={52}
-                />
-                <View style={styles.flex}>
-                    <Text style={styles.rowTitle}>{nameOf(professional)}</Text>
-                    <Text style={styles.rowMeta}>
-                        {when.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                        {', '}
-                        {formatApptTime(when)}
-                    </Text>
-                    <Text style={styles.rowMeta}>
-                        {(professional?.speciality ?? []).join(' · ') || 'Consultation'}
-                        {' · '}
-                        {next.durationMinutes ?? 30}m
-                    </Text>
-                    <View style={styles.statusRow}>
-                        <View style={[
-                            styles.statusDot,
-                            { backgroundColor: next.status === 'confirmed' ? Palette.success : Palette.warning },
-                        ]} />
-                        <Text style={[
-                            styles.statusText,
-                            { color: next.status === 'confirmed' ? Palette.success : Palette.warning },
-                        ]}>
-                            {next.status === 'confirmed' ? 'Confirmed' : 'Awaiting confirmation'}
-                        </Text>
-                    </View>
-                </View>
-            </TouchableOpacity>
-
-            {rest.length > 0 && (
-                <>
-                    <View style={styles.divider} />
-                    <Text style={styles.subHeading}>Upcoming Appointments</Text>
-                    <View style={styles.rowList}>
-                        {rest.slice(0, 3).map((appointment) => {
-                            const p = professionalOf(appointment);
-                            const at = new Date(appointment.scheduledFor);
-                            return (
-                                <TouchableOpacity
-                                    key={appointment._id}
-                                    style={styles.upcomingRow}
-                                    onPress={onOpen}
-                                    activeOpacity={0.85}
-                                >
-                                    <View style={styles.dateChip}>
-                                        <Text style={styles.dateChipDay}>{at.getDate()}</Text>
-                                        <Text style={styles.dateChipWeekday}>
-                                            {at.toLocaleDateString(undefined, { weekday: 'short' })}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.flex}>
-                                        <Text style={styles.rowTitle} numberOfLines={1}>{nameOf(p)}</Text>
-                                        <Text style={styles.rowMeta} numberOfLines={1}>
-                                            {formatRelativeDay(at)} · {formatApptTime(at)}
-                                        </Text>
-                                    </View>
-                                    <Text style={styles.rowMeta}>{appointment.durationMinutes ?? 30}m</Text>
-                                    <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-                </>
-            )}
-
-            <CardFooterAction label="Book another" onPress={onBook} />
-        </View>
-    );
-});
-AppointmentsCard.displayName = 'AppointmentsCard';
-
-// ---------------------------------------------------------------------------
 // Medications
 // ---------------------------------------------------------------------------
 
@@ -2298,8 +2104,8 @@ const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen 
     // person last left the toggle.
     useEffect(() => { if (!done) setExpanded(false); }, [done]);
 
-    // Gated by the caller: a day with no doses is a setup row, not a card. See the
-    // tracker/setup split in `HomeScreen`.
+    // Gated by the caller: a day with no doses draws no section. See the tracker ordering in
+    // `HomeScreen`.
     if (doses.length === 0) return null;
 
     // Pending doses lead, so recording one surfaces the next one rather than leaving it
@@ -2413,88 +2219,6 @@ const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen 
     );
 });
 MedicationsCard.displayName = 'MedicationsCard';
-
-// ---------------------------------------------------------------------------
-// Ask Predyqt AI — symptoms and the assistant, in one card
-// ---------------------------------------------------------------------------
-
-/**
- * Ask Predyqt AI.
- *
- * The symptom half of this card moved out to `SymptomCheckerCard`, which is the section
- * directly above it. They are still one act — `app/symptoms` composes what you pick into a
- * first-person message and posts it to the assistant — but drawing the *same* search field
- * and the *same* chips in both cards was two identical controls eight points apart. This
- * one is now the conversation: what the assistant last said, and the way back into it.
- *
- * Three things that are load-bearing:
- *
- * 1. **The last reply is clamped to three lines.** It used to render whole — fifteen lines
- *    of a paragraph the person has already read, in the middle of a home screen. The point
- *    of showing it at all is that reopening feels like a resumption rather than a fresh
- *    start, and three lines does that.
- * 2. **The safety sentence stays.** There is no diagnosis engine behind the symptom card
- *    above, and the line saying so is not decoration — a percentage or a condition name on
- *    either card would be the most dangerous element in the app.
- * 3. **An unavailable assistant is said, not hidden.** With no model key on the server the
- *    card says so and offers no chat, rather than a control that answers 503.
- */
-const AskCard = React.memo(({ conversation, onOpen }: {
-    conversation: Conversation | null;
-    onOpen: () => void;
-}) => {
-    const Palette = usePalette();
-    const styles = useStyles();
-    const last = [...(conversation?.messages ?? [])].reverse().find((m) => m.role === 'assistant');
-    const unavailable = conversation?.available === false;
-
-    return (
-        <View style={styles.card}>
-            <TouchableOpacity
-                style={styles.bubbleRow}
-                onPress={unavailable ? undefined : onOpen}
-                activeOpacity={unavailable ? 1 : 0.85}
-                disabled={unavailable}
-            >
-                <View style={styles.botIcon}>
-                    <Ionicons name="sparkles" size={18} color={Palette.textSecondary} />
-                </View>
-                <View style={styles.bubble}>
-                    <Text style={styles.bubbleText} numberOfLines={last ? 3 : undefined}>
-                        {unavailable
-                            ? 'The assistant is unavailable on this server right now. Your results and trackers are unaffected.'
-                            : last?.text
-                            ?? 'Ask about your results, your plan, or a symptom — I read your own records before answering.'}
-                    </Text>
-                    {!!last && (
-                        <View style={styles.bubbleFoot}>
-                            <Text style={styles.bubbleTime}>{messageTime(last.createdAt)}</Text>
-                            <Ionicons name="checkmark-done" size={14} color={Palette.success} />
-                        </View>
-                    )}
-                </View>
-            </TouchableOpacity>
-
-            <Text style={styles.cardNote}>
-                Anything you check on the card above is composed into a question for the assistant,
-                which answers with your results and plan in front of it. It does not diagnose.
-            </Text>
-
-            {!unavailable && (
-                <>
-                    <View style={styles.divider} />
-                    <TouchableOpacity style={styles.footerAction} onPress={onOpen} activeOpacity={0.8}>
-                        <Text style={styles.footerActionText}>
-                            {last ? 'Continue the conversation' : 'Chat with Predyqt AI'}
-                        </Text>
-                        <Ionicons name="chatbubble-ellipses-outline" size={17} color={Palette.primary} />
-                    </TouchableOpacity>
-                </>
-            )}
-        </View>
-    );
-});
-AskCard.displayName = 'AskCard';
 
 /** The kit's underlined footer action — "Log Activity +" — above a hairline rule. */
 const CardFooterAction = ({ label, onPress }: { label: string; onPress: () => void }) => {
@@ -2880,6 +2604,10 @@ const HomeSkeleton = () => {
                     <View style={styles.scoreFoot}>
                         <SkeletonBlock width="70%" height={13} />
                     </View>
+                    {/* The Predyqt Age line, so the real card is no taller than this one. */}
+                    <View style={styles.scoreFoot}>
+                        <SkeletonBlock width="52%" height={13} />
+                    </View>
                 </View>
 
                 <View style={styles.section}>
@@ -3095,12 +2823,15 @@ const useStyles = makeStyles((Palette) => ({
         backgroundColor: Palette.background, ...Shadow.card,
         shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
     },
+    // The part of the card that opens the breakdown; the age line under it is its own button.
+    scoreMain: { gap: Spacing.md },
     scoreTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
     scoreFoot: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
         borderTopWidth: 1, borderTopColor: Palette.borderLight, paddingTop: Spacing.md,
     },
     scoreFootText: { flex: 1, fontSize: 13, color: Palette.textSecondary, ...BodyFont.medium },
+    scoreFootLink: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.semibold },
     scoreBox: {
         width: 66, height: 66, borderRadius: Radius.lg,
         backgroundColor: Palette.primarySurface,
@@ -3131,11 +2862,9 @@ const useStyles = makeStyles((Palette) => ({
     cardHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
     cardTitle: { fontSize: 17, color: Palette.text, fontFamily: Fonts.bold },
     cardBody: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, ...BodyFont.regular, marginTop: 3 },
-    cardNote: { fontSize: 12, lineHeight: 17, color: Palette.textMuted, ...BodyFont.regular },
     bigFigure: { fontSize: 30, color: Palette.text, fontFamily: Fonts.bold },
     bigUnit: { fontSize: 15, color: Palette.textSecondary, ...BodyFont.regular },
     divider: { height: 1, backgroundColor: Palette.border },
-    subHeading: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
     roundButton: {
         width: 44, height: 44, borderRadius: 22, backgroundColor: Palette.primaryFill,
         alignItems: 'center', justifyContent: 'center',
@@ -3170,9 +2899,6 @@ const useStyles = makeStyles((Palette) => ({
     statRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: 5 },
     stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     statText: { fontSize: 12.5, color: Palette.text, fontFamily: Fonts.semibold },
-    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
-    statusDot: { width: 7, height: 7, borderRadius: Radius.pill },
-    statusText: { fontSize: 13, fontFamily: Fonts.semibold },
 
     // Markers to watch -----------------------------------------------------
     // Same width as `metricTile`, so the two horizontal rails on this page line their
@@ -3225,13 +2951,6 @@ const useStyles = makeStyles((Palette) => ({
     },
     actionTitle: { fontSize: 16, lineHeight: 22, color: Palette.text, fontFamily: Fonts.semibold },
     actionCta: { fontSize: 14, fontFamily: Fonts.bold, marginTop: 7 },
-
-    // Get more from Predyqt -----------------------------------------------
-    setupRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    setupIcon: {
-        width: 38, height: 38, borderRadius: Radius.md, backgroundColor: Palette.borderLight,
-        alignItems: 'center', justifyContent: 'center',
-    },
 
     // Health metrics -------------------------------------------------------
     metricTile: {
@@ -3311,32 +3030,6 @@ const useStyles = makeStyles((Palette) => ({
         width: 34, height: 34, borderRadius: Radius.md,
         alignItems: 'center', justifyContent: 'center', marginTop: 2,
     },
-
-    // Appointments ---------------------------------------------------------
-    doctorRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    upcomingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    dateChip: {
-        width: 46, height: 46, borderRadius: Radius.md, borderWidth: 1,
-        borderColor: Palette.border, backgroundColor: Palette.background,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    dateChipDay: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
-    dateChipWeekday: { fontSize: 10, color: Palette.textSecondary, ...BodyFont.medium },
-
-    // Assistant ------------------------------------------------------------
-    bubbleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
-    botIcon: {
-        width: 40, height: 40, borderRadius: 20, backgroundColor: Palette.borderLight,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    bubble: {
-        flex: 1, backgroundColor: Palette.background, borderRadius: Radius.lg,
-        borderWidth: 1, borderColor: Palette.borderLight,
-        padding: Spacing.md, gap: 4,
-    },
-    bubbleText: { fontSize: 14.5, lineHeight: 21, color: Palette.text, ...BodyFont.regular },
-    bubbleFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
-    bubbleTime: { fontSize: 11, color: Palette.textMuted, ...BodyFont.regular },
 
     // Latest analysis ------------------------------------------------------
     analysisCard: {

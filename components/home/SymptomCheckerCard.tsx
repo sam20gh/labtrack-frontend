@@ -21,6 +21,11 @@
  *
  * The empty state is the kit's list replaced by one link, because a "Recent Checks" heading
  * over nothing is a section that reads as broken rather than as new.
+ *
+ * **The card ends on the sentence that the assistant does not diagnose.** A check is
+ * composed into a question for the assistant, and there is no diagnosis engine behind the
+ * chips — so the sentence travels with this card, wherever it is drawn. It used to sit on the
+ * home screen's Ask Predyqt AI card, which was removed because the assistant is a tab.
  */
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
@@ -171,6 +176,14 @@ const SymptomCheckerCard = ({ checks, commonIds, onSearch, onBrowse, onSymptom, 
                         })}
                     </>
                 )}
+
+                <View style={styles.note}>
+                    <Ionicons name="information-circle-outline" size={14} color={Palette.textMuted} />
+                    <Text style={styles.noteText}>
+                        What you pick becomes a question for Predyqt AI, which answers with your results and
+                        plan in front of it. It does not diagnose.
+                    </Text>
+                </View>
             </View>
         </View>
     );
@@ -178,7 +191,10 @@ const SymptomCheckerCard = ({ checks, commonIds, onSearch, onBrowse, onSymptom, 
 
 const useStyles = makeStyles((Palette) => ({
     // Card — `rect x=16 y=50 w=343 h=384 rx=8`, over a 1pt #E5E7EB outline.
+    // The 16pt gutter every other home card carries on its own container. `Section` pads
+    // only its heading, so without it this card ran edge to edge.
     card: {
+        marginHorizontal: Spacing.lg,
         backgroundColor: tone('#F9FAFB'),
         borderRadius: 8,
         borderWidth: 1,
@@ -264,6 +280,13 @@ const useStyles = makeStyles((Palette) => ({
         gap: Spacing.xs,
     },
     browseText: { fontSize: 15, color: Palette.primary, fontFamily: Fonts.semibold },
+
+    note: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+        marginTop: Spacing.xs, paddingTop: Spacing.md, paddingBottom: Spacing.sm,
+        borderTopWidth: 1, borderTopColor: Palette.borderLight,
+    },
+    noteText: { flex: 1, fontSize: 12, lineHeight: 17, color: Palette.textMuted, ...BodyFont.regular },
 }));
 
 export default SymptomCheckerCard;
