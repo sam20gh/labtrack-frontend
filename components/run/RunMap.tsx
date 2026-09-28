@@ -42,6 +42,11 @@ export interface CameraHandle {
     setCamera: (stop: CameraStop) => void;
 }
 
+/** The map itself, for a snapshot of the frame on screen ("Share this moment"). */
+export interface MapHandle {
+    takeSnap: (writeToDisk?: boolean) => Promise<string>;
+}
+
 export interface ReplayCamera {
     /** 0–1 of the route drawn so far. */
     progress: number;
@@ -57,6 +62,7 @@ interface Props {
     mode?: 'live' | 'overview' | 'replay';
     replay?: ReplayCamera;
     cameraRef?: Ref<CameraHandle>;
+    mapRef?: Ref<MapHandle>;
     /** Live only: off lets the person pan without being dragged back. */
     follow?: boolean;
     interactive?: boolean;
@@ -77,7 +83,7 @@ const line = (coordinates: number[][]) => ({
 });
 
 export default function RunMap({
-    trail, lightPreset, accent, mode = 'live', replay, cameraRef, follow = true, interactive = true, style,
+    trail, lightPreset, accent, mode = 'live', replay, cameraRef, mapRef, follow = true, interactive = true, style,
 }: Props) {
     const Palette = usePalette();
     const styles = useStyles();
@@ -105,6 +111,7 @@ export default function RunMap({
 
     return (
         <MapView
+            ref={mapRef as never}
             style={[styles.map, style]}
             styleURL={STANDARD_STYLE}
             compassEnabled={false}

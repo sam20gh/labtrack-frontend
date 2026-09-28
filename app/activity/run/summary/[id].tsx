@@ -27,6 +27,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     View, Text, Pressable, ScrollView, ActivityIndicator, PanResponder, useWindowDimensions, StyleSheet, Alert,
+    Modal, Animated as RNAnimated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -36,7 +37,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useReducedMotion } from 'react-native-reanimated';
 import { BodyFont, Fonts, Palettes, Radius, Spacing } from '@/constants/theme';
-import RunMap, { type CameraHandle } from '@/components/run/RunMap';
+import RunMap, { type CameraHandle, type MapHandle } from '@/components/run/RunMap';
+import ReplayMoment from '@/components/run/ReplayMoment';
+import BrandTag from '@/components/run/BrandTag';
 import RoutePoster from '@/components/run/RoutePoster';
 import TickerNumber from '@/components/run/TickerNumber';
 import { getSession, getSessionTrack, updateSession, type ActivitySession } from '@/lib/activity';
@@ -47,13 +50,19 @@ import { lightPresetFor } from '@/lib/run/sun';
 import { mapUnavailableReason } from '@/lib/run/map';
 import { shareRunImage } from '@/lib/run/share';
 import { distanceParts, formatClock, paceParts, TYPE_LABEL } from '@/lib/run/format';
-import { TRACKABLE_TYPES, type Track, type TrackableType } from '@/lib/run/trackMath';
+import { haversine, TRACKABLE_TYPES, type Track, type TrackableType } from '@/lib/run/trackMath';
 import { formatEnergy, useUnits } from '@/lib/units';
 
 const CAMERA_EVERY_MS = 33; // ~30 Hz, each a short linear animation the native side smooths
 const UI_EVERY_MS = 50; // ~20 Hz for the numbers, the trail trim and the scrubber
 const TURN_DEG_PER_S = 90; // at 1×; a bend becomes a sweep, never a snap
 const FOCUS_FROM_TOP = 0.38; // the camera's focus sits in the lower third, looking ahead
+const CHROME_HIDE_MS = 2500; // controls fade while playing, so a screen recording is clean
+/**
+ * A moment this close to the start or the finish is not offered for sharing: a map of where
+ * a ride began or ended is a home address. The poster trims its ends for the same reason.
+ */
+const MOMENT_CLEARANCE_M = 400;
 const EFFORT_LABELS = ['', 'Very light', 'Light', 'Moderate', 'High effort', 'Maximum'];
 
 // The replay and the poster are a brand surface: dark, violet, Ember. Fixed in both schemes.
@@ -77,6 +86,12 @@ export default function RunSummary() {
     const [playing, setPlaying] = useState(true);
     const [speed, setSpeed] = useState<1 | 2>(1);
     const cameraRef = useRef<CameraHandle>(null);
+    const mapRef = useRef<MapHandle>(null);
+    const momentRef = useRef<View>(null);
+    const [chrome, setChrome] = useState(true);
+    const chromeOpacity = useRef(new RNAnimated.Value(1)).current;
+    const [moment, setMoment] = useState<{ uri: string; progress: number } | null>(null);
+    const [snapping, setSnapping] = useState(false);
     const progressRef = useRef(0);
     const headingRef = useRef(0);
     const playingRef = useRef(true);
@@ -147,6 +162,18 @@ export default function RunSummary() {
         cameraRef.current?.setCamera({ centerCoordinate: f.center, heading: f.heading, animationDuration: 0 });
         setProgress(p);
     }, [trail.coordinates, cum, plan.ahead]);
+
+    // Controls fade out a moment into playback and come back on a tap or a pause, so the
+    // replay can be screen-recorded clean — the branding and the numbers stay.
+    useEffect(() => {
+        if (!playing) setChrome(true);
+        if (stage !== 'replay' || !playing || !chrome) return undefined;
+        const t = setTimeout(() => setChrome(false), CHROME_HIDE_MS);
+        return () => clearTimeout(t);
+    }, [stage, playing, chrome]);
+    useEffect(() => {
+        RNAnimated.timing(chromeOpacity, { toValue: chrome ? 1 : 0, duration: 300, useNativeDriver: true }).start();
+    }, [chrome, chromeOpacity]);
 
     // The flight: one animation-frame loop for as long as the replay is on screen.
     useEffect(() => {
@@ -240,6 +267,41 @@ export default function RunSummary() {
         const first = trail.coordinates[0];
         // The camera keeps the current position at the centre of the padded viewport.
         const focusY = plan.paddingTop + (height - plan.paddingTop) / 2;
+        const here = replayFrame(trail.coordinates, cum, progress, plan.ahead).center;
+        const last = trail.coordinates[trail.coordinates.length - 1];
+        const clearOfEnds = haversine(here[1], here[0], first[1], first[0]) >= MOMENT_CLEARANCE_M
+            && haversine(here[1], here[0], last[1], last[0]) >= MOMENT_CLEARANCE_M;
+
+        const takeMoment = async () => {
+            setPlaying(false);
+            setChrome(true);
+            if (!clearOfEnds) {
+                Alert.alert(
+                    'Pick a moment further along',
+                    'Moments near the start or finish are not shared, so a picture never shows where you set off from. Move the slider along the route and try again.',
+                );
+                return;
+            }
+            setSnapping(true);
+            try {
+                const uri = await mapRef.current?.takeSnap(true);
+                if (uri) setMoment({ uri, progress: progressRef.current });
+            } catch {
+                Alert.alert('Could not capture this moment', 'Please try again.');
+            } finally {
+                setSnapping(false);
+            }
+        };
+
+        // The shared picture is 4:5; the full-screen snapshot is cropped to it, centred, so
+        // the dot's position is recomputed for the crop rather than assumed.
+        const momentW = Math.min(360, width - Spacing.xl * 2);
+        const momentH = Math.round(momentW * 1.25);
+        const scale = Math.max(momentW / width, momentH / height);
+        const dot = {
+            x: ((width / 2) * scale + (momentW - width * scale) / 2) / momentW,
+            y: (focusY * scale + (momentH - height * scale) / 2) / momentH,
+        };
         return (
             <View style={[styles.fill, { backgroundColor: P.canvas }]}>
                 {focused && <StatusBar style="light" />}
@@ -253,6 +315,14 @@ export default function RunSummary() {
                         start: { center: first, heading: startHeading, zoom: plan.zoom, paddingTop: plan.paddingTop },
                     }}
                     cameraRef={cameraRef}
+                    mapRef={mapRef}
+                />
+                {/* A tap anywhere brings the faded controls back. */}
+                <Pressable
+                    style={StyleSheet.absoluteFill}
+                    onPress={() => setChrome(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Show replay controls"
                 />
                 {/* The rider: fixed on screen at the camera's focus, so the map never redraws to move it. */}
                 <View pointerEvents="none" style={[styles.dotWrap, { top: focusY - 22, left: width / 2 - 22 }]}>
@@ -267,7 +337,11 @@ export default function RunSummary() {
                     </View>
                     <Text style={[styles.replayClock, { color: HERO.white }]}>{formatClock(session.durationSec * progress)}</Text>
                 </View>
-                <View style={[styles.replayBottom, { paddingBottom: insets.bottom + Spacing.lg }]}>
+                <BrandTag style={[styles.brand, { top: insets.top + Spacing.md }]} />
+                <RNAnimated.View
+                    pointerEvents={chrome ? 'box-none' : 'none'}
+                    style={[styles.replayBottom, { paddingBottom: insets.bottom + Spacing.lg, opacity: chromeOpacity }]}
+                >
                     <Scrubber
                         value={progress}
                         onScrub={(v) => { setPlaying(false); snapTo(v); }}
@@ -293,11 +367,75 @@ export default function RunSummary() {
                         >
                             <Text style={styles.pillText}>{speed}×</Text>
                         </Pressable>
+                        <Pressable
+                            onPress={takeMoment}
+                            disabled={snapping}
+                            style={[styles.pill, styles.ghost, styles.shareMoment]}
+                            accessibilityRole="button"
+                            accessibilityLabel="Share this moment of the replay"
+                        >
+                            {snapping
+                                ? <ActivityIndicator size="small" color={HERO.white} />
+                                : <Ionicons name="share-outline" size={16} color={HERO.white} />}
+                            <Text style={styles.pillText}>Share</Text>
+                        </Pressable>
                         <Pressable onPress={() => setStage('poster')} style={[styles.pill, styles.ghost]} accessibilityRole="button">
                             <Text style={styles.pillText}>Skip</Text>
                         </Pressable>
                     </View>
-                </View>
+                </RNAnimated.View>
+
+                <Modal visible={!!moment} transparent animationType="fade" onRequestClose={() => setMoment(null)}>
+                    <View style={[styles.momentBackdrop, { backgroundColor: withAlpha(P.canvas, 0.92) }]}>
+                        {moment && (
+                            <>
+                                <View style={styles.posterFrame}>
+                                    <ReplayMoment
+                                        ref={momentRef}
+                                        uri={moment.uri}
+                                        width={momentW}
+                                        height={momentH}
+                                        dot={dot}
+                                        title={title}
+                                        distance={distanceParts((session.distanceM ?? 0) * moment.progress, units)}
+                                        clock={formatClock(session.durationSec * moment.progress)}
+                                        date={date}
+                                    />
+                                </View>
+                                {/* Outside the captured view: anything inside it is in the picture. */}
+                                <View style={[styles.shareRow, { width: momentW }]}>
+                                    <Pressable onPress={() => setMoment(null)} style={[styles.share, styles.ghost]} accessibilityRole="button">
+                                        <Text style={styles.pillText}>Close</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={async () => {
+                                            setSharing(true);
+                                            try {
+                                                await shareRunImage(momentRef, `${title} on Predyqt: ${distance.value} ${distance.unit} in ${formatClock(session.durationSec)}.`);
+                                            } finally {
+                                                setSharing(false);
+                                            }
+                                        }}
+                                        disabled={sharing}
+                                        style={[styles.share, { backgroundColor: P.primaryFill }]}
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Share this picture"
+                                    >
+                                        {sharing ? <ActivityIndicator color={HERO.white} /> : (
+                                            <>
+                                                <Ionicons name="share-outline" size={20} color={HERO.white} />
+                                                <Text style={styles.pillText}>Share</Text>
+                                            </>
+                                        )}
+                                    </Pressable>
+                                </View>
+                                <Text style={[styles.note, { color: P.textSecondary, width: momentW }]}>
+                                    This picture shows the map around this point of your route.
+                                </Text>
+                            </>
+                        )}
+                    </View>
+                </Modal>
             </View>
         );
     }
@@ -432,6 +570,9 @@ const styles = StyleSheet.create({
     replayClock: { ...BodyFont.semibold, fontSize: 18, fontVariant: ['tabular-nums'], opacity: 0.85 },
     replayBottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: Spacing.xl, gap: Spacing.lg },
     replayActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    brand: { position: 'absolute', right: Spacing.xl },
+    shareMoment: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    momentBackdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.lg, padding: Spacing.xl },
     dotWrap: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
     dotGlow: { position: 'absolute', width: 44, height: 44, borderRadius: 22 },
     dotCore: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
