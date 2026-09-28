@@ -16,7 +16,7 @@
  * replay is idempotent.
  */
 import {
-    capabilities, isAvailable, supports, type JstyleVariant,
+    capabilities, isAvailable, supports, type JstylePacket, type JstyleVariant,
 } from '@/modules/jstyle-ble';
 import type {
     HealthCapability, HealthReader, SyncBatch, SourceDevice,
@@ -131,28 +131,84 @@ const deviceFor = (paired: PairedBracelet): SourceDevice => ({
  * contain are still on the device for next time.
  */
 /**
- * Which reader wrote a cursor. Bump it whenever a fix makes rows readable that an earlier
- * build read and discarded — the same job `READER_VERSION` does in `healthConnect.ts`.
+ * The version written into the cursor.
  *
- * The cursor only drops rows older than the last sync, so it cannot tell "sent" from "read
- * and thrown away". `v2` exists because of exactly that: build 23 decoded the V8's SpO2
- * history (packet 68) as `unknown`, every sync discarded it and still advanced the cursor,
- * and once the mapping was fixed all of those readings sat behind it. The bracelet screen
- * showed 95% — the tiles read the whole replay — while none of it was ever posted.
- *
- * An old cursor decodes as null, which is one full replay; the server upserts every row by
- * `externalId`, so that costs a larger POST and nothing else.
+ * The cursor no longer filters anything — see `acknowledgeSynced`: once a sync can delete
+ * from the bracelet, every row it read has to be posted, because a row read, filtered out
+ * and then deleted is gone. The bracelet is freed after each sync, so the replay is only
+ * what is new anyway. `v2` is kept in the string so a cursor records which reader wrote it;
+ * the v1 filter is how build 23's discarded SpO2 history sat unsent behind it.
  */
 const CURSOR_VERSION = 'v2';
 
-const decodeCursor = (cursor: string | null): Date | null => {
-    const prefix = `${CURSOR_VERSION}:`;
-    if (!cursor?.startsWith(prefix)) return null;
-    const at = new Date(cursor.slice(prefix.length));
-    return Number.isNaN(at.getTime()) ? null : at;
+// ── acknowledgement ─────────────────────────────────────────────────────────
+
+type SeriesCommand = Parameters<typeof session.readSeries>[1];
+
+/**
+ * The only series a sync ever deletes from the bracelet: each record is one reading at one
+ * instant, stored as its own row under its own `externalId`, so once the server has a row
+ * nothing is lost by the bracelet forgetting it.
+ *
+ * Everything else stays on the bracelet, deliberately:
+ *
+ * - **Day totals, continuous heart rate, HRV** are reduced to one figure *per day* before
+ *   they are sent, and the server `$set`s it. The bracelet's delete wipes the whole series,
+ *   today's partial record included, so the next sync would send an afternoon and overwrite
+ *   the full day with it.
+ * - **Sleep** — a delete mid-night splits the night in two, and the ingest keeps only the
+ *   longer half (`healthSync.sameNight`).
+ *
+ * Those buffers roll over on their own, overwriting records synced dozens of times, so
+ * leaving them costs a larger replay and nothing else.
+ */
+const MAPPERS: Partial<Record<SeriesCommand, (packets: JstylePacket[], ctx: map.MapContext) => { externalId: string }[]>> = {
+    getDetailActivity: (p, ctx) => map.toActivities(p, ctx),
+    getStaticHr: (p, ctx) => map.toHeart(p, ctx),
+    getAutoSpo2: (p, ctx) => map.toSpo2(p, ctx, 'automatic'),
+    getManualSpo2: (p, ctx) => map.toSpo2(p, ctx, 'manual'),
+    getTemperature: (p, ctx) => map.toTemperature(p, ctx, 'wrist'),
+    getAxillaryTemperature: (p, ctx) => map.toTemperature(p, ctx, 'axillary'),
 };
 
-const readSince = async (cursor: string | null): Promise<SyncBatch> => {
+/** What one sync read and may delete once the server has it. */
+interface PendingAck {
+    variant: JstyleVariant;
+    ctx: map.MapContext;
+    /** Per deletable series: the ids of every row this read produced and the batch carries. */
+    sent: Map<SeriesCommand, Set<string>>;
+}
+
+let pending: PendingAck | null = null;
+let watchdog: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * A read is only safe to act on when the bracelet said it was finished and every packet was
+ * one this build understands. The SpO2 history decoded as `unknown` for a whole build; with
+ * deletion switched on, that would have been every reading lost rather than merely unsent.
+ */
+const trustworthy = (result: session.ReadResult): boolean =>
+    result.complete && !result.reason && result.packets.every((p) => p.type !== 'unknown');
+
+/**
+ * Let go of the bracelet. Called by `sync.ts` on every path once a bracelet sync is over,
+ * and by the watchdog if that never happens — a held connection keeps the radio awake and
+ * stops the next sync, or live view, connecting at all.
+ */
+export const release = async (): Promise<void> => {
+    if (watchdog) clearTimeout(watchdog);
+    watchdog = null;
+    const held = pending;
+    pending = null;
+    // Live view may have taken the connection over meanwhile; it is not this sync's to close.
+    if (isLive()) return;
+    await transport.disconnect();
+    if (held) session.reset(held.variant);
+};
+
+// The cursor is part of the `HealthReader` contract and filters nothing here — see
+// `CURSOR_VERSION`.
+const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
     const paired = await getPaired();
     if (!paired) throw new Error('No bracelet is paired.');
     // The live view holds the one connection these bracelets allow, and a sync would
@@ -161,8 +217,8 @@ const readSince = async (cursor: string | null): Promise<SyncBatch> => {
 
     const { variant } = paired;
     const ctx: map.MapContext = { deviceId: paired.id, variant, device: deviceFor(paired) };
-    const since = decodeCursor(cursor);
     const readAt = new Date().toISOString();
+    await release();
 
     const batch: SyncBatch = {
         platform: 'jstyle_bracelet',
@@ -199,8 +255,15 @@ const readSince = async (cursor: string | null): Promise<SyncBatch> => {
             await updatePaired({ monitoringSetAt: new Date().toISOString() });
         }
 
-        const read = (command: Parameters<typeof session.readSeries>[1]) =>
-            session.readSeries(variant, command);
+        const sent = new Map<SeriesCommand, Set<string>>();
+        const read = async (command: SeriesCommand) => {
+            const result = await session.readSeries(variant, command);
+            const mapper = MAPPERS[command];
+            if (mapper && result.packets.length && trustworthy(result)) {
+                sent.set(command, new Set(mapper(result.packets, ctx).map((r) => r.externalId)));
+            }
+            return result;
+        };
 
         batch.days.push(...map.toDays((await read('getTotalActivity')).packets));
         batch.activities.push(...map.toActivities((await read('getDetailActivity')).packets, ctx));
@@ -221,18 +284,22 @@ const readSince = async (cursor: string | null): Promise<SyncBatch> => {
         batch.temperature!.push(
             ...map.toTemperature((await read('getAxillaryTemperature')).packets, ctx, 'axillary'),
         );
-    } finally {
-        // Always, including on the failure path. A connection left open keeps the radio hot
-        // and stops the next sync connecting at all, because these bracelets accept exactly
-        // one central at a time.
-        await transport.disconnect();
+
+        // The connection stays open through the POST, so the delete can follow the server's
+        // answer without a reconnect — and so the only readings that can appear between the
+        // read and the delete are ones the bracelet takes in those seconds, which the
+        // re-read in `acknowledgeSynced` catches. Two minutes is the ceiling on holding it.
+        pending = { variant, ctx, sent };
+        watchdog = setTimeout(() => { void release(); }, 120_000);
+    } catch (err) {
+        // A failed read acknowledges nothing and holds nothing.
+        await release();
         session.reset(variant);
+        throw err;
     }
 
-    // From the whole replay, not the filtered batch: the newest reading is worth showing
-    // even when the server already has it.
     await updatePaired({ lastSyncAt: readAt, latest: latestOf(batch, paired.latest) });
-    return since ? dropOlderThan(batch, since) : batch;
+    return batch;
 };
 
 /** The newest of `rows` by `at`, or the one already held when that is newer. */
@@ -275,47 +342,46 @@ const latestOf = (batch: SyncBatch, held: LatestReadings = {}): LatestReadings =
 });
 
 /**
- * Drop what the server has already seen.
+ * Tell the bracelet it may free what the server now holds.
  *
- * Purely bandwidth. Every row carries a deterministic `externalId` and the server upserts,
- * so re-posting an old row is harmless — which is why this filters rather than tracking
- * what was sent, and why losing the cursor costs nothing but a larger POST.
+ * **Called only after `/api/wearables/sync` has answered** — the server has written the rows
+ * by then; before it, the bracelet is the only copy, and acknowledging early turns every
+ * failed upload into permanent loss.
  *
- * Day rows are deliberately **not** filtered: a day's totals keep changing until the day is
- * over, so the last thing a sync should do is stop re-sending today because it sent it an
- * hour ago.
- */
-const dropOlderThan = (batch: SyncBatch, since: Date): SyncBatch => {
-    const after = (iso: string) => new Date(iso).getTime() >= since.getTime();
-    return {
-        ...batch,
-        activities: batch.activities.filter((r) => after(r.startedAt)),
-        sleep: batch.sleep.filter((r) => after(r.endedAt)),
-        heart: batch.heart.filter((r) => after(r.measuredAt)),
-        spo2: batch.spo2?.filter((r) => after(r.measuredAt)),
-        temperature: batch.temperature?.filter((r) => after(r.measuredAt)),
-        bloodPressure: batch.bloodPressure?.filter((r) => after(r.measuredAt)),
-        ecg: batch.ecg?.filter((r) => after(r.measuredAt)),
-    };
-};
-
-/**
- * Tell the bracelet it may free what was just read.
+ * The vendor's delete takes no range: it wipes the **whole** series. So each series is read
+ * once more first, and deleted only when everything it now holds is a row this sync sent. A
+ * reading taken while the POST was in flight fails that check, the series is left alone,
+ * and the next sync sends it — the one outcome this must never have is a reading deleted
+ * without having been sent. Series outside `MAPPERS` are never deleted; see there for why.
  *
- * **Called only after `/api/wearables/sync` has answered.** The bracelet is the only copy
- * until then, so acknowledging early turns every failed upload — a train, a tunnel, a
- * flaky connection — into permanent data loss.
+ * Always releases the bracelet, whether or not anything was deleted.
  *
  * Kept off `HealthReader` on purpose. No other reader has a step that destroys data on the
  * source, and putting one on the shared interface would invite a future reader to implement
  * it because the slot was there.
  */
 export const acknowledgeSynced = async (): Promise<void> => {
-    const paired = await getPaired();
-    if (!paired || !transport.isConnected()) return;
+    const plan = pending;
+    try {
+        // Nothing is deleted over a connection this sync did not open and hold throughout —
+        // live view taking the bracelet over mid-POST is the case this catches.
+        if (!plan || isLive() || transport.connectedId() !== plan.ctx.deviceId) return;
 
-    for (const command of ['getTotalActivity', 'getDetailSleep', 'getStaticHr'] as const) {
-        await session.acknowledge(paired.variant, command);
+        for (const [command, sentIds] of plan.sent) {
+            if (!sentIds.size) continue;
+            const again = await session.readSeries(plan.variant, command);
+            if (!trustworthy(again)) continue;
+
+            const nowHeld = MAPPERS[command]!(again.packets, plan.ctx).map((r) => r.externalId);
+            const unsent = nowHeld.filter((id) => !sentIds.has(id));
+            if (unsent.length) {
+                console.log(`🔁 ${command}: ${unsent.length} new since the read — kept for next sync`);
+                continue;
+            }
+            await session.acknowledge(plan.variant, command);
+        }
+    } finally {
+        await release();
     }
 };
 

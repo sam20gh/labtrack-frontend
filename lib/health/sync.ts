@@ -107,6 +107,14 @@ const runOne = async (platform: HealthPlatform): Promise<SyncResult> => {
             reason: err instanceof Error ? err.message : 'Could not sync health data.',
             platform,
         };
+    } finally {
+        // The bracelet reader leaves its connection open through the POST so the delete
+        // can follow the server's answer. Every path out lets go of it — after a successful
+        // acknowledge this is a no-op; after a failed POST or an empty read it is the only
+        // thing that does.
+        if (platform === 'jstyle_bracelet') {
+            await require('./jstyle/reader').release().catch(() => undefined);
+        }
     }
 };
 

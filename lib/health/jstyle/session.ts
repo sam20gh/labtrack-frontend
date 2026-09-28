@@ -141,6 +141,7 @@ const exchange = async (
     args: Parameters<typeof buildCommand>[2],
     maxPackets: number,
     accepts?: Accepts,
+    firstPacketMs: number = FIRST_PACKET_MS,
 ): Promise<ReadResult> => {
     const packets: JstylePacket[] = [];
     let complete = false;
@@ -170,7 +171,10 @@ const exchange = async (
         activeSink = (packet) => {
             // A reply to something else entirely — most often a button press mid-read.
             // Passed on rather than counted, so it cannot end this read early.
-            if ((packet.type === 'unknown' && !packets.length) || (accepts && !accepts(packet))) {
+            // With a filter, the filter alone decides — a delete's acknowledgement is a type
+            // this app has no name for, and is exactly the reply that read is waiting on.
+            const foreign = accepts ? !accepts(packet) : packet.type === 'unknown' && !packets.length;
+            if (foreign) {
                 unsolicited?.(packet);
                 return;
             }
@@ -189,7 +193,7 @@ const exchange = async (
             arm(NEXT_PACKET_MS);
         };
 
-        arm(FIRST_PACKET_MS);
+        arm(firstPacketMs);
 
         transport.write(buildCommand(variant, command, args)).catch((err) => {
             finish(err instanceof Error ? err.message : 'Could not reach the bracelet.');
@@ -287,7 +291,10 @@ export const acknowledge = (
 ): Promise<void> => exclusive(async () => {
     if (!supports(variant, command)) return;
     try {
-        await exchange(variant, command, { mode: 'delete' }, 4);
+        // The reply is a one-packet "deleted" of a type nothing maps, so any packet ends it,
+        // and a short wait: holding the one connection eight seconds per series for an
+        // acknowledgement nothing reads would keep every other command waiting.
+        await exchange(variant, command, { mode: 'delete' }, 1, () => true, 2_500);
     } catch { /* see above: re-sending beats deleting early */ }
 });
 
