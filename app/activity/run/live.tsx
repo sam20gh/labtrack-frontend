@@ -69,7 +69,7 @@ const useRecorder = () => {
     return { state: recorder.getState(), version };
 };
 
-type Ending = { kind: 'saving' } | { kind: 'offline' } | { kind: 'rejected'; reason: string } | null;
+type Ending = { kind: 'saving' } | { kind: 'offline' } | { kind: 'server'; httpStatus: number } | { kind: 'rejected'; reason: string } | null;
 
 const parseGoal = (raw: string | undefined): RunGoal | undefined => {
     if (!raw) return undefined;
@@ -175,6 +175,8 @@ export default function LiveRunScreen() {
             setEnding({ kind: 'rejected', reason: result.reason });
         } else if (result.status === 'pending' && result.authError) {
             router.replace('/(auth)/loginscreen');
+        } else if (result.status === 'pending' && result.kind === 'server') {
+            setEnding({ kind: 'server', httpStatus: result.httpStatus });
         } else {
             setEnding({ kind: 'offline' });
         }
@@ -212,8 +214,10 @@ export default function LiveRunScreen() {
                         </Text>
                         <Text style={[styles.endBody, { color: hud.secondary }]}>
                             {ending.kind === 'offline'
-                                ? 'It will upload the next time Predyqt can reach the server. Nothing is lost.'
-                                : `The server could not read it (${ending.reason}). It stays on this phone so it can be sent once that is fixed.`}
+                                ? 'The phone could not reach Predyqt. It uploads by itself when you are back online. Nothing is lost.'
+                                : ending.kind === 'server'
+                                    ? `Predyqt's server did not accept it yet (error ${ending.httpStatus}). It is safe on this phone and is retried every time you open the app. Nothing is lost.`
+                                    : `The server could not read it (${ending.reason}). It stays on this phone so it can be sent once that is fixed.`}
                         </Text>
                         <Pressable
                             style={[styles.done, { backgroundColor: P.primaryFill }]}

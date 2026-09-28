@@ -54,6 +54,7 @@ import { StreakCard } from '@/components/metric/StreakCard';
 import { QuickActions, type QuickAction } from '@/components/metric/QuickActions';
 import { TRACKABLE_TYPES, type TrackableType } from '@/lib/run/trackMath';
 import { TYPE_LABEL } from '@/lib/run/format';
+import WaitingUploadsCard from '@/components/run/WaitingUploadsCard';
 import { TotalsCard, type TotalsFigure } from '@/components/metric/TotalsCard';
 import { TypeBreakdown } from '@/components/metric/TypeBreakdown';
 import { ActiveHours } from '@/components/metric/ActiveHours';
@@ -646,6 +647,10 @@ export default function ActivityDashboard() {
                         <View style={styles.section}>
                             <QuickActions actions={quickActions} />
                         </View>
+
+                        {/* A recorded session still on this phone: the history is the server's, so
+                            without this it would be invisible until it uploads. Draws nothing otherwise. */}
+                        <WaitingUploadsCard style={styles.section} />
 
                         <View style={styles.section}>
                             <SourceBanner

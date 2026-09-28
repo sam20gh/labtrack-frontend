@@ -6,7 +6,7 @@ import {
   ChakraPetch_600SemiBold,
   ChakraPetch_700Bold,
 } from '@expo-google-fonts/chakra-petch';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -21,7 +21,6 @@ import * as Notifications from 'expo-notifications';
 import { routeForNotification, syncRegistration } from '@/lib/notifications';
 import { hydrateUnits } from '@/lib/units';
 import { hydrateHealthSources } from '@/lib/health';
-import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
 import ConnectionBanner from '@/components/errors/ConnectionBanner';
@@ -29,7 +28,7 @@ import ConnectionBanner from '@/components/errors/ConnectionBanner';
 // happen when the bundle loads — before any location event is delivered to a background
 // wake — or the event finds no task and the fix is dropped. See lib/run/recorder.ts.
 import '@/lib/run/recorder';
-import { uploadPending } from '@/lib/run/upload';
+import { attachUploadRetry } from '@/lib/run/upload';
 import { hydrateRunSettings } from '@/lib/run/settings';
 import { attachCoach } from '@/lib/run/coach';
 import { attachRunHeart } from '@/lib/run/heart';
@@ -76,9 +75,9 @@ export default function RootLayout() {
   // launch: the endpoint is idempotent, and this is the only thing that heals it.
   useEffect(() => { syncRegistration().catch(() => { /* nothing to tell the user here */ }); }, []);
 
-  // A finished run whose upload could not reach the server is still on the phone; send it.
-  // Never throws, and a run that still cannot go simply waits for the next launch.
-  useEffect(() => { uploadPending().catch(() => { /* retried next launch */ }); }, []);
+  // A finished run whose upload did not go through is still on the phone; send it now and
+  // whenever the app comes back to the front. Never throws; a run that cannot go yet waits.
+  useEffect(() => { attachUploadRetry(); }, []);
 
   // Run preferences are read synchronously during a run (countdown, cues, contrast), like
   // units. The coach listens to the recorder for the whole app's life, so a split is spoken
