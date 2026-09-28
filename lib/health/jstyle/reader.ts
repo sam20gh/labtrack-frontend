@@ -130,6 +130,28 @@ const deviceFor = (paired: PairedBracelet): SourceDevice => ({
  * report a clean failure — the caller sees a shorter batch, and the rows it does not
  * contain are still on the device for next time.
  */
+/**
+ * Which reader wrote a cursor. Bump it whenever a fix makes rows readable that an earlier
+ * build read and discarded — the same job `READER_VERSION` does in `healthConnect.ts`.
+ *
+ * The cursor only drops rows older than the last sync, so it cannot tell "sent" from "read
+ * and thrown away". `v2` exists because of exactly that: build 23 decoded the V8's SpO2
+ * history (packet 68) as `unknown`, every sync discarded it and still advanced the cursor,
+ * and once the mapping was fixed all of those readings sat behind it. The bracelet screen
+ * showed 95% — the tiles read the whole replay — while none of it was ever posted.
+ *
+ * An old cursor decodes as null, which is one full replay; the server upserts every row by
+ * `externalId`, so that costs a larger POST and nothing else.
+ */
+const CURSOR_VERSION = 'v2';
+
+const decodeCursor = (cursor: string | null): Date | null => {
+    const prefix = `${CURSOR_VERSION}:`;
+    if (!cursor?.startsWith(prefix)) return null;
+    const at = new Date(cursor.slice(prefix.length));
+    return Number.isNaN(at.getTime()) ? null : at;
+};
+
 const readSince = async (cursor: string | null): Promise<SyncBatch> => {
     const paired = await getPaired();
     if (!paired) throw new Error('No bracelet is paired.');
@@ -139,13 +161,14 @@ const readSince = async (cursor: string | null): Promise<SyncBatch> => {
 
     const { variant } = paired;
     const ctx: map.MapContext = { deviceId: paired.id, variant, device: deviceFor(paired) };
-    const since = cursor ? new Date(cursor) : null;
+    const since = decodeCursor(cursor);
+    const readAt = new Date().toISOString();
 
     const batch: SyncBatch = {
         platform: 'jstyle_bracelet',
         tzOffset: new Date().getTimezoneOffset(),
         // The next cursor is *now*, written only because this read is about to succeed.
-        cursor: new Date().toISOString(),
+        cursor: `${CURSOR_VERSION}:${readAt}`,
         providerLabel: VARIANT_LABEL[variant],
         permissions: capabilities(variant).commands,
         devices: [{ ...deviceFor(paired), lastSeenAt: new Date().toISOString() }],
@@ -208,7 +231,7 @@ const readSince = async (cursor: string | null): Promise<SyncBatch> => {
 
     // From the whole replay, not the filtered batch: the newest reading is worth showing
     // even when the server already has it.
-    await updatePaired({ lastSyncAt: batch.cursor ?? undefined, latest: latestOf(batch, paired.latest) });
+    await updatePaired({ lastSyncAt: readAt, latest: latestOf(batch, paired.latest) });
     return since ? dropOlderThan(batch, since) : batch;
 };
 
