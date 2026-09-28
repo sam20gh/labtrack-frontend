@@ -1693,8 +1693,12 @@ const MetricsRail = React.memo(({ cards, router }: { cards: MetricCardData[]; ro
                     <MetricTile
                         key={card.key}
                         card={card}
-                        // An unknown key opens the metrics list rather than `push(undefined)`.
-                        onPress={() => router.push((metricRoute(card.key) ?? '/metrics') as any)}
+                        // Every tile opens the Health Metrics page, never the metric's own
+                        // tracker. `METRIC_ROUTE` sends SpO2 and temperature to `/bracelet`,
+                        // which is right from the metrics list (it is where a new reading is
+                        // taken) but from here dropped people on a device settings screen
+                        // when they had asked to see a number.
+                        onPress={() => router.push('/metrics' as any)}
                     />
                 ))}
             </ScrollView>
