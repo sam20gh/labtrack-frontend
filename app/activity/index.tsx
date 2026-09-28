@@ -52,6 +52,8 @@ import { GoalRings } from '@/components/metric/GoalRings';
 import { PlanGuidanceCard } from '@/components/metric/PlanGuidanceCard';
 import { StreakCard } from '@/components/metric/StreakCard';
 import { QuickActions, type QuickAction } from '@/components/metric/QuickActions';
+import { TRACKABLE_TYPES, type TrackableType } from '@/lib/run/trackMath';
+import { TYPE_LABEL } from '@/lib/run/format';
 import { TotalsCard, type TotalsFigure } from '@/components/metric/TotalsCard';
 import { TypeBreakdown } from '@/components/metric/TypeBreakdown';
 import { ActiveHours } from '@/components/metric/ActiveHours';
@@ -60,7 +62,7 @@ import { ArtCard } from '@/components/activity/ArtCard';
 import { WelcomeCard } from '@/components/activity/WelcomeCard';
 import { CyclistArt, TargetArt, FlexArt, FLEX_ART } from '@/components/activity/art';
 import {
-    getSummary, getDay, getCalendar, getWearableStatus, today, formatDistance, formatType,
+    getSummary, getDay, getCalendar, getWearableStatus, today, formatDistance,
     formatDuration, dayHasData,
     type ActivitySummary, type ActivitySession, type WearableStatus,
     type ActivityMetricKey, type DayMetrics, type CalendarDay,
@@ -446,12 +448,14 @@ export default function ActivityDashboard() {
     /**
      * The three shortcuts under the chart — frame 7.
      *
-     * The middle one is the design's "Quick Jog", and it is only offered when this person
-     * has a most-logged type to pre-fill it with. Hard-coding jogging would put a shortcut
-     * to a run in front of somebody whose plan says to swim, which is the kind of dead
-     * control this app keeps removing.
+     * The middle one is the design's "Quick Jog", which is the live GPS session (phase 11.6).
+     * Until that existed it fell back to a quick *log* of the most-logged type; now it starts
+     * a recording, pre-selected to that type when it is one GPS can track (run, walk, hike,
+     * ride). A swimmer still gets the button — it opens the launch pad on its default — and
+     * logging a swim is one tap away under New Activity.
      */
     const quickType = breakdown[0]?.type && breakdown[0].type !== 'other' ? breakdown[0].type : null;
+    const gpsType = quickType && (TRACKABLE_TYPES as string[]).includes(quickType) ? quickType as TrackableType : null;
     const quickActions: QuickAction[] = [
         {
             key: 'new',
@@ -460,14 +464,12 @@ export default function ActivityDashboard() {
             primary: true,
             onPress: () => router.push('/activity/log'),
         },
-        ...(quickType
-            ? [{
-                key: 'quick',
-                label: `Quick ${formatType(quickType)}`,
-                icon: 'flash-outline' as const,
-                onPress: () => router.push({ pathname: '/activity/log', params: { type: quickType } }),
-            }]
-            : []),
+        {
+            key: 'quick',
+            label: gpsType ? `Start ${TYPE_LABEL[gpsType]}` : 'Record Route',
+            icon: 'navigate-outline',
+            onPress: () => router.push(gpsType ? { pathname: '/activity/run', params: { type: gpsType } } : '/activity/run'),
+        },
         {
             key: 'insight',
             label: 'Insight',

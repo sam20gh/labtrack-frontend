@@ -15,6 +15,7 @@
  */
 import { api } from './api';
 import type { SyncBatch } from './health';
+import type { Track, TrackableType } from './run/trackMath';
 
 /** Minutes west of UTC, as `Date.getTimezoneOffset()` reports it. */
 const tzOffset = () => new Date().getTimezoneOffset();
@@ -387,6 +388,57 @@ export const logActivity = (body: {
     effort?: number;
     notes?: string;
 }) => api.post<{ session: ActivitySession }>('/activity/sessions', { ...body, tzOffset: tzOffset() });
+
+/** What the server computed from a live track, beside the stored row. */
+export interface LiveSessionMetrics {
+    movingSec: number;
+    elapsedSec: number;
+    avgPacePerKm: number | null;
+    avgSpeed: number | null;
+    maxSpeed: number | null;
+    pointsUsed: number;
+    pointsDropped: number;
+    /** Why `activeKcal` is absent: ask for a weight, or say the type has no estimate. */
+    kcalUnavailable: 'no_weight' | 'type' | null;
+}
+
+/**
+ * Upload a GPS session recorded on this phone.
+ *
+ * `clientId` is generated when the run starts and is the idempotency key: the server answers
+ * a repeat with the stored row (200, `duplicate: true`), so the recorder can retry until it
+ * gets any 2xx and then delete its journal. Distance, pace, splits and calories are
+ * recomputed from `track` on the server; nothing else about them is sent. `route` on the
+ * returned row may be `{}` when there was no usable GPS — check `route?.coordinates?.length`.
+ */
+export const saveLiveSession = (body: {
+    clientId: string;
+    type: TrackableType;
+    startedAt: string;
+    endedAt: string;
+    track: Track;
+    effort?: number;
+    notes?: string;
+    steps?: number;
+    hrSource?: 'bracelet_live';
+    startAddress?: string;
+    endAddress?: string;
+}) => api.post<{ session: ActivitySession; metrics?: LiveSessionMetrics; duplicate?: boolean }>(
+    '/activity/sessions/live',
+    { ...body, tzOffset: tzOffset() },
+);
+
+/**
+ * What a live session needs before it starts: the body mass calories are priced with. The
+ * same rule the upload uses (logged weight, else profile, else null), so the live estimate
+ * and the stored figure cannot be priced on different bodies. Null means "ask for a weight".
+ */
+export const getLiveContext = () =>
+    api.get<{ weightKg: number | null; weightSource: 'logged' | 'profile' | null }>('/activity/live/context');
+
+/** The full-resolution track behind a live session, for the replay. 404 when there is none. */
+export const getSessionTrack = (id: string) =>
+    api.get<{ track: Track & { hrSource: 'bracelet_live' | null; steps?: number } }>(`/activity/sessions/${id}/track`);
 
 /** Only `effort` and `notes` on a synced session. See the note at the top of this file. */
 export const updateSession = (id: string, body: Partial<{

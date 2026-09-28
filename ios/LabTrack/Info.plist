@@ -61,8 +61,14 @@
     <string>LabTrack reads your workouts, sleep and heart rate from Apple Health so your activity tracker and health plan reflect what you actually did.</string>
     <key>NSHealthUpdateUsageDescription</key>
     <string>LabTrack wants to update your health data</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>LabTrack only uses your location while you are tracking an activity, including when the screen is locked during it.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>LabTrack records your route on the map while you are tracking a run, walk, hike or ride.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>LabTrack needs microphone access so you can ask the health assistant a question out loud.</string>
+    <key>NSMotionUsageDescription</key>
+    <string>LabTrack counts your steps and cadence while you are tracking an activity.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>LabTrack needs access to your photos so you can upload a lab report or show the assistant a picture.</string>
     <key>NSUserActivityTypes</key>
@@ -71,6 +77,11 @@
     </array>
     <key>RCTNewArchEnabled</key>
     <true/>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>fetch</string>
+      <string>location</string>
+    </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

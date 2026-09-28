@@ -25,6 +25,11 @@ import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
 import ConnectionBanner from '@/components/errors/ConnectionBanner';
+// Imported for its side effect: it defines the live-session location task. That has to
+// happen when the bundle loads — before any location event is delivered to a background
+// wake — or the event finds no task and the fix is dropped. See lib/run/recorder.ts.
+import '@/lib/run/recorder';
+import { uploadPending } from '@/lib/run/upload';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 ExpoSplashScreen.preventAutoHideAsync();
@@ -66,6 +71,10 @@ export default function RootLayout() {
   // no reminders at all, and looks identical to one that opted out. Re-register on every
   // launch: the endpoint is idempotent, and this is the only thing that heals it.
   useEffect(() => { syncRegistration().catch(() => { /* nothing to tell the user here */ }); }, []);
+
+  // A finished run whose upload could not reach the server is still on the phone; send it.
+  // Never throws, and a run that still cannot go simply waits for the next launch.
+  useEffect(() => { uploadPending().catch(() => { /* retried next launch */ }); }, []);
 
   // A tapped notification should land on the thing it is about, not the home screen
   useEffect(() => {

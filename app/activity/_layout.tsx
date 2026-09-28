@@ -9,6 +9,9 @@ export default function ActivityLayout() {
             <Stack.Screen name="log" />
             <Stack.Screen name="sources" />
             <Stack.Screen name="session/[id]" />
+            <Stack.Screen name="run/index" />
+            {/* No swipe-back mid-run: leaving is allowed, but by a deliberate tap, not an edge swipe. */}
+            <Stack.Screen name="run/live" options={{ gestureEnabled: false }} />
         </Stack>
     );
 }

@@ -43,11 +43,7 @@
         "android.permission.health.READ_HEART_RATE",
         "android.permission.health.READ_RESTING_HEART_RATE",
         "android.permission.health.READ_HEART_RATE_VARIABILITY",
-        "android.permission.health.READ_VO2_MAX",
-        "android.permission.BLUETOOTH_SCAN",
-        "android.permission.BLUETOOTH_CONNECT",
-        "android.permission.BLUETOOTH",
-        "android.permission.BLUETOOTH_ADMIN"
+        "android.permission.health.READ_VO2_MAX"
       ]
     },
     "web": {
@@ -116,6 +112,24 @@
         {
           "neverForLocation": true,
           "bluetoothAlwaysPermission": "LabTrack uses Bluetooth to sync activity, sleep and heart data from your health bracelet."
+        }
+      ],
+      "@rnmapbox/maps",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "LabTrack records your route on the map while you are tracking a run, walk, hike or ride.",
+          "locationAlwaysPermission": false,
+          "locationAlwaysAndWhenInUsePermission": "LabTrack only uses your location while you are tracking an activity, including when the screen is locked during it.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "LabTrack counts your steps and cadence while you are tracking an activity."
         }
       ]
     ]
