@@ -149,6 +149,28 @@ const aggregateOrNull = async (recordType: string, timeRangeFilter: any): Promis
     }
 };
 
+/**
+ * Steps Health Connect holds for a window — a live session's, after the fact.
+ *
+ * The phone's own pedometer is silent in the background, so a run recorded in the app has no
+ * step count of its own on Android. Whatever wrote steps to Health Connect during it — the
+ * phone's step counter, a watch — has them. Null when nothing did, or steps were not shared.
+ */
+export const stepsBetween = async (start: string | Date, end: string | Date): Promise<number | null> => {
+    try {
+        await initialize();
+        const result = await aggregateOrNull('Steps', {
+            operator: 'between',
+            startTime: new Date(start).toISOString(),
+            endTime: new Date(end).toISOString(),
+        });
+        const n = Number(result?.COUNT_TOTAL);
+        return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+    } catch {
+        return null;
+    }
+};
+
 /** A number that is actually a number and actually says something. Zero distance is not a distance. */
 const positive = (v: any): number | undefined =>
     (Number.isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : undefined);

@@ -39,6 +39,8 @@ import { TRACKABLE_TYPES, MAX_ACCURACY_M, type TrackableType } from '@/lib/run/t
 import { paceParts, TYPE_LABEL } from '@/lib/run/format';
 import { FREE, type RunGoal } from '@/lib/run/goal';
 import { useUnits } from '@/lib/units';
+import { getPaired } from '@/lib/health/jstyle/store';
+import { isAvailable, supports } from '@/modules/jstyle-ble';
 
 const PERMISSION_COPY: Record<Exclude<LocationPermission, 'granted'>, string> = {
     denied: 'Location is needed to record your route. You can allow it next time you press Start.',
@@ -72,6 +74,8 @@ export default function RunLaunchPad() {
     const [starting, setStarting] = useState(false);
     const [interrupted, setInterrupted] = useState<Interrupted | null>(null);
     const [weight, setWeight] = useState<number | null | 'unknown'>('unknown');
+    const [maxHr, setMaxHr] = useState<number | null>(null);
+    const [bracelet, setBracelet] = useState<string | null>(null);
     const lockSub = useRef<Location.LocationSubscription | null>(null);
 
     const miles = units.distance === 'mi';
@@ -120,8 +124,12 @@ export default function RunLaunchPad() {
                 beginLock();
             }
 
+            getPaired()
+                .then((p) => { if (mounted) setBracelet(p && isAvailable() && supports(p.variant, 'liveData') ? p.label : null); })
+                .catch(() => undefined);
+
             getLiveContext()
-                .then((ctx) => { if (mounted) setWeight(ctx.weightKg); })
+                .then((ctx) => { if (mounted) { setWeight(ctx.weightKg); setMaxHr(ctx.maxHr ?? null); } })
                 .catch((err) => {
                     if (err instanceof ApiError && err.isAuthError) router.replace('/(auth)/loginscreen');
                     else if (mounted) setWeight(null);
@@ -156,6 +164,7 @@ export default function RunLaunchPad() {
                 params: {
                     start: type,
                     w: typeof weight === 'number' ? String(weight) : '',
+                    hr: maxHr ? String(maxHr) : '',
                     goal: JSON.stringify(goal()),
                 },
             });
@@ -339,6 +348,15 @@ export default function RunLaunchPad() {
                 )}
                 {goalKind === 'pace' && (
                     <Text style={styles.hint}>A ghost runs at this pace beside you. It pauses when you do.</Text>
+                )}
+
+                {bracelet && (
+                    <View style={styles.note} accessible accessibilityLabel={`Heart rate from ${bracelet}`}>
+                        <Ionicons name="heart" size={18} color={Palette.danger} />
+                        <Text style={styles.noteText}>
+                            Heart rate from {bracelet}{maxHr ? '' : '. Add your date of birth for heart-rate zones.'}
+                        </Text>
+                    </View>
                 )}
 
                 {weight === null && (

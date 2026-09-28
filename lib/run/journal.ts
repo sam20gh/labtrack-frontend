@@ -39,18 +39,26 @@ export interface RunMeta {
     weightKg: number | null;
     /** What the runner set out to do. A lens on the live screen; never uploaded. */
     goal?: RunGoal;
+    /** Estimated maximum heart rate for the zones, from the server. Null without a birth date. */
+    maxHr?: number | null;
 }
 
 /**
  * Compact on purpose — a two-hour run is ~7,000 fix events.
- * `seg` on `steps` is the pedometer subscription the count belongs to: a subscription
- * counts from zero, so a JS restart starts a new segment and the totals add.
+ *
+ * Two kinds of step event, and the difference matters:
+ * - `steps` is a **partial** count from one bracelet connection — steps since that connection
+ *   began, rising. A dropped connection starts a new `seg`, and the segments add.
+ * - `stepsTotal` is an **authoritative** count for the whole window (iOS's motion
+ *   coprocessor, read at the finish). When present it replaces the segments outright,
+ *   because they can only ever be an undercount of it.
  */
 export type RunEvent =
     | { k: 'f'; t: number; la: number; ln: number; al?: number | null; ac?: number | null; hr?: number | null }
     | { k: 'pause'; t: number }
     | { k: 'resume'; t: number }
     | { k: 'steps'; t: number; seg: number; n: number }
+    | { k: 'stepsTotal'; t: number; n: number }
     | { k: 'finish'; t: number };
 
 export type RunStatus =
@@ -74,6 +82,7 @@ export interface ReplayedRun {
 export const replay = (meta: RunMeta, events: readonly RunEvent[]): ReplayedRun => {
     const track: Track = { t: [], lat: [], lng: [], alt: [], acc: [], hr: [], pauses: [] };
     const stepsBySeg = new Map<number, number>();
+    let stepsTotal: number | null = null;
     let pauseStart: number | null = null;
     let finishT: number | null = null;
     let lastT = meta.startedAt;
@@ -104,6 +113,9 @@ export const replay = (meta: RunMeta, events: readonly RunEvent[]): ReplayedRun 
                 // Counts only rise within a segment; the highest seen is the segment's total.
                 stepsBySeg.set(e.seg, Math.max(stepsBySeg.get(e.seg) ?? 0, e.n));
                 break;
+            case 'stepsTotal':
+                stepsTotal = e.n;
+                break;
             case 'finish':
                 finishT = e.t;
                 break;
@@ -117,7 +129,8 @@ export const replay = (meta: RunMeta, events: readonly RunEvent[]): ReplayedRun 
     if (!track.pauses!.length) delete track.pauses;
     if (!anyHr) delete track.hr;
 
-    const steps = stepsBySeg.size ? [...stepsBySeg.values()].reduce((a, b) => a + b, 0) : null;
+    const segmentSteps = stepsBySeg.size ? [...stepsBySeg.values()].reduce((a, b) => a + b, 0) : null;
+    const steps = stepsTotal ?? (segmentSteps && segmentSteps > 0 ? segmentSteps : null);
     return { track, startedAt: meta.startedAt, endedAt, finished: finishT != null, paused, steps, lastT };
 };
 

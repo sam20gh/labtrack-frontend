@@ -50,7 +50,21 @@ interface ActiveRun {
     /** Live calories, priced per segment as they land (grade 0 — see energy.ts). */
     kcal: number | null;
     pricedSegments: number;
+    /** Recent bracelet step readings, for live cadence: [ms, steps since connection]. */
+    stepSamples: [number, number][];
+    /** When each bracelet segment last reached the journal. */
+    stepsLoggedAt: Map<number, number>;
 }
+
+/**
+ * The newest heart rate from a live source, and the link's state. Module-level rather than
+ * per run: the bracelet is connected by `lib/run/heart.ts`, which lives for the app.
+ */
+let heart: { bpm: number; at: number } | null = null;
+export type HeartLink = 'none' | 'connecting' | 'live' | 'lost';
+let heartLink: HeartLink = 'none';
+/** A reading older than this is not attached to a fix — it describes a moment already gone. */
+const HEART_FRESH_MS = 5000;
 
 let run: ActiveRun | null = null;
 const listeners = new Set<() => void>();
@@ -109,6 +123,8 @@ const rebuild = (meta: journal.RunMeta, events: readonly journal.RunEvent[]): Ac
         lastFix: null,
         kcal: meta.weightKg != null ? 0 : null,
         pricedSegments: 0,
+        stepSamples: [],
+        stepsLoggedAt: new Map(),
     };
     for (const e of events) {
         if (e.k === 'f') {
@@ -161,8 +177,13 @@ export const ingest = (locations: readonly LocationObject[]) => {
     const paused = r.phase === 'paused';
     for (const loc of locations) {
         const fix = fixFromLocation(loc);
+        // Heart rate rides on the fix it was measured beside, and only if it is fresh.
+        if (heart && Math.abs(fix.t - heart.at) <= HEART_FRESH_MS) fix.hr = heart.bpm;
         // Journal the raw fix whatever the filter makes of it; the server re-filters.
-        r.buffer.push({ k: 'f', t: fix.t, la: fix.lat, ln: fix.lng, al: fix.alt ?? null, ac: fix.acc ?? null });
+        r.buffer.push({
+            k: 'f', t: fix.t, la: fix.lat, ln: fix.lng, al: fix.alt ?? null, ac: fix.acc ?? null,
+            ...(fix.hr != null ? { hr: fix.hr } : {}),
+        });
         r.acc.push(fix, { paused });
         r.lastFix = fix;
     }
@@ -195,7 +216,9 @@ export class RunAlreadyActiveError extends Error {
  * this is called: by now a countdown has run, and a system sheet over "GO" is the worst
  * moment to ask for anything.
  */
-export const start = async ({ type, weightKg, goal }: { type: TrackableType; weightKg: number | null; goal?: RunGoal }): Promise<string> => {
+export const start = async ({ type, weightKg, goal, maxHr }: {
+    type: TrackableType; weightKg: number | null; goal?: RunGoal; maxHr?: number | null;
+}): Promise<string> => {
     if (hydrate() && run && run.phase !== 'finished') throw new RunAlreadyActiveError();
 
     const meta: journal.RunMeta = {
@@ -205,6 +228,7 @@ export const start = async ({ type, weightKg, goal }: { type: TrackableType; wei
         startedAt: Date.now(),
         weightKg,
         goal: goal && goal.kind !== 'free' ? goal : undefined,
+        maxHr: maxHr ?? null,
     };
     journal.createRun(meta);
     run = rebuild(meta, []);
@@ -258,8 +282,9 @@ export const finish = async (): Promise<string | null> => {
     r.phase = 'finished';
     r.finishedAt = now;
 
+    // iOS's own count for the whole window, which replaces any partial bracelet segments.
     const steps = await stepsForWindow(r.meta.startedAt, now);
-    if (steps != null) record(r, { k: 'steps', t: now, seg: 0, n: steps }, true);
+    if (steps != null) record(r, { k: 'stepsTotal', t: now, n: steps }, true);
 
     journal.setStatus(r.meta.clientId, { state: 'finished' });
     journal.clearActive();
@@ -307,6 +332,48 @@ export const restartTracking = async () => {
 };
 
 // ---------------------------------------------------------------------------------------
+// The bracelet — fed by lib/run/heart.ts
+
+/** A live heart-rate reading. Held for the next fix; never stored on its own. */
+export const recordHeart = (bpm: number, at = Date.now()) => {
+    if (!Number.isFinite(bpm) || bpm < 30 || bpm > 230) return;
+    heart = { bpm: Math.round(bpm), at };
+    notify();
+};
+
+/**
+ * The bracelet's step count since this connection began (`seg`). Journalled as it rises,
+ * at most every 15 s, so a restart loses little; kept in memory for live cadence.
+ */
+export const recordBraceletSteps = (seg: number, stepsSinceConnect: number, at = Date.now()) => {
+    if (!hydrate() || !run || run.phase === 'finished' || !Number.isFinite(stepsSinceConnect)) return;
+    const r = run;
+    r.stepSamples.push([at, stepsSinceConnect]);
+    while (r.stepSamples.length && at - r.stepSamples[0][0] > 60_000) r.stepSamples.shift();
+    if (at - (r.stepsLoggedAt.get(seg) ?? 0) >= 15_000) {
+        r.stepsLoggedAt.set(seg, at);
+        record(r, { k: 'steps', t: at, seg, n: stepsSinceConnect });
+    }
+};
+
+export const setHeartLink = (state: HeartLink) => {
+    if (heartLink === state) return;
+    heartLink = state;
+    if (state !== 'live') heart = null;
+    notify();
+};
+
+/** Steps per minute over the last 30 s of bracelet readings, or null. */
+const cadenceOf = (samples: [number, number][], now: number): number | null => {
+    const recent = samples.filter(([t]) => now - t <= 30_000);
+    if (recent.length < 2) return null;
+    const [t0, s0] = recent[0];
+    const [t1, s1] = recent[recent.length - 1];
+    if (t1 - t0 < 10_000 || s1 < s0) return null;
+    return Math.round(((s1 - s0) / (t1 - t0)) * 60_000);
+};
+
+// ---------------------------------------------------------------------------------------
 // Reading
 
 export interface RecorderState {
@@ -324,6 +391,12 @@ export interface RecorderState {
     accuracyM: number | null;
     lastFixAt: number | null;
     goal: RunGoal | null;
+    maxHr: number | null;
+    /** The newest live heart rate, if it is fresh. */
+    heartRate: number | null;
+    heartLink: HeartLink;
+    /** Steps per minute from the bracelet, or null. */
+    cadence: number | null;
 }
 
 export const getState = (now = Date.now()): RecorderState => {
@@ -331,6 +404,7 @@ export const getState = (now = Date.now()): RecorderState => {
         return {
             phase: 'idle', clientId: null, type: null, startedAt: null, activeSec: 0, live: null,
             kcal: null, weightKnown: false, accuracyM: null, lastFixAt: null, goal: null,
+            maxHr: null, heartRate: null, heartLink, cadence: null,
         };
     }
     const openPause = run.pausedAt != null ? now - run.pausedAt : 0;
@@ -347,6 +421,10 @@ export const getState = (now = Date.now()): RecorderState => {
         accuracyM: run.lastFix?.acc ?? null,
         lastFixAt: run.lastFix?.t ?? null,
         goal: run.meta.goal ?? null,
+        maxHr: run.meta.maxHr ?? null,
+        heartRate: heart && now - heart.at <= 10_000 ? heart.bpm : null,
+        heartLink,
+        cadence: cadenceOf(run.stepSamples, now),
     };
 };
 
@@ -369,5 +447,7 @@ export const subscribe = (listener: () => void) => {
 /** Tests only. */
 export const __resetForTests = () => {
     run = null;
+    heart = null;
+    heartLink = 'none';
     listeners.clear();
 };

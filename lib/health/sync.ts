@@ -185,7 +185,17 @@ const run = async (force: boolean): Promise<SyncResult> => {
  */
 export const runSync = (force = false): Promise<SyncResult> => {
     if (inFlight) return inFlight;
-    inFlight = run(force).finally(() => { inFlight = null; });
+    inFlight = run(force)
+        .then((result) => {
+            // After the store's rows are in: a live run's steps can now be found in them.
+            // Never awaited and never allowed to fail the sync.
+            if (result.ran) {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+                (require('../run/enrich') as typeof import('../run/enrich')).fillLiveSteps().catch(() => undefined);
+            }
+            return result;
+        })
+        .finally(() => { inFlight = null; });
     return inFlight;
 };
 

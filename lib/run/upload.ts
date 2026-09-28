@@ -41,6 +41,8 @@ const attempt = async (clientId: string): Promise<UploadResult> => {
             endedAt: new Date(Math.max(replayed.endedAt, replayed.startedAt + 1000)).toISOString(),
             track: replayed.track,
             steps: replayed.steps ?? undefined,
+            // The only live heart-rate source is the bracelet; a column means it was worn.
+            hrSource: replayed.track.hr ? 'bracelet_live' : undefined,
         });
         journal.deleteRun(clientId);
         return { status: 'saved', session: res.session, metrics: res.metrics };

@@ -49,6 +49,7 @@ import { distanceParts, formatClock, paceParts, TYPE_LABEL } from '@/lib/run/for
 import { buildTrail, EMBER_DARK, EMBER_LIGHT, recentPace, withAlpha } from '@/lib/run/afterglow';
 import { goalProgress, type RunGoal } from '@/lib/run/goal';
 import { lightPresetFor } from '@/lib/run/sun';
+import { zoneFor } from '@/lib/run/zones';
 import { useRunSettings } from '@/lib/run/settings';
 import { splitSegments, TRACKABLE_TYPES, MAX_ACCURACY_M, type TrackableType } from '@/lib/run/trackMath';
 import { formatEnergy, useUnits } from '@/lib/units';
@@ -77,7 +78,7 @@ const parseGoal = (raw: string | undefined): RunGoal | undefined => {
 
 export default function LiveRunScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ start?: string; w?: string; goal?: string }>();
+    const params = useLocalSearchParams<{ start?: string; w?: string; hr?: string; goal?: string }>();
     const settings = useRunSettings();
     const units = useUnits();
     const insets = useSafeAreaInsets();
@@ -112,14 +113,20 @@ export default function LiveRunScreen() {
         setCounting(false);
         try {
             const w = params.w ? Number(params.w) : NaN;
-            await recorder.start({ type: pending!, weightKg: Number.isFinite(w) ? w : null, goal: parseGoal(params.goal) });
+            const hr = params.hr ? Number(params.hr) : NaN;
+            await recorder.start({
+                type: pending!,
+                weightKg: Number.isFinite(w) ? w : null,
+                maxHr: Number.isFinite(hr) ? hr : null,
+                goal: parseGoal(params.goal),
+            });
         } catch (err) {
             if (!(err instanceof recorder.RunAlreadyActiveError)) {
                 Alert.alert('Could not start', err instanceof Error ? err.message : 'Please try again.');
                 router.replace('/activity/run');
             }
         }
-    }, [params.goal, params.w, pending, router]);
+    }, [params.goal, params.w, params.hr, pending, router]);
 
     useEffect(() => {
         const phase = recorder.hydrate() ? recorder.getState().phase : 'idle';
@@ -252,6 +259,10 @@ export default function LiveRunScreen() {
     const nextHero: Record<HeroKind, HeroKind> = { distance: 'time', time: 'pace', pace: 'distance' };
 
     const statusText = paused ? 'Paused' : autoPaused ? 'Auto-paused' : noFix ? 'Waiting for GPS' : 'Recording';
+    const zone = zoneFor(state.heartRate, state.maxHr);
+    const heartLabel = state.heartLink === 'lost' ? 'Bracelet reconnecting…'
+        : state.heartLink === 'connecting' ? 'Connecting bracelet…'
+            : null;
 
     return (
         <View style={[styles.fill, { backgroundColor: hud.background }]}>
@@ -287,7 +298,9 @@ export default function LiveRunScreen() {
                                 {hero !== 'time' && <MiniStat hud={hud} label="Time" value={clock} />}
                                 {hero !== 'distance' && <MiniStat hud={hud} label="Distance" value={distance.value} unit={distance.unit} />}
                                 {hero !== 'pace' && <MiniStat hud={hud} label={paceLabel} value={pace?.value ?? '—'} unit={pace?.unit} />}
-                                <MiniStat hud={hud} label={kcal ? 'Calories' : 'Calories · needs weight'} value={kcal ?? '—'} />
+                                {state.heartRate != null
+                                    ? <MiniStat hud={hud} label={zone ? `Heart · zone ${zone}` : 'Heart'} value={String(state.heartRate)} unit="bpm" />
+                                    : <MiniStat hud={hud} label={kcal ? 'Calories' : 'Calories · needs weight'} value={kcal ?? '—'} />}
                             </View>
                             <View onLayout={(e) => setRibbonWidth(e.nativeEvent.layout.width)}>
                                 <PaceRibbon
@@ -314,6 +327,8 @@ export default function LiveRunScreen() {
                         ring={ringFraction}
                         ringLabel={ringLabel}
                         ghostGapSec={progress.ghostGapSec}
+                        heart={state.heartRate != null ? { bpm: state.heartRate, zone, estimated: state.maxHr != null } : null}
+                        cadence={state.cadence}
                     />
                 </View>
 
@@ -338,6 +353,10 @@ export default function LiveRunScreen() {
                 <View style={[styles.chip, { backgroundColor: hud.background, borderColor: hud.track }]}>
                     <RecDot colour={paused ? hud.secondary : P.danger} pulse={!paused && !reduceMotion} />
                     <Text style={[styles.chipText, { color: hud.text }]}>{statusText}</Text>
+                    {state.heartRate != null && (
+                        <Text style={[styles.chipText, { color: hud.text }]}>  ♥ {state.heartRate}</Text>
+                    )}
+                    {heartLabel && <Text style={[styles.chipText, { color: hud.secondary }]}>  · {heartLabel}</Text>}
                 </View>
                 <View style={styles.dots} accessible accessibilityLabel={`${FACES[page]} view, ${page + 1} of ${FACES.length}. Swipe for more.`}>
                     {FACES.map((f, i) => (

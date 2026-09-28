@@ -27,11 +27,12 @@ import ElevationProfile from '@/components/run/ElevationProfile';
 import { LinearGradient } from 'expo-linear-gradient';
 import { trailFromTrack, rampColor, EMBER_DARK, EMBER_LIGHT } from '@/lib/run/afterglow';
 import { elevationSeries, TRACKABLE_TYPES, type Track, type TrackableType } from '@/lib/run/trackMath';
-import { paceParts } from '@/lib/run/format';
+import { paceParts, formatClock } from '@/lib/run/format';
+import { timeInZones, ZONES } from '@/lib/run/zones';
 import { formatDistanceIn, useUnits } from '@/lib/units';
 import { ErrorState } from '@/components/errors';
 import {
-    getSession, getSessionTrack, updateSession, deleteSession,
+    getSession, getSessionTrack, getLiveContext, updateSession, deleteSession,
     formatDuration, formatDistance, formatPace, formatType, type ActivitySession,
 } from '@/lib/activity';
 import { ApiError } from '@/lib/api';
@@ -50,6 +51,7 @@ export default function ActivityDetail() {
     const [track, setTrack] = useState<Track | null>(null);
     const [chartWidth, setChartWidth] = useState(0);
     const trackFor = useRef<string | null>(null);
+    const [maxHr, setMaxHr] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<unknown>(null);
 
@@ -79,7 +81,12 @@ export default function ActivityDetail() {
         trackFor.current = session._id;
         let mounted = true;
         getSessionTrack(session._id)
-            .then((r) => { if (mounted) setTrack(r.track as Track); })
+            .then((r) => {
+                if (!mounted) return;
+                setTrack(r.track as Track);
+                // Zones need the age-based estimate; only asked for when there is heart rate.
+                if (r.track.hr) getLiveContext().then((c) => { if (mounted) setMaxHr(c.maxHr ?? null); }).catch(() => undefined);
+            })
             .catch(() => { /* the map falls back to the stored route; nothing else needs it */ });
         return () => { mounted = false; };
     }, [session, hasRoute]);
@@ -93,6 +100,7 @@ export default function ActivityDetail() {
         return { coordinates: session?.route?.coordinates ?? [], gradient: null, tail: null, paceRange: null };
     }, [track, type, ramp, session?.route?.coordinates]);
     const profile = useMemo(() => (track ? elevationSeries(track, type) : null), [track, type]);
+    const zones = useMemo(() => timeInZones(track, maxHr), [track, maxHr]);
 
     const setEffort = async (value: number) => {
         if (!session) return;
@@ -324,6 +332,33 @@ export default function ActivityDetail() {
                     </>
                 )}
 
+                {zones && (() => {
+                    const total = zones.slice(1).reduce((a, b) => a + b, 0) || 1;
+                    return (
+                        <>
+                            <Text style={styles.sectionTitle}>Heart-rate zones</Text>
+                            <View style={[styles.card, styles.splits]}>
+                                <View style={styles.zoneStack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                                    {ZONES.map((z) => (zones[z.n] > 0 ? (
+                                        <View key={z.n} style={{ flex: zones[z.n], backgroundColor: ramp[z.n - 1] }} />
+                                    ) : null))}
+                                </View>
+                                {ZONES.slice().reverse().map((z) => (
+                                    <View key={z.n} style={styles.split} accessible accessibilityLabel={`Zone ${z.n}, ${z.label}: ${formatClock(zones[z.n])}`}>
+                                        <View style={[styles.zoneDot, { backgroundColor: ramp[z.n - 1] }]} />
+                                        <Text style={styles.zoneLabel}>Zone {z.n} · {z.label}</Text>
+                                        <Text style={styles.splitPace}>{formatClock(zones[z.n])}</Text>
+                                        <Text style={styles.zoneShare}>{Math.round((zones[z.n] / total) * 100)}%</Text>
+                                    </View>
+                                ))}
+                                <Text style={styles.zoneNote}>
+                                    From your bracelet, against a maximum estimated from your age ({maxHr} bpm). A description of effort, not a measure of health.
+                                </Text>
+                            </View>
+                        </>
+                    );
+                })()}
+
                 <Text style={styles.sectionTitle}>How did it feel?</Text>
                 <View style={styles.efforts}>
                     {[1, 2, 3, 4, 5].map((value) => {
@@ -487,4 +522,9 @@ const useStyles = makeStyles((Palette) => ({
     splitBar: { height: '100%', borderRadius: 4 },
     splitPace: { width: 48, textAlign: 'right', fontSize: 13, ...BodyFont.semibold, color: Palette.text, fontVariant: ['tabular-nums'] },
     elevation: { paddingVertical: Spacing.lg },
+    zoneStack: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', gap: 2, marginBottom: Spacing.sm },
+    zoneDot: { width: 10, height: 10, borderRadius: 5 },
+    zoneLabel: { flex: 1, fontSize: 13, ...BodyFont.regular, color: Palette.text },
+    zoneShare: { width: 40, textAlign: 'right', fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary, fontVariant: ['tabular-nums'] },
+    zoneNote: { fontSize: 12, lineHeight: 17, ...BodyFont.regular, color: Palette.textSecondary, marginTop: Spacing.sm },
 }));

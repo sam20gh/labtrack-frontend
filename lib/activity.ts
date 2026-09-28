@@ -434,7 +434,11 @@ export const saveLiveSession = (body: {
  * and the stored figure cannot be priced on different bodies. Null means "ask for a weight".
  */
 export const getLiveContext = () =>
-    api.get<{ weightKg: number | null; weightSource: 'logged' | 'profile' | null }>('/activity/live/context');
+    api.get<{ weightKg: number | null; weightSource: 'logged' | 'profile' | null; maxHr: number | null }>('/activity/live/context');
+
+/** Steps for a live session found afterwards (Android, from Health Connect). Fill-only on the server. */
+export const enrichLiveSession = (id: string, body: { steps: number }) =>
+    api.post<{ session: ActivitySession; filled: string[] }>(`/activity/sessions/${id}/enrich`, body);
 
 /** The full-resolution track behind a live session, for the replay. 404 when there is none. */
 export const getSessionTrack = (id: string) =>

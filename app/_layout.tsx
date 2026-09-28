@@ -32,6 +32,7 @@ import '@/lib/run/recorder';
 import { uploadPending } from '@/lib/run/upload';
 import { hydrateRunSettings } from '@/lib/run/settings';
 import { attachCoach } from '@/lib/run/coach';
+import { attachRunHeart } from '@/lib/run/heart';
 import RunInProgressPill from '@/components/run/RunInProgressPill';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -82,7 +83,7 @@ export default function RootLayout() {
   // Run preferences are read synchronously during a run (countdown, cues, contrast), like
   // units. The coach listens to the recorder for the whole app's life, so a split is spoken
   // whichever screen is showing — or none.
-  useEffect(() => { hydrateRunSettings(); attachCoach(); }, []);
+  useEffect(() => { hydrateRunSettings(); attachCoach(); attachRunHeart(); }, []);
 
   // A tapped notification should land on the thing it is about, not the home screen
   useEffect(() => {

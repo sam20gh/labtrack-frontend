@@ -234,3 +234,57 @@ describe('recording', () => {
         expect(recorder.getState().live!.distanceM).toBe(d);
     });
 });
+
+describe('the bracelet during a run', () => {
+    it('puts a fresh heart rate on the fix it was measured beside, and a stale one on none', async () => {
+        const id = await recorder.start({ type: 'jogging', weightKg: null, maxHr: 182 });
+        recorder.recordHeart(148, T0 + 10_000);
+        recorder.ingest(locations(10, 3) as any); // T0+10s…12s: fresh
+        recorder.recordHeart(150, T0 + 20_000);
+        recorder.ingest(locations(40, 2) as any); // 20 s after the reading: stale
+        await recorder.finish();
+
+        const { track } = journal.replay(journal.readRun(id)!.meta, journal.readRun(id)!.events);
+        expect(track.hr!.slice(0, 3)).toEqual([148, 148, 148]);
+        expect(track.hr!.slice(3)).toEqual([null, null]);
+        expect(recorder.getState().maxHr).toBe(182);
+    });
+
+    it('counts steps per connection and adds the connections, unless iOS gives the whole window', async () => {
+        const steps = jest.requireMock('../steps');
+        steps.stepsForWindow.mockResolvedValueOnce(null); // Android: no whole-window count
+        const id = await recorder.start({ type: 'walking', weightKg: null });
+        recorder.recordBraceletSteps(1, 0, T0);
+        recorder.recordBraceletSteps(1, 400, T0 + 20_000);
+        // The link dropped and came back: a new segment, counting from its own first reading.
+        recorder.recordBraceletSteps(2, 0, T0 + 60_000);
+        recorder.recordBraceletSteps(2, 250, T0 + 90_000);
+        await recorder.finish();
+        const saved = journal.readRun(id)!;
+        expect(journal.replay(saved.meta, saved.events).steps).toBe(650);
+    });
+
+    it('lets the whole-window count replace the bracelet’s partial one', async () => {
+        const id = await recorder.start({ type: 'walking', weightKg: null });
+        recorder.recordBraceletSteps(1, 300, T0 + 20_000);
+        await recorder.finish(); // the mocked iOS count is 4321
+        const saved = journal.readRun(id)!;
+        expect(journal.replay(saved.meta, saved.events).steps).toBe(4321);
+    });
+
+    it('works out cadence from the last 30 s of bracelet steps', async () => {
+        await recorder.start({ type: 'jogging', weightKg: null });
+        recorder.recordBraceletSteps(1, 0, T0);
+        recorder.recordBraceletSteps(1, 85, T0 + 30_000);
+        expect(recorder.getState(T0 + 30_000).cadence).toBe(170);
+    });
+
+    it('forgets the heart rate when the link drops, rather than showing an old one', async () => {
+        await recorder.start({ type: 'jogging', weightKg: null });
+        recorder.setHeartLink('live');
+        recorder.recordHeart(150, Date.now());
+        expect(recorder.getState().heartRate).toBe(150);
+        recorder.setHeartLink('lost');
+        expect(recorder.getState().heartRate).toBeNull();
+    });
+});
