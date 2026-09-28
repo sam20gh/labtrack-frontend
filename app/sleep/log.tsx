@@ -22,7 +22,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
@@ -72,6 +72,38 @@ export default function LogSleepScreen() {
         }
     };
 
+    /**
+     * Android has no combined date-and-time dialog. `mode="datetime"` there opens the date
+     * dialog alone, and unmounting it afterwards calls `dismiss('datetime')` on a picker table
+     * that holds only `date` and `time` — a TypeError, and a white screen. So Android asks
+     * twice, date then time, imperatively; iOS keeps its inline spinner, which does support it.
+     */
+    const pick = (which: 'bed' | 'wake') => {
+        if (Platform.OS === 'ios') {
+            setPicking(picking === which ? null : which);
+            return;
+        }
+        const current = which === 'bed' ? bed : wake;
+        const set = which === 'bed' ? setBed : setWake;
+        DateTimePickerAndroid.open({
+            value: current,
+            mode: 'date',
+            onChange: (e, day) => {
+                if (e.type !== 'set' || !day) return;
+                DateTimePickerAndroid.open({
+                    value: day,
+                    mode: 'time',
+                    onChange: (e2, time) => {
+                        if (e2.type !== 'set' || !time) return;
+                        const next = new Date(day);
+                        next.setHours(time.getHours(), time.getMinutes(), 0, 0);
+                        set(next);
+                    },
+                });
+            },
+        });
+    };
+
     const label = (d: Date) => d.toLocaleString(undefined, {
         weekday: 'short', month: 'short', day: 'numeric',
         hour: 'numeric', minute: '2-digit',
@@ -93,7 +125,7 @@ export default function LogSleepScreen() {
                     when it did not — a night your watch was charging, or before a device is connected.
                 </Text>
 
-                <Pressable style={styles.field} onPress={() => setPicking(picking === 'bed' ? null : 'bed')}>
+                <Pressable style={styles.field} onPress={() => pick('bed')}>
                     <Ionicons name="moon-outline" size={18} color={Palette.textSecondary} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.fieldLabel}>Went to bed</Text>
@@ -102,19 +134,16 @@ export default function LogSleepScreen() {
                     <Ionicons name="chevron-down" size={16} color={Palette.textMuted} />
                 </Pressable>
 
-                {picking === 'bed' ? (
+                {Platform.OS === 'ios' && picking === 'bed' ? (
                     <DateTimePicker
                         value={bed}
                         mode="datetime"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(_e, next) => {
-                            if (Platform.OS !== 'ios') setPicking(null);
-                            if (next) setBed(next);
-                        }}
+                        display="spinner"
+                        onChange={(_e, next) => { if (next) setBed(next); }}
                     />
                 ) : null}
 
-                <Pressable style={styles.field} onPress={() => setPicking(picking === 'wake' ? null : 'wake')}>
+                <Pressable style={styles.field} onPress={() => pick('wake')}>
                     <Ionicons name="sunny-outline" size={18} color={Palette.textSecondary} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.fieldLabel}>Woke up</Text>
@@ -123,15 +152,12 @@ export default function LogSleepScreen() {
                     <Ionicons name="chevron-down" size={16} color={Palette.textMuted} />
                 </Pressable>
 
-                {picking === 'wake' ? (
+                {Platform.OS === 'ios' && picking === 'wake' ? (
                     <DateTimePicker
                         value={wake}
                         mode="datetime"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(_e, next) => {
-                            if (Platform.OS !== 'ios') setPicking(null);
-                            if (next) setWake(next);
-                        }}
+                        display="spinner"
+                        onChange={(_e, next) => { if (next) setWake(next); }}
                     />
                 ) : null}
 
