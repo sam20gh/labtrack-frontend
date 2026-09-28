@@ -38,6 +38,11 @@ internal object PacketTypes {
         "29" to "activityModeData",
         "42" to "hrv",
         "55" to "autoSpo2",
+        // What `Oxygen_data` — the V8's automatic SpO2 history — actually answers with:
+        // `ResolveUtil.GetAutomaticSpo2Monitoring` stamps its packets "68", not "55". Without
+        // this line every SpO2 history packet decoded as `unknown` and a sync read the whole
+        // history and kept none of it.
+        "68" to "autoSpo2",
         "70" to "manualSpo2",
         "59" to "temperature",
         "36" to "temperature",

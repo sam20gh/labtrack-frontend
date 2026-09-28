@@ -25,6 +25,8 @@ import {
     buildCommand, parsePacket, resetCodec, supports,
     type JstyleCommand, type JstylePacket, type JstyleVariant,
 } from '@/modules/jstyle-ble';
+import { Platform } from 'react-native';
+
 import * as transport from './transport';
 
 /** The vendor's batch size. See the note above — this is not a tuning parameter. */
@@ -84,6 +86,21 @@ let unsolicited: Sink | null = null;
 
 export const onUnsolicited = (handler: Sink | null): void => { unsolicited = handler; };
 
+/**
+ * Names the native table got wrong, corrected by raw code.
+ *
+ * Android only: the raw code is the Android jar's numbering, and on iOS the same number
+ * means something else entirely (68 is the V8's RR-interval stream there). Each entry is
+ * also fixed in `PacketTypes.kt`; this exists so a build already installed gets the fix
+ * over the air instead of waiting for the next native build, and can be emptied once no
+ * build predating the native fix is in use.
+ *
+ * - **68 → autoSpo2.** The V8's SpO2 history (`Oxygen_data`) answers as
+ *   `GetAutomaticSpo2Monitoring`, "68". Unmapped, every packet decoded as `unknown` and a
+ *   sync kept no blood oxygen at all.
+ */
+const ANDROID_TYPE_FIXES: Record<number, JstylePacket['type']> = { 68: 'autoSpo2' };
+
 /** Wired into `transport.connect`, and the only place a packet is decoded. */
 export const makePacketHandler = (variant: JstyleVariant) => (base64: string): void => {
     let packet: JstylePacket;
@@ -93,6 +110,9 @@ export const makePacketHandler = (variant: JstyleVariant) => (base64: string): v
         // A packet the codec could not read at all. Dropping one is survivable; letting it
         // throw would take down the notification subscription and with it the whole sync.
         return;
+    }
+    if (packet.type === 'unknown' && Platform.OS === 'android' && ANDROID_TYPE_FIXES[packet.rawType]) {
+        packet = { ...packet, type: ANDROID_TYPE_FIXES[packet.rawType] };
     }
     (activeSink ?? unsolicited)?.(packet);
 };
