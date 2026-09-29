@@ -43,6 +43,38 @@ export const dismissPlanItem = (id: string) =>
         body: { status: 'dismissed' },
     });
 
+/** Undo a dismissal. The server picks the status: advice goes back to ongoing. */
+export const restorePlanItem = (id: string) =>
+    apiFetch<{ item: PlanItem }>(`/plan-items/${id}/status`, {
+        method: 'PATCH',
+        body: { status: 'restore' },
+    });
+
+/**
+ * What dismissing a piece of advice switches off, said before it happens.
+ *
+ * Diet, exercise and sleep advice are read by their tracker while open. Dismissing the only
+ * diet item on a plan once removed the on-plan / off-plan verdict from every meal after it,
+ * behind nothing but a "Dismissed" toast, and nobody could tell why the card had gone.
+ */
+export const DISMISS_CONSEQUENCE: Record<string, { before: string; after: string }> = {
+    diet: {
+        before: 'Your nutrition log will stop checking meals against this advice, and your daily targets may change.',
+        after: 'Your nutrition log is not checking meals against this advice.',
+    },
+    exercise: {
+        before: 'Your activity targets will no longer take this advice into account.',
+        after: 'Your activity targets are not taking this advice into account.',
+    },
+    sleep: {
+        before: 'Your sleep goal will no longer take this advice into account.',
+        after: 'Your sleep goal is not taking this advice into account.',
+    },
+};
+
+export const dismissConsequenceFor = (item: PlanItem) =>
+    isAdvice(item) && item.condition ? DISMISS_CONSEQUENCE[item.condition] ?? null : null;
+
 /**
  * Advice is finished rather than dismissed — "I asked my prescriber" is a thing done, not
  * a recommendation declined. Lifestyle items carry no frequency, so completing one never

@@ -26,7 +26,7 @@ import Toast from 'react-native-toast-message';
 import { api, ApiError } from '@/lib/api';
 import { ErrorState } from '@/components/errors';
 import {
-    getPlan, STATUS_META, TYPE_ICON, AREA_LABEL, adviceHomeFor, isAdvice,
+    getPlan, STATUS_META, TYPE_ICON, AREA_LABEL, adviceHomeFor, dismissConsequenceFor, isAdvice,
 } from '@/lib/plan';
 import { usePlanItemActions } from '@/hooks/usePlanItemActions';
 import { Fonts, BodyFont, Spacing, Radius } from '@/constants/theme';
@@ -130,6 +130,7 @@ export default function PlanItemScreen() {
     const advice = isAdvice(item);
     const meta = STATUS_META[item.status] ?? STATUS_META.upcoming;
     const home = adviceHomeFor(item);
+    const consequence = dismissConsequenceFor(item);
     const { actionable, canOrder, canBook, inBasket, price } = actions.capabilities(item);
     const busy = actions.busyId === item._id;
     const kicker = advice
@@ -251,6 +252,18 @@ export default function PlanItemScreen() {
                     </View>
                 ) : null}
 
+                {/* The way back from a dismissal. Without it, one mis-tap on diet advice
+                    switched off every meal's plan verdict for good. */}
+                {item.status === 'dismissed' ? (
+                    <View style={styles.actions}>
+                        {consequence ? <Text style={styles.restoreNote}>{consequence.after}</Text> : null}
+                        <TouchableOpacity style={styles.primary} onPress={() => actions.restore(item)} disabled={busy}>
+                            {busy ? <ActivityIndicator size="small" color={Palette.white} />
+                                : <Text style={styles.primaryText}>Restore to my plan</Text>}
+                        </TouchableOpacity>
+                    </View>
+                ) : null}
+
                 {advice ? (
                     <Text style={styles.footnote}>
                         Generated from your results and records. Talk to your clinician before
@@ -306,6 +319,7 @@ const useStyles = makeStyles((Palette) => ({
     },
     trackLinkText: { flex: 1, fontSize: 14, color: Palette.primary, ...BodyFont.semibold },
     unavailable: { fontSize: 13, color: Palette.textMuted, fontStyle: 'italic', ...BodyFont.regular },
+    restoreNote: { fontSize: 13, lineHeight: 19, color: Palette.textSecondary, ...BodyFont.regular },
 
     actions: { gap: Spacing.sm },
     primary: {

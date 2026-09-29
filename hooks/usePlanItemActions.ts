@@ -1,5 +1,5 @@
 /**
- * The things a person can do to a plan item: fill the basket, book, finish, dismiss.
+ * The things a person can do to a plan item: fill the basket, book, finish, dismiss, restore.
  *
  * Shared by the timeline (`app/myplans.tsx`) and one item's page (`app/plan/[id].tsx`), so
  * the two can never disagree about what "Add to basket" does. See the comments that used
@@ -7,11 +7,14 @@
  * and why booking opens the appointment screen rather than posting a slot.
  */
 import { useCallback, useState } from 'react';
+import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { api, ApiError } from '@/lib/api';
 import { useBasket } from '@/lib/basket';
-import { completePlanItem, dismissPlanItem, isOpen } from '@/lib/plan';
+import {
+    completePlanItem, dismissPlanItem, restorePlanItem, dismissConsequenceFor, isOpen,
+} from '@/lib/plan';
 import type { PlanItem, Product } from '@/types/api';
 
 export function usePlanItemActions(
@@ -68,11 +71,16 @@ export function usePlanItemActions(
         }
     }, [products, setProducts, add]);
 
-    const transition = useCallback(async (item: PlanItem, to: 'dismissed' | 'completed') => {
+    const transition = useCallback(async (item: PlanItem, to: 'dismissed' | 'completed' | 'restored') => {
         setBusyId(item._id);
         try {
-            await (to === 'completed' ? completePlanItem(item._id) : dismissPlanItem(item._id));
-            Toast.show({ type: 'success', text1: to === 'completed' ? 'Marked as done' : 'Dismissed' });
+            const call = { completed: completePlanItem, dismissed: dismissPlanItem, restored: restorePlanItem }[to];
+            await call(item._id);
+            Toast.show({
+                type: 'success',
+                text1: { completed: 'Marked as done', dismissed: 'Dismissed', restored: 'Back on your plan' }[to],
+                ...(to === 'dismissed' ? { text2: 'You can restore it from the item’s page' } : {}),
+            });
             await onChanged();
         } catch (error) {
             Toast.show({
@@ -84,6 +92,19 @@ export function usePlanItemActions(
             setBusyId(null);
         }
     }, [onChanged]);
+
+    /**
+     * Advice a tracker reads asks first, and says what stops. Everything else dismisses on
+     * one tap, as it always has — a confirmation on every card is one people learn to skip.
+     */
+    const dismiss = useCallback((item: PlanItem) => {
+        const consequence = dismissConsequenceFor(item);
+        if (!consequence) return transition(item, 'dismissed');
+        Alert.alert('Dismiss this advice?', `${consequence.before} You can restore it later.`, [
+            { text: 'Keep it', style: 'cancel' },
+            { text: 'Dismiss', style: 'destructive', onPress: () => { transition(item, 'dismissed'); } },
+        ]);
+    }, [transition]);
 
     /** What this item offers, worked out once so the card and the page draw the same buttons. */
     const capabilities = useCallback((item: PlanItem) => {
@@ -102,8 +123,9 @@ export function usePlanItemActions(
         busyId,
         book,
         addToBasket,
-        dismiss: (item: PlanItem) => transition(item, 'dismissed'),
+        dismiss,
         complete: (item: PlanItem) => transition(item, 'completed'),
+        restore: (item: PlanItem) => transition(item, 'restored'),
         capabilities,
     };
 }

@@ -5,7 +5,7 @@
  */
 jest.mock('../auth', () => ({ getAccessToken: jest.fn(async () => null) }));
 
-import { isAdvice, needsAction, planItemsForMedications, adviceHomeFor } from '../plan';
+import { isAdvice, needsAction, planItemsForMedications, adviceHomeFor, dismissConsequenceFor } from '../plan';
 import type { PlanItem } from '@/types/api';
 
 const item = (over: Partial<PlanItem>): PlanItem => ({
@@ -31,6 +31,18 @@ describe('advice', () => {
         expect(adviceHomeFor(item({ condition: 'supplementation' }))?.route).toBe('/medications');
         expect(adviceHomeFor(item({ condition: 'alcohol' }))).toBeNull();
         expect(adviceHomeFor(item({ type: 'test', condition: 'diet' }))).toBeNull();
+    });
+
+    // Dismissing the only diet item once switched off every meal's plan verdict behind a
+    // bare "Dismissed" toast. Advice a tracker reads has to say so before it goes.
+    it('warns before dismissing exactly the advice a tracker reads', () => {
+        for (const condition of ['diet', 'exercise', 'sleep']) {
+            const c = dismissConsequenceFor(item({ condition }));
+            expect(c?.before).toBeTruthy();
+            expect(c?.after).toBeTruthy();
+        }
+        expect(dismissConsequenceFor(item({ condition: 'alcohol' }))).toBeNull();
+        expect(dismissConsequenceFor(item({ type: 'test', condition: 'diet' }))).toBeNull();
     });
 });
 

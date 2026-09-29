@@ -6,6 +6,9 @@
  * medical record. Every number here is editable, because a photograph cannot show how much
  * oil went in the pan and the person can.
  *
+ * A draft with no verdict says why (`verdict` on the analyse response) rather than leaving a
+ * gap where the card was.
+ *
  * The plan verdict and the swap are shown but not editable: they describe the meal as it
  * was estimated, and letting them be edited would produce coaching text attached to numbers
  * it never described.
@@ -226,6 +229,32 @@ export default function ReviewMealScreen() {
                     )}
 
                     {/*
+                      No verdict, and why. The card used to vanish without a word, so a plan
+                      whose only diet advice had been dismissed read as the feature breaking.
+                      Neutral, never a warning: a meal nobody judged has not failed anything.
+                      Nothing is drawn when an older server sends no reason — guessing one
+                      would be the lie this line exists to avoid.
+                    */}
+                    {draft.analysis?.alignment === 'unassessed' && parsed.verdict === 'no_guidance' && (
+                        <TouchableOpacity style={styles.unjudged} onPress={() => router.push('/myplans')} activeOpacity={0.8}>
+                            <Ionicons name="information-circle-outline" size={18} color={Palette.textSecondary} />
+                            <Text style={styles.unjudgedText}>
+                                Not checked against your plan — it has no diet advice at the moment.
+                                If you dismissed some, you can restore it from your health plan.
+                            </Text>
+                            <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
+                        </TouchableOpacity>
+                    )}
+                    {draft.analysis?.alignment === 'unassessed' && parsed.verdict === 'not_judged' && (
+                        <View style={styles.unjudged}>
+                            <Ionicons name="information-circle-outline" size={18} color={Palette.textSecondary} />
+                            <Text style={styles.unjudgedText}>
+                                We couldn&apos;t judge this meal against your plan this time.
+                            </Text>
+                        </View>
+                    )}
+
+                    {/*
                       The swap card. Logging the swap instead of the meal is offered only
                       because the design shows it; it records what they intend to eat, not a
                       correction of what they already ate.
@@ -358,6 +387,16 @@ const useStyles = makeStyles((Palette) => ({
         lineHeight: 19,
         marginTop: Spacing.sm,
     },
+
+    unjudged: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        backgroundColor: Palette.borderLight,
+        borderRadius: Radius.md,
+        padding: Spacing.md,
+    },
+    unjudgedText: { flex: 1, ...BodyFont.regular, fontSize: 12, color: Palette.textSecondary, lineHeight: 17 },
 
     swapName: { fontFamily: Fonts.bold, fontSize: 16, color: Palette.text },
     swapWhy: {

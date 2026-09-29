@@ -90,6 +90,12 @@ export interface AnalysisResult {
     /** The estimate was low-confidence; the review screen asks the person to check it. */
     needsConfirmation: boolean;
     uncertainties: string[];
+    /**
+     * Why the draft does or does not carry a plan verdict. `no_guidance`: the health plan has
+     * no open diet advice — dismissed, or never given. `not_judged`: there was advice and the
+     * estimate still came back unassessed. Absent from a server that predates it.
+     */
+    verdict?: 'judged' | 'no_guidance' | 'not_judged';
 }
 
 /** Photograph a meal. Saves nothing — returns a draft to review. */
