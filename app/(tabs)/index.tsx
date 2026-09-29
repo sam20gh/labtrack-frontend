@@ -30,6 +30,8 @@
  *   8. **Symptom Checker** — the illustration, the search, the common symptoms and the
  *      checks already run, as `Design/sympt.svg` draws them.
  *   9. **News & Resources.**
+ *  10. **Rate Our App** — `Design/rating.svg`, last because it asks something of the person
+ *      rather than telling them anything. Its store link is a placeholder until release.
  *
  * A card is earned by having something to report, which is why the cards guard and return
  * null rather than carrying empty states. What the page no longer draws, and where it went:
@@ -125,6 +127,7 @@ import SymptomCheckerCard from '@/components/home/SymptomCheckerCard';
 import { PredictionCard } from '@/components/home/PredictionCard';
 import AppointmentCard from '@/components/home/AppointmentCard';
 import ExploreDoctorsCard from '@/components/home/ExploreDoctorsCard';
+import RateAppCard from '@/components/home/RateAppCard';
 import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { Spacing, Radius, Shadow, Fonts, BodyFont, schemed, tone, Palettes } from '@/constants/theme';
@@ -1133,6 +1136,9 @@ export default function HomeScreen() {
                                         </ScrollView>
                                     </Section>
                                 )}
+
+                                {/* Rate Our App — `Design/rating.svg`. The store link is a placeholder. */}
+                                <RateAppCard />
                             </FadeIn>
                         )}
                     </>
