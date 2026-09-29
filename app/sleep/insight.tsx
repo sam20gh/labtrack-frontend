@@ -48,7 +48,11 @@ function Delta({ comparison, period }: { comparison: PeriodComparison; period: s
     if (comparison.deltaPct === null || comparison.direction === null) {
         return (
             <Text style={styles.deltaMuted}>
-                {comparison.previous === null ? 'No earlier period to compare with' : 'No change to report'}
+                {comparison.previous === null
+                    ? 'No earlier period to compare with'
+                    : comparison.tooFewNights
+                        ? 'Too few nights to compare yet'
+                        : 'No change to report'}
             </Text>
         );
     }

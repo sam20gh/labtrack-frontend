@@ -228,6 +228,8 @@ export interface PeriodComparison {
     previousNights?: number;
     deltaPct: number | null;
     direction: 'up' | 'down' | 'flat' | null;
+    /** Both windows had data, but one had fewer than three nights — too few to compare. */
+    tooFewNights?: boolean;
 }
 
 export interface SleepScoreScreen {
