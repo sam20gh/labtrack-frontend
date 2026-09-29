@@ -239,6 +239,7 @@ function ThemedRoot({ publishableKey }: { publishableKey: string | null }) {
             its own back button over it, so a navigation bar would sit on the photograph. */}
         <Stack.Screen name="ProductDetails" options={{ headerShown: false }} />
         <Stack.Screen name="myplans" options={{ title: "My Plans", headerShown: true }} />
+        <Stack.Screen name="plan" options={{ headerShown: false }} />
       </Stack>
 
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />

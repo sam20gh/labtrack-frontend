@@ -24,11 +24,13 @@ import {
 } from '@/lib/medications';
 import { ensureRemindersReady, reminderState, type ReminderState } from '@/lib/notifications';
 import { DoseRow } from '@/components/medications/DoseRow';
+import { PlanNotesCard } from '@/components/plan/PlanNotes';
+import { getPlan, planItemsForMedications } from '@/lib/plan';
 import { PillGlyph } from '@/components/medications/PillGlyph';
 import { Fonts, Spacing, Radius, Shadow, BodyFont, tone, Palettes } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type {
-    TrackedMedication, MedicationScheduleDay, MedicationCheckResponse,
+    TrackedMedication, MedicationScheduleDay, MedicationCheckResponse, PlanItem,
 } from '@/types/api';
 
 export default function MedicationsScreen() {
@@ -42,18 +44,23 @@ export default function MedicationsScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [busyDose, setBusyDose] = useState<string | null>(null);
     const [reminders, setReminders] = useState<ReminderState | null>(null);
+    const [planItems, setPlanItems] = useState<PlanItem[]>([]);
 
     const load = useCallback(async () => {
         try {
             // Settled rather than all: a failing check must not blank the dose list, which
             // is the part someone opened the screen to act on.
-            const [medsRes, dayRes, checkRes] = await Promise.allSettled([
+            // The plan is a database read like the rest — its advice about medicines and
+            // supplements belongs on this screen, not only at the foot of the timeline.
+            const [medsRes, dayRes, checkRes, planRes] = await Promise.allSettled([
                 listMedications(),
                 getSchedule(),
                 getCheck(),
+                getPlan(),
             ]);
 
             if (medsRes.status === 'fulfilled') setMedications(medsRes.value.medications);
+            if (planRes.status === 'fulfilled') setPlanItems(planRes.value.items || []);
 
             // Whether a dose reminder can actually be delivered. Checked here rather than
             // assumed, because a schedule that quietly notifies nobody is the one failure
@@ -115,6 +122,7 @@ export default function MedicationsScreen() {
     const pending = doses.filter((d) => d.status === 'scheduled');
     const adherence = day?.adherence;
     const verdict = interactionVerdict(check?.check || null);
+    const planNotes = planItemsForMedications(planItems, medications);
 
     // Nothing set up yet — the design's first frame
     if (!medications.length) {
@@ -147,6 +155,9 @@ export default function MedicationsScreen() {
                         <Ionicons name="scan-outline" size={17} color={Palette.primary} />
                         <Text style={styles.secondaryButtonText}>Scan a pill or packet</Text>
                     </TouchableOpacity>
+                    {planNotes.length ? (
+                        <View style={styles.emptyNotes}><PlanNotesCard items={planNotes} /></View>
+                    ) : null}
                 </View>
             </SafeAreaView>
         );
@@ -235,6 +246,13 @@ export default function MedicationsScreen() {
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
                 </TouchableOpacity>
+
+                {/*
+                  Advice from the plan about medicines and supplements — "ask your
+                  prescriber about zinc" is acted on here, with the list in front of you, so
+                  it sits beside the interaction check rather than at the foot of the plan.
+                */}
+                <PlanNotesCard items={planNotes} />
 
                 {/*
                   Reminders that cannot arrive.
@@ -462,6 +480,7 @@ const useStyles = makeStyles((Palette) => ({
         backgroundColor: Palette.primaryFill,
     },
     checkBody: { flex: 1, gap: 2 },
+    emptyNotes: { alignSelf: 'stretch', marginTop: Spacing.xl },
     checkTitle: { fontSize: 15, color: Palette.text, fontFamily: Fonts.semibold },
     checkDetail: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular, lineHeight: 17 },
     checkStale: { fontSize: 11, color: Palette.primary, ...BodyFont.medium, marginTop: 2 },

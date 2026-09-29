@@ -5,7 +5,10 @@
  * age/year pairs with "Book" and "Add to Basket" buttons that had no handlers, and computed
  * urgency against a hardcoded date of birth.
  *
- * Now: overdue items first, then grouped by year, each individually orderable or bookable.
+ * Now: overdue items first, then the advice to follow, then grouped by year, each
+ * individually orderable or bookable. Tapping a card opens the item in full at
+ * `app/plan/[id].tsx` — the card clamps its text, and the part cut off is often the part
+ * that says what to do.
  *
  * Ordering adds to the shared basket rather than placing an order — see `addToBasket`.
  */
@@ -17,10 +20,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-import { api, ApiError } from '@/lib/api';
+import { api } from '@/lib/api';
 import { ErrorState } from '@/components/errors';
 import { useBasket } from '@/lib/basket';
-import { getPlan, dismissPlanItem, STATUS_META, TYPE_ICON } from '@/lib/plan';
+import {
+    getPlan, STATUS_META, TYPE_ICON, AREA_LABEL, adviceHomeFor, isAdvice, isOpen, needsAction,
+} from '@/lib/plan';
+import { usePlanItemActions } from '@/hooks/usePlanItemActions';
 import { hasBeenAsked, registerForPushNotifications } from '@/lib/notifications';
 import type { PlanItem, GroupedPlanItems, Product } from '@/types/api';
 
@@ -30,6 +36,29 @@ import { tone } from '@/constants/theme';
 const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
+/**
+ * The timeline's sections, worked out here rather than taken from the server's `grouped`.
+ *
+ * The server files anything `urgent` or `due` under "Needs attention", and advice was
+ * written with `dueDate: today` and swept to `urgent` the next morning — so "ask your
+ * prescriber about zinc" sat among the overdue screenings wearing an "Overdue" badge, or,
+ * once dismissed from there, under a year at the bottom. Advice has no deadline; it gets a
+ * section of its own, directly under what is actually overdue.
+ */
+const ADVICE_KEY = 'advice';
+const groupItems = (items: PlanItem[]): GroupedPlanItems =>
+    items.reduce<GroupedPlanItems>((acc, item) => {
+        const key = needsAction(item)
+            ? 'urgent'
+            : isAdvice(item) && isOpen(item)
+                ? ADVICE_KEY
+                : String(new Date(item.dueDate).getFullYear());
+        (acc[key] = acc[key] || []).push(item);
+        return acc;
+    }, {});
+
+const SECTION_RANK = (key: string) => (key === 'urgent' ? 0 : key === ADVICE_KEY ? 1 : 2);
+
 
 
 export default function MyPlansScreen() {
@@ -37,15 +66,14 @@ export default function MyPlansScreen() {
     const styles = useStyles();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { add, has, count, estimatedTotal } = useBasket();
+    const { count, estimatedTotal } = useBasket();
     const [grouped, setGrouped] = useState<GroupedPlanItems>({});
     const [products, setProducts] = useState<Record<string, Product>>({});
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [busyId, setBusyId] = useState<string | null>(null);
     const [error, setError] = useState<unknown>(null);
-    const [expanded, setExpanded] = useState<Record<string, boolean>>({ urgent: true });
+    const [expanded, setExpanded] = useState<Record<string, boolean>>({ urgent: true, [ADVICE_KEY]: true });
 
     const load = useCallback(async () => {
         try {
@@ -59,11 +87,12 @@ export default function MyPlansScreen() {
                 api.get<Product[]>('/products').catch(() => [] as Product[]),
             ]);
             setProducts(Object.fromEntries((catalogue || []).map((p) => [p._id, p])));
-            setGrouped(data.grouped || {});
+            const groups = groupItems(data.items || []);
+            setGrouped(groups);
             setTotal(data.items?.length ?? 0);
             // Open the soonest year alongside overdue, so the screen is never all-collapsed
-            const years = Object.keys(data.grouped || {}).filter((k) => k !== 'urgent').sort();
-            setExpanded((prev) => ({ ...prev, urgent: true, [years[0]]: true }));
+            const years = Object.keys(groups).filter((k) => SECTION_RANK(k) === 2).sort();
+            setExpanded((prev) => ({ ...prev, urgent: true, [ADVICE_KEY]: true, [years[0]]: true }));
 
             // Ask about notifications only once there is a plan worth reminding about.
             // Prompting on first launch, before the value is obvious, is the surest route
@@ -84,91 +113,28 @@ export default function MyPlansScreen() {
 
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
-    /**
-     * Booking opens the appointment screen rather than posting a slot.
-     *
-     * This button used to request a fixed time — a week out at 10:00 — and report it as
-     * done. Nobody's Tuesday morning is free by default, and the person had no way to see
-     * what had been asked for, let alone change it. The plan item carries the professional
-     * and the clinical reason across, so nothing is retyped.
-     */
-    const book = (item: PlanItem) =>
-        router.push({
-            pathname: '/appointments/book',
-            params: {
-                professionalId: String(item.professionalId),
-                planItemId: item._id,
-                ...(item.description ? { reason: item.description } : {}),
-            },
-        });
-
-    /**
-     * Ordering from the plan fills the basket; it does not place an order.
-     *
-     * This button used to POST /orders for that one item and report it as on its way.
-     * Someone with three overdue screenings placed three separate orders, paid postage and
-     * attention three times, and never saw a total before committing. The plan now feeds
-     * the same basket the shop does, and the Order tab checks the whole lot out at once —
-     * `createOrder` carries every `planItemId` across, so the timeline still closes off.
-     */
-    const addToBasket = async (item: PlanItem) => {
-        if (!item.productId) return;
-        setBusyId(item._id);
-        try {
-            // The catalogue may have failed to load, or the plan may name a product added
-            // since it was fetched. Fetching the one product is cheaper than losing the tap.
-            const product = products[item.productId]
-                ?? await api.get<Product>(`/products/${item.productId}`);
-            setProducts((prev) => ({ ...prev, [product._id]: product }));
-            await add(product, item._id);
-            Toast.show({
-                type: 'success',
-                text1: 'Added to basket',
-                text2: `${product.name} — check out from the Order tab`,
-            });
-        } catch (error) {
-            Toast.show({
-                type: 'error',
-                text1: 'Could not add that',
-                text2: error instanceof ApiError ? error.message : 'Please try again',
-            });
-        } finally {
-            setBusyId(null);
-        }
-    };
-
-    const dismiss = async (item: PlanItem) => {
-        setBusyId(item._id);
-        try {
-            await dismissPlanItem(item._id);
-            Toast.show({ type: 'success', text1: 'Dismissed' });
-            await load();
-        } catch (error) {
-            Toast.show({
-                type: 'error',
-                text1: 'Could not complete that',
-                text2: error instanceof ApiError ? error.message : 'Please try again',
-            });
-        } finally {
-            setBusyId(null);
-        }
-    };
+    const actions = usePlanItemActions(products, setProducts, load);
 
     const renderItem = (item: PlanItem) => {
         const meta = STATUS_META[item.status] ?? STATUS_META.upcoming;
-        const busy = busyId === item._id;
-        const actionable = ['urgent', 'due', 'upcoming'].includes(item.status);
-        const canOrder = actionable && Boolean(item.productId);
-        const inBasket = Boolean(item.productId && has(item.productId));
-        const price = item.productId ? products[item.productId]?.price : undefined;
-        const canBook = actionable && Boolean(item.professionalId);
-        // Dietary advice is the one lifestyle item the app can actually help with day to
-        // day: the nutrition tracker derives its targets from this item and scores every
-        // meal against it. Without this link the advice is a sentence nobody acts on.
-        const canTrack = item.type === 'lifestyle' && item.condition === 'diet';
+        const busy = actions.busyId === item._id;
+        const { actionable, canOrder, canBook, inBasket, price } = actions.capabilities(item);
+        const advice = isAdvice(item);
+        // Advice the app can help with day to day links to the tracker that acts on it —
+        // the nutrition tracker derives its targets from diet advice and scores every meal
+        // against it. Without the link the advice is a sentence nobody acts on.
+        const home = actionable ? adviceHomeFor(item) : null;
+        const open = () => router.push({ pathname: '/plan/[id]', params: { id: item._id } });
 
         return (
-            <View key={item._id} style={[styles.card, item.status === 'urgent' && styles.cardUrgent]}>
+            <TouchableOpacity
+                key={item._id}
+                style={[styles.card, needsAction(item) && item.status === 'urgent' && styles.cardUrgent]}
+                onPress={open}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityHint="Opens the full details"
+            >
                 <View style={styles.cardHeader}>
                     {item.image
                         ? <Image source={{ uri: item.image }} style={styles.thumb} />
@@ -181,12 +147,24 @@ export default function MyPlansScreen() {
                     <View style={styles.cardBody}>
                         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
                         <View style={styles.metaRow}>
-                            <View style={[styles.badge, { backgroundColor: meta.bg }]}>
-                                <Text style={[styles.badgeText, { color: meta.color }]}>{meta.label}</Text>
-                            </View>
-                            <Text style={styles.dueText}>{formatDate(item.dueDate)}</Text>
+                            {/* Advice has no deadline, so it shows its area, not a date */}
+                            {advice && actionable ? (
+                                <View style={[styles.badge, { backgroundColor: Palette.borderLight }]}>
+                                    <Text style={[styles.badgeText, { color: Palette.textSecondary }]}>
+                                        {AREA_LABEL[item.condition ?? ''] ?? 'Advice'}
+                                    </Text>
+                                </View>
+                            ) : (
+                                <>
+                                    <View style={[styles.badge, { backgroundColor: meta.bg }]}>
+                                        <Text style={[styles.badgeText, { color: meta.color }]}>{meta.label}</Text>
+                                    </View>
+                                    <Text style={styles.dueText}>{formatDate(item.dueDate)}</Text>
+                                </>
+                            )}
                         </View>
                     </View>
+                    <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} style={styles.cardChevron} />
                 </View>
 
                 {item.description ? (
@@ -207,21 +185,23 @@ export default function MyPlansScreen() {
 
                 {/* A recommendation with nothing behind it says so, rather than showing a
                     button that cannot work */}
-                {canTrack ? (
-                    <TouchableOpacity style={styles.trackLink} onPress={() => router.push('/nutrition')}>
-                        <Ionicons name="restaurant-outline" size={14} color={Palette.primary} />
-                        <Text style={styles.trackLinkText}>Track this in your nutrition log</Text>
+                {home ? (
+                    <TouchableOpacity style={styles.trackLink} onPress={() => router.push(home.route as never)}>
+                        <Ionicons name={home.icon as any} size={14} color={Palette.primary} />
+                        <Text style={styles.trackLinkText}>{home.label}</Text>
                         <Ionicons name="chevron-forward" size={14} color={Palette.primary} />
                     </TouchableOpacity>
                 ) : null}
 
-                {actionable && item.type !== 'lifestyle' && !canOrder && !canBook ? (
+                {actionable && !advice && !canOrder && !canBook ? (
                     <Text style={styles.unavailable}>
                         Not yet available to book through Predyqt — ask your clinician about this one.
                     </Text>
                 ) : null}
 
-                {(canOrder || canBook || actionable) && (
+                {/* Advice is acted on from its page ("Mark as done"), so its card stays a
+                    sentence and a link rather than a row of buttons */}
+                {actionable && !advice && (
                     <View style={styles.actions}>
                         {canOrder && (inBasket ? (
                             <TouchableOpacity style={styles.inBasketAction} onPress={() => router.push('/basket')}>
@@ -229,29 +209,27 @@ export default function MyPlansScreen() {
                                 <Text style={styles.inBasketActionText}>In basket</Text>
                             </TouchableOpacity>
                         ) : (
-                            <TouchableOpacity style={styles.primaryAction} onPress={() => addToBasket(item)} disabled={busy}>
+                            <TouchableOpacity style={styles.primaryAction} onPress={() => actions.addToBasket(item)} disabled={busy}>
                                 {busy ? <ActivityIndicator size="small" color={Palette.white} />
                                     : <Text style={styles.primaryActionText}>Add to basket</Text>}
                             </TouchableOpacity>
                         ))}
                         {canBook && (
-                            <TouchableOpacity style={styles.primaryAction} onPress={() => book(item)} disabled={busy}>
+                            <TouchableOpacity style={styles.primaryAction} onPress={() => actions.book(item)} disabled={busy}>
                                 <Text style={styles.primaryActionText}>Book</Text>
                             </TouchableOpacity>
                         )}
-                        {actionable && (
-                            <TouchableOpacity style={styles.secondaryAction} onPress={() => dismiss(item)} disabled={busy}>
-                                <Text style={styles.secondaryActionText}>Dismiss</Text>
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity style={styles.secondaryAction} onPress={() => actions.dismiss(item)} disabled={busy}>
+                            <Text style={styles.secondaryActionText}>Dismiss</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
-            </View>
+            </TouchableOpacity>
         );
     };
 
     const sections = Object.keys(grouped).sort((a, b) =>
-        a === 'urgent' ? -1 : b === 'urgent' ? 1 : Number(a) - Number(b));
+        SECTION_RANK(a) - SECTION_RANK(b) || Number(a) - Number(b));
 
     if (loading) {
         return (
@@ -309,7 +287,7 @@ export default function MyPlansScreen() {
                                 onPress={() => setExpanded((p) => ({ ...p, [key]: !p[key] }))}
                             >
                                 <Text style={[styles.sectionTitle, isUrgent && styles.sectionTitleUrgent]}>
-                                    {isUrgent ? 'Needs attention' : key}
+                                    {isUrgent ? 'Needs attention' : key === ADVICE_KEY ? 'Advice to follow' : key}
                                 </Text>
                                 <View style={styles.sectionRight}>
                                     <Text style={styles.sectionCount}>{items.length}</Text>
@@ -372,6 +350,7 @@ const useStyles = makeStyles((Palette) => ({
         alignItems: 'center', justifyContent: 'center',
     },
     cardBody: { flex: 1 },
+    cardChevron: { marginTop: 2 },
     cardTitle: { fontSize: 15, fontWeight: '600', color: Palette.text, lineHeight: 20 },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
     badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },

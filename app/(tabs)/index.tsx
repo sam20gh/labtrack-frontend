@@ -91,7 +91,11 @@ import {
     getLatestBiomarkers, byClinicalPriority, describeMovement, medicalName, plainName,
     formatValue, FLAG_META, isCriticalFlag, hasReturnedToRange,
 } from '@/lib/biomarkers';
-import { getPlan, STATUS_META as PLAN_STATUS_META, TYPE_ICON as PLAN_TYPE_ICON } from '@/lib/plan';
+import {
+    getPlan, needsAction, planItemsForMedications,
+    STATUS_META as PLAN_STATUS_META, TYPE_ICON as PLAN_TYPE_ICON,
+} from '@/lib/plan';
+import { PlanNoteRow } from '@/components/plan/PlanNotes';
 import { getDay as getNutritionDay } from '@/lib/nutrition';
 import {
     getLatestInterpretation, generateInterpretation, hasMeaningfulChanges, isVerified,
@@ -218,6 +222,12 @@ interface HomeAction {
     cta: string;
     onPress: () => void;
 }
+
+/** What tapping a plan item in "Needs you" will actually offer on its page. */
+const planCta = (item: PlanItem) =>
+    item.type === 'consultation' && item.professionalId ? 'Book it'
+        : item.productId ? 'Order it'
+            : 'See details';
 
 /** How a plan item's date reads once it is asking for something. */
 const dueLabel = (item: PlanItem) => {
@@ -622,11 +632,12 @@ export default function HomeScreen() {
      *
      * `urgent` first, then `due`, each oldest-first. Everything else on the plan is a date
      * in the future and belongs on the plan screen, not on a home page whose job is to say
-     * what today needs.
+     * what today needs. Advice is never "overdue" — `needsAction` leaves it out, or a
+     * sentence about zinc arrives here wearing "Order it".
      */
     const planDue = useMemo(
         () => plan
-            .filter((item) => item.status === 'urgent' || item.status === 'due')
+            .filter(needsAction)
             .sort((a, b) =>
                 (a.status === 'urgent' ? 0 : 1) - (b.status === 'urgent' ? 0 : 1)
                 || new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
@@ -715,8 +726,8 @@ export default function HomeScreen() {
                 image: item.image,
                 title: item.title,
                 body: dueLabel(item),
-                cta: item.type === 'consultation' ? 'Book it' : 'Order it',
-                onPress: () => router.push('/myplans'),
+                cta: planCta(item),
+                onPress: () => router.push({ pathname: '/plan/[id]', params: { id: item._id } }),
             });
         }
 
@@ -745,8 +756,8 @@ export default function HomeScreen() {
                 image: item.image,
                 title: item.title,
                 body: dueLabel(item),
-                cta: item.type === 'consultation' ? 'Book it' : 'Order it',
-                onPress: () => router.push('/myplans'),
+                cta: planCta(item),
+                onPress: () => router.push({ pathname: '/plan/[id]', params: { id: item._id } }),
             });
         }
 
@@ -840,6 +851,12 @@ export default function HomeScreen() {
     }
 
     if ((medications?.doses.length ?? 0) > 0) {
+        // The medicines in today's schedule are the only names home has; that is enough
+        // to catch a plan item that names one.
+        const medicationNotes = planItemsForMedications(
+            plan,
+            (medications?.doses ?? []).map((d) => ({ name: d.medicationName, brandName: null })),
+        );
         trackers.push({
             id: 'medications',
             order: pendingDoses > 0 ? 0 : 4,
@@ -851,6 +868,7 @@ export default function HomeScreen() {
                         onDose={handleDose}
                         onAdd={openMedicationAdd}
                         onOpen={openMedication}
+                        planNote={medicationNotes[0] ?? null}
                     />
                 </Section>
             ),
@@ -2090,12 +2108,18 @@ const Macro = ({ label, grams, target, tint }: {
  * same weight as an unfinished one. The rows are one tap away rather than gone, because
  * undo lives on them and a mis-tap has to stay correctable.
  */
-const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen }: {
+const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen, planNote }: {
     schedule: MedicationScheduleDay | null;
     busyDose: string | null;
     onDose: (id: string, action: 'take' | 'skip' | 'undo') => void;
     onAdd: () => void;
     onOpen: (id: string) => void;
+    /**
+     * The one plan item about medicines worth carrying here — one, because the card is a
+     * day's doses and the hub holds the rest. Advice to raise with a prescriber is read
+     * best beside the doses it is about.
+     */
+    planNote?: PlanItem | null;
 }) => {
     const Palette = usePalette();
     const styles = useStyles();
@@ -2207,6 +2231,8 @@ const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen 
                     </View>
                 )}
 
+                {planNote ? <PlanNoteRow item={planNote} divider /> : null}
+
                 <CardFooterAction label="Add medication" onPress={onAdd} />
             </View>
         );
@@ -2219,6 +2245,8 @@ const MedicationsCard = React.memo(({ schedule, busyDose, onDose, onAdd, onOpen 
             </Text>
 
             {rows}
+
+            {planNote ? <PlanNoteRow item={planNote} divider /> : null}
 
             <CardFooterAction label="Add medication" onPress={onAdd} />
         </View>
