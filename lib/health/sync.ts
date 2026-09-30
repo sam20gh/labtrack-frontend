@@ -67,10 +67,20 @@ const runOne = async (platform: HealthPlatform): Promise<SyncResult> => {
         const batch = await readSince(source?.cursor ?? null, platform);
         if (!batch) return { ran: false, daysUpdated: [], platform };
 
+        // The cycle import rides on the phone store's batch, and only when switched on. See
+        // `cycleImport.ts` — nothing about periods is read otherwise.
+        if (platform === 'apple_health' || platform === 'health_connect') {
+            Object.assign(batch, await require('./cycleImport').readCycleForSync());
+        }
+
         const total = batch.activities.length + batch.sleep.length
             + batch.heart.length + batch.days.length
             + (batch.spo2?.length ?? 0) + (batch.temperature?.length ?? 0)
-            + (batch.bloodPressure?.length ?? 0) + (batch.ecg?.length ?? 0);
+            + (batch.bloodPressure?.length ?? 0) + (batch.ecg?.length ?? 0)
+            + (batch.cycle?.length ?? 0) + (batch.nightTemperature?.length ?? 0)
+            // A window with no rows still has to be posted: it is how a period deleted in the
+            // Health app reaches the server.
+            + (batch.cycleWindow ? 1 : 0);
 
         // Nothing changed. Still a run, so the interval guard holds.
         if (total === 0) {

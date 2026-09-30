@@ -9,9 +9,10 @@
  * through `renderDay`, because a ring of exercise minutes, a hydration tick and a period day
  * are three different marks and no prop list could anticipate a fourth.
  *
- * The cycle calendar is the first caller. The other four keep their own grids until each is
- * moved over and checked on a device; a calendar that shifts a date by one column is a bug
- * nothing but a screenshot catches.
+ * Its callers: the cycle calendar, `ActivityCalendar`, `HydrationCalendar` and the medication
+ * schedule's month view — each moved over and checked on a device, because a calendar that
+ * shifts a date by one column is a bug nothing but a screenshot catches. `DirectionCalendar`
+ * is deliberately not one: it draws weeks of a forecast with a date label per row, not a month.
  *
  * Weeks start on Sunday, matching every existing grid in the app. `maxMonth` caps walking
  * forward — the activity grid has nothing to show in a future month, the cycle grid has
@@ -62,8 +63,15 @@ interface Props {
     maxMonth?: string;
     /** The earliest month the back chevron may reach. Omit for no limit. */
     minMonth?: string;
-    /** Height of one row. Width is always a seventh. */
-    cellHeight?: number;
+    /** Height of one row, or `'auto'` for cells that size themselves. Width is always a seventh. */
+    cellHeight?: number | 'auto';
+    /** Space between rows. */
+    rowGap?: number;
+    /**
+     * `card` draws its own border and padding; `bare` draws none, for a grid that already sits
+     * inside a card of its own (the hydration screen).
+     */
+    variant?: 'card' | 'bare';
     loading?: boolean;
     /** Drawn under the grid — a legend, usually. */
     footer?: React.ReactNode;
@@ -71,7 +79,8 @@ interface Props {
 }
 
 export function MonthGrid({
-    month, onChangeMonth, renderDay, maxMonth, minMonth, cellHeight = 48, loading, footer, style,
+    month, onChangeMonth, renderDay, maxMonth, minMonth, cellHeight = 48, rowGap = 0, variant = 'card',
+    loading, footer, style,
 }: Props) {
     const Palette = usePalette();
     const styles = useStyles();
@@ -80,8 +89,8 @@ export function MonthGrid({
     const canForward = !maxMonth || month < maxMonth;
 
     return (
-        <View style={[styles.card, style]}>
-            <View style={styles.head}>
+        <View style={[variant === 'card' ? styles.card : styles.bare, style]}>
+            <View style={[styles.head, variant === 'bare' && styles.headBare]}>
                 <Pressable
                     onPress={() => canBack && onChangeMonth(shiftMonth(month, -1))}
                     disabled={!canBack}
@@ -109,9 +118,9 @@ export function MonthGrid({
                 {WEEKDAYS.map((w) => <Text key={w} style={styles.weekday}>{w}</Text>)}
             </View>
 
-            <View style={[styles.grid, loading && styles.gridLoading]}>
+            <View style={[styles.grid, { rowGap }, loading && styles.gridLoading]}>
                 {cells.map((day, i) => (
-                    <View key={day ?? `blank${i}`} style={[styles.cell, { height: cellHeight }]}>
+                    <View key={day ?? `blank${i}`} style={[styles.cell, cellHeight !== 'auto' && { height: cellHeight }]}>
                         {day ? renderDay(day) : null}
                     </View>
                 ))}
@@ -132,6 +141,8 @@ const useStyles = makeStyles((Palette) => ({
         paddingTop: Spacing.lg,
         paddingBottom: Spacing.md,
     },
+    bare: { gap: 0 },
+    headBare: { paddingHorizontal: 0 },
     head: {
         flexDirection: 'row',
         alignItems: 'center',

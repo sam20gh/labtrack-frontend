@@ -7,7 +7,7 @@
  * every logged day, and the confirmation says exactly that.
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Switch, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,9 +15,13 @@ import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import {
-    getCyclePlan, updateCyclePlan, deleteAllCycleData, STATUSES, FERTILE_DISCLAIMER,
+    getCyclePlan, updateCyclePlan, deleteAllCycleData, deleteImportedDays, STATUSES, FERTILE_DISCLAIMER,
     type CyclePlan, type CyclePlanUpdate,
 } from '@/lib/cycle';
+import {
+    isCycleImportOn, enableCycleImport, disableCycleImport, importSourceLabel, importSource,
+} from '@/lib/health/cycleImport';
+import { runSync, resetSyncThrottle } from '@/lib/health/sync';
 import { ApiError } from '@/lib/api';
 
 function Row({ title, body, value, onChange, disabled }: {
@@ -88,18 +92,82 @@ export default function CycleSettingsScreen() {
     const [plan, setPlan] = useState<CyclePlan | null>(null);
     const [error, setError] = useState<unknown>(null);
     const [deleting, setDeleting] = useState(false);
+    const [importOn, setImportOn] = useState(false);
+    const [importing, setImporting] = useState(false);
+    const [imported, setImported] = useState<number>(0);
+    const storeLabel = importSourceLabel();
+    const storeSource = importSource();
 
     const load = useCallback(async () => {
         try {
             setError(null);
-            setPlan((await getCyclePlan()).plan);
+            const [res, on] = await Promise.all([getCyclePlan(), isCycleImportOn()]);
+            setPlan(res.plan);
+            setImportOn(on);
+            setImported(storeSource ? res.imported?.[storeSource] ?? 0 : 0);
         } catch (err) {
             if (err instanceof ApiError && err.isAuthError) { router.replace('/(auth)/loginscreen'); return; }
             setError(err);
         }
-    }, [router]);
+    }, [router, storeSource]);
 
     useFocusEffect(useCallback(() => { load(); }, [load]));
+
+    /**
+     * Switching the import on asks the store for the cycle types — the only place that prompt
+     * appears — then syncs straight away so the history it holds arrives while the person is
+     * still looking at this screen.
+     */
+    const toggleImport = async (on: boolean) => {
+        if (!on) {
+            await disableCycleImport();
+            setImportOn(false);
+            return;
+        }
+        setImporting(true);
+        try {
+            const granted = await enableCycleImport();
+            if (!granted) {
+                Alert.alert(
+                    'Not shared',
+                    Platform.OS === 'android'
+                        ? 'Health Connect did not share period data. It will not ask again, so allow it under Health Connect → App permissions → Predyqt.'
+                        : 'Apple Health did not share period data. You can allow it under Settings → Health → Data Access & Devices → Predyqt.',
+                );
+                return;
+            }
+            setImportOn(true);
+            resetSyncThrottle();
+            await runSync(true);
+            await load();
+        } finally {
+            setImporting(false);
+        }
+    };
+
+    const confirmRemoveImported = () => {
+        if (!storeSource) return;
+        Alert.alert(
+            `Remove days from ${storeLabel}?`,
+            `The ${imported} period day${imported === 1 ? '' : 's'} brought in from ${storeLabel} are removed here. Anything you logged in Predyqt stays, and ${storeLabel} keeps its own copy.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Remove', style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await disableCycleImport();
+                            setImportOn(false);
+                            await deleteImportedDays(storeSource);
+                            await load();
+                        } catch (err) {
+                            Alert.alert('Not removed', err instanceof ApiError ? err.message : 'Please try again.');
+                        }
+                    },
+                },
+            ],
+        );
+    };
 
     const save = async (update: CyclePlanUpdate, optimistic: Partial<CyclePlan>) => {
         const before = plan;
@@ -243,6 +311,34 @@ export default function CycleSettingsScreen() {
                     />
                 </View>
                 {paused ? <Text style={styles.footnote}>Reminders are paused while you are pregnant or breastfeeding.</Text> : null}
+
+                {storeLabel ? (
+                    <>
+                        <Text style={styles.groupTitle}>{`From ${storeLabel}`}</Text>
+                        <View style={styles.group}>
+                            <Row
+                                title={`Import periods from ${storeLabel}`}
+                                body={importing
+                                    ? 'Importing…'
+                                    : importOn
+                                        ? `On. ${imported} day${imported === 1 ? '' : 's'} imported so far; new ones arrive whenever the app syncs.`
+                                        : `Brings in the periods ${storeLabel} already has${Platform.OS === 'ios' ? ', and Apple Watch sleeping wrist temperature' : ''}. Only asked for when you switch this on.`}
+                                value={importOn}
+                                disabled={importing}
+                                onChange={toggleImport}
+                            />
+                            {imported > 0 ? (
+                                <Pressable style={styles.row} onPress={confirmRemoveImported} accessibilityRole="button">
+                                    <Text style={[styles.rowTitle, { flex: 1 }]}>Remove imported days</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+                                </Pressable>
+                            ) : null}
+                        </View>
+                        <Text style={styles.footnote}>
+                            Anything you log here wins over what was imported for the same day.
+                        </Text>
+                    </>
+                ) : null}
 
                 <View style={styles.privacy}>
                     <Ionicons name="lock-closed-outline" size={16} color={Palette.textSecondary} />

@@ -43,7 +43,9 @@
         "android.permission.health.READ_HEART_RATE",
         "android.permission.health.READ_RESTING_HEART_RATE",
         "android.permission.health.READ_HEART_RATE_VARIABILITY",
-        "android.permission.health.READ_VO2_MAX"
+        "android.permission.health.READ_VO2_MAX",
+        "android.permission.health.READ_MENSTRUATION",
+        "android.permission.health.READ_INTERMENSTRUAL_BLEEDING"
       ]
     },
     "web": {
@@ -102,7 +104,7 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "LabTrack reads your workouts, sleep and heart rate from Apple Health so your activity tracker and health plan reflect what you actually did.",
+          "NSHealthShareUsageDescription": "LabTrack reads your workouts, sleep and heart rate from Apple Health so your activity tracker and health plan reflect what you actually did. If you switch on the cycle import, it also reads your periods and sleeping wrist temperature for your cycle tracker.",
           "background": false
         }
       ],

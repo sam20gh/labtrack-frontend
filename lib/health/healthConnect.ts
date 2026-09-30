@@ -34,7 +34,7 @@ import {
 } from 'react-native-health-connect';
 import type {
     HealthReader, HealthCapability, SyncBatch, HealthScope,
-    ActivityRow, SleepRow, DayRow, SleepStage, SourceDevice,
+    ActivityRow, SleepRow, DayRow, SleepStage, SourceDevice, CycleRow,
 } from './types';
 
 /** Read permissions, grouped by the scope a person grants. */
@@ -650,3 +650,84 @@ export const reader: HealthReader = {
 
 /** Deep-link into Health Connect, for the "permissions were declined" path. */
 export const openSettings = openHealthConnectSettings;
+
+/* ------------------------------------------------------------------ the cycle import */
+
+/**
+ * Period data, asked for separately and only from the cycle tracker.
+ *
+ * Not in `PERMISSIONS`: somebody who connected Health Connect for their workouts has not
+ * agreed to have their periods read, and folding these into the connect prompt would read them
+ * anyway for everybody who tapped "Allow all". Requested from `lib/health/cycleImport.ts` when
+ * the person switches the import on in cycle settings.
+ */
+const CYCLE_RECORD_TYPES = ['MenstruationFlow', 'MenstruationPeriod', 'IntermenstrualBleeding'] as const;
+const CYCLE_PERMISSIONS = CYCLE_RECORD_TYPES.map((recordType) => ({ accessType: 'read' as const, recordType: recordType as any }));
+
+const cycleGranted = (granted: any[]) => {
+    const types = new Set(granted.map((p) => p.recordType));
+    return CYCLE_RECORD_TYPES.some((t) => types.has(t));
+};
+
+export const hasCyclePermission = async (): Promise<boolean> => {
+    try {
+        if ((await getSdkStatus()) !== SdkAvailabilityStatus.SDK_AVAILABLE) return false;
+        await initialize();
+        return cycleGranted(await getGrantedPermissions());
+    } catch {
+        return false;
+    }
+};
+
+export const requestCyclePermissions = async (): Promise<boolean> => {
+    if ((await getSdkStatus()) !== SdkAvailabilityStatus.SDK_AVAILABLE) return false;
+    await initialize();
+    return cycleGranted(await requestPermission(CYCLE_PERMISSIONS as any));
+};
+
+/** Local `YYYY-MM-DD` on this phone, which is the calendar the person logged in. */
+const phoneDay = (instant: string | Date) => {
+    const d = new Date(instant);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+};
+
+/** Health Connect's `MenstruationFlow` constants: 0 unknown, 1 light, 2 medium, 3 heavy. */
+const HC_FLOW: Record<number, CycleRow['flow']> = { 0: 'unspecified', 1: 'light', 2: 'medium', 3: 'heavy' };
+
+/**
+ * Every period day since `from`. A type the person did not grant, or never recorded, reads as
+ * nothing rather than failing the rest — the same rule every read in this file follows.
+ */
+export const readCycle = async (from: Date): Promise<CycleRow[]> => {
+    await initialize();
+    const timeRangeFilter = { operator: 'between' as const, startTime: from.toISOString(), endTime: new Date().toISOString() };
+    const rows: CycleRow[] = [];
+    const read = async (type: string) => { try { return await readAll(type, timeRangeFilter); } catch { return []; } };
+
+    for (const r of await read('MenstruationFlow')) {
+        const flow = HC_FLOW[r.flow ?? 0];
+        const at = r.time ?? r.startTime;
+        if (flow && at) rows.push({ day: phoneDay(at), flow, externalId: `hc-flow-${r.metadata?.id ?? at}` });
+    }
+
+    // A period span with no per-day flow still says which days were period days. Typed as
+    // instantaneous by the library, but Health Connect records it as an interval — read both.
+    for (const r of await read('MenstruationPeriod')) {
+        const start = r.startTime ?? r.time;
+        if (!start) continue;
+        // The end is exclusive in Health Connect; a same-day period has start === end.
+        const endInstant = r.endTime ? new Date(new Date(r.endTime).getTime() - 1) : new Date(start);
+        const last = phoneDay(endInstant < new Date(start) ? start : endInstant);
+        for (let day = phoneDay(start), guard = 0; day <= last && guard < 20; guard += 1) {
+            rows.push({ day, flow: 'unspecified', externalId: `hc-period-${r.metadata?.id ?? start}` });
+            day = new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+        }
+    }
+
+    for (const r of await read('IntermenstrualBleeding')) {
+        const at = r.time ?? r.startTime;
+        if (at) rows.push({ day: phoneDay(at), flow: 'spotting', externalId: `hc-imb-${r.metadata?.id ?? at}` });
+    }
+
+    return rows;
+};

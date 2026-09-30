@@ -58,7 +58,7 @@
     <key>NSCameraUsageDescription</key>
     <string>LabTrack needs camera access so you can photograph a lab report or show the assistant a symptom.</string>
     <key>NSHealthShareUsageDescription</key>
-    <string>LabTrack reads your workouts, sleep and heart rate from Apple Health so your activity tracker and health plan reflect what you actually did.</string>
+    <string>LabTrack reads your workouts, sleep and heart rate from Apple Health so your activity tracker and health plan reflect what you actually did. If you switch on the cycle import, it also reads your periods and sleeping wrist temperature for your cycle tracker.</string>
     <key>NSHealthUpdateUsageDescription</key>
     <string>LabTrack wants to update your health data</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

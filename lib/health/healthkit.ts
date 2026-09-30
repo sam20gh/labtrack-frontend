@@ -25,12 +25,14 @@ import {
     queryWorkoutSamplesWithAnchor,
     queryCategorySamplesWithAnchor,
     queryStatisticsCollectionForQuantity,
+    queryCategorySamples,
+    queryQuantitySamples,
     AuthorizationStatus,
     CategoryValueSleepAnalysis,
 } from '@kingstinct/react-native-healthkit';
 import type {
     HealthReader, HealthCapability, SyncBatch, HealthScope,
-    ActivityRow, SleepRow, DayRow, SleepStage, SourceDevice,
+    ActivityRow, SleepRow, DayRow, SleepStage, SourceDevice, CycleRow, NightTemperatureRow,
 } from './types';
 
 /**
@@ -390,4 +392,71 @@ export const reader: HealthReader = {
 
         return batch;
     },
+};
+
+/* ------------------------------------------------------------------ the cycle import */
+
+/**
+ * Period data and the Watch's sleeping wrist temperature, asked for separately and only from
+ * the cycle tracker — not in `SCOPES`, for the reason `requestCyclePermissions` in
+ * `healthConnect.ts` gives. HealthKit will not say whether *read* access was granted (see
+ * `capability` above), so a completed request is treated as consent and an empty read as
+ * "nothing shared or nothing recorded", which the settings screen words as exactly that.
+ */
+const CYCLE_TYPES = [
+    'HKCategoryTypeIdentifierMenstrualFlow',
+    'HKCategoryTypeIdentifierIntermenstrualBleeding',
+    'HKQuantityTypeIdentifierAppleSleepingWristTemperature',
+] as const;
+
+export const requestCyclePermissions = async (): Promise<boolean> => {
+    if (!isHealthDataAvailable()) return false;
+    return requestAuthorization({ toRead: CYCLE_TYPES as any });
+};
+
+/** Always true where Apple Health exists: read consent cannot be observed. */
+export const hasCyclePermission = async (): Promise<boolean> => isHealthDataAvailable();
+
+const phoneDay = (instant: string | Date) => {
+    const d = new Date(instant);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+};
+
+/** `HKCategoryValueMenstrualFlow`: 1 unspecified, 2 light, 3 medium, 4 heavy, 5 none. */
+const HK_FLOW: Record<number, CycleRow['flow'] | null> = { 1: 'unspecified', 2: 'light', 3: 'medium', 4: 'heavy', 5: null };
+
+export const readCycle = async (from: Date): Promise<CycleRow[]> => {
+    const rows: CycleRow[] = [];
+    const filter = { date: { startDate: from } };
+    try {
+        for (const sample of await queryCategorySamples('HKCategoryTypeIdentifierMenstrualFlow', { limit: 0, filter })) {
+            const flow = HK_FLOW[Number((sample as any).value)];
+            // "None" is a day somebody logged as not bleeding; it is not a period day.
+            if (!flow) continue;
+            rows.push({ day: phoneDay((sample as any).startDate), flow, externalId: `hk-flow-${(sample as any).uuid}` });
+        }
+    } catch { /* not shared */ }
+    try {
+        for (const sample of await queryCategorySamples('HKCategoryTypeIdentifierIntermenstrualBleeding', { limit: 0, filter })) {
+            rows.push({ day: phoneDay((sample as any).startDate), flow: 'spotting', externalId: `hk-imb-${(sample as any).uuid}` });
+        }
+    } catch { /* not shared */ }
+    return rows;
+};
+
+/**
+ * One figure per night from Apple Watch (Series 8 and later), filed under the day the sleep
+ * ended — the wake day every sleep row in this app uses.
+ */
+export const readNightTemperature = async (from: Date): Promise<NightTemperatureRow[]> => {
+    try {
+        const samples = await queryQuantitySamples('HKQuantityTypeIdentifierAppleSleepingWristTemperature', {
+            limit: 0, unit: 'degC', filter: { date: { startDate: from } },
+        });
+        return samples
+            .filter((x: any) => Number.isFinite(x.quantity))
+            .map((x: any) => ({ day: phoneDay(x.endDate), celsius: x.quantity, externalId: `hk-wt-${x.uuid}` }));
+    } catch {
+        return [];
+    }
 };

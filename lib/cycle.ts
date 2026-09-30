@@ -203,7 +203,7 @@ export interface CycleInsight {
 /* -------------------------------------------------------------------- API */
 
 export const getCyclePlan = () =>
-    api.get<{ access: CycleAccess; plan: CyclePlan }>('/cycle/plan');
+    api.get<{ access: CycleAccess; plan: CyclePlan; imported?: Partial<Record<'health_connect' | 'apple_health', number>> }>('/cycle/plan');
 
 export type CyclePlanUpdate = Partial<Omit<CyclePlan, 'seed' | 'reminders' | 'fertileAllowed'>> & {
     seed?: Partial<CyclePlan['seed']>;
@@ -223,7 +223,11 @@ export const getCycleCalendar = (month: string) =>
 
 export const getCycleDay = (day: string) => api.get<{ entry: DayEntry | null }>(`/cycle/days/${day}`);
 
-export const saveCycleDay = (day: string, entry: Omit<DayEntry, 'day' | 'source'>) =>
+/**
+ * Replace a day. Omit `flow` to leave it to the health store — the log screen does, when
+ * somebody saves a symptom on a day whose flow was imported and did not touch the flow.
+ */
+export const saveCycleDay = (day: string, entry: Omit<DayEntry, 'day' | 'source' | 'flow'> & { flow?: Flow | null }) =>
     api.put<{ entry: DayEntry | null }>(`/cycle/days/${day}?tzOffset=${tzOffset()}`, entry);
 
 export const editPeriodDays = (change: { add?: string[]; remove?: string[] }) =>
@@ -232,6 +236,13 @@ export const editPeriodDays = (change: { add?: string[]; remove?: string[] }) =>
 export const getCycleHistory = () => api.get<CycleHistory>(`/cycle/history?tzOffset=${tzOffset()}`);
 export const getCycleInsight = () => api.get<CycleInsight>(`/cycle/insight?tzOffset=${tzOffset()}`);
 export const deleteAllCycleData = () => api.delete<{ deletedDays: number }>('/cycle/data');
+/** The days a health store contributed. Nothing the person logged is touched. */
+export const deleteImportedDays = (source: 'health_connect' | 'apple_health') =>
+    api.delete<{ deletedDays: number }>(`/cycle/imported?source=${source}`);
+
+/** Where a day's flow came from, in words, or null when the person logged it. */
+export const flowSourceLabel = (source?: string): string | null =>
+    source === 'health_connect' ? 'From Health Connect' : source === 'apple_health' ? 'From Apple Health' : null;
 
 /* ------------------------------------------------------------- formatting */
 

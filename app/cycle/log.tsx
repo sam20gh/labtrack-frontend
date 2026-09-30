@@ -23,7 +23,7 @@ import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
 import { FlowPicker, SymptomChips, MoodPicker } from '@/components/cycle/LogControls';
 import {
-    getCycleDay, saveCycleDay, today as localToday, addDays, formatDayLong,
+    getCycleDay, saveCycleDay, today as localToday, addDays, formatDayLong, flowSourceLabel,
     type Flow, type Symptom,
 } from '@/lib/cycle';
 import { ApiError } from '@/lib/api';
@@ -47,6 +47,9 @@ export default function CycleLogScreen() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<unknown>(null);
     const [dirty, setDirty] = useState(false);
+    /** Where the loaded flow came from, and whether anybody touched it since. */
+    const [flowSource, setFlowSource] = useState<string | undefined>(undefined);
+    const [flowTouched, setFlowTouched] = useState(false);
 
     const load = useCallback(async (d: string) => {
         setLoading(true);
@@ -57,6 +60,8 @@ export default function CycleLogScreen() {
             setSymptoms(entry?.symptoms ?? []);
             setMood(entry?.mood ?? null);
             setNote(entry?.note ?? '');
+            setFlowSource(entry?.source);
+            setFlowTouched(false);
             setDirty(false);
         } catch (err) {
             if (err instanceof ApiError && err.isAuthError) { router.replace('/(auth)/loginscreen'); return; }
@@ -73,6 +78,7 @@ export default function CycleLogScreen() {
 
     const onFlow = (f: Flow | null) => {
         setDirty(true);
+        setFlowTouched(true);
         if (f === null) setFlow(flow === 'spotting' ? null : 'unspecified');
         else setFlow(f);
     };
@@ -80,7 +86,13 @@ export default function CycleLogScreen() {
     const save = async () => {
         setSaving(true);
         try {
-            await saveCycleDay(day, { flow, symptoms, mood, note: note.trim() || null });
+            // An imported flow nobody touched is left to the store, so the next sync can still
+            // correct it; copying it into the manual row would freeze it.
+            const leaveFlow = !flowTouched && flowSourceLabel(flowSource) !== null;
+            await saveCycleDay(day, {
+                ...(leaveFlow ? {} : { flow }),
+                symptoms, mood, note: note.trim() || null,
+            });
             setDirty(false);
             router.back();
         } catch (err) {
@@ -140,12 +152,14 @@ export default function CycleLogScreen() {
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.cardTitle}>Period day</Text>
                                     <Text style={styles.cardHint}>
-                                        {flow === 'unspecified' ? 'Pick the flow below if you know it.' : 'Were you on your period this day?'}
+                                        {!flowTouched && flowSourceLabel(flowSource) && flow
+                                            ? `${flowSourceLabel(flowSource)}. Change it here and yours wins.`
+                                            : flow === 'unspecified' ? 'Pick the flow below if you know it.' : 'Were you on your period this day?'}
                                     </Text>
                                 </View>
                                 <Switch
                                     value={periodDay}
-                                    onValueChange={(on) => { setDirty(true); setFlow(on ? 'unspecified' : null); }}
+                                    onValueChange={(on) => { setDirty(true); setFlowTouched(true); setFlow(on ? 'unspecified' : null); }}
                                     trackColor={{ true: Palette.cycleFill, false: Palette.borderStrong }}
                                     thumbColor={Palette.white}
                                     accessibilityLabel="Period day"

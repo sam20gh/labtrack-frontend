@@ -21,27 +21,11 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Fonts, Spacing, Radius, BodyFont, tone } from '@/constants/theme';
+import { Spacing, Radius, BodyFont, tone } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { MonthGrid } from '@/components/ui/MonthGrid';
 import { dayStatus, type DayStatus } from '@/lib/hydration';
 import type { SeriesPoint } from '@/lib/metrics';
-
-const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-const pad = (n: number) => String(n).padStart(2, '0');
-
-export const shiftMonth = (month: string, delta: number): string => {
-    const [y, m] = month.split('-').map(Number);
-    const d = new Date(Date.UTC(y, m - 1 + delta, 1));
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`;
-};
-
-const monthTitle = (month: string) => {
-    const [y, m] = month.split('-').map(Number);
-    return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(undefined, {
-        month: 'long', year: 'numeric', timeZone: 'UTC',
-    });
-};
 
 function Mark({ status }: { status: DayStatus }) {
     const Palette = usePalette();
@@ -73,85 +57,46 @@ interface Props {
     onSelect?: (day: string) => void;
 }
 
+/**
+ * The month frame is `MonthGrid`'s, `bare` because the water screen already draws the card
+ * around it. What is drawn here is each day: its date and its mark, and today boxed.
+ */
 export function HydrationCalendar({ month, series, today, onChangeMonth, onSelect }: Props) {
-    const Palette = usePalette();
     const styles = useStyles();
     const byDay = useMemo(() => new Map(series.map((p) => [p.day, p])), [series]);
 
-    const [year, mon] = month.split('-').map(Number);
-    const offset = new Date(Date.UTC(year, mon - 1, 1)).getUTCDay();
-    const length = new Date(Date.UTC(year, mon, 0)).getUTCDate();
-
-    const cells: (string | null)[] = [
-        ...Array(offset).fill(null),
-        ...Array.from({ length }, (_, i) => `${month}-${pad(i + 1)}`),
-    ];
-    while (cells.length % 7 !== 0) cells.push(null);
-
-    const atCurrentMonth = month >= today.slice(0, 7);
-
     return (
-        <View style={styles.wrap}>
-            <View style={styles.head}>
-                <Pressable
-                    onPress={() => onChangeMonth(shiftMonth(month, -1))}
-                    hitSlop={10}
-                    accessibilityRole="button"
-                    accessibilityLabel="Previous month"
-                >
-                    <Ionicons name="chevron-back" size={18} color={Palette.textSecondary} />
-                </Pressable>
-                <Text style={styles.title}>{monthTitle(month)}</Text>
-                <Pressable
-                    onPress={() => !atCurrentMonth && onChangeMonth(shiftMonth(month, 1))}
-                    disabled={atCurrentMonth}
-                    hitSlop={10}
-                    accessibilityRole="button"
-                    accessibilityLabel="Next month"
-                    accessibilityState={{ disabled: atCurrentMonth }}
-                >
-                    <Ionicons
-                        name="chevron-forward"
-                        size={18}
-                        color={atCurrentMonth ? Palette.border : Palette.textSecondary}
-                    />
-                </Pressable>
-            </View>
+        <MonthGrid
+            month={month}
+            onChangeMonth={onChangeMonth}
+            maxMonth={today.slice(0, 7)}
+            variant="bare"
+            cellHeight="auto"
+            rowGap={Spacing.xs}
+            renderDay={(day) => {
+                const point = byDay.get(day);
+                // A day outside the fetched window is "nothing known", which draws the
+                // same as "nothing logged" — an empty ring claims nothing either way.
+                const status = point ? dayStatus(point, today) : (day > today ? 'future' : 'none');
+                const isToday = day === today;
 
-            <View style={styles.week}>
-                {WEEKDAYS.map((w) => <Text key={w} style={styles.weekday}>{w}</Text>)}
-            </View>
-
-            <View style={styles.grid}>
-                {cells.map((day, i) => {
-                    if (!day) return <View key={`blank${i}`} style={styles.cell} />;
-
-                    const point = byDay.get(day);
-                    // A day outside the fetched window is "nothing known", which draws the
-                    // same as "nothing logged" — an empty ring claims nothing either way.
-                    const status = point ? dayStatus(point, today) : (day > today ? 'future' : 'none');
-                    const isToday = day === today;
-
-                    return (
-                        <Pressable
-                            key={day}
-                            style={styles.cell}
-                            disabled={status === 'future' || !onSelect}
-                            onPress={() => onSelect?.(day)}
-                            accessibilityRole={onSelect ? 'button' : undefined}
-                            accessibilityLabel={`${new Date(`${day}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}: ${LABELS[status]}`}
-                        >
-                            <View style={[styles.inner, isToday && styles.innerToday]}>
-                                <Text style={[styles.date, status === 'future' && styles.dateFuture]}>
-                                    {Number(day.slice(-2))}
-                                </Text>
-                                <Mark status={status} />
-                            </View>
-                        </Pressable>
-                    );
-                })}
-            </View>
-        </View>
+                return (
+                    <Pressable
+                        disabled={status === 'future' || !onSelect}
+                        onPress={() => onSelect?.(day)}
+                        accessibilityRole={onSelect ? 'button' : undefined}
+                        accessibilityLabel={`${new Date(`${day}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}: ${LABELS[status]}`}
+                    >
+                        <View style={[styles.inner, isToday && styles.innerToday]}>
+                            <Text style={[styles.date, status === 'future' && styles.dateFuture]}>
+                                {Number(day.slice(-2))}
+                            </Text>
+                            <Mark status={status} />
+                        </View>
+                    </Pressable>
+                );
+            }}
+        />
     );
 }
 
@@ -165,18 +110,6 @@ const LABELS: Record<DayStatus, string> = {
 const MARK = 22;
 
 const useStyles = makeStyles((Palette) => ({
-    wrap: { gap: Spacing.md },
-    head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    title: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
-
-    week: { flexDirection: 'row' },
-    weekday: {
-        flex: 1, textAlign: 'center',
-        ...BodyFont.medium, fontSize: 12, color: Palette.textSecondary,
-    },
-
-    grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: Spacing.xs },
-    cell: { width: `${100 / 7}%`, alignItems: 'center' },
     inner: {
         alignItems: 'center', gap: 5,
         paddingVertical: 5, paddingHorizontal: 4,

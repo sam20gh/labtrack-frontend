@@ -199,6 +199,27 @@ export interface EcgRow {
     sourceDevice?: SourceDevice;
 }
 
+/**
+ * One day of a period, from a phone health store. Only sent by a phone whose owner switched the
+ * cycle import on (`lib/health/cycleImport.ts`) — period data is never read as a side effect of
+ * connecting a store for workouts.
+ *
+ * `day` is resolved on the phone, which knows its own calendar. `unspecified` is a day inside a
+ * period the store recorded without a flow; `spotting` covers intermenstrual bleeding.
+ */
+export interface CycleRow {
+    day: string;
+    flow: 'spotting' | 'light' | 'medium' | 'heavy' | 'unspecified';
+    externalId: string;
+}
+
+/** A night's wrist temperature the store computed itself (Apple Watch). Filed by wake day. */
+export interface NightTemperatureRow {
+    day: string;
+    celsius: number;
+    externalId: string;
+}
+
 export interface SyncBatch {
     platform: HealthPlatform;
     /** `Date.getTimezoneOffset()`. The server cannot infer the calendar the user lives in. */
@@ -226,6 +247,15 @@ export interface SyncBatch {
     temperature?: TemperatureRow[];
     bloodPressure?: BloodPressureRow[];
     ecg?: EcgRow[];
+
+    /**
+     * The cycle import. `cycleWindow` is the span the phone re-read in full, and it matters as
+     * much as the rows: the server replaces this store's days inside it, which is how a period
+     * deleted in the Health app disappears here too.
+     */
+    cycle?: CycleRow[];
+    cycleWindow?: { from: string; to: string };
+    nightTemperature?: NightTemperatureRow[];
 }
 
 export interface HealthReader {

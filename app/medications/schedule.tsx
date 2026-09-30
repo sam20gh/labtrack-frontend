@@ -8,6 +8,12 @@
  * The month grid marks a day `taken` only when every dose on it was taken. A tick on a day
  * someone missed their evening dose is a lie they will act on, so a partial day gets its own
  * mark — see `medicationSchedule.byDay`.
+ *
+ * The month view is a real month, on `components/ui/MonthGrid`. It used to be 45 days —
+ * thirty back, fourteen ahead — flowed into rows with no weekday columns, so a Tuesday could
+ * sit under any column and "which day did I miss?" meant counting. Walking forward stops at
+ * next month: asking the server for a range materialises the doses in it, and a year of
+ * future rows to draw an empty grid is the wrong trade.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
@@ -18,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getSchedule, getCalendar, updateDose, today, addDays } from '@/lib/medications';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { Fonts, Spacing, Radius, BodyFont, schemed } from '@/constants/theme';
+import { MonthGrid, shiftMonth } from '@/components/ui/MonthGrid';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { MedicationScheduleDay, MedicationCalendar, CalendarDay } from '@/types/api';
 
@@ -38,6 +45,7 @@ export default function ScheduleScreen() {
     const router = useRouter();
     const [view, setView] = useState<View_>('day');
     const [selected, setSelected] = useState(today());
+    const [month, setMonth] = useState(today().slice(0, 7));
     const [day, setDay] = useState<MedicationScheduleDay | null>(null);
     const [calendar, setCalendar] = useState<MedicationCalendar | null>(null);
     const [loading, setLoading] = useState(true);
@@ -45,16 +53,23 @@ export default function ScheduleScreen() {
 
     const load = useCallback(async () => {
         try {
+            // One calendar read serves both the week strip (a week either side of today) and
+            // the month on screen, capped a month ahead for the reason in the header.
+            const monthStart = `${month}-01`;
+            const monthEnd = addDays(`${shiftMonth(month, 1)}-01`, -1);
+            const earliest = [monthStart, addDays(today(), -6)].sort()[0];
+            const cappedEnd = [monthEnd, addDays(today(), 31)].sort()[0];
+            const latest = [cappedEnd, addDays(today(), 7)].sort()[1];
             const [dayRes, calRes] = await Promise.allSettled([
                 getSchedule(selected),
-                getCalendar(addDays(today(), -30), addDays(today(), 14)),
+                getCalendar(earliest, latest),
             ]);
             if (dayRes.status === 'fulfilled') setDay(dayRes.value);
             if (calRes.status === 'fulfilled') setCalendar(calRes.value);
         } finally {
             setLoading(false);
         }
-    }, [selected]);
+    }, [selected, month]);
 
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -99,9 +114,15 @@ export default function ScheduleScreen() {
 
             {view === 'day' ? (
                 <>
+                    {/*
+                      `flexGrow: 0` on the strip itself. A horizontal ScrollView in a column grows
+                      to share the leftover height with the list beneath it, so on a day with no
+                      doses — a short list — it took most of the screen and stretched every card.
+                    */}
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
+                        style={styles.weekStripScroll}
                         contentContainerStyle={styles.weekStrip}
                     >
                         {week.map((d) => {
@@ -169,36 +190,54 @@ export default function ScheduleScreen() {
                 <ScrollView contentContainerStyle={styles.content}>
                     {calendar ? (
                         <>
-                            <View style={styles.monthStats}>
-                                <MonthStat value={calendar.adherence.taken} label="Taken" colour={Palette.success} />
-                                <MonthStat value={calendar.adherence.missed} label="Missed" colour={Palette.danger} />
-                                <MonthStat value={calendar.adherence.skipped} label="Skipped" colour={Palette.textMuted} />
-                            </View>
+                            {(() => {
+                                // The month's own totals, summed from its days, so the three
+                                // numbers describe the grid beneath them and not the fetch.
+                                const inMonth = calendar.days.filter((d) => d.day.startsWith(month));
+                                const sum = (k: 'taken' | 'missed' | 'skipped') => inMonth.reduce((n, d) => n + d[k], 0);
+                                return (
+                                    <View style={styles.monthStats}>
+                                        <MonthStat value={sum('taken')} label="Taken" colour={Palette.success} />
+                                        <MonthStat value={sum('missed')} label="Missed" colour={Palette.danger} />
+                                        <MonthStat value={sum('skipped')} label="Skipped" colour={Palette.textMuted} />
+                                    </View>
+                                );
+                            })()}
 
-                            <View style={styles.grid}>
-                                {calendar.days.map((d) => {
-                                    const meta = DAY_STATUS[d.status];
+                            <MonthGrid
+                                month={month}
+                                onChangeMonth={(m) => { setMonth(m); }}
+                                maxMonth={shiftMonth(today().slice(0, 7), 1)}
+                                cellHeight={54}
+                                renderDay={(day) => {
+                                    const d = calendar.days.find((x) => x.day === day);
+                                    const meta = d ? DAY_STATUS[d.status] : null;
                                     return (
                                         <TouchableOpacity
-                                            key={d.day}
                                             style={styles.cell}
-                                            onPress={() => { setSelected(d.day); setView('day'); setLoading(true); }}
+                                            onPress={() => { setSelected(day); setView('day'); setLoading(true); }}
                                             activeOpacity={0.7}
+                                            accessibilityRole="button"
+                                            accessibilityLabel={`${day}${d ? `, ${d.status}` : ', no doses'}`}
                                         >
-                                            <Text style={styles.cellDate}>{Number(d.day.slice(8))}</Text>
-                                            <View style={[
-                                                styles.cellMark,
-                                                { borderColor: meta.colour },
-                                                meta.icon ? { backgroundColor: meta.colour } : null,
-                                            ]}>
-                                                {meta.icon ? (
-                                                    <Ionicons name={meta.icon as any} size={11} color={Palette.white} />
-                                                ) : null}
-                                            </View>
+                                            <Text style={[styles.cellDate, day === today() && styles.cellToday]}>
+                                                {Number(day.slice(8))}
+                                            </Text>
+                                            {meta ? (
+                                                <View style={[
+                                                    styles.cellMark,
+                                                    { borderColor: meta.colour },
+                                                    meta.icon ? { backgroundColor: meta.colour } : null,
+                                                ]}>
+                                                    {meta.icon ? (
+                                                        <Ionicons name={meta.icon as any} size={11} color={Palette.white} />
+                                                    ) : null}
+                                                </View>
+                                            ) : <View style={styles.cellBlank} />}
                                         </TouchableOpacity>
                                     );
-                                })}
-                            </View>
+                                }}
+                            />
 
                             <View style={styles.legend}>
                                 <LegendItem colour={Palette.success} label="All taken" />
@@ -255,7 +294,8 @@ const useStyles = makeStyles((Palette) => ({
     toggleButton: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: Radius.sm },
     toggleActive: { backgroundColor: Palette.background },
 
-    weekStrip: { paddingHorizontal: Spacing.xl, gap: 8, paddingBottom: Spacing.md },
+    weekStripScroll: { flexGrow: 0 },
+    weekStrip: { paddingHorizontal: Spacing.xl, gap: 8, paddingBottom: Spacing.md, alignItems: 'flex-start' },
     weekDay: {
         width: 46, paddingVertical: 8, borderRadius: Radius.md,
         alignItems: 'center', gap: 2,
@@ -279,9 +319,10 @@ const useStyles = makeStyles((Palette) => ({
     monthStatValue: { fontSize: 22, fontFamily: Fonts.bold },
     monthStatLabel: { fontSize: 11, color: Palette.textSecondary, ...BodyFont.regular },
 
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'flex-start' },
-    cell: { width: '12%', alignItems: 'center', gap: 3, paddingVertical: 4 },
-    cellDate: { fontSize: 10, color: Palette.textSecondary, ...BodyFont.regular },
+    cell: { alignItems: 'center', gap: 4, paddingVertical: 4, minWidth: 36 },
+    cellDate: { fontSize: 12, color: Palette.text, ...BodyFont.medium },
+    cellToday: { color: Palette.primary, ...BodyFont.semibold },
+    cellBlank: { width: 20, height: 20 },
     cellMark: {
         width: 20, height: 20, borderRadius: 10, borderWidth: 1.5,
         alignItems: 'center', justifyContent: 'center',

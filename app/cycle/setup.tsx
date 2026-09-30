@@ -37,6 +37,8 @@ import {
     STATUSES, FERTILE_DISCLAIMER, formatDayLong, type CycleStatus,
 } from '@/lib/cycle';
 import { ApiError } from '@/lib/api';
+import { enableCycleImport, importSourceLabel } from '@/lib/health/cycleImport';
+import { runSync, resetSyncThrottle } from '@/lib/health/sync';
 
 type Step = 'intro' | 'last' | 'lengths' | 'status' | 'options';
 const ORDER: Step[] = ['intro', 'last', 'lengths', 'status', 'options'];
@@ -128,6 +130,8 @@ export default function CycleSetupScreen() {
     const [remindSoon, setRemindSoon] = useState(true);
     const [remindLate, setRemindLate] = useState(true);
     const [discreet, setDiscreet] = useState(true);
+    const storeLabel = importSourceLabel();
+    const [importStore, setImportStore] = useState(false);
     const [saving, setSaving] = useState(false);
 
     const index = ORDER.indexOf(step);
@@ -157,6 +161,12 @@ export default function CycleSetupScreen() {
             if (lastStart) {
                 const lastDay = periodUnsure ? lastStart : addDays(lastStart, periodLength - 1);
                 await editPeriodDays({ add: daysBetween(lastStart, lastDay < todayDay ? lastDay : todayDay) });
+            }
+            // Last, so a refused prompt costs nothing already answered. The sync is not awaited:
+            // the dashboard paints from the setup answers and fills in when the history lands.
+            if (importStore && await enableCycleImport().catch(() => false)) {
+                resetSyncThrottle();
+                runSync(true).catch(() => undefined);
             }
             router.replace('/cycle');
         } catch (err) {
@@ -319,6 +329,14 @@ export default function CycleSetupScreen() {
                                     <Toggle title="Remind me before my period" body="A couple of days before it is likely to start." value={remindSoon} onChange={setRemindSoon} />
                                     <Toggle title="Tell me if my period is late" body="Once, not every morning." value={remindLate} onChange={setRemindLate} />
                                 </>
+                            ) : null}
+                            {storeLabel ? (
+                                <Toggle
+                                    title={`Import periods from ${storeLabel}`}
+                                    body={`Brings in what ${storeLabel} already has. ${storeLabel} asks you first.`}
+                                    value={importStore}
+                                    onChange={setImportStore}
+                                />
                             ) : null}
                             <Toggle
                                 title="Keep reminders discreet"
