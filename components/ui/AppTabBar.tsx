@@ -178,6 +178,11 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
                 visible={sheetOpen}
                 onClose={() => setSheetOpen(false)}
                 onSelect={select}
+                onRecord={(recording) => {
+                    // Deferred for the same reason as `select`.
+                    setSheetOpen(false);
+                    requestAnimationFrame(() => { router.push(recording ? '/activity/run/live' : '/activity/run'); });
+                }}
                 barHeight={TAB_BAR_HEIGHT}
             />
 

@@ -554,6 +554,7 @@ export default function HomeScreen() {
     const openAppointments = useCallback(() => router.push('/appointments'), [router]);
     const openProfessionals = useCallback(() => router.push('/(tabs)/professionals'), [router]);
     const openActivityLog = useCallback(() => router.push('/activity/log'), [router]);
+    const openActivityRecord = useCallback(() => router.push('/activity/run'), [router]);
     const openActivitySession = useCallback(
         (id: string) => router.push({ pathname: '/activity/session/[id]', params: { id } }),
         [router],
@@ -899,6 +900,7 @@ export default function HomeScreen() {
                         summary={activity}
                         sessions={sessions}
                         onLog={openActivityLog}
+                        onRecord={openActivityRecord}
                         onSession={openActivitySession}
                     />
                 </Section>
@@ -1728,12 +1730,14 @@ const ProgressRing = ({ done, total, size = 66, stroke = 6 }: {
  * — never zero — when nobody has set a plan to measure against, which is when the ring is
  * dropped rather than drawn empty. Same call `alignment: 'unassessed'` makes in nutrition.
  */
-const ActivityCard = React.memo(({ summary, sessions, onLog, onSession }: {
+const ActivityCard = React.memo(({ summary, sessions, onLog, onRecord, onSession }: {
     summary: ActivitySummary | null;
     sessions: ActivitySession[];
     onLog: () => void;
+    onRecord: () => void;
     onSession: (id: string) => void;
 }) => {
+    const Palette = usePalette();
     const styles = useStyles();
     const goal = summary?.goal;
     const done = goal?.sessions.done ?? 0;
@@ -1766,7 +1770,35 @@ const ActivityCard = React.memo(({ summary, sessions, onLog, onSession }: {
                 </View>
             )}
 
-            <CardFooterAction label="Log Activity" onPress={onLog} />
+            {/*
+              Two actions, not the kit's one. "Log Activity" alone made the card a form for
+              workouts already done, and the live GPS tracker — the thing to reach for when
+              somebody is about to go out — had no way in from home at all.
+            */}
+            <View style={styles.divider} />
+            <View style={styles.footerSplit}>
+                <TouchableOpacity
+                    style={[styles.footerAction, styles.flex]}
+                    onPress={onRecord}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Record a workout with GPS"
+                >
+                    <Ionicons name="play-circle-outline" size={18} color={Palette.primary} />
+                    <Text style={styles.footerActionText}>Record</Text>
+                </TouchableOpacity>
+                <View style={styles.footerRule} />
+                <TouchableOpacity
+                    style={[styles.footerAction, styles.flex]}
+                    onPress={onLog}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Log an activity"
+                >
+                    <Text style={styles.footerActionText}>Log Activity</Text>
+                    <Ionicons name="add" size={18} color={Palette.primary} />
+                </TouchableOpacity>
+            </View>
         </View>
     );
 });
@@ -2902,6 +2934,8 @@ const useStyles = makeStyles((Palette) => ({
     },
     footerAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
     footerActionText: { fontSize: 15, color: Palette.primary, fontFamily: Fonts.semibold },
+    footerSplit: { flexDirection: 'row', alignItems: 'center' },
+    footerRule: { width: 1, height: 20, backgroundColor: Palette.border },
     rowList: { gap: Spacing.md },
 
     // Medications, once the day is done -------------------------------------

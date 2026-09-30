@@ -61,6 +61,7 @@ import { ActiveHours } from '@/components/metric/ActiveHours';
 import { PeriodCompare } from '@/components/metric/PeriodCompare';
 import { ArtCard } from '@/components/activity/ArtCard';
 import { WelcomeCard } from '@/components/activity/WelcomeCard';
+import { RecordCard } from '@/components/activity/RecordCard';
 import { CyclistArt, TargetArt, FlexArt, FLEX_ART } from '@/components/activity/art';
 import {
     getSummary, getDay, getCalendar, getWearableStatus, today, formatDistance,
@@ -447,29 +448,41 @@ export default function ActivityDashboard() {
     }
 
     /**
-     * The three shortcuts under the chart — frame 7.
+     * The live GPS tracker (phase 11.6), started on a type.
      *
-     * The middle one is the design's "Quick Jog", which is the live GPS session (phase 11.6).
-     * Until that existed it fell back to a quick *log* of the most-logged type; now it starts
-     * a recording, pre-selected to that type when it is one GPS can track (run, walk, hike,
-     * ride). A swimmer still gets the button — it opens the launch pad on its default — and
-     * logging a swim is one tap away under New Activity.
+     * The tracker used to be the middle of the three shortcuts below, labelled after the
+     * most-logged type — "Start Walk", or "Record Route" for a swimmer — and it was missed:
+     * an outlined disc under a chart does not say "this app will follow your run". It now has
+     * its own card (`RecordCard`) and the floating button, which is the one control that stays
+     * on screen however far down somebody scrolls. The floating button opens the launch pad on
+     * the type this person tracks most, where GPS can track it, so their usual is one tap.
      */
     const quickType = breakdown[0]?.type && breakdown[0].type !== 'other' ? breakdown[0].type : null;
     const gpsType = quickType && (TRACKABLE_TYPES as string[]).includes(quickType) ? quickType as TrackableType : null;
+    const startRecording = (type: TrackableType | null) =>
+        router.push(type ? { pathname: '/activity/run', params: { type } } : '/activity/run');
+
+    /**
+     * The three shortcuts under the chart — frame 7.
+     *
+     * Recording left this row for the card above it, so the row is what is left once a
+     * workout exists: writing one down after the fact, finding an old one, and the insight.
+     * "Log manually" rather than the kit's "New Activity", because beside a card that records
+     * one live, "new activity" no longer says which of the two it does.
+     */
     const quickActions: QuickAction[] = [
         {
             key: 'new',
-            label: 'New Activity',
-            icon: 'add',
+            label: 'Log manually',
+            icon: 'create-outline',
             primary: true,
             onPress: () => router.push('/activity/log'),
         },
         {
-            key: 'quick',
-            label: gpsType ? `Start ${TYPE_LABEL[gpsType]}` : 'Record Route',
-            icon: 'navigate-outline',
-            onPress: () => router.push(gpsType ? { pathname: '/activity/run', params: { type: gpsType } } : '/activity/run'),
+            key: 'history',
+            label: 'History',
+            icon: 'time-outline',
+            onPress: () => router.push('/activity/history'),
         },
         {
             key: 'insight',
@@ -628,6 +641,15 @@ export default function ActivityDashboard() {
                                 />
                             </View>
                         )}
+
+                        {/*
+                          Above the chart, because it is the one thing on this page that starts
+                          something rather than reports on it — and the part of the feature
+                          people were not finding.
+                        */}
+                        <View style={styles.section}>
+                            <RecordCard onStart={startRecording} />
+                        </View>
 
                         <View style={styles.section}>
                             <MetricPicker metrics={metrics} value={active?.key ?? metric} onChange={setMetric} />
@@ -910,13 +932,22 @@ export default function ActivityDashboard() {
                 )}
             </ScrollView>
 
+            {/*
+              Labelled, not a bare glyph. It used to be a "+" that opened the manual form —
+              the same thing the filled disc and the empty-day card already offered — while
+              the live tracker had no persistent control at all. A play icon alone would be
+              read as "play a video"; the word is what makes it a tracker.
+            */}
             <Pressable
-                style={styles.fab}
-                onPress={() => router.push('/activity/log')}
+                style={({ pressed }) => [styles.fab, pressed && { opacity: 0.9 }]}
+                onPress={() => startRecording(gpsType)}
                 accessibilityRole="button"
-                accessibilityLabel="Log a new activity"
+                accessibilityLabel={gpsType
+                    ? `Record a ${TYPE_LABEL[gpsType].toLowerCase()} with GPS`
+                    : 'Record a workout with GPS'}
             >
-                <Ionicons name="add" size={26} color={Palette.white} />
+                <Ionicons name="play" size={18} color={Palette.white} />
+                <Text style={styles.fabText}>{gpsType ? `Record ${TYPE_LABEL[gpsType].toLowerCase()}` : 'Record'}</Text>
             </Pressable>
         </SafeAreaView>
     );
@@ -1010,10 +1041,12 @@ const useStyles = makeStyles((Palette) => ({
         position: 'absolute',
         right: Spacing.xl,
         bottom: Spacing.xxxl,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        height: 52,
+        paddingHorizontal: Spacing.xl,
+        borderRadius: 26,
         backgroundColor: Palette.primaryFill,
+        flexDirection: 'row',
+        gap: Spacing.sm,
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',
@@ -1022,4 +1055,5 @@ const useStyles = makeStyles((Palette) => ({
         shadowOffset: { width: 0, height: 4 },
         elevation: 4,
     },
+    fabText: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.white },
 }));

@@ -5,11 +5,10 @@
  * one of these writes something and two of them navigate, and the design separates them the
  * way every other primary action in this app is separated from the rows around it.
  *
- * **Quick Jog is offered only when it means something.** It is a shortcut into the log form
- * pre-filled with the type this person actually does most, so on an account with no history
- * there is nothing to pre-fill and the slot is dropped rather than hard-coded to jogging —
- * the design's own label, and a suggestion to go for a run is the wrong thing to put in
- * front of somebody whose plan says to swim.
+ * The kit's middle "Quick Jog" disc is gone from this row: the live GPS tracker has its own
+ * card above the chart (`components/activity/RecordCard.tsx`) and the floating Record button,
+ * because an outlined disc labelled after somebody's most-logged type was the reason people
+ * never found it. See `app/activity/index.tsx`.
  */
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';

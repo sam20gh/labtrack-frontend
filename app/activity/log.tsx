@@ -19,6 +19,8 @@ import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { logActivity } from '@/lib/activity';
 import { typeStyle } from '@/lib/activityTypes';
 import { ApiError } from '@/lib/api';
+import { TRACKABLE_TYPES, type TrackableType } from '@/lib/run/trackMath';
+import { TYPE_LABEL } from '@/lib/run/format';
 
 /** The design's ten. `normaliseType` on the server maps these onto the same buckets a watch uses. */
 const TYPES: { key: string; label: string }[] = [
@@ -70,6 +72,16 @@ export default function LogActivityScreen() {
     const [notes, setNotes] = useState('');
     const [saving, setSaving] = useState(false);
 
+    /** The picked type, when it is one the live tracker can record. The keys are shared. */
+    const trackable = type && (TRACKABLE_TYPES as string[]).includes(type) ? type as TrackableType : null;
+
+    /**
+     * Over to the launch pad. `replace`, not `push`: the form was the wrong door, and Back
+     * from the tracker should land on the dashboard rather than on a half-filled log.
+     */
+    const startLive = (live: TrackableType | null) =>
+        router.replace(live ? { pathname: '/activity/run', params: { type: live } } : '/activity/run');
+
     const save = async () => {
         if (!type || saving) return;
         setSaving(true);
@@ -112,7 +124,29 @@ export default function LogActivityScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-                <Text style={styles.question}>What activity did you do?</Text>
+                {/*
+                  The fork, before the form. Somebody standing at the door in running shoes who
+                  taps "Log activity" wants the tracker, and this screen used to answer them with
+                  a duration picker and no hint that the app could follow the run itself.
+                */}
+                <Pressable
+                    onPress={() => startLive(null)}
+                    style={({ pressed }) => [styles.live, pressed && styles.livePressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Starting now? Record it live with GPS"
+                >
+                    <View style={styles.liveIcon}>
+                        <Ionicons name="navigate" size={18} color={Palette.white} />
+                    </View>
+                    <View style={styles.liveText}>
+                        <Text style={styles.liveTitle}>Starting now? Record it live</Text>
+                        <Text style={styles.liveBody}>Run, walk, ride or hike with GPS route, pace and splits.</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={Palette.primary} />
+                </Pressable>
+
+                <Text style={styles.question}>What did you do?</Text>
+                <Text style={styles.questionSub}>Log a workout you’ve already finished.</Text>
 
                 <View style={styles.grid}>
                     {TYPES.map((t) => {
@@ -138,6 +172,26 @@ export default function LogActivityScreen() {
                         );
                     })}
                 </View>
+
+                {/*
+                  The same offer, made specific once the pick is something GPS can follow. It is
+                  a suggestion under the grid, not a redirect: somebody logging yesterday's walk
+                  carries on with the form exactly as before.
+                */}
+                {trackable && (
+                    <Pressable
+                        onPress={() => startLive(trackable)}
+                        style={styles.nudge}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Record this ${TYPE_LABEL[trackable].toLowerCase()} live with GPS instead`}
+                    >
+                        <Ionicons name="play-circle" size={20} color={Palette.primary} />
+                        <Text style={styles.nudgeText}>
+                            Going for a {TYPE_LABEL[trackable].toLowerCase()} now?{' '}
+                            <Text style={styles.nudgeLink}>Record it live instead</Text>
+                        </Text>
+                    </Pressable>
+                )}
 
                 <Text style={styles.label}>How long?</Text>
                 <View style={styles.chips}>
@@ -236,7 +290,48 @@ const useStyles = makeStyles((Palette) => ({
     barTitle: { fontSize: 16, fontFamily: Fonts.semibold, color: Palette.text },
     content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl },
 
-    question: { fontSize: 22, fontFamily: Fonts.bold, color: Palette.text, marginBottom: Spacing.xl },
+    live: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        padding: Spacing.lg,
+        borderRadius: Radius.lg,
+        borderWidth: 1,
+        borderColor: Palette.primaryPale,
+        backgroundColor: Palette.primaryTint,
+        marginBottom: Spacing.xxl,
+    },
+    livePressed: { opacity: 0.8 },
+    liveIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: Palette.primaryFill,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    liveText: { flex: 1, gap: 2 },
+    liveTitle: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text },
+    liveBody: { fontSize: 12.5, lineHeight: 17, ...BodyFont.regular, color: Palette.textSecondary },
+
+    question: { fontSize: 22, fontFamily: Fonts.bold, color: Palette.text },
+    questionSub: {
+        fontSize: 13,
+        ...BodyFont.regular,
+        color: Palette.textSecondary,
+        marginTop: 4,
+        marginBottom: Spacing.xl,
+    },
+
+    nudge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        marginTop: Spacing.lg,
+        paddingVertical: Spacing.xs,
+    },
+    nudgeText: { flex: 1, fontSize: 13.5, ...BodyFont.regular, color: Palette.textSecondary },
+    nudgeLink: { ...BodyFont.semibold, color: Palette.primary },
 
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
     tile: {

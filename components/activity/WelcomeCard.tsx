@@ -53,8 +53,9 @@ export function WelcomeCard({ onLog, onConnect }: Props) {
 
             <Text style={styles.title} accessibilityRole="header">Track your activity, see your insights</Text>
             <Text style={styles.body}>
-                Log a workout or connect your health app. Your steps, sessions and streaks will
-                fill this page — and count towards your health plan.
+                Record a run, walk or ride with GPS, log a workout, or connect your health app.
+                Your steps, sessions and streaks will fill this page — and count towards your
+                health plan.
             </Text>
 
             <View style={styles.actions}>

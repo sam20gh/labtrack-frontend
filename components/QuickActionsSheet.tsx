@@ -14,7 +14,7 @@
  * layer over the app rather than a screen, and a grid with one more cell for "close" is a
  * cell that does nothing but undo opening it.
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import {
     View, Text, StyleSheet, Modal, Pressable, Animated, Easing, TouchableOpacity,
 } from 'react-native';
@@ -22,20 +22,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { QUICK_ACTIONS, type QuickAction } from '@/lib/quickActions';
 import { Spacing, Radius, BodyFont, tone } from '@/constants/theme';
-import { makeStyles } from '@/hooks/useTheme';
+import { makeStyles, usePalette } from '@/hooks/useTheme';
+import * as recorder from '@/lib/run/recorder';
 
 interface Props {
     visible: boolean;
     onClose: () => void;
     onSelect: (action: QuickAction) => void;
+    /** The live GPS tracker — or, while one is recording (`true`), the way back to it. */
+    onRecord: (recording: boolean) => void;
     /** Height of the bar the caret has to sit above, so the two never overlap. */
     barHeight: number;
 }
 
-export function QuickActionsSheet({ visible, onClose, onSelect, barHeight }: Props) {
+export function QuickActionsSheet({ visible, onClose, onSelect, onRecord, barHeight }: Props) {
+    const Palette = usePalette();
     const styles = useStyles();
     const insets = useSafeAreaInsets();
     const anim = useRef(new Animated.Value(0)).current;
+    useSyncExternalStore(recorder.subscribe, recorder.getVersion);
+    const { phase } = recorder.getState();
+    const recording = phase === 'recording' || phase === 'paused';
 
     useEffect(() => {
         Animated.timing(anim, {
@@ -72,6 +79,33 @@ export function QuickActionsSheet({ visible, onClose, onSelect, barHeight }: Pro
                         },
                     ]}
                 >
+                    {/*
+                      Recording a workout is the one thing here that *starts* something rather
+                      than opening a screen, and it is the thing somebody reaches for with their
+                      shoes already on — so it is a full-width row above the grid, not a sixteenth
+                      tile. A tile would also leave one orphan on a final row (see
+                      `lib/quickActions.ts`); a row is a different element and does not count.
+                      While a recording is going it becomes the way back to it.
+                    */}
+                    <TouchableOpacity
+                        style={styles.record}
+                        onPress={() => onRecord(recording)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel={recording ? 'Back to your workout' : 'Record a workout with GPS'}
+                    >
+                        <View style={styles.recordIcon}>
+                            <Ionicons name={recording ? 'radio-button-on' : 'play'} size={18} color={Palette.white} />
+                        </View>
+                        <View style={styles.recordText}>
+                            <Text style={styles.recordTitle}>{recording ? 'Back to your workout' : 'Record a workout'}</Text>
+                            <Text style={styles.recordBody} numberOfLines={1}>
+                                {recording ? 'Recording in progress' : 'Run, walk, ride or hike with GPS'}
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={Palette.primary} />
+                    </TouchableOpacity>
+
                     <View style={styles.grid}>
                         {QUICK_ACTIONS.map((action) => (
                             <TouchableOpacity
@@ -125,6 +159,20 @@ const useStyles = makeStyles((Palette) => ({
         shadowRadius: 24,
         elevation: 12,
     },
+
+    record: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+        marginHorizontal: Spacing.md, marginBottom: Spacing.xl,
+        padding: Spacing.md, borderRadius: Radius.lg,
+        backgroundColor: Palette.primaryTint, borderWidth: 1, borderColor: Palette.primaryPale,
+    },
+    recordIcon: {
+        width: 40, height: 40, borderRadius: 20, backgroundColor: Palette.primaryFill,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    recordText: { flex: 1, gap: 1 },
+    recordTitle: { ...BodyFont.semibold, fontSize: 15, color: Palette.text },
+    recordBody: { ...BodyFont.regular, fontSize: 12.5, color: Palette.textSecondary },
 
     grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: Spacing.xl },
     // Fixed fraction, not `flex` — flex children do not wrap onto even columns, the same
