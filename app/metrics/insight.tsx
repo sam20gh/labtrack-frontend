@@ -19,7 +19,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -56,11 +56,17 @@ export default function MetricsInsightScreen() {
 
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
+    // Opened from one metric's history ("See … insights"), that metric leads, so the reading
+    // somebody asked for is the first thing on the screen rather than somewhere in a scroll.
+    const { metric: focus } = useLocalSearchParams<{ metric?: string }>();
+
     /** Metrics with something to say. A card with no data is not an insight. */
-    const cards = useMemo(
-        () => (data?.metrics ?? []).filter((m) => m.series.some((p) => p.value !== null)),
-        [data],
-    );
+    const cards = useMemo(() => {
+        const withData = (data?.metrics ?? []).filter((m) => m.series.some((p) => p.value !== null));
+        return focus
+            ? [...withData.filter((m) => m.key === focus), ...withData.filter((m) => m.key !== focus)]
+            : withData;
+    }, [data, focus]);
 
     if (loading) {
         return (

@@ -1626,11 +1626,8 @@ const MetricsRail = React.memo(({ cards, router }: { cards: MetricCardData[]; ro
                     <MetricTile
                         key={card.key}
                         card={card}
-                        // Every tile opens the Health Metrics page, never the metric's own
-                        // tracker. `METRIC_ROUTE` sends SpO2 and temperature to `/bracelet`,
-                        // which is right from the metrics list (it is where a new reading is
-                        // taken) but from here dropped people on a device settings screen
-                        // when they had asked to see a number.
+                        // Every tile opens the Health Metrics page, the list these tiles are
+                        // a preview of. Each card there opens that metric's own history.
                         onPress={() => router.push('/metrics' as any)}
                     />
                 ))}

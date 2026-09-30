@@ -29,12 +29,18 @@ export type MetricKey =
 /** The three that accept a manual entry. The rest are device-fed. */
 export type LoggableKind = 'weight' | 'water' | 'blood-pressure';
 
+/** Every kind `GET /metrics/:kind/history` answers — the route slugs, hyphenated. */
+export type HistoryKind = LoggableKind | 'heart-rate' | 'hrv' | 'spo2' | 'temperature' | 'sleep' | 'steps';
+
 export interface SeriesPoint {
     day: string;
     value: number | null;
     secondary?: number | null;
     target?: number | null;
     category?: string | null;
+    /** Device-fed kinds: the day's lowest and highest reading, where the rollup keeps them. */
+    min?: number | null;
+    max?: number | null;
 }
 
 export interface MetricCard {
@@ -98,11 +104,48 @@ export interface MetricLog {
     note?: string | null;
 }
 
+/**
+ * One row in a device-fed metric's history.
+ *
+ * An individual reading where the record keeps one (heart-rate samples, oximetry,
+ * temperature, nights), or a whole day (`perDay`) where it keeps only the day's figure.
+ */
+export interface HistoryEntry {
+    id: string;
+    day: string;
+    /** When it was measured. Null on a per-day row. */
+    at: string | null;
+    /** Sleep only: when it ended. */
+    end?: string | null;
+    value: number;
+    unit: string;
+    label: string | null;
+    detail: string | null;
+    perDay?: boolean;
+    /** Where tapping the row goes, when the entry has a screen of its own. */
+    route?: string;
+}
+
+export interface HistoryStats {
+    latest: { value: number; day: string };
+    average: number;
+    min: number;
+    max: number;
+    daysWithData: number;
+}
+
 export interface MetricHistory {
     kind: string;
     days: number;
     series: SeriesPoint[];
     logs: MetricLog[];
+    /** Device-fed kinds only. */
+    label?: string;
+    unit?: string;
+    entries?: HistoryEntry[];
+    /** True when the window held more readings than the list returns. */
+    truncated?: boolean;
+    stats?: HistoryStats | null;
     summary: {
         readings: number;
         mean: { systolic: number; diastolic: number; category: BpCategory };
@@ -114,7 +157,7 @@ export interface MetricHistory {
     note: string | null;
 }
 
-export const getHistory = (kind: LoggableKind, days = 30) =>
+export const getHistory = (kind: HistoryKind, days = 30) =>
     api.get<MetricHistory>(`/metrics/${kind}/history?days=${days}&tzOffset=${tzOffset()}`);
 
 export const logBloodPressure = (body: {
@@ -299,19 +342,70 @@ export const METRIC_TINT = schemed((Palette, scheme): Record<MetricKey, string> 
     hrv: Palette.textSecondary,
 }));
 
-/** Which detail route a card opens. Device-fed metrics point at their own trackers. */
+/**
+ * Which history screen a card opens — **its own, for every metric.**
+ *
+ * The device-fed cards used to open whichever feature owned the data: heart rate, HRV and
+ * steps landed on Activity, blood oxygen and temperature on the bracelet's pairing screen.
+ * Tapping a number and arriving on device settings is a broken promise, and it made the list
+ * behave three different ways. Every card now opens `/metrics/[kind]` — a chart, the
+ * entries, and at the bottom the way on to its insight and to the tracker it comes from.
+ *
+ * Hydration keeps `/metrics/water`: that is its own history-and-insight flow, built from
+ * `Design/hydration.svg`, and a static route that wins over `[kind]`.
+ */
 export const METRIC_ROUTE: Record<MetricKey, string> = {
     weight: '/metrics/weight',
     blood_pressure: '/metrics/blood-pressure',
     hydration: '/metrics/water',
-    heart_rate: '/activity',
-    // Charted over time on the activity screen, beside heart rate.
-    hrv: '/activity',
-    // The bracelet screen, where the latest reading is and a new one can be taken.
-    spo2: '/bracelet',
-    temperature: '/bracelet',
-    sleep: '/sleep/record',
-    steps: '/activity',
+    heart_rate: '/metrics/heart-rate',
+    hrv: '/metrics/hrv',
+    spo2: '/metrics/spo2',
+    temperature: '/metrics/temperature',
+    sleep: '/metrics/sleep',
+    steps: '/metrics/steps',
+};
+
+/**
+ * The history screen's slug back to the card's key — the inverse of `METRIC_ROUTE` for the
+ * kinds `app/metrics/[kind].tsx` draws. Hydration is absent because it never lands there.
+ */
+export const HISTORY_METRIC: Record<Exclude<HistoryKind, 'water'>, MetricKey> = {
+    weight: 'weight',
+    'blood-pressure': 'blood_pressure',
+    'heart-rate': 'heart_rate',
+    hrv: 'hrv',
+    spo2: 'spo2',
+    temperature: 'temperature',
+    sleep: 'sleep',
+    steps: 'steps',
+};
+
+/**
+ * Where "See insights" at the foot of a history screen goes.
+ *
+ * The metrics insight screen, opened on this metric, for everything but sleep — which has
+ * its own insight screen with stages, weekday pattern and schedule consistency, and a second,
+ * thinner reading of the same nights would be the worse of the two.
+ */
+export const METRIC_INSIGHT_ROUTE = (key: MetricKey): string => {
+    if (key === 'sleep') return '/sleep/insight';
+    if (key === 'hydration') return '/metrics/water/insight';
+    return `/metrics/insight?metric=${key}`;
+};
+
+/**
+ * The feature a device-fed metric comes from, offered below the insight link — never instead
+ * of the history. A blood-oxygen reading is taken on the bracelet screen, so that is where
+ * "Take a reading" belongs; it is not where "show me my blood oxygen" belongs.
+ */
+export const METRIC_SOURCE_LINK: Partial<Record<MetricKey, { label: string; route: string; icon: string }>> = {
+    heart_rate: { label: 'Open Activity', route: '/activity', icon: 'pulse-outline' },
+    hrv: { label: 'Open Activity', route: '/activity', icon: 'pulse-outline' },
+    steps: { label: 'Open Activity', route: '/activity', icon: 'walk-outline' },
+    spo2: { label: 'Take a reading on your bracelet', route: '/bracelet', icon: 'watch-outline' },
+    temperature: { label: 'Take a reading on your bracelet', route: '/bracelet', icon: 'watch-outline' },
+    sleep: { label: 'Open the sleep tracker', route: '/sleep', icon: 'moon-outline' },
 };
 
 /**

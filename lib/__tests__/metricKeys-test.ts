@@ -8,7 +8,10 @@
  */
 jest.mock('@/lib/api', () => ({ api: {} }));
 
-import { metricRoute, metricIcon, metricTint, METRIC_ROUTE } from '@/lib/metrics';
+import {
+    metricRoute, metricIcon, metricTint, METRIC_ROUTE, HISTORY_METRIC, METRIC_INSIGHT_ROUTE,
+    type MetricKey,
+} from '@/lib/metrics';
 
 const palette = { textSecondary: '#6B7280' };
 
@@ -29,6 +32,30 @@ describe('metric lookups by a server-sent key', () => {
             expect(metricIcon(key)).toEqual(expect.any(String));
             expect(metricTint(key, palette)).toEqual(expect.any(String));
             expect(metricRoute(key) === undefined).toBe(false);
+        }
+    });
+});
+
+/**
+ * Every card on the Health Metrics list opens that metric's own history. Heart rate, HRV and
+ * steps used to open Activity, and blood oxygen and temperature the bracelet's pairing screen.
+ */
+describe('where a metric card goes', () => {
+    it('is a history under /metrics for every metric', () => {
+        for (const route of Object.values(METRIC_ROUTE)) expect(route).toMatch(/^\/metrics\//);
+    });
+
+    it('is a slug the history screen knows, and maps back to the same card', () => {
+        for (const [key, route] of Object.entries(METRIC_ROUTE)) {
+            if (key === 'hydration') continue; // its own flow at /metrics/water
+            const slug = route.replace('/metrics/', '') as keyof typeof HISTORY_METRIC;
+            expect(HISTORY_METRIC[slug]).toBe(key);
+        }
+    });
+
+    it('offers an insight for every metric', () => {
+        for (const key of Object.keys(METRIC_ROUTE) as MetricKey[]) {
+            expect(METRIC_INSIGHT_ROUTE(key)).toMatch(/insight/);
         }
     });
 });

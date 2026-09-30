@@ -333,10 +333,10 @@ export const iconFor = (metric: string) => METRIC_ICON[metric] ?? 'analytics';
  * cannot act on is worse than one they are not told about.
  *
  * **Delegated to `lib/metrics.ts` wherever the keys overlap.** Hand-writing these produced
- * three dead links on the first pass — `/metrics/blood_pressure` (the route is hyphenated),
- * and `/metrics/sleep` and `/metrics/steps`, which do not exist at all: `app/metrics/[kind]`
- * only serves the loggable kinds, and the device-fed ones live under `/activity`. Nothing
- * errors on a bad push, so a wrong route here is a button that silently does nothing.
+ * dead links on the first pass — `/metrics/blood_pressure`, when the route is hyphenated.
+ * Every metric now has a history at `app/metrics/[kind]`, and delegating is what moved these
+ * onto it without a second edit. Nothing errors on a bad push, so a wrong route here is a
+ * button that silently does nothing.
  */
 export const METRIC_ROUTE: Record<string, string> = {
     turing_score: '/score',
