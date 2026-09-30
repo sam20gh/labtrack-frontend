@@ -34,6 +34,8 @@ export interface PairedBracelet {
      * next sync does it — which is how a band paired before this existed gets it too.
      */
     monitoringSetAt?: string;
+    /** Which `MONITORING` set in `reader.ts` was sent. Absent with `monitoringSetAt` means 1. */
+    monitoringVersion?: number;
     /** The newest reading of each kind the last sync brought over. */
     latest?: LatestReadings;
 }

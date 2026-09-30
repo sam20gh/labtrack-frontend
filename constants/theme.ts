@@ -204,6 +204,23 @@ const LightPalette = {
     alertSurface: '#FFF1F2',
     alertBorder: '#FECDD3',
     /**
+     * The cycle tracker's period colour, and only that.
+     *
+     * Deliberately none of the reds already here: `danger` is a verdict on a result, `alert`
+     * is a failed request or a vital sign, and `pink` is the Symptoms and Diary tiles. A
+     * period day is none of those — it is a fact somebody logged, not a finding and not a
+     * fault — and drawing it in `danger` would put the colour of "your potassium is critically
+     * high" on every period in the calendar. Searched against those three: 5.4:1 on white,
+     * 5.7 ΔE from its nearest (pink); the dark value 8.0:1 on the dark card, 6.3 ΔE from
+     * `alert`. `cyclePale` is the predicted window and the chips; the fertile window uses
+     * `teal`, a different hue family so a colour-blind reader is not asked to tell two
+     * roses apart.
+     */
+    cycle: '#C0394B',
+    cycleFill: '#C0394B',
+    cycleSurface: '#FDF0F2',
+    cyclePale: '#F6C9CF',
+    /**
      * The violet badge tone the same screens use where the state is *not* a fault — a
      * feature behind the plus plan, an update that is ready, a tracker with nothing in it
      * yet. `primarySurface` at `#F3E8FF` is a step towards magenta and reads as a second
@@ -314,6 +331,10 @@ const DarkPalette: ThemePalette = {
     alert: '#FB7185',
     alertSurface: '#2E1419',
     alertBorder: '#5A2130',
+    cycle: '#F49098',
+    cycleFill: '#B83A4B',
+    cycleSurface: '#2E171B',
+    cyclePale: '#5A2530',
     primaryTint: '#1F1625',
     meterWeak: '#FB7185',
     meterStrong: '#34D399',

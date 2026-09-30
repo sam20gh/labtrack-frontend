@@ -185,6 +185,7 @@ function ThemedRoot({ publishableKey }: { publishableKey: string | null }) {
             titled "activity/index". */}
         <Stack.Screen name="activity" options={{ headerShown: false }} />
         <Stack.Screen name="sleep" options={{ headerShown: false }} />
+        <Stack.Screen name="cycle" options={{ headerShown: false }} />
         <Stack.Screen name="bracelet" options={{ headerShown: false }} />
         <Stack.Screen name="score" options={{ headerShown: false }} />
         <Stack.Screen name="age" options={{ headerShown: false }} />

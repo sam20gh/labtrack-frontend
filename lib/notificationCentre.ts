@@ -20,10 +20,10 @@ import { schemed } from '@/constants/theme';
 export type NotificationCategory =
     | 'plan' | 'medication' | 'sleep' | 'hydration' | 'activity' | 'nutrition'
     | 'vitals' | 'vitals_review' | 'results' | 'insight' | 'appointment' | 'order'
-    | 'achievement' | 'account';
+    | 'achievement' | 'account' | 'cycle';
 
 export type NotificationTint =
-    | 'violet' | 'indigo' | 'blue' | 'green' | 'rose' | 'amber' | 'slate';
+    | 'violet' | 'indigo' | 'blue' | 'green' | 'rose' | 'amber' | 'slate' | 'cycle';
 
 export interface NotificationAction {
     label: string;
@@ -134,6 +134,8 @@ export const TINT_COLOURS: Record<NotificationTint, { fg: string; bg: string }> 
     rose: { fg: Palette.alert, bg: Palette.alertSurface },
     amber: { fg: Palette.warning, bg: Palette.warningSurface },
     slate: { fg: Palette.textSecondary, bg: Palette.borderLight },
+    // The cycle tracker's own rose, not `alert`: a period reminder is not a vital sign.
+    cycle: { fg: Palette.cycle, bg: Palette.cycleSurface },
 }));
 
 export const tintOf = (tint: NotificationTint) => TINT_COLOURS[tint] ?? TINT_COLOURS.slate;

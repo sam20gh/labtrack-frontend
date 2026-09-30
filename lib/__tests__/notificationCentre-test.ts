@@ -166,7 +166,7 @@ describe('the icons the server can send', () => {
         'calendar-outline', 'medkit-outline', 'moon-outline', 'water-outline',
         'walk-outline', 'restaurant-outline', 'pulse-outline', 'document-text-outline',
         'sparkles-outline', 'time-outline', 'cube-outline', 'trophy-outline',
-        'person-outline',
+        'person-outline', 'flower-outline',
     ];
 
     it('are all real Ionicons glyphs', () => {
@@ -182,7 +182,7 @@ describe('the tint map', () => {
         // Mirrors `TINTS` in `labtrack-backend/utils/notificationCatalogue.js`. A tint
         // missing here draws as slate, which is survivable, but a tint added there and
         // never added here means the category that wanted it is permanently grey.
-        const serverTints = ['violet', 'indigo', 'blue', 'green', 'rose', 'amber', 'slate'];
+        const serverTints = ['violet', 'indigo', 'blue', 'green', 'rose', 'amber', 'slate', 'cycle'];
         expect(Object.keys(TINT_COLOURS).sort()).toEqual([...serverTints].sort());
     });
 

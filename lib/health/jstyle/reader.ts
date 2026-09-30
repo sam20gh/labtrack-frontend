@@ -37,11 +37,26 @@ import { isLive } from './live';
  * had nothing newer than a phone reading to show. Heart rate every ten minutes is what the
  * vendor app ships with; SpO2 hourly because a reading is a thirty-second optical sweep and
  * doing it more often is most of the battery.
+ *
+ * Wrist temperature every thirty minutes is for the cycle tracker: the server takes the
+ * median of the readings inside each night's sleep (`utils/nightTemperature.js`), which needs
+ * roughly a dozen a night to be steadier than the sensor's noise. Both codecs already encoded
+ * `'temperature'`; it was simply never switched on. **Its battery cost is not documented by
+ * the vendor** — measure it on a band before release, and lengthen the interval rather than
+ * drop it if it is too high.
  */
-const MONITORING: { monitor: 'hr' | 'spo2'; intervalMinutes: number }[] = [
+const MONITORING: { monitor: 'hr' | 'spo2' | 'temperature'; intervalMinutes: number }[] = [
     { monitor: 'hr', intervalMinutes: 10 },
     { monitor: 'spo2', intervalMinutes: 60 },
+    { monitor: 'temperature', intervalMinutes: 30 },
 ];
+
+/**
+ * Bump when `MONITORING` changes. A band paired before the version existed carries only
+ * `monitoringSetAt` and counts as version 1, so it is set up again on its next sync — without
+ * this, adding temperature would have reached only bands paired from now on.
+ */
+const MONITORING_VERSION = 2;
 
 export const LABEL = 'Health bracelet';
 
@@ -248,11 +263,12 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         const battery = map.readBattery((await session.ask(variant, 'getBattery')).packets);
         if (battery !== null) await updatePaired({ lastBattery: battery });
 
-        if (!paired.monitoringSetAt && supports(variant, 'setAutoMonitoring')) {
+        const monitoringVersion = paired.monitoringVersion ?? (paired.monitoringSetAt ? 1 : 0);
+        if (monitoringVersion < MONITORING_VERSION && supports(variant, 'setAutoMonitoring')) {
             for (const setting of MONITORING) {
                 await session.ask(variant, 'setAutoMonitoring', setting);
             }
-            await updatePaired({ monitoringSetAt: new Date().toISOString() });
+            await updatePaired({ monitoringSetAt: new Date().toISOString(), monitoringVersion: MONITORING_VERSION });
         }
 
         const sent = new Map<SeriesCommand, Set<string>>();

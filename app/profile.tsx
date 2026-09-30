@@ -66,6 +66,7 @@ import {
 } from '@/components/achievements/TrophyCase';
 import { getSummary as getActivitySummary, getWearableStatus } from '@/lib/activity';
 import { getPermissionStatus } from '@/lib/notifications';
+import { getCyclePlan, type CycleAccess } from '@/lib/cycle';
 import { APPEARANCE_OPTIONS, useAppearancePreference } from '@/lib/appearance';
 import { Avatar } from '@/components/Avatar';
 import { Fonts, Radius, Spacing, BodyFont, tone, Palettes } from '@/constants/theme';
@@ -131,6 +132,7 @@ export default function ProfileScreen() {
     const [streak, setStreak] = useState<number | null>(null);
     const [devices, setDevices] = useState<string | null>(null);
     const [pushStatus, setPushStatus] = useState<string | null>(null);
+    const [cycleAccess, setCycleAccess] = useState<CycleAccess | null>(null);
     const [badges, setBadges] = useState<AchievementHub | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -151,12 +153,13 @@ export default function ProfileScreen() {
         // Settled rather than all: the settings rows below do not depend on any of the
         // status figures, so a score or wearable hiccup should cost one row's subtitle,
         // never the screen someone came here to use.
-        const [userRes, scoreRes, activityRes, wearableRes, pushRes] = await Promise.allSettled([
+        const [userRes, scoreRes, activityRes, wearableRes, pushRes, cycleRes] = await Promise.allSettled([
             api.get<ProfileUser>(`/users/${userId}`),
             getScore(),
             getActivitySummary('1w'),
             getWearableStatus(),
             getPermissionStatus(),
+            getCyclePlan(),
         ]);
 
         if (userRes.status === 'fulfilled') {
@@ -172,6 +175,7 @@ export default function ProfileScreen() {
         if (activityRes.status === 'fulfilled') setStreak(activityRes.value.streak);
         if (wearableRes.status === 'fulfilled') setDevices(describeSources(wearableRes.value.sources));
         if (pushRes.status === 'fulfilled') setPushStatus(pushRes.value);
+        if (cycleRes.status === 'fulfilled') setCycleAccess(cycleRes.value.access);
         setLoading(false);
     }, [router]);
 
@@ -475,6 +479,15 @@ export default function ProfileScreen() {
                             icon="clipboard-outline"
                             label="Health assessment"
                             onPress={() => router.push('/health-assessment/review')}
+                        />
+                        {/* For everybody, whatever their profile says: gender decides what the
+                            app offers unprompted, never what somebody may switch on. See
+                            `cycleController.accessFor`. */}
+                        <Row
+                            icon="flower-outline"
+                            label="Cycle tracking"
+                            value={cycleAccess === 'enabled' ? 'On' : cycleAccess === 'off' ? 'Off' : cycleAccess ? 'Set up' : undefined}
+                            onPress={() => router.push('/cycle')}
                         />
                         <Row
                             icon="stats-chart-outline"

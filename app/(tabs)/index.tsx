@@ -132,6 +132,11 @@ import { PredictionCard } from '@/components/home/PredictionCard';
 import AppointmentCard from '@/components/home/AppointmentCard';
 import ExploreDoctorsCard from '@/components/home/ExploreDoctorsCard';
 import RateAppCard from '@/components/home/RateAppCard';
+import { CycleCard, CycleOfferCard } from '@/components/home/CycleCard';
+import {
+    getCycleOverview, dismissCycleOffer, editPeriodDays, homeCardLive, homeOfferLive,
+    type CycleOverview,
+} from '@/lib/cycle';
 import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { Spacing, Radius, Shadow, Fonts, BodyFont, schemed, tone, Palettes } from '@/constants/theme';
@@ -300,6 +305,8 @@ export default function HomeScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [analysisExpanded, setAnalysisExpanded] = useState(false);
     const [busyDose, setBusyDose] = useState<string | null>(null);
+    const [cycle, setCycle] = useState<CycleOverview | null>(null);
+    const [cycleBusy, setCycleBusy] = useState(false);
 
     const load = useCallback(async () => {
         const loggedIn = await isSignedIn();
@@ -349,12 +356,16 @@ export default function HomeScreen() {
             // call, and putting that inside a `useFocusEffect` is exactly the mistake the
             // header of this file warns about.
             getPredictionOverview(),
+            // Three small reads — the plan, the user's gender, a year of logged days. It
+            // decides both whether the cycle card has anything to say and whether the one-time
+            // offer is made, so it has to be here rather than after the paint.
+            getCycleOverview(),
         ]);
 
         const [
             userRes, biomarkerRes, analysisRes, nutritionRes, scoreRes, metricsRes,
             activityRes, activityDayRes, medicationRes, appointmentRes, planRes,
-            resourceRes, checksRes, predictionRes,
+            resourceRes, checksRes, predictionRes, cycleRes,
         ] = results;
 
         if (userRes.status === 'fulfilled') setUser(userRes.value as User);
@@ -374,6 +385,7 @@ export default function HomeScreen() {
         if (resourceRes.status === 'fulfilled') setResources(resourceRes.value.items ?? []);
         if (checksRes.status === 'fulfilled') setSymptomChecks(checksRes.value);
         if (predictionRes.status === 'fulfilled') setPredictions(predictionRes.value);
+        if (cycleRes.status === 'fulfilled') setCycle(cycleRes.value);
 
         const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
@@ -778,9 +790,27 @@ export default function HomeScreen() {
             });
         }
 
+        // A period that is due or late. Last, because it is a question about a log, not a
+        // clinical finding — and the words are the tracker's own, which name no condition.
+        if (cycle?.access === 'enabled' && ['due', 'late', 'very_late'].includes(cycle.reading.state)
+            && !cycle.reading.currentPeriod) {
+            out.push({
+                id: 'cycle',
+                icon: 'flower-outline',
+                color: Palette.cycle,
+                surface: Palette.cycleSurface,
+                title: 'Did your period start?',
+                body: cycle.reading.state === 'due'
+                    ? 'It could start any day. Logging it keeps your predictions right.'
+                    : `It is ${cycle.reading.daysLate} day${cycle.reading.daysLate === 1 ? '' : 's'} later than expected. Log it when it starts.`,
+                cta: 'Open',
+                onPress: () => router.push('/cycle'),
+            });
+        }
+
         return out.slice(0, 3);
     // Palette is a dependency: these colours are computed, and a scheme change must recompute them.
-    }, [crisis, planDue, analysis, imminent, generating, handleGenerate, router, Palette]);
+    }, [crisis, planDue, analysis, imminent, generating, handleGenerate, router, Palette, cycle]);
 
     const firstName = user?.firstName?.trim() || 'there';
     const initials = ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase();
@@ -940,6 +970,40 @@ export default function HomeScreen() {
         });
     }
 
+    /**
+     * The cycle. Earned like the rest — only when there is something to say (`homeCardLive`).
+     * On a period, or with one due or late, it rises to the top beside today's doses; a
+     * question about when the last one ended sits with the ordinary trackers.
+     */
+    if (cycle && homeCardLive(cycle)) {
+        const pressing = ['period', 'due', 'late', 'very_late'].includes(cycle.reading.state);
+        trackers.push({
+            id: 'cycle',
+            order: pressing ? 0.5 : 5.5,
+            node: (
+                <Section title="Cycle" action="See All" onAction={() => router.push('/cycle')}>
+                    <CycleCard
+                        overview={cycle}
+                        busy={cycleBusy}
+                        onOpen={() => router.push('/cycle')}
+                        onStarted={async () => {
+                            if (cycleBusy) return;
+                            setCycleBusy(true);
+                            try {
+                                await editPeriodDays({ add: [cycle.today] });
+                                setCycle(await getCycleOverview());
+                            } catch {
+                                Toast.show({ type: 'error', text1: 'Could not log that', text2: 'Please try again.' });
+                            } finally {
+                                setCycleBusy(false);
+                            }
+                        }}
+                    />
+                </Section>
+            ),
+        });
+    }
+
     trackers.sort((a, b) => a.order - b.order);
 
     return (
@@ -1081,6 +1145,21 @@ export default function HomeScreen() {
                                 {trackers.map((tracker) => (
                                     <React.Fragment key={tracker.id}>{tracker.node}</React.Fragment>
                                 ))}
+
+                                {/* The one-time offer of the cycle tracker. See the header of
+                                    `components/home/CycleCard.tsx` for why this invitation, and
+                                    only this one, breaks the no-rows-for-unstarted-trackers rule. */}
+                                {homeOfferLive(cycle?.access) && (
+                                    <Section title="Cycle">
+                                        <CycleOfferCard
+                                            onSetUp={() => router.push('/cycle/setup')}
+                                            onDismiss={() => {
+                                                setCycle((prev) => (prev ? { ...prev, access: 'dismissed' } : prev));
+                                                dismissCycleOffer().catch(() => {});
+                                            }}
+                                        />
+                                    </Section>
+                                )}
 
                                 {/*
                                   Doctor Appointment, before anything is booked — `Design/doctors.svg`.
