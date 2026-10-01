@@ -36,6 +36,8 @@ export interface PairedBracelet {
     monitoringSetAt?: string;
     /** Which `MONITORING` set in `reader.ts` was sent. Absent with `monitoringSetAt` means 1. */
     monitoringVersion?: number;
+    /** The name last written to the band (`BAND_NAME` in `reader.ts`). Unset: never renamed. */
+    nameSetTo?: string;
     /** The newest reading of each kind the last sync brought over. */
     latest?: LatestReadings;
     /**

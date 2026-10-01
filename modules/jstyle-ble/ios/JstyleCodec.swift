@@ -58,10 +58,11 @@ enum JstyleCodec {
             "getTemperature", "ppg",
             "liveData", "measure", "setAutoMonitoring",
         ]
-        // `BleSDK_V8.h` has no `GetDeviceName`, though the V8 jar does.
+        // `BleSDK_V8.h` has no `GetDeviceName`, though the V8 jar does. It has no
+        // `SetDeviceName` either, but that one is built by hand — see `deviceNameFrame`.
         return variant == "j2208a"
             ? shared + ["getAxillaryTemperature"]
-            : shared.filter { $0 != "getDeviceName" }
+            : shared.filter { $0 != "getDeviceName" } + ["setDeviceName"]
     }
 
     struct UnsupportedCommand: Error, LocalizedError {
@@ -172,8 +173,26 @@ enum JstyleCodec {
                 open: bool(args["open"])) as Data
         case "setAutoMonitoring":
             return sdk.setAutomaticHRMonitoring(autoMonitoringV8(args)) as Data
+        case "setDeviceName":
+            return deviceNameFrame(args["name"] as? String ?? "")
         default: return Data()
         }
+    }
+
+    /**
+     * The V8's rename command, built here because the iOS SDK has no method for it.
+     *
+     * The header's own `DATATYPE_V8` names the reply (`SetDeviceName_V8 = 16`), and the V8
+     * jar's `SetDeviceName` encodes it, so this is that method byte for byte: 16 bytes,
+     * `0x3D`, the first 14 characters of the name, zero padding, and the low byte of the sum
+     * of the first 15 as the checksum — the same `crcValue` every other frame carries.
+     */
+    private static func deviceNameFrame(_ name: String) -> Data {
+        var frame = [UInt8](repeating: 0, count: 16)
+        frame[0] = 0x3D
+        for (i, byte) in name.utf8.prefix(14).enumerated() { frame[i + 1] = byte }
+        frame[15] = frame[0..<15].reduce(0, &+)
+        return Data(frame)
     }
 
     // ── decoding ────────────────────────────────────────────────────────────

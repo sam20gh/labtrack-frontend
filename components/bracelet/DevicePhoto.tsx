@@ -42,7 +42,7 @@ export default function DevicePhoto({ variant, width = 190 }: Props) {
             style={{ width, height: width / ASPECT }}
             resizeMode="contain"
             accessibilityRole="image"
-            accessibilityLabel="J-Style V8 health bracelet"
+            accessibilityLabel="Predyqt 2 health bracelet"
         />
     );
 }

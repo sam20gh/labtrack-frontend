@@ -91,6 +91,8 @@ internal object Codec {
             // No `getAxillaryTemperature`: the V8 SDK has no such command.
             "getTemperature",
             "ppg", "liveData", "measure", "setAutoMonitoring",
+            // V8 only: the 2208A jar has no `SetDeviceName`.
+            "setDeviceName",
         ),
     )
 
@@ -181,6 +183,9 @@ internal object Codec {
                 autoMonitoringV8(intArg(args, "intervalMinutes", 0)),
                 autoModeV8(args["monitor"]),
             )
+            // The jar keeps the first 14 characters and casts each to a byte, so anything
+            // outside ASCII would arrive as a different letter. `reader.ts` sends a fixed name.
+            "setDeviceName" -> SdkV8.SetDeviceName((args["name"] as? String) ?: "")
             else -> throw IllegalArgumentException("Unhandled command '$cmd'.")
         }
 

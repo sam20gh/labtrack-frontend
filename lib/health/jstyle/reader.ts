@@ -61,10 +61,17 @@ const MONITORING_VERSION = 2;
 
 export const LABEL = 'Health bracelet';
 
-/** What to call each model on screen. The vendor's own names. */
+/**
+ * What the V8 is called, on screen and over the air. It ships as JCVital's `JCV8B…`; the
+ * first sync renames the band itself to this, so every later scan — on any phone — lists it
+ * under our name. At most 14 ASCII characters: the firmware keeps no more.
+ */
+export const BAND_NAME = 'Predyqt 2';
+
+/** What to call each model on screen. The 2208A keeps the vendor's name; the V8 is ours. */
 export const VARIANT_LABEL: Record<JstyleVariant, string> = {
     j2208a: 'J-Style 2208A',
-    v8: 'J-Style V8',
+    v8: BAND_NAME,
 };
 
 /**
@@ -274,6 +281,16 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
                 await session.ask(variant, 'setAutoMonitoring', setting);
             }
             await updatePaired({ monitoringSetAt: new Date().toISOString(), monitoringVersion: MONITORING_VERSION });
+        }
+
+        // Written to the band's own memory, so it is sent once per name rather than on every
+        // sync. Recorded whether or not the band acknowledges it: a band that never answers
+        // this would otherwise cost every sync an eight-second wait. The next scan shows
+        // whether it took — the band advertises the new name after it next restarts its radio.
+        if (paired.nameSetTo !== BAND_NAME && supports(variant, 'setDeviceName')) {
+            await session.ask(variant, 'setDeviceName', { name: BAND_NAME },
+                (packet) => packet.type === 'deviceNameSet');
+            await updatePaired({ nameSetTo: BAND_NAME, label: BAND_NAME });
         }
 
         const sent = new Map<SeriesCommand, Set<string>>();

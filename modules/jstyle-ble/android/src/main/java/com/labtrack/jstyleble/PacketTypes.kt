@@ -24,6 +24,8 @@ internal object PacketTypes {
         "10" to "macAddress",
         "11" to "version",
         "15" to "deviceName",
+        // `BleConst.CMD_Set_Name`: the V8's reply to `SetDeviceName`.
+        "116" to "deviceNameSet",
         "63" to "macAddress",
         "16" to "autoMonitoring",
         "17" to "autoMonitoringSet",

@@ -193,7 +193,8 @@ export default function BraceletScreen() {
             const record: PairedBracelet = {
                 id: device.id,
                 variant,
-                label: device.name || VARIANT_LABEL[variant],
+                // A V8 is ours whatever it is advertising; the first sync renames the band too.
+                label: variant === 'v8' ? VARIANT_LABEL.v8 : device.name || VARIANT_LABEL[variant],
                 pairedAt: new Date().toISOString(),
                 lastBattery: map.readBattery(reply.packets) ?? undefined,
             };
@@ -227,7 +228,8 @@ export default function BraceletScreen() {
             + 'is printed on the back of the bracelet or on its box.',
             [
                 { text: VARIANT_LABEL.j2208a, onPress: () => pair(device, 'j2208a') },
-                { text: VARIANT_LABEL.v8, onPress: () => pair(device, 'v8') },
+                // The back of the band says V8, not our name.
+                { text: `${VARIANT_LABEL.v8} (V8)`, onPress: () => pair(device, 'v8') },
                 { text: 'Cancel', style: 'cancel' },
             ],
         );

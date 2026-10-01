@@ -61,7 +61,8 @@ const BRACELET_NAME = /2208|2301|\bv8\b|j-?style|jcvital|predyqt/i;
  */
 const NAME_HINTS: { pattern: RegExp; variant: JstyleVariant }[] = [
     { pattern: /2208|j-?style\s*2208/i, variant: 'j2208a' },
-    { pattern: /2301|\bv8\b|jstyle\s*v8/i, variant: 'v8' },
+    // `JCV8B…` is how the V8 ships; `Predyqt 2` is what the first sync renames it to.
+    { pattern: /2301|\bv8\b|jstyle\s*v8|jcv8|predyqt\s*2/i, variant: 'v8' },
 ];
 
 export interface DiscoveredBracelet {
@@ -190,7 +191,9 @@ export const scan = (
         }
         if (!device) return;
 
-        const name = device.name ?? device.localName ?? null;
+        // The advertisement first: iOS caches a peripheral's GAP name, so after a rename
+        // `device.name` can keep showing the old one while the band is advertising the new.
+        const name = device.localName ?? device.name ?? null;
         const recognised = advertisesProfile(device) || (!!name && BRACELET_NAME.test(name));
         if (!recognised && !name) return;
 

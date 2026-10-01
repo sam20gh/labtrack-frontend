@@ -59,7 +59,12 @@ export type JstyleCommand =
      * `intervalMinutes`. Without it a band takes no spot readings between syncs, and a
      * resting heart rate never exists to be shown.
      */
-    | 'setAutoMonitoring';
+    | 'setAutoMonitoring'
+    /**
+     * Rename the bracelet — what it advertises over Bluetooth and so what every phone's scan
+     * lists. `name`, at most 14 ASCII characters. **V8 only**: the 2208A SDK has no encoder.
+     */
+    | 'setDeviceName';
 
 /** What a spot measurement measures. Encoded differently by each SDK — see the codecs. */
 export type JstyleMeasure = 'hr' | 'spo2' | 'hrv';
@@ -110,7 +115,7 @@ export interface JstylePacket {
  */
 export type JstylePacketType =
     | 'deviceTime' | 'personalInfo' | 'deviceInfo' | 'battery' | 'macAddress'
-    | 'version' | 'deviceName'
+    | 'version' | 'deviceName' | 'deviceNameSet'
     | 'totalActivity' | 'detailActivity' | 'detailSleep'
     | 'staticHr' | 'dynamicHr' | 'hrv'
     | 'autoSpo2' | 'manualSpo2'
@@ -149,6 +154,8 @@ export interface JstyleCommandArgs {
     monitor?: JstyleMonitor;
     /** `setAutoMonitoring`: minutes between readings. 0 turns the family off. */
     intervalMinutes?: number;
+    /** `setDeviceName`: at most 14 ASCII characters; the firmware has room for no more. */
+    name?: string;
 }
 
 /**

@@ -38,7 +38,7 @@ enum JstylePacketTypes {
     /// `DATATYPE_V8`, from `BleSDK_Header_V8.h`. Note every value past 30 has shifted.
     static let v8: [Int: String] = [
         0: "deviceTime", 2: "personalInfo", 4: "deviceInfo",
-        9: "battery", 10: "macAddress", 11: "version", 15: "deviceName",
+        9: "battery", 10: "macAddress", 11: "version", 15: "deviceName", 16: "deviceNameSet",
         17: "autoMonitoring", 18: "autoMonitoringSet",
         24: "realTimeStep", 25: "totalActivity", 26: "detailActivity", 27: "detailSleep",
         28: "dynamicHr", 29: "staticHr", 30: "activityModeData",
