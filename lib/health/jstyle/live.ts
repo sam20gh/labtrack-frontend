@@ -22,6 +22,7 @@ import { getWearableStatus, syncBatch } from '@/lib/activity';
 import * as transport from './transport';
 import * as session from './session';
 import { getPaired, updatePaired, type PairedBracelet } from './store';
+import { checkAndSetClock } from './clock';
 
 export interface LiveReading {
     heartRate: number | null;
@@ -143,7 +144,8 @@ export const start = async (handlers: LiveHandlers): Promise<void> => {
             cleanUp(variant);
             if (wasLive) handlers.onLost();
         });
-        await session.ask(variant, 'setDeviceTime');
+        // Read before it is set, and kept for the next sync if it was wrong. See `clock.ts`.
+        await checkAndSetClock(variant, { report: false });
         const first = await session.ask(
             variant, 'liveData', { live: true }, (p) => p.type === 'realTimeStep',
         );

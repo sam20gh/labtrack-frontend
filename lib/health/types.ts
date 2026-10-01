@@ -256,6 +256,31 @@ export interface SyncBatch {
     cycle?: CycleRow[];
     cycleWindow?: { from: string; to: string };
     nightTemperature?: NightTemperatureRow[];
+
+    /**
+     * A bracelet's own clock, read before the phone set it. Every record a bracelet sends is
+     * stamped from that clock, and it has been seen hours wrong; the server uses this to move
+     * or set aside what was stamped while it was (`utils/clockFault.js`). Bracelet only.
+     */
+    clock?: BraceletClock;
+}
+
+/** See `SyncBatch.clock` and `lib/health/jstyle/clock.ts`. */
+export interface BraceletClock {
+    /** Which bracelet: the id its records' `externalId`s carry. */
+    deviceId: string;
+    bandAt: string | null;
+    phoneAt: string;
+    /** When the clock was last set, so known right. Null: never recorded. */
+    lastSetAt: string | null;
+    /** Read again once this sync's reads were done. */
+    afterRead?: { bandAt: string | null; phoneAt: string } | null;
+    /** The previous sync's end-of-sync readings — what finds the cause of a wrong clock. */
+    previous?: {
+        at: string;
+        afterRead?: { bandAt: string | null; phoneAt: string } | null;
+        afterAck?: { bandAt: string | null; phoneAt: string } | null;
+    } | null;
 }
 
 export interface HealthReader {

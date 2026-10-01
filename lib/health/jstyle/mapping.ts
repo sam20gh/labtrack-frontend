@@ -39,7 +39,7 @@ const K = {
     ecgBreath: 'ECGBreathValue', ecgHighBp: 'ECGhighBpValue', ecgLowBp: 'ECGLowBpValue',
     ecgQuality: 'ECGQualityValue',
     ppgSbp: 'PPGSBP', ppgDbp: 'PPGDBP', ppgHr: 'PPGHR',
-    battery: 'batteryLevel', mac: 'macAddress',
+    battery: 'batteryLevel', mac: 'macAddress', deviceTime: 'strDeviceTime',
     version: 'deviceVersion', name: 'deviceName',
 } as const;
 
@@ -497,6 +497,21 @@ export const readIdentity = (packets: JstylePacket[]): Partial<SourceDevice> => 
         name: (r[K.name] as string) || undefined,
         model: (r[K.version] as string) || undefined,
     };
+};
+
+/**
+ * The bracelet's own clock, from a `getDeviceTime` reply.
+ *
+ * Parsed exactly as every record's stamp is — phone-local — so the gap between this and the
+ * phone's clock is the gap in every stamp the bracelet wrote meanwhile. `strDeviceTime` is
+ * the key in both Android SDKs (`DeviceKey.DeviceTime`, written `20yy-MM-dd HH:mm:ss`). The
+ * iOS spelling is not documented and the two others are guesses, which is why null means
+ * "unknown" and never "right".
+ */
+export const readDeviceTime = (packets: JstylePacket[]): Date | null => {
+    const r = records(packets)[0];
+    if (!r) return null;
+    return parseInstant(r[K.deviceTime] ?? r.deviceTime ?? r.DeviceTime);
 };
 
 export const readMac = (packets: JstylePacket[]): string | null =>

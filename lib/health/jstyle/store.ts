@@ -38,6 +38,25 @@ export interface PairedBracelet {
     monitoringVersion?: number;
     /** The newest reading of each kind the last sync brought over. */
     latest?: LatestReadings;
+    /**
+     * When the phone last set the bracelet's clock — the last moment its stamps are known to
+     * be right. `clock.ts` explains why the server needs it.
+     */
+    clockSetAt?: string;
+    /** The clock as the last sync left it, sent with the next one. See `clock.ts`. */
+    lastClockCheck?: { at: string; afterRead?: ClockReading | null; afterAck?: ClockReading | null };
+    /**
+     * A wrong clock found by something other than a sync — live view sets the clock too —
+     * kept until a sync has reported it, because setting it destroyed the only evidence.
+     */
+    unreportedClock?: ClockReading & { lastSetAt: string | null };
+}
+
+/** The bracelet's clock as read, and the phone's when it answered. */
+export interface ClockReading {
+    /** The bracelet's time, read as phone-local like every record's stamp. Null: it did not say. */
+    bandAt: string | null;
+    phoneAt: string;
 }
 
 /** One reading and when the bracelet took it. */

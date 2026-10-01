@@ -25,9 +25,10 @@ import * as transport from './transport';
 import * as session from './session';
 import * as map from './mapping';
 import {
-    getPaired, updatePaired, type LatestReadings, type PairedBracelet, type Stamped,
+    getPaired, updatePaired, type ClockReading, type LatestReadings, type PairedBracelet, type Stamped,
 } from './store';
 import { isLive } from './live';
+import { checkAndSetClock, isWrong, readClock } from './clock';
 
 /**
  * The bracelet's own timed readings, switched on once per pairing.
@@ -192,6 +193,8 @@ interface PendingAck {
     ctx: map.MapContext;
     /** Per deletable series: the ids of every row this read produced and the batch carries. */
     sent: Map<SeriesCommand, Set<string>>;
+    /** The clock once the reads were done, kept for the next sync to report. */
+    afterRead: ClockReading;
 }
 
 let pending: PendingAck | null = null;
@@ -258,7 +261,9 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         // timestamped from its own clock, which drifts and resets to 1970 on a flat
         // battery, and a sync that corrected it afterwards would have already filed a
         // night's sleep in 1970. Cheap, and it fixes the next read rather than this one.
-        await session.ask(variant, 'setDeviceTime');
+        // It is *read* before it is set: once set, nothing can show it was wrong, and what it
+        // stamped meanwhile is still in this read. See `clock.ts`.
+        const clockBefore = await checkAndSetClock(variant, { report: true });
 
         const battery = map.readBattery((await session.ask(variant, 'getBattery')).packets);
         if (battery !== null) await updatePaired({ lastBattery: battery });
@@ -305,7 +310,22 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         // answer without a reconnect — and so the only readings that can appear between the
         // read and the delete are ones the bracelet takes in those seconds, which the
         // re-read in `acknowledgeSynced` catches. Two minutes is the ceiling on holding it.
-        pending = { variant, ctx, sent };
+        const afterRead = await readClock(variant);
+        // Live view sets the clock too. If it found the clock wrong since the last sync, that
+        // reading is the evidence, and this sync's own merely says the set worked.
+        const found = !isWrong(clockBefore) && paired.unreportedClock
+            ? paired.unreportedClock
+            : clockBefore;
+        batch.clock = {
+            deviceId: paired.id,
+            bandAt: found.bandAt,
+            phoneAt: found.phoneAt,
+            lastSetAt: found.lastSetAt,
+            afterRead,
+            previous: paired.lastClockCheck ?? null,
+        };
+
+        pending = { variant, ctx, sent, afterRead };
         watchdog = setTimeout(() => { void release(); }, 120_000);
     } catch (err) {
         // A failed read acknowledges nothing and holds nothing.
@@ -378,6 +398,8 @@ const latestOf = (batch: SyncBatch, held: LatestReadings = {}): LatestReadings =
  */
 export const acknowledgeSynced = async (): Promise<void> => {
     const plan = pending;
+    // The POST that carried any clock reading live view kept has landed.
+    await updatePaired({ unreportedClock: undefined });
     try {
         // Nothing is deleted over a connection this sync did not open and hold throughout —
         // live view taking the bracelet over mid-POST is the case this catches.
@@ -396,6 +418,13 @@ export const acknowledgeSynced = async (): Promise<void> => {
             }
             await session.acknowledge(plan.variant, command);
         }
+
+        // Once more after the deletes, so the next sync can say whether this one left the
+        // clock wrong. See `clock.ts`.
+        const afterAck = await readClock(plan.variant);
+        await updatePaired({
+            lastClockCheck: { at: new Date().toISOString(), afterRead: plan.afterRead, afterAck },
+        });
     } finally {
         await release();
     }
