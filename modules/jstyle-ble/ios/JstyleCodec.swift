@@ -80,19 +80,21 @@ enum JstyleCodec {
         }
 
         let m = mode(args["mode"])
-        // The vendor takes an NSDate to resume from and warns it is ignored unless it
-        // matches a stored record exactly. `distantPast` means "wherever you are", which is
-        // what every vendor demo passes and what a resume actually wants — the bracelet's
-        // own bookmark rather than ours.
-        let from = (args["startDate"] as? String).flatMap(ISO8601DateFormatter().date(from:))
-            ?? Date.distantPast
+        // **nil, never a placeholder date.** The SDK writes a non-nil date into bytes 4–6 of
+        // the frame as BCD of (year − 2000), month, day, and leaves them zero for nil — which
+        // is what the Android jar sends for its empty string, and the frame both bracelets
+        // answer with history. `Date.distantPast` was here until 2026-10-07: year 1 encodes
+        // as `87 12 31`, a request for everything from 31 Dec 2087, and every history series
+        // came back empty while battery and clock answered normally. The header's "ignored
+        // unless it matches a stored record" is not what the 2208A firmware does.
+        let from: Date? = (args["startDate"] as? String).flatMap(ISO8601DateFormatter().date(from:))
 
         return variant == "j2208a"
             ? build2208A(command, m, from, args)
             : buildV8(command, m, from, args)
     }
 
-    private static func build2208A(_ cmd: String, _ m: Int32, _ from: Date, _ args: [String: Any]) -> Data {
+    private static func build2208A(_ cmd: String, _ m: Int32, _ from: Date?, _ args: [String: Any]) -> Data {
         let sdk: BleSDK_J2208A = BleSDK_J2208A.sharedManager()
         switch cmd {
         case "getDeviceTime":    return sdk.getDeviceTime() as Data
@@ -134,7 +136,7 @@ enum JstyleCodec {
         }
     }
 
-    private static func buildV8(_ cmd: String, _ m: Int32, _ from: Date, _ args: [String: Any]) -> Data {
+    private static func buildV8(_ cmd: String, _ m: Int32, _ from: Date?, _ args: [String: Any]) -> Data {
         let sdk: BleSDK_V8 = BleSDK_V8.sharedManager()
         switch cmd {
         case "getDeviceTime":    return sdk.getDeviceTime() as Data
