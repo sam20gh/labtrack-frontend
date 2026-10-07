@@ -42,5 +42,10 @@ module.exports = {
     ignorePaths: [
         '**/android-expo/build/**/*',
         '**/android-expo/.cxx/**/*',
+        // Xcode writes this locally and ios/.gitignore keeps it from EAS.
+        'ios/*.xcodeproj/project.xcworkspace/**/*',
+        // `pod install` writes these on EAS; neither is committed, so local never has them.
+        'ios/Podfile.lock',
+        'ios/*.xcworkspace/**/*',
     ],
 };
