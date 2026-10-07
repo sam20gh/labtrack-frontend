@@ -208,6 +208,52 @@ let pending: PendingAck | null = null;
 let watchdog: ReturnType<typeof setTimeout> | null = null;
 
 /**
+ * What the last read heard back.
+ *
+ * An empty batch is three different facts, and the screen used to say "nothing new" for all
+ * of them: the bracelet answered and had nothing, it never answered, or it answered in a
+ * shape this build cannot read. The last is how the first iPhone sync spent a day reporting
+ * "nothing new" over a bracelet full of data. Kept off `SyncBatch` because the server has no
+ * use for it — it is about this phone's conversation with this bracelet.
+ */
+export interface ReadReport {
+    /** Series this bracelet supports and was asked for. */
+    asked: number;
+    /** Of those, how many sent nothing at all before the timeout. */
+    silent: number;
+    /** Records that arrived with content and could not be read — see `map.unreadable`. */
+    unreadable: number;
+    /** Rows the read produced, across every family. Zero means nothing was posted. */
+    rows: number;
+}
+
+let lastReport: ReadReport | null = null;
+
+/** The last read's report, or null when the last read failed or none has run. */
+export const lastReadReport = (): ReadReport | null => lastReport;
+
+/**
+ * The line the bracelet screen shows after a sync that ran.
+ *
+ * `daysUpdated` is the server's answer and wins when it is non-zero. Otherwise the report
+ * decides which of the three empty outcomes this was. "Still on the bracelet" is only said
+ * when nothing was posted (`rows === 0`): the bracelet frees a series only after the server
+ * has its rows, so with no POST nothing can have been deleted.
+ */
+export const describeSync = (daysUpdated: number, report: ReadReport | null): string => {
+    if (daysUpdated) return `Synced — ${daysUpdated} day${daysUpdated === 1 ? '' : 's'} updated.`;
+    if (report && report.rows === 0 && report.unreadable > 0) {
+        return 'The bracelet sent data this version of Predyqt can\'t read yet. It is still on the '
+            + 'bracelet, and an app update will bring it over.';
+    }
+    if (report && report.asked > 0 && report.silent === report.asked) {
+        return 'The bracelet connected but didn\'t send its history. Keep it next to your phone '
+            + 'and sync again.';
+    }
+    return 'Synced — the bracelet had nothing new since the last sync.';
+};
+
+/**
  * A read is only safe to act on when the bracelet said it was finished and every packet was
  * one this build understands. The SpO2 history decoded as `unknown` for a whole build; with
  * deletion switched on, that would have been every reading lost rather than merely unsent.
@@ -243,6 +289,8 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
     const { variant } = paired;
     const ctx: map.MapContext = { deviceId: paired.id, variant, device: deviceFor(paired) };
     const readAt = new Date().toISOString();
+    lastReport = null;
+    const report: ReadReport = { asked: 0, silent: 0, unreadable: 0, rows: 0 };
     await release();
 
     const batch: SyncBatch = {
@@ -296,6 +344,11 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         const sent = new Map<SeriesCommand, Set<string>>();
         const read = async (command: SeriesCommand) => {
             const result = await session.readSeries(variant, command);
+            if (supports(variant, command)) {
+                report.asked += 1;
+                if (!result.packets.length) report.silent += 1;
+                report.unreadable += map.unreadable(result.packets);
+            }
             const mapper = MAPPERS[command];
             if (mapper && result.packets.length && trustworthy(result)) {
                 sent.set(command, new Set(mapper(result.packets, ctx).map((r) => r.externalId)));
@@ -352,6 +405,10 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
     }
 
     await updatePaired({ lastSyncAt: readAt, latest: latestOf(batch, paired.latest) });
+    report.rows = batch.activities.length + batch.sleep.length + batch.heart.length
+        + batch.days.length + (batch.spo2?.length ?? 0) + (batch.temperature?.length ?? 0)
+        + (batch.bloodPressure?.length ?? 0) + (batch.ecg?.length ?? 0);
+    lastReport = report;
     return batch;
 };
 

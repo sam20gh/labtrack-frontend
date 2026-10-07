@@ -32,7 +32,7 @@ import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { JstyleVariant } from '@/modules/jstyle-ble';
 import * as transport from '@/lib/health/jstyle/transport';
-import { VARIANT_LABEL } from '@/lib/health/jstyle/reader';
+import { VARIANT_LABEL, describeSync, lastReadReport } from '@/lib/health/jstyle/reader';
 import { getPaired, setPaired, clearPaired, type PairedBracelet } from '@/lib/health/jstyle/store';
 import { runSync, resetSyncThrottle } from '@/lib/health/sync';
 
@@ -152,9 +152,7 @@ export default function BraceletScreen() {
 
             setNote(
                 bracelet?.ran
-                    ? bracelet.days
-                        ? `Synced — ${bracelet.days} day${bracelet.days === 1 ? '' : 's'} updated.`
-                        : 'Synced — nothing new to bring over.'
+                    ? describeSync(bracelet.days, lastReadReport())
                     : bracelet?.reason ?? 'Could not reach the bracelet.',
             );
             setPairedState(await getPaired());

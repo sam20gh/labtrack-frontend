@@ -110,3 +110,24 @@ describe('Android reply shapes are unchanged', () => {
         })], ctx)).toEqual([expect.objectContaining({ bpm: 61 })]);
     });
 });
+
+describe('unreadable', () => {
+    it('counts a reply whose records sit in a shape the mappers cannot reach', () => {
+        // The pre-fix iOS failure, re-created with a list name nothing unwraps.
+        expect(map.unreadable([packet('totalActivity', {
+            someFutureWrapper: { inner: [{ date: '2026.10.07', step: 1 }] },
+            stamp: '2026.10.07 10:00:00',
+        })])).toBe(1);
+    });
+
+    it('counts nothing for a reply it can read, or one that is empty', () => {
+        expect(map.unreadable([packet('totalActivity', {
+            arrayTotalActivityData: [{ date: '2026.10.07', step: 2140 }],
+        })])).toBe(0);
+        expect(map.unreadable([packet('totalActivity', { arrayTotalActivityData: [] })])).toBe(0);
+        expect(map.unreadable([packet('totalActivity', {})])).toBe(0);
+        expect(map.unreadable([packet('detailSleep', {
+            arrayDetailSleepData: [{ startTime_SleepData: '2026.10.07 00:30:00', arraySleepQuality: [1] }],
+        })])).toBe(0);
+    });
+});

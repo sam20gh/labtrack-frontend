@@ -177,6 +177,26 @@ const records = (packets: JstylePacket[]): Record<string, unknown>[] => {
     return out;
 };
 
+/** Every key a record's instant is read from. A record carrying none of them maps to nothing. */
+const STAMP_KEYS = [K.date, K.time, K.iosSleepStart];
+const DATEISH = /^\d{4}[-.]\d{1,2}[-.]\d{1,2}/;
+
+/**
+ * How many records arrived with content but no timestamp this file knows how to read.
+ *
+ * Every mapper drops such a record without a word, so a reply in a shape this file has not
+ * met reads as an empty series — which is how the iOS SDKs' nested lists went unnoticed:
+ * the screen said "nothing new" over a bracelet full of data. Counting them lets the screen
+ * say what actually happened. "Content" means a non-empty array or a date-like string, so a
+ * reply that is genuinely empty (`{ arrayTotalActivityData: [] }`, or `{}`) counts zero.
+ */
+export const unreadable = (packets: JstylePacket[]): number =>
+    records(packets).filter((r) =>
+        !STAMP_KEYS.some((key) => r[key])
+        && Object.values(r).some((v) =>
+            (Array.isArray(v) && v.length > 0) || (typeof v === 'string' && DATEISH.test(v))),
+    ).length;
+
 // ── activity ────────────────────────────────────────────────────────────────
 
 /**
