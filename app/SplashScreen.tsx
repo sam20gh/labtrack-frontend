@@ -18,6 +18,7 @@ import { isSignedIn } from '@/lib/auth';
 import BrandMark from '@/components/BrandMark';
 import { Fonts, BodyFont, Palettes } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { landAfterSignIn } from '@/lib/onboarding';
 
 /** How long the mark is held on screen before we route. The bar is timed to match. */
 const DWELL_MS = 2500;
@@ -70,7 +71,7 @@ export default function SplashScreen() {
                 const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
 
                 if (signedIn) {
-                    router.replace('/(tabs)');
+                    await landAfterSignIn(router);
                 } else if (!hasSeenOnboarding) {
                     // First time user - show onboarding
                     router.replace('/onboarding');

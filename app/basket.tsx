@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -25,6 +25,11 @@ export default function BasketScreen() {
     const Palette = usePalette();
     const styles = useStyles();
     const router = useRouter();
+    // Set when the basket was reached from the journey (welcome hub → packages). A paid
+    // order goes back there, where the new parcels already show on the tracker; anything
+    // short of paid still goes to the order, which is where it can be paid.
+    const { returnTo: rawReturnTo } = useLocalSearchParams<{ returnTo?: string }>();
+    const returnTo = typeof rawReturnTo === 'string' && rawReturnTo.startsWith('/') ? rawReturnTo : null;
     const { initPaymentSheet, presentPaymentSheet } = useStripe();
     const { lines, estimatedTotal, setQuantity, remove, clear, count } = useBasket();
     const [placing, setPlacing] = useState(false);
@@ -113,7 +118,8 @@ export default function BasketScreen() {
                 text1: 'Payment complete',
                 text2: `${formatMoney(order.total)} — we'll send your kit shortly`,
             });
-            router.replace({ pathname: '/order-details', params: { orderId: order._id } });
+            if (returnTo) router.dismissTo(returnTo as Href);
+            else router.replace({ pathname: '/order-details', params: { orderId: order._id } });
         } catch (error) {
             Toast.show({
                 type: 'error',

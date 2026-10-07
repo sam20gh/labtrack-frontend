@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
@@ -12,6 +12,10 @@ export default function HealthAssessmentWelcome() {
     const Palette = usePalette();
     const styles = useStyles();
     const router = useRouter();
+    // `mode` and `returnTo` arrive from the welcome hub and the journey card, and ride the
+    // flow's params like every answer does, so `height.tsx` and `complete.tsx` can read them.
+    const params = useLocalSearchParams();
+    const essentials = params.mode === 'essentials';
     const [userName, setUserName] = useState('');
 
     useEffect(() => {
@@ -28,7 +32,7 @@ export default function HealthAssessmentWelcome() {
     };
 
     const handleReady = () => {
-        router.push('/health-assessment/name');
+        router.push({ pathname: '/health-assessment/name', params: { ...params } });
     };
 
     const handleNeedHelp = () => {
@@ -75,7 +79,9 @@ export default function HealthAssessmentWelcome() {
 
                 {/* Subtitle */}
                 <Text style={styles.subtitle}>
-                    Here's what we'll do over the next few minutes.
+                    {essentials
+                        ? 'Six quick questions, about two minutes. You can add the rest whenever you like.'
+                        : "Here's what we'll do over the next few minutes."}
                 </Text>
             </View>
 

@@ -148,6 +148,8 @@ import type {
     BiomarkerSummary, MedicationScheduleDay, NutritionDay, NutritionTargets, Product, User,
     Appointment, PlanItem, Professional,
 } from '@/types/api';
+import { JourneyCard } from '@/components/home/JourneyCard';
+import { dismissJourney, getJourney, openStep, type Journey } from '@/lib/onboarding';
 
 /**
  * What the score card shows before the score has loaded, or for a signed-out visitor.
@@ -307,6 +309,8 @@ export default function HomeScreen() {
     const [busyDose, setBusyDose] = useState<string | null>(null);
     const [cycle, setCycle] = useState<CycleOverview | null>(null);
     const [cycleBusy, setCycleBusy] = useState(false);
+    /** The first weeks — see `components/home/JourneyCard.tsx`. Null until read, or on failure. */
+    const [journey, setJourney] = useState<Journey | null>(null);
 
     const load = useCallback(async () => {
         const loggedIn = await isSignedIn();
@@ -360,12 +364,18 @@ export default function HomeScreen() {
             // decides both whether the cycle card has anything to say and whether the one-time
             // offer is made, so it has to be here rather than after the paint.
             getCycleOverview(),
+            // The first-run journey. A handful of counts and the person's orders — a database
+            // read like the rest of this batch. In the first-paint batch rather than after it
+            // because for a new account it is the top of the page, and arriving late would
+            // shove everything under it down. Its failure is not worth the "some data could
+            // not load" toast — the card is optional and simply is not drawn.
+            getJourney().catch(() => null),
         ]);
 
         const [
             userRes, biomarkerRes, analysisRes, nutritionRes, scoreRes, metricsRes,
             activityRes, activityDayRes, medicationRes, appointmentRes, planRes,
-            resourceRes, checksRes, predictionRes, cycleRes,
+            resourceRes, checksRes, predictionRes, cycleRes, journeyRes,
         ] = results;
 
         if (userRes.status === 'fulfilled') setUser(userRes.value as User);
@@ -386,6 +396,8 @@ export default function HomeScreen() {
         if (checksRes.status === 'fulfilled') setSymptomChecks(checksRes.value);
         if (predictionRes.status === 'fulfilled') setPredictions(predictionRes.value);
         if (cycleRes.status === 'fulfilled') setCycle(cycleRes.value);
+        // A journey that fails to load draws no card, rather than a stale one.
+        setJourney(journeyRes.status === 'fulfilled' ? journeyRes.value : null);
 
         const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (rejected.some((r) => r.reason instanceof ApiError && r.reason.isAuthError)) {
@@ -1054,6 +1066,22 @@ export default function HomeScreen() {
                                     onPress={openScore}
                                     onAge={openAgeHub}
                                 />
+
+                                {/*
+                                  The first weeks: steps, then parcels, then "what changed".
+                                  The one card drawn before there is data, because for a new
+                                  account where they are in setup is the thing to report.
+                                */}
+                                {journey ? (
+                                    <JourneyCard
+                                        journey={journey}
+                                        onOpen={(route) => openStep(router, route)}
+                                        onDismiss={() => {
+                                            setJourney({ ...journey, showJourney: false });
+                                            dismissJourney().catch(() => setJourney(journey));
+                                        }}
+                                    />
+                                ) : null}
 
                                 {/*
                                   The markers behind the number, worst first. The score card used to

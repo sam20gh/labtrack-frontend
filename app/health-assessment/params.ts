@@ -66,6 +66,12 @@ export type AssessmentParams = Partial<{
     healthNotes: string;
     hasVoiceRecording: string;
     voiceDuration: string;
+
+    // Flow control — not answers, never saved.
+    /** `essentials`: name → goals → birth year → gender → weight → height, then save. */
+    mode: string;
+    /** Where `complete.tsx` sends the person afterwards, e.g. the welcome hub. */
+    returnTo: string;
 }>;
 
 export type AssessmentParamKey = keyof AssessmentParams;

@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/constants/supabase';
 import { syncAccount } from '@/lib/auth';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { landAfterSignIn } from '@/lib/onboarding';
 
 export default function AuthCallback() {
     const Palette = usePalette();
@@ -56,7 +57,8 @@ export default function AuthCallback() {
                 return;
             }
 
-            router.replace('/(tabs)');
+            // The confirmation link is the first session most new accounts ever have.
+            await landAfterSignIn(router);
         };
 
         complete();

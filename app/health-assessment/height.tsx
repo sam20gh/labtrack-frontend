@@ -49,10 +49,14 @@ export default function HeightScreen() {
         }
     };
 
+    // Height is the last of the essentials. The short path from the welcome hub saves here;
+    // blood type onwards is "complete your health profile", offered later.
+    const nextPath = params.mode === 'essentials' ? '/health-assessment/complete' : '/health-assessment/blood-type';
+
     const handleContinue = () => {
         const heightInCm = unit === 'cm' ? height : Math.round(height * 2.54);
         router.push({
-            pathname: '/health-assessment/blood-type',
+            pathname: nextPath,
             params: {
                 ...params,
                 height: heightInCm.toString(),
@@ -63,7 +67,7 @@ export default function HeightScreen() {
 
     const handleSkip = () => {
         router.push({
-            pathname: '/health-assessment/blood-type',
+            pathname: nextPath,
             params: { ...params }
         });
     };

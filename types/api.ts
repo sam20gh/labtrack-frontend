@@ -360,6 +360,27 @@ export interface Product {
     images?: string[];
     type?: string;
     price: number;
+    /** What the product ships, and so what its order line tracks. See `utils/orderComponents.js`. */
+    includes?: ComponentKind[];
+    /** Present on a package (`type: 'package'`) only. */
+    package?: {
+        tier: string;
+        tagline: string | null;
+        highlights: string[];
+        rank: number;
+        featured: boolean;
+    } | null;
+}
+
+export type ComponentKind = 'blood' | 'dna' | 'bracelet';
+
+/** One parcel on an order line — a kit or the bracelet — on its own timeline. */
+export interface OrderComponent {
+    _id?: Id;
+    kind: ComponentKind;
+    status: 'placed' | 'kit_sent' | 'sample_received' | 'processing' | 'resulted' | 'dispatched' | 'delivered';
+    statusHistory?: { status: string; at: IsoDate; note?: string }[];
+    trackingReference?: string;
 }
 
 export type OrderStatus =
@@ -373,6 +394,7 @@ export interface OrderItem {
     price: number;
     quantity: number;
     planItemId?: Id;
+    components?: OrderComponent[];
 }
 
 export interface Order extends Timestamped {

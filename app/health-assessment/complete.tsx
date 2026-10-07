@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Animated, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
@@ -87,7 +87,9 @@ export default function CompleteScreen() {
                 healthNotes,
                 hasVoiceRecording,
                 voiceDuration,
+                mode,
             } = params as AssessmentParams;
+            const essentialsOnly = mode === 'essentials';
 
             // What is already stored. A retake resubmits the whole assessment, and the
             // backend PUT replaces rather than merges, so anything append-only has to be
@@ -95,10 +97,12 @@ export default function CompleteScreen() {
             // person keeps their newest answers and loses older mood/note entries.
             let previousMoodHistory: any[] = [];
             let previousNotes: any[] = [];
+            let previousAssessment: HealthAssessment | null = null;
             try {
                 const existing = await api.get<{ healthAssessment?: HealthAssessment }>(
                     `/users/${userId}/health-assessment`
                 );
+                previousAssessment = existing?.healthAssessment ?? null;
                 previousMoodHistory = existing?.healthAssessment?.moodHistory ?? [];
                 previousNotes = existing?.healthAssessment?.notes ?? [];
             } catch (err) {
@@ -216,7 +220,20 @@ export default function CompleteScreen() {
                 }
             }
 
-            await api.put(`/users/${userId}/health-assessment`, { healthAssessment });
+            // The essentials path asked six questions and must not overwrite the other
+            // seventeen: the PUT replaces the whole object, so everything it did not ask is
+            // carried over from what is stored, and only the goals it did ask are new.
+            const toSave = essentialsOnly
+                ? {
+                    ...(previousAssessment ?? {}),
+                    healthGoals: healthAssessment.healthGoals,
+                    analysisPreferences: {
+                        ...((previousAssessment as any)?.analysisPreferences ?? {}),
+                        focusAreas: healthAssessment.analysisPreferences.focusAreas,
+                    },
+                }
+                : healthAssessment;
+            await api.put(`/users/${userId}/health-assessment`, { healthAssessment: toSave });
 
             console.log('Health assessment saved successfully!');
             setIsSaving(false);
@@ -305,9 +322,16 @@ export default function CompleteScreen() {
         saveHealthAssessment();
     };
 
+    /** Where the flow was started from — the welcome hub or the journey card — or home. */
+    const returnTo = typeof params.returnTo === 'string' && params.returnTo.startsWith('/') ? params.returnTo : null;
+    const essentials = params.mode === 'essentials';
+
     const handleGoToHome = () => {
         // Navigate to home/tabs and reset the stack
-        router.replace('/(tabs)');
+        // Back to the hub that opened the flow, popping the assessment screens off the stack
+        // rather than pushing a second copy of the hub on top of them.
+        if (returnTo) router.dismissTo(returnTo as Href);
+        else router.replace('/(tabs)');
     };
 
     const handleViewProfile = () => {
@@ -383,16 +407,21 @@ export default function CompleteScreen() {
                 {/* Text Content */}
                 <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
                     <Text style={styles.title}>
-                        {saveError ? "We couldn't save your answers" : 'Assessment Complete!'}
+                        {saveError ? "We couldn't save your answers" : essentials ? 'Basics saved' : 'Assessment Complete!'}
                     </Text>
                     <Text style={styles.subtitle}>
                         {saveError
                             ? `${saveError}. Your answers are still here — try again, or come back to it from Profile › Health profile.`
-                            : "Great job! Your health profile has been created. We'll use this information to provide personalized insights and recommendations."
+                            : essentials
+                                ? 'That is enough to make your readings personal. Medications, conditions and habits can wait, and we will offer them later.'
+                                : "Great job! Your health profile has been created. We'll use this information to provide personalized insights and recommendations."
                         }
                     </Text>
 
-                    {!saveError && (
+                    {/* The summary and the generic "what's next" list belong to the full flow.
+                        Somebody on the short path came from the welcome hub, which *is* the
+                        what's-next list, with real steps on it. */}
+                    {!saveError && !essentials && (
                         <>
                             {/* Summary Stats */}
                             <View style={styles.statsContainer}>
@@ -456,12 +485,14 @@ export default function CompleteScreen() {
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity style={styles.primaryButton} onPress={handleGoToHome}>
-                        <Text style={styles.primaryButtonText}>Go to Home</Text>
+                        <Text style={styles.primaryButtonText}>{returnTo ? 'Continue' : 'Go to Home'}</Text>
                     </TouchableOpacity>
                 )}
-                <TouchableOpacity style={styles.secondaryButton} onPress={handleViewProfile}>
-                    <Text style={styles.secondaryButtonText}>View My Profile</Text>
-                </TouchableOpacity>
+                {!returnTo && (
+                    <TouchableOpacity style={styles.secondaryButton} onPress={handleViewProfile}>
+                        <Text style={styles.secondaryButtonText}>View My Profile</Text>
+                    </TouchableOpacity>
+                )}
             </Animated.View>
         </SafeAreaView>
     );

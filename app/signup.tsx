@@ -24,6 +24,7 @@ import { Fonts, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { signUpWithEmail } from '@/lib/auth';
 import { MIN_ACCEPTED_LEVEL, scorePassword } from '@/lib/password';
+import { landAfterSignIn } from '@/lib/onboarding';
 
 const RegisterScreen = () => {
   const Palette = usePalette();
@@ -84,7 +85,7 @@ const RegisterScreen = () => {
     }
 
     Toast.show({ type: 'success', text1: 'Success', text2: 'Account created successfully!' });
-    router.replace('/(tabs)');
+    await landAfterSignIn(router);
   };
 
   if (awaitingConfirmation) {

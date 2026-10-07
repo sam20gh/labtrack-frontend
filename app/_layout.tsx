@@ -159,6 +159,10 @@ function ThemedRoot({ publishableKey }: { publishableKey: string | null }) {
         <Stack.Screen name="(auth)/loginscreen" options={{ headerShown: false }} />
         <Stack.Screen name="signup" options={{ headerShown: false }} />
         <Stack.Screen name="health-assessment" options={{ headerShown: false }} />
+        {/* The first-run journey: the hub, the storefront, and "what changed". */}
+        <Stack.Screen name="welcome" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="packages" options={{ headerShown: false }} />
+        <Stack.Screen name="journey" options={{ headerShown: false }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
         <Stack.Screen name="auth/reset" options={{ headerShown: false }} />
         <Stack.Screen name="add-result" options={{ headerShown: false }} />

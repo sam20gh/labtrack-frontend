@@ -21,6 +21,7 @@ import { authStyles } from '@/components/auth/styles';
 import { Fonts, Radius, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { signInWithEmail, signInWithGoogle, STORAGE_KEYS } from '@/lib/auth';
+import { landAfterSignIn } from '@/lib/onboarding';
 
 const LoginScreen = () => {
     const Palette = usePalette();
@@ -58,7 +59,9 @@ const LoginScreen = () => {
             await AsyncStorage.setItem(STORAGE_KEYS.keepSignedIn, 'true');
         }
 
-        router.replace('/(tabs)');
+        // Usually the first session of a new account — email confirmation means sign-up
+        // ends on "check your email", and this is where they come back. See `landAfterSignIn`.
+        await landAfterSignIn(router);
     };
 
     const handleGoogleSignIn = async () => {
@@ -76,7 +79,7 @@ const LoginScreen = () => {
             return;
         }
 
-        router.replace('/(tabs)');
+        await landAfterSignIn(router);
     };
 
     return (
