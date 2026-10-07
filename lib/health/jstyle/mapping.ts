@@ -22,17 +22,29 @@ import type {
     SourceDevice, Spo2Row, TemperatureRow,
 } from '../types';
 
-/** The vendor's keys, named once. */
+/**
+ * The vendor's keys, named once.
+ *
+ * **The iOS SDKs spell several of these differently from the Android jars**, and the `ios…`
+ * entries are those spellings, read from both `.a` archives' string tables (neither header
+ * documents them). Each mapper tries the Android key and then the iOS one. Until 2026-10-07
+ * only the Android spellings were here, so the first iPhone sync — a 2208A — read every
+ * series, mapped none of it, and reported "nothing new".
+ */
 const K = {
     date: 'date', time: 'Time',
     step: 'step', calories: 'calories', distance: 'distance',
     exerciseMinutes: 'exerciseMinutes', activeMinutes: 'ExerciseTime',
     sleepUnit: 'sleepUnitLength', sleepArray: 'arraySleepQuality',
+    iosSleepStart: 'startTime_SleepData',
     staticHr: 'onceHeartValue', dynamicHr: 'arrayDynamicHR', heartValue: 'heartValue',
+    iosStaticHr: 'singleHR', iosDynamicHr: 'arrayHR', iosHeartRate: 'heartRate',
     hrv: 'hrv', stress: 'stress', fatigue: 'fatigueDegree', vascularAging: 'vascularAging',
     highPressure: 'highPressure', lowPressure: 'lowPressure',
     highBp: 'highBP', lowBp: 'lowBP',
+    iosSystolic: 'systolicBP', iosDiastolic: 'diastolicBP',
     spo2: 'Blood_oxygen',
+    iosAutoSpo2: 'automaticSpo2Data', iosManualSpo2: 'manualSpo2Data',
     temperature: 'temperature', axillary: 'axillaryTemperature',
     ecgValue: 'ECGValue', ppgValue: 'PPGValue', ecgString: 'KEcgDataString',
     ecgHr: 'ECGHrValue', ecgHrv: 'ECGHrvValue', ecgStress: 'ECGStreesValue',
@@ -125,18 +137,35 @@ export interface MapContext {
 }
 
 /**
+ * The iOS SDKs' list of records: the one top-level value that is an array of objects,
+ * under a per-series name (`arrayTotalActivityData`, `arrayDetailSleepData`,
+ * `arrayemperatureData` — the typo is the vendor's). Arrays of numbers *inside* a record
+ * (`arraySteps`, `arraySleepQuality`) are never at this level, so they cannot be mistaken
+ * for it.
+ */
+const iosList = (data: Record<string, unknown>): unknown[] | undefined =>
+    Object.values(data).find((value): value is unknown[] =>
+        Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null);
+
+/**
  * Every packet of a series carries its payload the same way, under `dicData`.
  *
  * The bridge already lifts that, but the vendor sends a *list* of records per packet for
  * history series and a bare object for single replies. Flattening here means each mapper
  * below reads one record at a time and never has to know which shape it got.
+ *
+ * On iOS the list sits one level deeper, under a named key — see `iosList`. Missing that
+ * level is silent: the wrapper is taken as a single record with no `date`, every mapper
+ * drops it, and a full read becomes an empty batch.
  */
 const records = (packets: JstylePacket[]): Record<string, unknown>[] => {
     const out: Record<string, unknown>[] = [];
     packets.forEach((packet) => {
         const data = packet.data as Record<string, unknown>;
         // The list arrives either as `dicData` or as the payload itself once unwrapped.
-        const list = Array.isArray(data) ? data : data?.ActivityData ?? data?.dicData ?? data;
+        const list = Array.isArray(data)
+            ? data
+            : data?.ActivityData ?? data?.dicData ?? (data && iosList(data)) ?? data;
         if (Array.isArray(list)) {
             list.forEach((item) => {
                 if (item && typeof item === 'object') out.push(item as Record<string, unknown>);
@@ -253,7 +282,7 @@ const stageFor = (value: number, unitMinutes: number): SleepStage => {
  */
 export const toSleep = (packets: JstylePacket[], ctx: MapContext): SleepRow[] =>
     records(packets).flatMap((r) => {
-        const start = parseInstant(r[K.date]);
+        const start = parseInstant(r[K.date]) ?? parseInstant(r[K.iosSleepStart]);
         const codes = numberList(r[K.sleepArray]);
         if (!start || codes.length === 0) return [];
 
@@ -300,7 +329,7 @@ export const toSleep = (packets: JstylePacket[], ctx: MapContext): SleepRow[] =>
 export const toHeart = (packets: JstylePacket[], ctx: MapContext): HeartRow[] =>
     records(packets).flatMap((r) => {
         const at = parseInstant(r[K.date]) ?? parseInstant(r[K.time]);
-        const bpm = positive(r[K.staticHr]) ?? positive(r[K.heartValue]);
+        const bpm = positive(r[K.staticHr]) ?? positive(r[K.iosStaticHr]) ?? positive(r[K.heartValue]);
         if (!at || bpm === null) return [];
 
         return [{
@@ -327,7 +356,7 @@ export const toHeartDays = (packets: JstylePacket[]): DayRow[] => {
     records(packets).forEach((r) => {
         const at = parseInstant(r[K.date]);
         if (!at) return;
-        const values = numberList(r[K.dynamicHr]).filter((v) => v > 0);
+        const values = numberList(r[K.dynamicHr] ?? r[K.iosDynamicHr]).filter((v) => v > 0);
         if (!values.length) return;
         byDay.set(localDay(at), [...(byDay.get(localDay(at)) ?? []), ...values]);
     });
@@ -369,8 +398,8 @@ export const toBloodPressure = (
 ): BloodPressureRow[] =>
     records(packets).flatMap((r) => {
         const at = parseInstant(r[K.date]);
-        const systolic = positive(r[K.highPressure]) ?? positive(r[K.highBp]);
-        const diastolic = positive(r[K.lowPressure]) ?? positive(r[K.lowBp]);
+        const systolic = positive(r[K.highPressure]) ?? positive(r[K.highBp]) ?? positive(r[K.iosSystolic]);
+        const diastolic = positive(r[K.lowPressure]) ?? positive(r[K.lowBp]) ?? positive(r[K.iosDiastolic]);
         if (!at || systolic === null || diastolic === null) return [];
 
         // A transposed or impossible pair is dropped rather than sent. The server answers
@@ -383,7 +412,7 @@ export const toBloodPressure = (
             measuredAt: at.toISOString(),
             systolic,
             diastolic,
-            pulse: positive(r[K.heartValue]) ?? undefined,
+            pulse: positive(r[K.heartValue]) ?? positive(r[K.iosHeartRate]) ?? undefined,
             method: 'optical_estimate',
             sourceDevice: ctx.device,
         }];
@@ -396,7 +425,8 @@ export const toSpo2 = (
 ): Spo2Row[] =>
     records(packets).flatMap((r) => {
         const at = parseInstant(r[K.date]);
-        const spo2 = positive(r[K.spo2]);
+        const spo2 = positive(r[K.spo2])
+            ?? positive(r[context === 'manual' ? K.iosManualSpo2 : K.iosAutoSpo2]);
         // Below 70% is outside what a wrist sensor can measure rather than a medical
         // emergency it has detected, and above 100 is impossible. Both are dropped so the
         // record does not carry a reading nobody should act on.
