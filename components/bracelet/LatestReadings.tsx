@@ -59,6 +59,9 @@ const tiles = (latest: Latest): Tile[] => {
     add('spo2', 'Blood oxygen', 'water', latest.spo2, (v) => String(Math.round(v)), '%');
     add('temp', 'Skin temperature', 'thermometer-outline', latest.temperature, (v) => v.toFixed(1), '°C');
     add('hrv', 'HRV', 'pulse-outline', latest.hrv, (v) => String(Math.round(v)), 'ms');
+    // The bracelet's own score, uncoloured here: the colour needs the person's usual, which only
+    // the server holds. The Stress screen draws it.
+    add('stress', 'Stress', 'flash-outline', latest.stress, (v) => String(Math.round(v)), '');
     add('bp', 'Blood pressure (estimate)', 'speedometer-outline', latest.bloodPressure,
         (v) => `${v.systolic}/${v.diastolic}`, 'mmHg');
     add('steps', 'Steps', 'walk-outline', latest.steps, (v) => v.toLocaleString(), '');

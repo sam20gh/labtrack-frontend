@@ -733,6 +733,7 @@ const latestOf = (batch: SyncBatch, held: LatestReadings = {}): LatestReadings =
     hrv: newest(
         batch.days.filter((d) => d.hrvMs != null), (d) => d.day, (d) => d.hrvMs!, held.hrv,
     ),
+    stress: newest(batch.stress, (r) => r.measuredAt, (r) => r.score, held.stress),
     bloodPressure: newest(
         batch.bloodPressure, (r) => r.measuredAt,
         (r) => ({ systolic: r.systolic, diastolic: r.diastolic }), held.bloodPressure,

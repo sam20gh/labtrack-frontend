@@ -14,6 +14,7 @@
  */
 import { api } from './api';
 import { schemed } from '@/constants/theme';
+import type { StressHistoryExtras } from './stress';
 
 const tzOffset = () => new Date().getTimezoneOffset();
 
@@ -49,8 +50,10 @@ export interface MetricCard {
     unit: string;
     value: number | string | null;
     target?: number | null;
-    /** HRV only: the median of the person's previous 28 days, once five exist. */
+    /** HRV and stress: the median of the person's previous 28 days, once five exist. */
     baseline?: number | null;
+    /** Stress only: `below` / `usual` / `above` the person's usual, or null while learning. */
+    level?: 'below' | 'usual' | 'above' | null;
     at: string | null;
     status: string;
     statusColour?: string | null;
@@ -124,6 +127,8 @@ export interface HistoryEntry {
     perDay?: boolean;
     /** Where tapping the row goes, when the entry has a screen of its own. */
     route?: string;
+    /** Stress only: the reading's colour against the person's usual (light hex), or null. */
+    colour?: string | null;
 }
 
 export interface HistoryStats {
@@ -134,7 +139,8 @@ export interface HistoryStats {
     daysWithData: number;
 }
 
-export interface MetricHistory {
+/** Stress adds its usual, its day and its check-ins — see `lib/stress.ts`. */
+export interface MetricHistory extends StressHistoryExtras {
     kind: string;
     days: number;
     series: SeriesPoint[];
@@ -267,8 +273,9 @@ export const METRIC_ICON: Record<MetricKey, string> = {
     heart_rate: 'heart-outline',
     // The same glyph `DayStats` gives HRV on the activity screen.
     hrv: 'git-compare-outline',
-    // A gauge rather than a face or a cloud: it is the bracelet's reading, not a mood.
-    stress: 'speedometer-outline',
+    // Not a face or a cloud: it is the bracelet's reading, not a mood. Not the gauge either —
+    // the bracelet screen gives that to its blood-pressure estimate.
+    stress: 'flash-outline',
     // Filled, where hydration's drop is an outline: a blood drop, not a glass of water. The
     // colour and the label carry the rest.
     spo2: 'water',

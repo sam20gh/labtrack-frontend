@@ -100,6 +100,8 @@ export interface LatestReadings {
     spo2?: Stamped;
     temperature?: Stamped;
     hrv?: Stamped;
+    /** The bracelet's own stress score, from the newest HRV record. */
+    stress?: Stamped;
     bloodPressure?: Stamped<{ systolic: number; diastolic: number }>;
     steps?: Stamped;
 }

@@ -37,6 +37,9 @@ import {
     type MetricHistory, type MetricLog, type HistoryKind, type HistoryEntry, type MetricKey,
 } from '@/lib/metrics';
 import { dayLabel } from '@/lib/hydration';
+import { LEVEL_ICON } from '@/lib/stress';
+import { StressDayChart } from '@/components/stress/StressDayChart';
+import { StressCheckInCard } from '@/components/stress/StressCheckInCard';
 import { formatMinutes } from '@/lib/sleep';
 import { useUnits, unitLabel, displayWeight, type UnitPrefs } from '@/lib/units';
 import { Spacing, Radius, Shadow, Fonts, BodyFont, tone } from '@/constants/theme';
@@ -242,6 +245,56 @@ export default function MetricDetailScreen() {
                     />
                 )}
 
+                {kind === 'stress' && history && (
+                    <>
+                        <View style={styles.card}>
+                            <View style={styles.rowBetween}>
+                                <Text style={styles.cardTitle}>
+                                    {history.intraday ? dayLabel(history.intraday.day, localToday()) : 'Today'}
+                                </Text>
+                                {/* The colour never stands alone: a glyph and words go with it. */}
+                                {history.level && (
+                                    <View style={[styles.pill, {
+                                        backgroundColor: history.level.colour ? `${tone(history.level.colour)}22` : Palette.borderLight,
+                                    }]}>
+                                        <Ionicons
+                                            name={LEVEL_ICON[history.level.key] as never}
+                                            size={12}
+                                            color={history.level.colour ? tone(history.level.colour) : Palette.textSecondary}
+                                        />
+                                        <Text style={[styles.pillText, {
+                                            color: history.level.colour ? tone(history.level.colour) : Palette.textSecondary,
+                                        }]}>
+                                            {history.level.label}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                            {history.intraday?.readings.length ? (
+                                <StressDayChart
+                                    readings={history.intraday.readings}
+                                    baseline={history.baseline ?? null}
+                                    levels={history.levels ?? []}
+                                    width={chartWidth}
+                                />
+                            ) : (
+                                <Text style={styles.empty}>No readings yet. Your bracelet takes one about every hour.</Text>
+                            )}
+                            {history.baseline == null && (
+                                <Text style={styles.hint}>
+                                    Colours appear once there are five days to learn your usual from.
+                                </Text>
+                            )}
+                        </View>
+
+                        <StressCheckInCard
+                            feelings={history.feelings}
+                            today={(history.checkIns ?? []).filter((c) => c.day === localToday())}
+                            onChanged={() => { void load(days); }}
+                        />
+                    </>
+                )}
+
                 <View style={styles.card}>
                     <View style={styles.rowBetween}>
                         <Text style={styles.cardTitle}>Trend</Text>
@@ -436,6 +489,11 @@ const EntryRow = ({ entry, when, last, onOpen }: {
     const meta = [when, entry.label, entry.detail].filter(Boolean).join(' · ');
     const body = (
         <>
+            {/* Stress only: the reading's colour against the usual. The label in `meta` says
+                the same in words, so the dot is never the only signal. */}
+            {entry.colour !== undefined && (
+                <View style={[styles.dot, { backgroundColor: entry.colour ? tone(entry.colour) : Palette.borderStrong }]} />
+            )}
             <View style={styles.flex}>
                 <Text style={styles.logValue}>{formatValue(entry.value, entry.unit)}</Text>
                 {meta ? <Text style={styles.logWhen}>{meta}</Text> : null}
