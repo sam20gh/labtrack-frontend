@@ -18,7 +18,7 @@ const ResetPasswordSMSScreen = () => {
 
     const handleSendCode = async () => {
         if (!phone) {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter your phone number' });
+            Toast.show({ type: 'error', text1: 'Enter your phone number' });
             return;
         }
 
@@ -34,7 +34,7 @@ const ResetPasswordSMSScreen = () => {
             return;
         }
 
-        Toast.show({ type: 'success', text1: 'Sent', text2: 'Verification code sent to your phone' });
+        Toast.show({ type: 'success', text1: 'Code sent', text2: 'Check your messages for a 6-digit code.' });
         router.push({
             pathname: '/reset-password-2fa',
             params: { phone: normalisePhone(phone) },

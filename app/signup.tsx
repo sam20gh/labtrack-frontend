@@ -85,7 +85,7 @@ const RegisterScreen = () => {
       return;
     }
 
-    Toast.show({ type: 'success', text1: 'Success', text2: 'Account created successfully!' });
+    Toast.show({ type: 'success', text1: 'Your account is ready' });
     await landAfterSignIn(router);
   };
 
@@ -118,8 +118,8 @@ const RegisterScreen = () => {
               const retry = await signUpWithEmail(form.email, form.password);
               Toast.show(
                 retry.ok
-                  ? { type: 'success', text1: 'Sent', text2: 'Confirmation email resent' }
-                  : { type: 'error', text1: 'Error', text2: retry.error || 'Could not resend' }
+                  ? { type: 'success', text1: 'Confirmation email sent again', text2: 'Check your inbox, and your spam folder.' }
+                  : { type: 'error', text1: 'Could not resend the email', text2: retry.error || 'Please try again.' }
               );
             }}
           >

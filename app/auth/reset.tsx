@@ -52,11 +52,11 @@ export default function ResetPassword() {
 
     const handleSave = async () => {
         if (password.length < 8) {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Password must be at least 8 characters' });
+            Toast.show({ type: 'error', text1: 'Use at least 8 characters' });
             return;
         }
         if (password !== confirm) {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Passwords do not match' });
+            Toast.show({ type: 'error', text1: 'Passwords do not match' });
             return;
         }
 
@@ -65,7 +65,7 @@ export default function ResetPassword() {
         setSaving(false);
 
         if (updateError) {
-            Toast.show({ type: 'error', text1: 'Error', text2: updateError.message });
+            Toast.show({ type: 'error', text1: 'Could not update your password', text2: updateError.message });
             return;
         }
 

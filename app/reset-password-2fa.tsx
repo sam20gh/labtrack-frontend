@@ -38,12 +38,12 @@ const ResetPassword2FAScreen = () => {
     const handleVerify = async () => {
         const fullCode = code.join('');
         if (fullCode.length !== 6) {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter the complete 6-digit code' });
+            Toast.show({ type: 'error', text1: 'Enter all 6 digits of the code' });
             return;
         }
 
         if (!phone) {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Missing phone number — please start again' });
+            Toast.show({ type: 'error', text1: 'Phone number missing', text2: 'Go back and enter it again.' });
             return;
         }
 
@@ -58,7 +58,7 @@ const ResetPassword2FAScreen = () => {
         }
 
         // A verified OTP is a full sign-in, so go straight into the app
-        Toast.show({ type: 'success', text1: 'Verified', text2: 'Signed in successfully' });
+        Toast.show({ type: 'success', text1: 'You’re signed in' });
         router.replace('/(tabs)');
     };
 

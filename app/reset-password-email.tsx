@@ -23,12 +23,12 @@ const ResetPasswordEmailScreen = () => {
 
     const handleSendPassword = async () => {
         if (!email) {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter your email address' });
+            Toast.show({ type: 'error', text1: 'Enter your email address' });
             return;
         }
 
         if (!isValidEmail(email)) {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter a valid email address' });
+            Toast.show({ type: 'error', text1: 'Check that email address', text2: 'It should look like name@example.com.' });
             return;
         }
 
