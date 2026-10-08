@@ -182,6 +182,19 @@ export interface StressRow {
 }
 
 /**
+ * A bracelet's continuous heart rate for one local day, one entry per vendor record.
+ *
+ * `blocks` is keyed by each record's start instant in ms and holds `[count, sum, min, max]`
+ * of its readings. Per record rather than per day so the band can be freed of the series
+ * after a sync: the server adds a later piece of a day to the earlier ones instead of
+ * replacing them. See `models/HeartStream.js`.
+ */
+export interface HeartStreamRow {
+    day: string;
+    blocks: Record<string, [number, number, number, number]>;
+}
+
+/**
  * One ECG or PPG measurement the person ran on the bracelet.
  *
  * `samples` is the waveform and it is the reason this is its own row rather than a field:
@@ -264,6 +277,7 @@ export interface SyncBatch {
     bloodPressure?: BloodPressureRow[];
     ecg?: EcgRow[];
     stress?: StressRow[];
+    heartStream?: HeartStreamRow[];
 
     /**
      * The cycle import. `cycleWindow` is the span the phone re-read in full, and it matters as

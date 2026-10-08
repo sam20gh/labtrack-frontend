@@ -178,10 +178,15 @@ type SeriesCommand = Parameters<typeof session.readSeries>[1];
  *
  * Everything else stays on the bracelet, deliberately:
  *
- * - **Day totals, continuous heart rate, HRV** are reduced to one figure *per day* before
- *   they are sent, and the server `$set`s it. The bracelet's delete wipes the whole series,
- *   today's partial record included, so the next sync would send an afternoon and overwrite
- *   the full day with it.
+ * - **Day totals, HRV** are reduced to one figure *per day* before they are sent, and the
+ *   server `$set`s it. The bracelet's delete wipes the whole series, today's partial record
+ *   included, so the next sync would send an afternoon and overwrite the full day with it.
+ *
+ * **Continuous heart rate was on that list until 2026-10-08**, and at ~860 packets it was most
+ * of every sync. It is now posted per record (`heartStream`, `models/HeartStream.js`), so the
+ * server adds an afternoon to the morning instead of replacing it, and it is freed like the
+ * per-reading series — but only once the server's reply shows it stored the stream. A server
+ * that predates it never says so, and the band keeps the series exactly as before.
  * - **Sleep** — a delete mid-night splits the night in two, and the ingest keeps only the
  *   longer half (`healthSync.sameNight`).
  *
@@ -195,7 +200,18 @@ const MAPPERS: Partial<Record<SeriesCommand, (packets: JstylePacket[], ctx: map.
     getManualSpo2: (p, ctx) => map.toSpo2(p, ctx, 'manual'),
     getTemperature: (p, ctx) => map.toTemperature(p, ctx, 'wrist'),
     getAxillaryTemperature: (p, ctx) => map.toTemperature(p, ctx, 'axillary'),
+    getDynamicHr: (p, ctx) => map.heartStreamRecords(p, ctx),
 };
+
+/** Series the band may be freed of only when the server's reply says it stores them. */
+const NEEDS_SERVER_SUPPORT: Partial<Record<SeriesCommand, keyof ServerStores>> = {
+    getDynamicHr: 'heartStream',
+};
+
+/** What the server's reply to the POST said it stores, beyond what every server does. */
+export interface ServerStores {
+    heartStream: boolean;
+}
 
 // ── incremental reads ───────────────────────────────────────────────────────
 
@@ -208,7 +224,7 @@ const MAPPERS: Partial<Record<SeriesCommand, (packets: JstylePacket[], ctx: map.
  * and `acknowledgeSynced` re-reads them whole before deleting, which a partial read would
  * make refuse every time.
  */
-const INCREMENTAL: SeriesCommand[] = ['getTotalActivity', 'getDetailSleep', 'getDynamicHr', 'getHrv'];
+const INCREMENTAL: SeriesCommand[] = ['getTotalActivity', 'getDetailSleep', 'getHrv'];
 
 /**
  * Bump to make every band prove its start dates again — after a change to how the date is
@@ -456,7 +472,7 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         permissions: capabilities(variant).commands,
         devices: [{ ...deviceFor(paired), lastSeenAt: new Date().toISOString() }],
         activities: [], sleep: [], heart: [], days: [],
-        spo2: [], temperature: [], bloodPressure: [], ecg: [], stress: [],
+        spo2: [], temperature: [], bloodPressure: [], ecg: [], stress: [], heartStream: [],
     };
 
     await transport.connect(
@@ -596,7 +612,30 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         batch.activities.push(...map.toActivities((await read('getDetailActivity')).packets, ctx));
         batch.sleep.push(...map.toSleep((await read('getDetailSleep')).packets, ctx));
         batch.heart.push(...map.toHeart((await read('getStaticHr')).packets, ctx));
-        batch.days.push(...map.toHeartDays((await read('getDynamicHr')).packets));
+        /**
+         * Continuous heart rate, twice: per record for a server that stores the stream, and as
+         * one figure per day for one that does not. The server rebuilds the day from the
+         * records after the day figures, so on a current server the records win.
+         *
+         * **The first stream read for a band drops its oldest day.** Until then the series was
+         * never freed, so this read is a replay of the whole ring buffer, and its oldest day
+         * has usually been overwritten at the start — posting it would replace a whole day the
+         * server already holds with its last few hours. Every later read holds only what was
+         * recorded since the band was last freed, so nothing is dropped again.
+         */
+        const dynamic = await read('getDynamicHr');
+        let streamRecords = map.heartStreamRecords(dynamic.packets, ctx);
+        let dynamicPackets = dynamic.packets;
+        if (!paired.heartStreamSince) {
+            const days = [...new Set(streamRecords.map((r) => r.day))].sort();
+            if (days.length > 1) {
+                const oldest = days[0];
+                streamRecords = streamRecords.filter((r) => r.day !== oldest);
+                dynamicPackets = map.keepSince(dynamic.packets, new Date(`${days[1]}T00:00:00`));
+            }
+        }
+        batch.days.push(...map.toHeartDays(dynamicPackets));
+        batch.heartStream!.push(...map.toHeartStream(streamRecords));
 
         const hrv = await read('getHrv');
         batch.days.push(...map.toHrvDays(hrv.packets));
@@ -656,7 +695,7 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
     report.rows = batch.activities.length + batch.sleep.length + batch.heart.length
         + batch.days.length + (batch.spo2?.length ?? 0) + (batch.temperature?.length ?? 0)
         + (batch.bloodPressure?.length ?? 0) + (batch.ecg?.length ?? 0)
-        + (batch.stress?.length ?? 0);
+        + (batch.stress?.length ?? 0) + (batch.heartStream?.length ?? 0);
     lastReport = report;
     return batch;
 };
@@ -719,7 +758,9 @@ const latestOf = (batch: SyncBatch, held: LatestReadings = {}): LatestReadings =
  * source, and putting one on the shared interface would invite a future reader to implement
  * it because the slot was there.
  */
-export const acknowledgeSynced = async (): Promise<void> => {
+export const acknowledgeSynced = async (
+    stores: ServerStores = { heartStream: false },
+): Promise<void> => {
     const plan = pending;
     // The POST that carried any clock reading live view kept has landed — and with it every
     // row behind this read's cursors, which is the only moment they may be saved. Saved
@@ -745,8 +786,16 @@ export const acknowledgeSynced = async (): Promise<void> => {
         // live view taking the bracelet over mid-POST is the case this catches.
         if (!plan || isLive() || transport.connectedId() !== plan.ctx.deviceId) return;
 
+        if (stores.heartStream && !(await getPaired())?.heartStreamSince) {
+            // The transition read is done and the server holds it: from here every read of the
+            // stream is only what was recorded since the band was last freed.
+            await updatePaired({ heartStreamSince: new Date().toISOString() });
+        }
+
         for (const [command, sentIds] of plan.sent) {
             if (!sentIds.size) continue;
+            const needs = NEEDS_SERVER_SUPPORT[command];
+            if (needs && !stores[needs]) continue;
             const again = await session.readSeries(plan.variant, command);
             if (!trustworthy(again)) continue;
 

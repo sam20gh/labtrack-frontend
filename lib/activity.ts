@@ -484,7 +484,7 @@ export const getWearableStatus = () => api.get<WearableStatus>('/wearables/statu
  */
 export const syncBatch = (batch: SyncBatch) =>
     api.post<{
-        received: { activities: number; sleep: number; heart: number; days: number };
+        received: { activities: number; sleep: number; heart: number; days: number; heartStream?: number };
         daysUpdated: string[];
         rejectedHeartSamples: number;
     }>('/wearables/sync', batch);

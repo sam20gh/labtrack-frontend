@@ -61,6 +61,11 @@ export interface PairedBracelet {
     incrementalVersion?: number;
     /** The last full replay the server received. One is due every day regardless. */
     lastFullReadAt?: string;
+    /**
+     * When the server first confirmed it stores the continuous heart stream for this band.
+     * Unset: the next read is the transition replay, which drops its oldest day.
+     */
+    heartStreamSince?: string;
 }
 
 /** One series' incremental-read state. */

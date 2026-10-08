@@ -95,6 +95,7 @@ const runOne = async (platform: HealthPlatform): Promise<SyncResult> => {
             + batch.heart.length + batch.days.length
             + (batch.spo2?.length ?? 0) + (batch.temperature?.length ?? 0)
             + (batch.bloodPressure?.length ?? 0) + (batch.ecg?.length ?? 0)
+            + (batch.stress?.length ?? 0) + (batch.heartStream?.length ?? 0)
             + (batch.cycle?.length ?? 0) + (batch.nightTemperature?.length ?? 0)
             // A window with no rows still has to be posted: it is how a period deleted in the
             // Health app reaches the server.
@@ -119,7 +120,13 @@ const runOne = async (platform: HealthPlatform): Promise<SyncResult> => {
         // step, which is why it is here rather than on `HealthReader`.
         if (platform === 'jstyle_bracelet') {
             try {
-                await require('./jstyle/reader').acknowledgeSynced();
+                // Whether the server stores the continuous heart stream is read from its own
+                // reply: a server that predates it has no such count, and the band must then
+                // keep the series, because nothing else holds it.
+                const received = (result.received ?? {}) as Record<string, unknown>;
+                await require('./jstyle/reader').acknowledgeSynced({
+                    heartStream: typeof received.heartStream === 'number',
+                });
             } catch { /* it keeps the rows and re-sends them; the server upserts */ }
         }
 

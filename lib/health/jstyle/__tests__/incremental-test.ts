@@ -135,12 +135,12 @@ describe('the pieces', () => {
 describe('a band that honours a start date', () => {
     it('reads in full and probes once, then reads from the day before the newest record', async () => {
         await sync();
-        expect(callsFor('getDynamicHr').map((c) => !!c.startDate)).toEqual([false, true]);
-        expect(store.__get().incremental.getDynamicHr).toMatchObject({ verdict: 'verified' });
+        expect(callsFor('getHrv').map((c) => !!c.startDate)).toEqual([false, true]);
+        expect(store.__get().incremental.getHrv).toMatchObject({ verdict: 'verified' });
 
         jest.clearAllMocks();
         await sync();
-        const second = callsFor('getDynamicHr');
+        const second = callsFor('getHrv');
         expect(second).toHaveLength(1);
         expect(parseStart(second[0].startDate!).getTime()).toBe(new Date(2026, 9, 6).getTime());
     });
@@ -149,7 +149,7 @@ describe('a band that honours a start date', () => {
         await sync();
         mockDays = [1, 2, 3, 4, 5, 6, 7, 8];
         const batch = await reader.readSince(null);
-        const days = batch.days.filter((d) => d.avgBpm != null).map((d) => d.day);
+        const days = batch.days.filter((d) => d.hrvMs != null).map((d) => d.day);
         // The cursor was the 7th, so the read starts at midnight on the 6th: the 6th and 7th
         // whole, and the 8th that is new. Nothing from before the 6th.
         expect(days).toEqual(['2026-10-06', '2026-10-07', '2026-10-08']);
@@ -185,19 +185,17 @@ describe('a band that replays everything anyway', () => {
         mockDays = [1, 2, 3, 4, 5, 6, 7, 8];
         const batch = await reader.readSince(null);
         // The cursor was the 7th: the window starts at midnight on the 6th.
-        expect(batch.days.filter((d) => d.avgBpm != null).map((d) => d.day))
-            .toEqual(['2026-10-06', '2026-10-07', '2026-10-08']);
         expect(batch.days.filter((d) => d.hrvMs != null).map((d) => d.day))
             .toEqual(['2026-10-06', '2026-10-07', '2026-10-08']);
         expect(batch.stress!.map((r) => new Date(r.measuredAt).getDate())).toEqual([6, 7, 8]);
         expect(batch.sleep.length).toBe(3);
         await acknowledgeSynced();
         // The cursor moved on with what was read.
-        expect(new Date(store.__get().incremental.getDynamicHr.newest).getDate()).toBe(8);
+        expect(new Date(store.__get().incremental.getHrv.newest).getDate()).toBe(8);
 
         store.__set({ ...store.__get(), lastFullReadAt: new Date(Date.now() - 25 * 3600_000).toISOString() });
         const full = await reader.readSince(null);
-        expect(full.days.filter((d) => d.avgBpm != null)).toHaveLength(8);
+        expect(full.days.filter((d) => d.hrvMs != null)).toHaveLength(8);
         await release();
     });
 });
@@ -217,7 +215,7 @@ describe('the full replay', () => {
         store.__set({ ...store.__get(), lastFullReadAt: new Date(Date.now() - 25 * 3600_000).toISOString() });
         jest.clearAllMocks();
         await sync();
-        expect(callsFor('getDynamicHr')).toEqual([{ command: 'getDynamicHr', startDate: undefined }]);
+        expect(callsFor('getHrv')).toEqual([{ command: 'getHrv', startDate: undefined }]);
     });
 
     it('runs after a wrong clock', async () => {
@@ -225,15 +223,15 @@ describe('the full replay', () => {
         mockClockWrong = true;
         jest.clearAllMocks();
         await sync();
-        expect(callsFor('getDynamicHr')).toEqual([{ command: 'getDynamicHr', startDate: undefined }]);
+        expect(callsFor('getHrv')).toEqual([{ command: 'getHrv', startDate: undefined }]);
     });
 
     it('does not probe while there is too little history to tell', async () => {
         mockDays = [6, 7];
         await sync();
-        expect(store.__get().incremental.getDynamicHr).toMatchObject({ verdict: 'unverified' });
+        expect(store.__get().incremental.getHrv).toMatchObject({ verdict: 'unverified' });
         // Nothing older than the start date: no probe was even worth sending.
-        expect(callsFor('getDynamicHr').every((c) => !c.startDate)).toBe(true);
+        expect(callsFor('getHrv').every((c) => !c.startDate)).toBe(true);
     });
 });
 

@@ -18,7 +18,7 @@
  */
 import type { JstylePacket, JstyleVariant } from '@/modules/jstyle-ble';
 import type {
-    ActivityRow, BloodPressureRow, DayRow, EcgRow, HeartRow, SleepRow, SleepStage,
+    ActivityRow, BloodPressureRow, DayRow, EcgRow, HeartRow, HeartStreamRow, SleepRow, SleepStage,
     SourceDevice, Spo2Row, StressRow, TemperatureRow,
 } from '../types';
 
@@ -422,6 +422,52 @@ export const toHeartDays = (packets: JstylePacket[]): DayRow[] => {
         maxBpm: Math.max(...values),
         avgBpm: Math.round(values.reduce((a, b) => a + b, 0) / values.length),
     }));
+};
+
+/** Readings outside this are a sensor fault, not a heart. The server applies the same bounds. */
+const STREAM_BPM = { min: 25, max: 250 };
+
+export interface HeartStreamRecord {
+    externalId: string;
+    at: Date;
+    day: string;
+    /** `[count, sum, min, max]` of the record's readings inside `STREAM_BPM`. */
+    tuple: [number, number, number, number];
+}
+
+/**
+ * Continuous heart rate, one entry per vendor record.
+ *
+ * Each record is a start time and fifteen readings (24 bytes on the wire). Zeros are the band
+ * off the wrist and are dropped first, as in `toHeartDays`; a record with nothing left is
+ * not a record of anything and maps to nothing. This is also what `MAPPERS` in `reader.ts`
+ * reads to decide whether the band may be freed, so what is sent and what is checked can
+ * never disagree.
+ */
+export const heartStreamRecords = (packets: JstylePacket[], ctx: MapContext): HeartStreamRecord[] =>
+    records(packets).flatMap((r) => {
+        const at = parseInstant(r[K.date]);
+        if (!at) return [];
+        const values = numberList(r[K.dynamicHr] ?? r[K.iosDynamicHr])
+            .filter((v) => v >= STREAM_BPM.min && v <= STREAM_BPM.max);
+        if (!values.length) return [];
+        return [{
+            externalId: idFor(ctx.deviceId, 'hr_stream', at),
+            at,
+            day: localDay(at),
+            tuple: [values.length, values.reduce((a, b) => a + b, 0), Math.min(...values), Math.max(...values)],
+        }];
+    });
+
+/** The same records grouped into one row per local day, as the server stores them. */
+export const toHeartStream = (records: HeartStreamRecord[]): HeartStreamRow[] => {
+    const byDay = new Map<string, HeartStreamRow>();
+    for (const r of records) {
+        const row = byDay.get(r.day) ?? { day: r.day, blocks: {} };
+        row.blocks[String(r.at.getTime())] = r.tuple;
+        byDay.set(r.day, row);
+    }
+    return [...byDay.values()];
 };
 
 /**
