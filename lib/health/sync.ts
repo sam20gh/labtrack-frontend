@@ -111,6 +111,7 @@ const runOne = async (platform: HealthPlatform): Promise<SyncResult> => {
         }
 
         const result = await syncBatch(batch);
+        console.log(`📤 ${platform}: posted, ${result.daysUpdated.length} day(s) updated`);
 
         // Only now may the bracelet forget what it just handed over. Its storage is the
         // only copy until this POST is acknowledged, so acknowledging any earlier would
@@ -129,6 +130,11 @@ const runOne = async (platform: HealthPlatform): Promise<SyncResult> => {
             platform,
         };
     } catch (err) {
+        // Logged as well as returned: the screens show a reason only when *nothing* ran, so
+        // a bracelet failing beside a Health Connect success was otherwise invisible.
+        const status = (err as { status?: number })?.status;
+        console.warn(`⚠️ ${platform}: sync failed${status ? ` (${status})` : ''} — `
+            + `${err instanceof Error ? err.message : String(err)}`);
         return {
             ran: false,
             daysUpdated: [],

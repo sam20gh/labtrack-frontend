@@ -361,6 +361,8 @@ export interface ReadReport {
     series: SeriesTiming[];
     /** Milliseconds from connecting to the end of the last read. */
     totalMs: number;
+    /** Time spent before the first series: connecting, the clock, battery, settings. */
+    setup?: { connectMs: number; clockMs: number; batteryMs: number; settingsMs: number };
 }
 
 export interface SeriesTiming {
@@ -460,6 +462,10 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         session.makePacketHandler(variant),
         () => session.reset(variant),
     );
+    const setup = { connectMs: Date.now() - startedAt, clockMs: 0, batteryMs: 0, settingsMs: 0 };
+    report.setup = setup;
+    let mark = Date.now();
+    const lap = () => { const ms = Date.now() - mark; mark = Date.now(); return ms; };
 
     try {
         // Setting the clock first is not housekeeping. Every record the bracelet returns is
@@ -469,9 +475,11 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         // It is *read* before it is set: once set, nothing can show it was wrong, and what it
         // stamped meanwhile is still in this read. See `clock.ts`.
         const clockBefore = await checkAndSetClock(variant, { report: true });
+        setup.clockMs = lap();
 
         const battery = map.readBattery((await session.ask(variant, 'getBattery')).packets);
         if (battery !== null) await updatePaired({ lastBattery: battery });
+        setup.batteryMs = lap();
 
         const monitoringVersion = paired.monitoringVersion ?? (paired.monitoringSetAt ? 1 : 0);
         if (monitoringVersion < MONITORING_VERSION && supports(variant, 'setAutoMonitoring')) {
@@ -490,6 +498,8 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
                 (packet) => packet.type === 'deviceNameSet');
             await updatePaired({ nameSetTo: BAND_NAME, label: BAND_NAME });
         }
+
+        setup.settingsMs = lap();
 
         const sent = new Map<SeriesCommand, Set<string>>();
         const timed = async (command: SeriesCommand, how: SeriesTiming['how'], startDate?: Date) => {
@@ -585,7 +595,9 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         // read and the delete are ones the bracelet takes in those seconds, which the
         // re-read in `acknowledgeSynced` catches. Two minutes is the ceiling on holding it.
         report.totalMs = Date.now() - startedAt;
-        console.log(`⌚ Bracelet read in ${(report.totalMs / 1000).toFixed(1)}s — `
+        const sec = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
+        console.log(`⌚ Bracelet read in ${sec(report.totalMs)} — connect ${sec(setup.connectMs)}, `
+            + `clock ${sec(setup.clockMs)}, battery ${sec(setup.batteryMs)}, settings ${sec(setup.settingsMs)}; `
             + report.series.map((t) => `${t.command}${t.how === 'full' ? '' : `[${t.how}]`} `
                 + `${t.packets}p ${(t.ms / 1000).toFixed(1)}s`).join(', '));
         pendingCursors = { incremental: cursors, fullRead, at: new Date(now).toISOString() };
@@ -688,6 +700,12 @@ export const acknowledgeSynced = async (): Promise<void> => {
     // earlier, a failed POST would leave the next read starting past rows nobody received.
     const cursors = pendingCursors;
     pendingCursors = null;
+    if (cursors) {
+        console.log(`💾 Bracelet cursors saved — ${Object.entries(cursors.incremental)
+            .map(([command, c]) => `${command} ${c.verdict}`).join(', ')}${cursors.fullRead ? ' (full read)' : ''}`);
+    } else {
+        console.log('💾 Nothing to save: this sync left no cursors (released before the upload landed?)');
+    }
     await updatePaired({
         unreportedClock: undefined,
         ...(cursors ? {
@@ -713,6 +731,7 @@ export const acknowledgeSynced = async (): Promise<void> => {
                 continue;
             }
             await session.acknowledge(plan.variant, command);
+            console.log(`🗑️ ${command}: freed on the bracelet (${sentIds.size} sent)`);
         }
 
         // Once more after the deletes, so the next sync can say whether this one left the
