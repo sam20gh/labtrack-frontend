@@ -1,6 +1,7 @@
 /**
  * Past and in-flight orders.
  */
+import { formatMoney } from '@/lib/currency';
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -73,7 +74,7 @@ export default function OrdersHistoryScreen() {
                                 {order.items.map((i) => i.name).join(', ')}
                             </Text>
                             <View style={styles.cardBottom}>
-                                <Text style={styles.total}>£{order.total.toFixed(2)}</Text>
+                                <Text style={styles.total}>{formatMoney(order.total, order.currency)}</Text>
                                 <Ionicons name="chevron-forward" size={18} color={tone('#D1D5DB')} />
                             </View>
                         </TouchableOpacity>

@@ -28,7 +28,7 @@ import Toast from 'react-native-toast-message';
 import { BodyFont, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { useBasket } from '@/lib/basket';
-import { formatMoney } from '@/lib/payments';
+import { formatMoney, priceIn, useCurrency } from '@/lib/currency';
 import { ApiError } from '@/lib/api';
 import { claimKit, getStorefront, KIT_ICON, skipStep, type Storefront } from '@/lib/onboarding';
 import type { ComponentKind } from '@/types/api';
@@ -48,6 +48,7 @@ export default function PackagesScreen() {
     const params = useLocalSearchParams<{ returnTo?: string }>();
     const returnTo = typeof params.returnTo === 'string' && params.returnTo.startsWith('/') ? params.returnTo : null;
     const { add, has } = useBasket();
+    const currency = useCurrency();
 
     const [store, setStore] = useState<Storefront | null>(null);
     const [failed, setFailed] = useState(false);
@@ -104,7 +105,7 @@ export default function PackagesScreen() {
                 ) : null}
                 <Text style={styles.tier}>{item.package?.tier ?? item.name}</Text>
                 {item.package?.tagline ? <Text style={styles.tagline}>{item.package.tagline}</Text> : null}
-                <Text style={styles.price}>{formatMoney(item.price, item.currency)}</Text>
+                <Text style={styles.price}>{formatMoney(priceIn(item, currency), currency)}</Text>
 
                 <View style={styles.includes}>
                     {(item.includes ?? []).map((k) => (
@@ -126,7 +127,7 @@ export default function PackagesScreen() {
                     style={[styles.choose, !featured && styles.chooseQuiet]}
                     onPress={() => buy(item)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Choose ${item.name}, ${formatMoney(item.price, item.currency)}`}
+                    accessibilityLabel={`Choose ${item.name}, ${formatMoney(priceIn(item, currency), currency)}`}
                 >
                     <Text style={[styles.chooseText, !featured && styles.chooseTextQuiet]}>Choose {item.package?.tier ?? item.name}</Text>
                 </TouchableOpacity>
@@ -220,7 +221,7 @@ export default function PackagesScreen() {
                                                 <Text style={styles.addonName}>{a.name}</Text>
                                                 {a.description ? <Text style={styles.addonBody} numberOfLines={2}>{a.description}</Text> : null}
                                             </View>
-                                            <Text style={styles.addonPrice}>{formatMoney(a.price, a.currency)}</Text>
+                                            <Text style={styles.addonPrice}>{formatMoney(priceIn(a, currency), currency)}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </>

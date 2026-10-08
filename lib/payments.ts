@@ -11,6 +11,7 @@ import type { Order } from '@/types/api';
 export interface PaymentStatus {
     available: boolean;
     testMode: boolean;
+    /** The base. Each order is charged in its own `currency`. */
     currency: string;
     publishableKey: string | null;
 }
@@ -38,7 +39,5 @@ export const createPaymentIntent = (orderId: string) =>
 export const confirmPayment = (orderId: string) =>
     apiFetch<{ order: Order }>(`/payments/orders/${orderId}/confirm`, { method: 'POST' });
 
-export const formatMoney = (amount: number, currency = 'gbp') => {
-    const symbols: Record<string, string> = { gbp: '£', usd: '$', eur: '€', aed: 'AED ' };
-    return `${symbols[currency.toLowerCase()] ?? ''}${amount.toFixed(2)}`;
-};
+/** One formatter for every price in the app; it lives with the currency preference. */
+export { formatMoney } from './currency';

@@ -14,6 +14,11 @@
  * drawn as a fixed row with the reason attached rather than left off the screen, because
  * someone looking for it should find the answer rather than assume the app forgot.
  *
+ * **Currency sits here too**, as four chips rather than a cycling tile: four choices is past
+ * the point where tapping round to the one you want is quicker than seeing them all. It is a
+ * display-and-order preference like the units — `lib/currency.ts` — and the screen says the
+ * one thing that is different about it: an order keeps the currency it was placed in.
+ *
  * The footer says the record is stored metric. That is not trivia: it is why switching to
  * pounds cannot corrupt a weight history, and it is the sentence that stops the next
  * person from "fixing" the conversion at the API boundary.
@@ -26,6 +31,7 @@ import * as Haptics from 'expo-haptics';
 
 import { ScreenHeader } from '@/components/settings/ScreenHeader';
 import { UNIT_OPTIONS, setUnit, useUnits, type UnitKey } from '@/lib/units';
+import { CURRENCY_OPTIONS, setCurrency, useCurrency, type CurrencyCode } from '@/lib/currency';
 import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 
@@ -33,6 +39,14 @@ export default function UnitsScreen() {
     const Palette = usePalette();
     const styles = useStyles();
     const prefs = useUnits();
+    const currency = useCurrency();
+    const currencyOption = CURRENCY_OPTIONS.find((o) => o.code === currency);
+
+    const pickCurrency = useCallback((code: CurrencyCode) => {
+        if (code === currency) return;
+        Haptics.selectionAsync().catch(() => { });
+        setCurrency(code);
+    }, [currency]);
 
     /**
      * Tap cycles rather than opening a picker. Every quantity here has exactly two
@@ -50,7 +64,7 @@ export default function UnitsScreen() {
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                <ScreenHeader title="Units & Metrics" subtitle="Edit your units & metrics here" />
+                <ScreenHeader title="Units & Metrics" subtitle="Edit your units, metrics & currency here" />
 
                 <View style={styles.body}>
                     <Text style={styles.groupLabel}>General</Text>
@@ -95,6 +109,31 @@ export default function UnitsScreen() {
                             another unit would put a number next to a band that was never worked out for it.
                         </Text>
                     </View>
+
+                    <Text style={styles.groupLabel}>Currency</Text>
+                    <View style={styles.chips} accessibilityRole="radiogroup">
+                        {CURRENCY_OPTIONS.map((option) => {
+                            const on = option.code === currency;
+                            return (
+                                <Pressable
+                                    key={option.code}
+                                    style={[styles.chip, on && styles.chipOn]}
+                                    onPress={() => pickCurrency(option.code)}
+                                    accessibilityRole="radio"
+                                    accessibilityState={{ checked: on }}
+                                    accessibilityLabel={option.label}
+                                >
+                                    <Text style={[styles.chipCode, on && styles.chipCodeOn]}>{option.code}</Text>
+                                    <Text style={[styles.chipLabel, on && styles.chipLabelOn]} numberOfLines={1}>{option.label}</Text>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+                    <Text style={styles.currencyNote}>
+                        Shop prices are shown and charged in {currency}, and orders in {currency} deliver
+                        to {currencyOption?.deliversTo}. An order you have already placed keeps the currency
+                        it was placed in.
+                    </Text>
 
                     <Text style={styles.footer}>
                         Your records are always stored in metric. Changing a unit here changes what you see
@@ -143,6 +182,22 @@ const useStyles = makeStyles((Palette) => ({
         marginTop: Spacing.sm,
     },
     noteText: { flex: 1, fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
+
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    chip: {
+        // Four across on a phone, two by two on a narrow one — never three and an orphan.
+        width: '23%', minWidth: 72, flexGrow: 1,
+        backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.border,
+        borderRadius: Radius.lg, paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
+        alignItems: 'center', gap: 2,
+    },
+    // Selected is state, so it takes the action colour (CLAUDE.md: purple means "you can act here").
+    chipOn: { backgroundColor: Palette.primarySurface, borderColor: Palette.primary },
+    chipCode: { fontSize: 15, fontFamily: Fonts.bold, color: Palette.text },
+    chipCodeOn: { color: Palette.primary },
+    chipLabel: { fontSize: 11, ...BodyFont.regular, color: Palette.textMuted },
+    chipLabelOn: { color: Palette.textSecondary },
+    currencyNote: { fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textSecondary },
 
     footer: {
         fontSize: 12, lineHeight: 18, ...BodyFont.regular, color: Palette.textMuted,

@@ -68,6 +68,7 @@
  * SafeAreaView the way the other tab screens are; the gradient takes `insets.top` as
  * padding instead. Same rule, applied to a screen whose first element is full-bleed.
  */
+import { formatMoney, priceIn, useCurrency } from '@/lib/currency';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
@@ -2847,6 +2848,7 @@ const Section = ({ title, action, onAction, children }: {
 const ProductCard = ({ product, onPress }: { product: Product; onPress: () => void }) => {
     const Palette = usePalette();
     const styles = useStyles();
+    const currency = useCurrency();
     return (
         <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.85}>
             {product.image
@@ -2855,7 +2857,7 @@ const ProductCard = ({ product, onPress }: { product: Product; onPress: () => vo
                     <Ionicons name="flask-outline" size={26} color={Palette.textSecondary} />
                 </View>}
             <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-            <Text style={styles.productPrice}>£{product.price}</Text>
+            <Text style={styles.productPrice}>{formatMoney(priceIn(product, currency), currency)}</Text>
         </TouchableOpacity>
     );
 };

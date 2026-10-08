@@ -42,6 +42,7 @@ import * as Haptics from 'expo-haptics';
 import { api } from '@/lib/api';
 import { useBasket } from '@/lib/basket';
 import { galleryOf, metaFor, byTypeOrder, formatPrice, matchesQuery } from '@/lib/catalogue';
+import { priceIn, useCurrency } from '@/lib/currency';
 import { Spacing, Radius, Shadow, Fonts, BodyFont, Palettes } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState, StaleNotice } from '@/components/errors';
@@ -118,6 +119,7 @@ const ProductTile = ({
     product: Product; width: number; onOpen: () => void; onAdd: () => void; inBasket: boolean;
 }) => {
     const styles = useStyles();
+    const currency = useCurrency();
     const meta = metaFor(product.type);
     const images = galleryOf(product);
     const cover = images[0];
@@ -142,7 +144,7 @@ const ProductTile = ({
             <Text style={styles.tileName} numberOfLines={2}>{product.name}</Text>
 
             <View style={styles.tileFooter}>
-                <Text style={styles.tilePrice}>{formatPrice(product.price)}</Text>
+                <Text style={styles.tilePrice}>{formatPrice(priceIn(product, currency), currency)}</Text>
                 <AddButton inBasket={inBasket} onPress={onAdd} size={34} />
             </View>
         </TouchableOpacity>
@@ -155,6 +157,7 @@ const FeatureCard = ({
 }: { product: Product; onOpen: () => void; onAdd: () => void; inBasket: boolean }) => {
     const Palette = usePalette();
     const styles = useStyles();
+    const currency = useCurrency();
     const meta = metaFor(product.type);
     const images = galleryOf(product);
 
@@ -178,7 +181,7 @@ const FeatureCard = ({
             <View style={styles.featureBody}>
                 <Text style={styles.featureName} numberOfLines={2}>{product.name}</Text>
                 <View style={styles.featureFooter}>
-                    <Text style={styles.featurePrice}>{formatPrice(product.price)}</Text>
+                    <Text style={styles.featurePrice}>{formatPrice(priceIn(product, currency), currency)}</Text>
                     <AddButton inBasket={inBasket} onPress={onAdd} />
                 </View>
             </View>
@@ -195,7 +198,7 @@ export default function OrdersScreen() {
     const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
-    const { add, has, count, estimatedTotal } = useBasket();
+    const { add, has, count, estimatedTotal, currency } = useBasket();
 
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -472,7 +475,7 @@ export default function OrdersScreen() {
                     </View>
                     <Text style={styles.basketBarText}>View basket</Text>
                     {/* Indicative, exactly as `useBasket` names it — the server re-prices at checkout. */}
-                    <Text style={styles.basketBarTotal}>{formatPrice(estimatedTotal)}</Text>
+                    <Text style={styles.basketBarTotal}>{formatPrice(estimatedTotal, currency)}</Text>
                     <Ionicons name="arrow-forward" size={17} color={Palette.white} />
                 </TouchableOpacity>
             )}

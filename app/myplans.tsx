@@ -23,6 +23,7 @@ import Toast from 'react-native-toast-message';
 import { api } from '@/lib/api';
 import { ErrorState } from '@/components/errors';
 import { useBasket } from '@/lib/basket';
+import { formatMoney } from '@/lib/currency';
 import {
     getPlan, STATUS_META, TYPE_ICON, AREA_LABEL, adviceHomeFor, isAdvice, isOpen, needsAction,
 } from '@/lib/plan';
@@ -66,7 +67,7 @@ export default function MyPlansScreen() {
     const styles = useStyles();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { count, estimatedTotal } = useBasket();
+    const { count, estimatedTotal, currency } = useBasket();
     const [grouped, setGrouped] = useState<GroupedPlanItems>({});
     const [products, setProducts] = useState<Record<string, Product>>({});
     const [total, setTotal] = useState(0);
@@ -118,7 +119,7 @@ export default function MyPlansScreen() {
     const renderItem = (item: PlanItem) => {
         const meta = STATUS_META[item.status] ?? STATUS_META.upcoming;
         const busy = actions.busyId === item._id;
-        const { actionable, canOrder, canBook, inBasket, price } = actions.capabilities(item);
+        const { actionable, canOrder, canBook, inBasket, price, currency: priceCurrency } = actions.capabilities(item);
         const advice = isAdvice(item);
         // Advice the app can help with day to day links to the tracker that acts on it —
         // the nutrition tracker derives its targets from diet advice and scores every meal
@@ -179,7 +180,7 @@ export default function MyPlansScreen() {
                 {item.productName ? (
                     <Text style={styles.linked}>
                         <Ionicons name="cube-outline" size={13} color={Palette.textSecondary} /> {item.productName}
-                        {typeof price === 'number' ? <Text style={styles.linkedPrice}>{`  £${price.toFixed(2)}`}</Text> : null}
+                        {typeof price === 'number' ? <Text style={styles.linkedPrice}>{`  ${formatMoney(price, priceCurrency)}`}</Text> : null}
                     </Text>
                 ) : null}
 
@@ -312,7 +313,7 @@ export default function MyPlansScreen() {
                     <Text style={styles.viewBasketText}>
                         View basket ({count} {count === 1 ? 'item' : 'items'})
                     </Text>
-                    <Text style={styles.viewBasketTotal}>£{estimatedTotal.toFixed(2)}</Text>
+                    <Text style={styles.viewBasketTotal}>{formatMoney(estimatedTotal, currency)}</Text>
                 </TouchableOpacity>
             )}
             <Toast />

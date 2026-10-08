@@ -42,6 +42,7 @@ import { api, ApiError } from '@/lib/api';
 import { useBasket } from '@/lib/basket';
 import { ORDER_STAGES, ORDER_STATUS_META } from '@/lib/orders';
 import { galleryOf, metaFor, formatPrice } from '@/lib/catalogue';
+import { priceIn, useCurrency } from '@/lib/currency';
 import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
@@ -239,6 +240,7 @@ export default function ProductDetails() {
     const { height: screenHeight } = useWindowDimensions();
     const { productId } = useLocalSearchParams<{ productId: string }>();
     const { add, has, count } = useBasket();
+    const currency = useCurrency();
 
     const [product, setProduct] = useState<Product | null>(null);
     const [related, setRelated] = useState<Product[]>([]);
@@ -366,7 +368,7 @@ export default function ProductDetails() {
                     <Text style={styles.name}>{product.name}</Text>
 
                     <View style={styles.priceRow}>
-                        <Text style={styles.price}>{formatPrice(product.price)}</Text>
+                        <Text style={styles.price}>{formatPrice(priceIn(product, currency), currency)}</Text>
                         <Text style={styles.priceNote}>one-off, includes analysis</Text>
                     </View>
 
@@ -435,7 +437,7 @@ export default function ProductDetails() {
                                             </View>
                                         )}
                                         <Text style={styles.relatedName} numberOfLines={2}>{other.name}</Text>
-                                        <Text style={styles.relatedPrice}>{formatPrice(other.price)}</Text>
+                                        <Text style={styles.relatedPrice}>{formatPrice(priceIn(other, currency), currency)}</Text>
                                     </TouchableOpacity>
                                 );
                             })}
@@ -474,7 +476,7 @@ export default function ProductDetails() {
             <View style={[styles.buyBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
                 <View>
                     <Text style={styles.buyBarLabel}>Total</Text>
-                    <Text style={styles.buyBarPrice}>{formatPrice(product.price)}</Text>
+                    <Text style={styles.buyBarPrice}>{formatPrice(priceIn(product, currency), currency)}</Text>
                 </View>
                 <TouchableOpacity
                     style={[styles.buyButton, inBasket && styles.buyButtonDone]}

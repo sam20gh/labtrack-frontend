@@ -6,6 +6,7 @@
  * to live on the timeline for why ordering fills the basket rather than placing an order,
  * and why booking opens the appointment screen rather than posting a slot.
  */
+import { priceIn } from '@/lib/currency';
 import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -23,7 +24,7 @@ export function usePlanItemActions(
     onChanged: () => void | Promise<void>,
 ) {
     const router = useRouter();
-    const { add, has } = useBasket();
+    const { add, has, currency } = useBasket();
     const [busyId, setBusyId] = useState<string | null>(null);
 
     /**
@@ -115,9 +116,12 @@ export function usePlanItemActions(
             canOrder,
             canBook: actionable && Boolean(item.professionalId),
             inBasket: Boolean(item.productId && has(item.productId)),
-            price: item.productId ? products[item.productId]?.price : undefined,
+            // In the basket's currency, as the server priced it. Null when it has no price in
+            // that currency, which the card draws as no price rather than as pounds.
+            price: item.productId ? priceIn(products[item.productId], currency) ?? undefined : undefined,
+            currency,
         };
-    }, [has, products]);
+    }, [has, products, currency]);
 
     return {
         busyId,

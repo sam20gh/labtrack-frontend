@@ -6,6 +6,7 @@
  */
 import { api, apiFetch } from './api';
 import type { Order, OrderStatus } from '@/types/api';
+import type { CurrencyCode } from './currency';
 import { schemed, tone } from '@/constants/theme';
 
 export interface ShippingAddress {
@@ -16,10 +17,12 @@ export interface ShippingAddress {
     country?: string;
 }
 
+/** The server prices every line in `currency`; the order then carries it as `order.currency`. */
 export const createOrder = (
     items: { productId: string; quantity: number; planItemId?: string }[],
-    shippingAddress?: ShippingAddress,
-) => apiFetch<{ order: Order }>('/orders', { method: 'POST', body: { items, shippingAddress } });
+    shippingAddress: ShippingAddress | undefined,
+    currency: CurrencyCode,
+) => apiFetch<{ order: Order }>('/orders', { method: 'POST', body: { items, shippingAddress, currency } });
 
 export const getOrders = () => api.get<{ orders: Order[] }>('/orders');
 export const getOrder = (id: string) => api.get<{ order: Order }>(`/orders/${id}`);

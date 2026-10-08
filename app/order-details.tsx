@@ -205,13 +205,13 @@ export default function OrderDetailsScreen() {
                             <Text style={styles.itemName}>{item.name}</Text>
                             {item.quantity > 1 && <Text style={styles.itemQty}>Quantity {item.quantity}</Text>}
                         </View>
-                        <Text style={styles.itemPrice}>£{(item.price * item.quantity).toFixed(2)}</Text>
+                        <Text style={styles.itemPrice}>{formatMoney(item.price * item.quantity, order.currency)}</Text>
                     </View>
                 ))}
 
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Total</Text>
-                    <Text style={styles.totalValue}>£{order.total.toFixed(2)}</Text>
+                    <Text style={styles.totalValue}>{formatMoney(order.total, order.currency)}</Text>
                 </View>
 
                 {order.shippingAddress?.line1 ? (

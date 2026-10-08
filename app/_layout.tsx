@@ -20,6 +20,7 @@ import { getPaymentStatus } from '@/lib/payments';
 import * as Notifications from 'expo-notifications';
 import { routeForNotification, syncRegistration } from '@/lib/notifications';
 import { hydrateUnits } from '@/lib/units';
+import { hydrateCurrency } from '@/lib/currency';
 import { hydrateHealthSources } from '@/lib/health';
 import Toast from 'react-native-toast-message';
 
@@ -53,6 +54,7 @@ export default function RootLayout() {
   // `lib/units.ts`, so the stored value has to be in the module cache before the first
   // screen paints. Failure is swallowed there and leaves the metric defaults in place.
   useEffect(() => { hydrateUnits(); }, []);
+  useEffect(() => { hydrateCurrency(); }, []);
 
   // Appearance is awaited, unlike units: a unit in the default for one frame is invisible,
   // a white flash on a phone set to dark is not. The splash stays up until it resolves,

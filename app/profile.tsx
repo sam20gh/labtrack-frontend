@@ -68,6 +68,7 @@ import { getSummary as getActivitySummary, getWearableStatus } from '@/lib/activ
 import { getPermissionStatus } from '@/lib/notifications';
 import { getCyclePlan, type CycleAccess } from '@/lib/cycle';
 import { APPEARANCE_OPTIONS, useAppearancePreference } from '@/lib/appearance';
+import { useCurrency } from '@/lib/currency';
 import { Avatar } from '@/components/Avatar';
 import { Fonts, Radius, Spacing, BodyFont, tone, Palettes } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
@@ -126,6 +127,7 @@ export default function ProfileScreen() {
     const styles = useStyles();
     const router = useRouter();
     const appearance = useAppearancePreference();
+    const currency = useCurrency();
 
     const [user, setUser] = useState<ProfileUser>({});
     const [score, setScore] = useState<HealthScore | null>(null);
@@ -447,7 +449,8 @@ export default function ProfileScreen() {
                         />
                         <Row
                             icon="options-outline"
-                            label="Units & metrics"
+                            label="Units & currency"
+                            value={currency}
                             onPress={() => router.push('/settings/units')}
                         />
                         <Row

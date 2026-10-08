@@ -17,10 +17,22 @@ import { useBasket } from '@/lib/basket';
 import { createOrder } from '@/lib/orders';
 import { getPaymentStatus, createPaymentIntent, confirmPayment, formatMoney } from '@/lib/payments';
 import { ApiError } from '@/lib/api';
+import { CURRENCY_OPTIONS, type CurrencyCode } from '@/lib/currency';
 
 
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { tone } from '@/constants/theme';
+/**
+ * Where a currency's prices deliver, as a starting address — the API ships each currency only
+ * to its own region (`CURRENCIES[].shipTo`). Eurozone has 21 countries, so it starts blank.
+ */
+const REGION: Record<CurrencyCode, { name: string; iso: string | undefined }> = {
+    GBP: { name: 'United Kingdom', iso: 'GB' },
+    AED: { name: 'United Arab Emirates', iso: 'AE' },
+    SAR: { name: 'Saudi Arabia', iso: 'SA' },
+    EUR: { name: '', iso: undefined },
+};
+
 export default function BasketScreen() {
     const Palette = usePalette();
     const styles = useStyles();
@@ -31,10 +43,11 @@ export default function BasketScreen() {
     const { returnTo: rawReturnTo } = useLocalSearchParams<{ returnTo?: string }>();
     const returnTo = typeof rawReturnTo === 'string' && rawReturnTo.startsWith('/') ? rawReturnTo : null;
     const { initPaymentSheet, presentPaymentSheet } = useStripe();
-    const { lines, estimatedTotal, setQuantity, remove, clear, count } = useBasket();
+    const { lines, estimatedTotal, linePrice, currency, setQuantity, remove, clear, count } = useBasket();
     const [placing, setPlacing] = useState(false);
     const [payment, setPayment] = useState<{ available: boolean; testMode: boolean } | null>(null);
-    const [address, setAddress] = useState({ line1: '', line2: '', city: '', postcode: '', country: 'United Kingdom' });
+    const [address, setAddress] = useState({ line1: '', line2: '', city: '', postcode: '', country: REGION[currency].name });
+    const deliversTo = CURRENCY_OPTIONS.find((o) => o.code === currency)?.deliversTo;
 
     useEffect(() => {
         getPaymentStatus()
@@ -63,6 +76,7 @@ export default function BasketScreen() {
             const { order } = await createOrder(
                 lines.map((l) => ({ productId: l.productId, quantity: l.quantity, planItemId: l.planItemId })),
                 address,
+                currency,
             );
             await clear();
 
@@ -70,7 +84,7 @@ export default function BasketScreen() {
                 Toast.show({
                     type: 'success',
                     text1: 'Order placed',
-                    text2: `${formatMoney(order.total)} — we'll be in touch about payment`,
+                    text2: `${formatMoney(order.total, order.currency)} — we'll be in touch about payment`,
                 });
                 router.replace({ pathname: '/order-details', params: { orderId: order._id } });
                 return;
@@ -90,7 +104,7 @@ export default function BasketScreen() {
                         line2: address.line2 || undefined,
                         city: address.city,
                         postalCode: address.postcode,
-                        country: 'GB',
+                        country: REGION[currency].iso,
                     },
                 },
             });
@@ -116,7 +130,7 @@ export default function BasketScreen() {
             Toast.show({
                 type: 'success',
                 text1: 'Payment complete',
-                text2: `${formatMoney(order.total)} — we'll send your kit shortly`,
+                text2: `${formatMoney(order.total, order.currency)} — we'll send your kit shortly`,
             });
             if (returnTo) router.dismissTo(returnTo as Href);
             else router.replace({ pathname: '/order-details', params: { orderId: order._id } });
@@ -183,7 +197,9 @@ export default function BasketScreen() {
                                         <Ionicons name="calendar-outline" size={11} color={Palette.primary} /> From your health plan
                                     </Text>
                                 ) : null}
-                                <Text style={styles.linePrice}>£{(line.price * line.quantity).toFixed(2)}</Text>
+                                <Text style={styles.linePrice}>
+                                    {formatMoney(linePrice(line) === null ? null : (linePrice(line) as number) * line.quantity, currency)}
+                                </Text>
                             </View>
 
                             <View style={styles.qty}>
@@ -197,6 +213,19 @@ export default function BasketScreen() {
                             </View>
                         </View>
                     ))}
+
+                    <TouchableOpacity
+                        style={styles.currencyRow}
+                        onPress={() => router.push('/settings/units')}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Paying in ${currency}. Change currency`}
+                    >
+                        <Ionicons name="cash-outline" size={16} color={Palette.textSecondary} />
+                        <Text style={styles.currencyText}>
+                            Paying in {currency} · delivers to {deliversTo}
+                        </Text>
+                        <Text style={styles.currencyChange}>Change</Text>
+                    </TouchableOpacity>
 
                     <Text style={styles.sectionLabel}>Where should we send your kit?</Text>
                     {([
@@ -240,7 +269,7 @@ export default function BasketScreen() {
                 <View style={styles.footer}>
                     <View style={styles.totalRow}>
                         <Text style={styles.totalLabel}>Total</Text>
-                        <Text style={styles.totalValue}>£{estimatedTotal.toFixed(2)}</Text>
+                        <Text style={styles.totalValue}>{formatMoney(estimatedTotal, currency)}</Text>
                     </View>
                     <TouchableOpacity
                         style={[styles.primaryButton, (!addressComplete || placing) && styles.buttonDisabled]}
@@ -250,7 +279,7 @@ export default function BasketScreen() {
                         {placing
                             ? <ActivityIndicator color={Palette.white} />
                             : <Text style={styles.primaryButtonText}>
-                                {payment?.available ? `Pay ${formatMoney(estimatedTotal)}` : 'Place order'}
+                                {payment?.available && estimatedTotal !== null ? `Pay ${formatMoney(estimatedTotal, currency)}` : payment?.available ? 'Pay' : 'Place order'}
                             </Text>}
                     </TouchableOpacity>
                 </View>
@@ -292,6 +321,12 @@ const useStyles = makeStyles((Palette) => ({
     },
     qtyValue: { fontSize: 14, fontWeight: '600', color: Palette.text, minWidth: 18, textAlign: 'center' },
     sectionLabel: { fontSize: 15, fontWeight: '700', color: Palette.text, marginTop: 22, marginBottom: 10 },
+    currencyRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16,
+        paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, backgroundColor: Palette.surface,
+    },
+    currencyText: { flex: 1, fontSize: 13, color: Palette.textSecondary },
+    currencyChange: { fontSize: 13, fontWeight: '600', color: Palette.primary },
     input: {
         borderWidth: 1, borderColor: Palette.border, borderRadius: 10,
         paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: Palette.text, marginBottom: 10,

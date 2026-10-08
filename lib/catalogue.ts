@@ -10,6 +10,7 @@
  * Same argument `lib/quickActions.ts` records: the list is a product decision, and the
  * next surface that wants it must not hand-copy it.
  */
+import { formatMoney, type CurrencyCode } from './currency';
 import type { Product } from '@/types/api';
 import { schemed, tone, activePalette } from '@/constants/theme';
 
@@ -69,9 +70,11 @@ export const byTypeOrder = (a: string, b: string) => {
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
 };
 
-/** Prices are stored as numbers; `.00` is written out so a column of them aligns. */
-export const formatPrice = (price?: number) =>
-    typeof price === 'number' ? `£${price.toFixed(2)}` : '—';
+/**
+ * A price in the currency it is in. Pass the result of `priceIn(product, currency)` — never
+ * `product.price` with another currency, which is a GBP figure under the wrong sign.
+ */
+export const formatPrice = (price?: number | null, currency?: CurrencyCode) => formatMoney(price, currency);
 
 /**
  * Does this product's name or description mention `query`?

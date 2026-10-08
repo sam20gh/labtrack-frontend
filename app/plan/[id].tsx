@@ -16,6 +16,7 @@
  * the timeline has just fetched it, so the page reads it and picks its item rather than
  * adding a route that returns a subset of the same thing.
  */
+import { formatMoney } from '@/lib/currency';
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -131,7 +132,7 @@ export default function PlanItemScreen() {
     const meta = STATUS_META[item.status] ?? STATUS_META.upcoming;
     const home = adviceHomeFor(item);
     const consequence = dismissConsequenceFor(item);
-    const { actionable, canOrder, canBook, inBasket, price } = actions.capabilities(item);
+    const { actionable, canOrder, canBook, inBasket, price, currency } = actions.capabilities(item);
     const busy = actions.busyId === item._id;
     const kicker = advice
         ? `Advice · ${AREA_LABEL[item.condition ?? ''] ?? 'General'}`
@@ -145,7 +146,7 @@ export default function PlanItemScreen() {
         item.productName ? {
             icon: 'cube-outline',
             label: 'Test',
-            value: typeof price === 'number' ? `${item.productName} · £${price.toFixed(2)}` : item.productName,
+            value: typeof price === 'number' ? `${item.productName} · ${formatMoney(price, currency)}` : item.productName,
         } : null,
         {
             icon: 'sparkles-outline',

@@ -6,10 +6,15 @@
  *
  * The basket holds product ids and quantities only. Prices come from the server at
  * checkout, never from here: a client-held price is a client-controlled price.
+ *
+ * Each line keeps the product's `pricing` — every currency the server priced it in — so the
+ * indicative total follows the currency picker without a refetch. The order is still priced
+ * by the server, in the currency `createOrder` sends.
  */
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Product } from '@/types/api';
+import { priceIn, useCurrency, type CurrencyCode, type Pricing } from './currency';
 
 const STORAGE_KEY = 'basket';
 
@@ -20,15 +25,25 @@ export interface BasketLine {
     planItemId?: string;
     /** Snapshot for display only — the server re-prices at checkout. */
     name: string;
+    /** GBP. Read through `linePrice`, which picks the currency in force. */
     price: number;
+    /** Every currency, as the server priced it when the line was added. Absent on old baskets. */
+    pricing?: Pricing;
     image?: string | null;
 }
 
 interface BasketContextValue {
     lines: BasketLine[];
     count: number;
-    /** Indicative only; the order total comes back from the server. */
-    estimatedTotal: number;
+    /** The currency the basket is shown and will be ordered in. */
+    currency: CurrencyCode;
+    /**
+     * Indicative only; the order total comes back from the server. Null when a line has no
+     * price in this currency — a basket saved before currencies existed, shown in AED.
+     */
+    estimatedTotal: number | null;
+    /** One unit of a line, in `currency`, or null. */
+    linePrice: (line: BasketLine) => number | null;
     add: (product: Product, planItemId?: string) => Promise<void>;
     remove: (productId: string) => Promise<void>;
     setQuantity: (productId: string, quantity: number) => Promise<void>;
@@ -42,6 +57,7 @@ const BasketContext = createContext<BasketContextValue | null>(null);
 export const BasketProvider = ({ children }: { children: React.ReactNode }) => {
     const [lines, setLines] = useState<BasketLine[]>([]);
     const [ready, setReady] = useState(false);
+    const currency = useCurrency();
 
     useEffect(() => {
         AsyncStorage.getItem(STORAGE_KEY)
@@ -90,6 +106,7 @@ export const BasketProvider = ({ children }: { children: React.ReactNode }) => {
                 planItemId,
                 name: product.name,
                 price: product.price,
+                pricing: product.pricing,
                 image: product.image ?? null,
             }];
         await persist(next);
@@ -106,17 +123,25 @@ export const BasketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const clear = useCallback(async () => { await persist([]); }, [persist]);
 
-    const value = useMemo<BasketContextValue>(() => ({
+    const value = useMemo<BasketContextValue>(() => {
+        const linePrice = (line: BasketLine) => priceIn(line, currency);
+        const prices = lines.map((l) => linePrice(l));
+        return {
         lines,
         count: lines.reduce((n, l) => n + l.quantity, 0),
-        estimatedTotal: lines.reduce((n, l) => n + l.price * l.quantity, 0),
+        currency,
+        estimatedTotal: prices.some((p) => p === null)
+            ? null
+            : lines.reduce((n, l, i) => n + (prices[i] as number) * l.quantity, 0),
+        linePrice,
         add,
         remove,
         setQuantity,
         clear,
         has: (id: string) => lines.some((l) => l.productId === id),
         ready,
-    }), [lines, add, remove, setQuantity, clear, ready]);
+        };
+    }, [lines, currency, add, remove, setQuantity, clear, ready]);
 
     return <BasketContext.Provider value={value}>{children}</BasketContext.Provider>;
 };

@@ -359,7 +359,12 @@ export interface Product {
     /** The gallery, cover first. Absent on records written before it existed. */
     images?: string[];
     type?: string;
+    /** GBP — the base. Draw `priceIn(product, currency)` from `lib/currency.ts`, not this. */
     price: number;
+    /** Explicit prices per currency; null where the API converts from GBP. */
+    prices?: Partial<Record<'AED' | 'SAR' | 'EUR', number | null>>;
+    /** What it costs in each currency, as the API priced it. */
+    pricing?: import('@/lib/currency').Pricing;
     /** What the product ships, and so what its order line tracks. See `utils/orderComponents.js`. */
     includes?: ComponentKind[];
     /** Present on a package (`type: 'package'`) only. */
