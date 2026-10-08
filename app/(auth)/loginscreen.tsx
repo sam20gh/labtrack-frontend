@@ -11,7 +11,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, To
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 import { Ionicons } from '@expo/vector-icons';
 import AuthErrorBanner from '@/components/auth/AuthErrorBanner';
 import AuthField from '@/components/auth/AuthField';
@@ -203,7 +203,7 @@ const LoginScreen = () => {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 };

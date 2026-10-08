@@ -22,7 +22,7 @@ import { routeForNotification, syncRegistration } from '@/lib/notifications';
 import { hydrateUnits } from '@/lib/units';
 import { hydrateCurrency } from '@/lib/currency';
 import { hydrateHealthSources } from '@/lib/health';
-import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 
 import ConnectionBanner from '@/components/errors/ConnectionBanner';
 // Imported for its side effect: it defines the live-session location task. That has to
@@ -258,12 +258,14 @@ function ThemedRoot({ publishableKey }: { publishableKey: string | null }) {
         {/* The way back into a run from anywhere else in the app. Draws nothing unless one is going. */}
         <RunInProgressPill />
         {/* One instance at the root, so a screen that reports an outage or a rate limit is
-            actually heard. Several screens still mount their own `<Toast />`; the library
+            actually heard. Several screens still mount their own `<ToastHost />`; the library
             keeps a stack of refs and the last mounted wins, so those keep working and this
             one covers the screens that never had one — the home screen among them, where
             five Toast.show calls (including the "no new analysis needed" explanation) were
-            landing on no renderer at all. */}
-        <Toast />
+            landing on no renderer at all. Every mount is `<ToastHost />`, which carries the
+            app's own layout (`components/ui/AppToast.tsx`); a bare `<Toast />` would draw the
+            library's default for whichever screen mounted it last. */}
+        <ToastHost />
       </BasketProvider>
       </StripeProvider>
     </NavigationThemeProvider>

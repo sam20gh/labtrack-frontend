@@ -23,6 +23,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 
 import { api, ApiError } from '@/lib/api';
 import { getUserId } from '@/lib/auth';
@@ -292,7 +293,7 @@ export default function HealthProfileReviewScreen() {
                     <Ionicons name="arrow-forward" size={18} color={Palette.white} />
                 </TouchableOpacity>
             </ScrollView>
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 }

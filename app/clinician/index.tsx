@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 import {
     clinicianSignIn, getClinicianProfile, getReviewQueue, getClinicianToken,
     clearClinicianToken, type QueueEntry,
@@ -151,7 +152,7 @@ export default function ClinicianQueueScreen() {
                         </TouchableOpacity>
                     </View>
                 </KeyboardAvoidingView>
-                <Toast />
+                <ToastHost />
             </SafeAreaView>
         );
     }
@@ -237,7 +238,7 @@ export default function ClinicianQueueScreen() {
                     );
                 })}
             </ScrollView>
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 }

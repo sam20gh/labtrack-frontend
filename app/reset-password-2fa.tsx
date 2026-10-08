@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 import { verifyPhoneOtp } from '@/lib/auth';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { tone } from '@/constants/theme';
@@ -144,7 +145,7 @@ const ResetPassword2FAScreen = () => {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 };

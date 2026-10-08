@@ -23,7 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 import { api, ApiError } from '@/lib/api';
 import { ErrorState } from '@/components/errors';
 import {
@@ -272,7 +272,7 @@ export default function PlanItemScreen() {
                     </Text>
                 ) : null}
             </ScrollView>
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 }

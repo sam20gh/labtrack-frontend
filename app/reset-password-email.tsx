@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { sendPasswordResetEmail } from '@/lib/auth';
 import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { tone } from '@/constants/theme';
 
@@ -130,7 +131,7 @@ const ResetPasswordEmailScreen = () => {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 };

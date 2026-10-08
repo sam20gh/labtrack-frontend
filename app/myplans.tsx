@@ -19,7 +19,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 import { api } from '@/lib/api';
 import { ErrorState } from '@/components/errors';
 import { useBasket } from '@/lib/basket';
@@ -316,7 +316,7 @@ export default function MyPlansScreen() {
                     <Text style={styles.viewBasketTotal}>{formatMoney(estimatedTotal, currency)}</Text>
                 </TouchableOpacity>
             )}
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 }

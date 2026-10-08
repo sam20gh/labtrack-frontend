@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 import {
     getPreferences, updatePreferences, registerForPushNotifications,
     getPermissionStatus, sendTestNotification, type NotificationPreferences,
@@ -230,7 +231,7 @@ export default function NotificationSettingsScreen() {
                     </TouchableOpacity>
                 )}
             </ScrollView>
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 }

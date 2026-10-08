@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 import { getReportForReview, submitReview, addFollowUp } from '@/lib/clinician';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { tone } from '@/constants/theme';
@@ -312,7 +313,7 @@ export default function ReviewScreen() {
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 }

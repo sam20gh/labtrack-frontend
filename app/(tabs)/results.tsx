@@ -26,7 +26,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Toast from 'react-native-toast-message';
+import { ToastHost } from '@/components/ui/AppToast';
 import { Spacing, Radius, Fonts, Shadow, BodyFont, Palettes } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ErrorState } from '@/components/errors';
@@ -569,7 +569,7 @@ export default function ResultsScreen() {
                     <Text style={styles.addButtonText}>Add a result</Text>
                 </TouchableOpacity>
             </ScrollView>
-            <Toast />
+            <ToastHost />
         </SafeAreaView>
     );
 }
