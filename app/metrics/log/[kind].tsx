@@ -6,7 +6,7 @@
  * be validated together. Three near-identical screens differing only in their middle would
  * drift apart on the parts that are the same.
  *
- * Two things this screen does that the kit's does not:
+ * Three things this screen does that the kit's does not:
  *
  * - **Blood pressure is classified on the way back and shown before you leave.** The design
  *   logs and returns to the dashboard. A reading in the crisis range has to say so at the
@@ -16,9 +16,12 @@
  *   the refusals that matter — a transposed blood pressure, a weight in pounds — come back
  *   from `utils/bloodPressure.js`, so the rule lives in one place and the app cannot let
  *   through something the record should not hold.
+ * - **Water shows the hydration page's glass at the level this drink would bring today to.**
+ *   It is a preview and is labelled as one: nothing is written until Save, and the glass does
+ *   not draw the "done" ring however full it gets, because nothing has been done yet.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,10 +29,12 @@ import Toast from 'react-native-toast-message';
 
 import { ApiError } from '@/lib/api';
 import {
-    logWeight, logWater, logBloodPressure, getReference,
-    type MetricsReference, type BpCategory,
+    logWeight, logWater, logBloodPressure, getReference, getHydrationToday,
+    type MetricsReference, type BpCategory, type HydrationToday,
 } from '@/lib/metrics';
-import { useUnits, unitLabel, toCanonicalWeight, displayWeight } from '@/lib/units';
+import { attainment } from '@/lib/hydration';
+import { useUnits, unitLabel, toCanonicalWeight, displayWeight, formatVolume } from '@/lib/units';
+import { WaterGlass } from '@/components/hydration/WaterGlass';
 import { Spacing, Radius, Shadow, Fonts, BodyFont, tone } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 
@@ -63,7 +68,15 @@ export default function LogMetricScreen() {
     const [pulse, setPulse] = useState('');
     const [result, setResult] = useState<{ category: BpCategory; urgentNote: string | null; note: string } | null>(null);
 
+    // Today's total, so the glass can show where this drink would leave the day. A failure
+    // costs the preview and nothing else — the form still logs.
+    const [hydration, setHydration] = useState<HydrationToday | null>(null);
+    const { width } = useWindowDimensions();
+
     useEffect(() => { getReference().then(setReference).catch(() => {}); }, []);
+    useEffect(() => {
+        if (kind === 'water') getHydrationToday().then(setHydration).catch(() => {});
+    }, [kind]);
 
     const save = useCallback(async () => {
         setSaving(true);
@@ -126,6 +139,17 @@ export default function LogMetricScreen() {
         );
     }
 
+    // The amount this drink adds, as the server will count it: a typed amount wins over the
+    // picked container, and the drink's factor applies (every factor is 1 today — see
+    // `hydrationTargets.DRINK_TYPES` — but the preview must not be the place that assumes so).
+    const drinkMl = customMl
+        ? Number(customMl) || 0
+        : reference?.hydration.containers.find((c) => c.key === container)?.ml ?? 0;
+    const factor = hydration?.drinkTypes.find((d) => d.key === drinkType)?.factor ?? 1;
+    const consumedNow = hydration?.consumedMl ?? 0;
+    const consumedAfter = consumedNow + drinkMl * factor;
+    const waterTarget = hydration?.targetMl ?? null;
+
     const canSave = kind === 'weight' ? Number(weightInput) > 0
         : kind === 'water' ? Boolean(container || Number(customMl) > 0)
             : Number(systolic) > 0 && Number(diastolic) > 0;
@@ -167,6 +191,25 @@ export default function LogMetricScreen() {
 
                     {kind === 'water' && reference && (
                         <>
+                            {waterTarget !== null && (
+                                <View style={[styles.card, styles.glassCard]}>
+                                    <WaterGlass
+                                        fill={attainment(consumedAfter, waterTarget)}
+                                        width={Math.min(150, width * 0.4)}
+                                        animated
+                                    />
+                                    <Text style={styles.glassValue}>
+                                        {formatVolume(consumedAfter, units)}
+                                        <Text style={styles.glassOf}> of {formatVolume(waterTarget, units)}</Text>
+                                    </Text>
+                                    <Text style={styles.hint}>
+                                        {drinkMl > 0
+                                            ? `Today after this drink — ${formatVolume(consumedNow, units)} so far.`
+                                            : `Today so far. Pick a drink to see where it leaves you.`}
+                                    </Text>
+                                </View>
+                            )}
+
                             <View style={styles.card}>
                                 <Text style={styles.fieldLabel}>Container</Text>
                                 <View style={styles.chipRow}>
@@ -377,6 +420,10 @@ const useStyles = makeStyles((Palette) => ({
     card: { backgroundColor: Palette.background, borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.sm, ...Shadow.card },
     fieldLabel: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.text },
     hint: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary, lineHeight: 16 },
+
+    glassCard: { alignItems: 'center' },
+    glassValue: { fontFamily: Fonts.bold, fontSize: 22, color: Palette.text, marginTop: Spacing.xs },
+    glassOf: { ...BodyFont.regular, fontSize: 14, color: Palette.textSecondary },
 
     bigInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6 },
     bigInput: { fontFamily: Fonts.bold, fontSize: 44, color: Palette.text, minWidth: 120, padding: 0 },

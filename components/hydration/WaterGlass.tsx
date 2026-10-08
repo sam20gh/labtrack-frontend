@@ -29,8 +29,8 @@
  * animating fill level is a frame-rate bill for an illustration. Verified against the export's
  * own authored paths at full: identical to the pixel with the filters removed from both.
  */
-import React, { useId } from 'react';
-import { View } from 'react-native';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { View, Animated, Easing } from 'react-native';
 import Svg, { Path, G, Defs, LinearGradient, Stop, ClipPath } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -96,20 +96,59 @@ interface Props {
     width: number;
     /** Draws the design's confirmation ring over the glass. */
     complete?: boolean;
+    /**
+     * Eases the water to each new `fill` rather than jumping, rising from empty on mount.
+     * For a glass that moves under somebody's finger — the log screen previews the level a
+     * drink would bring today to as containers are picked. The hydration page leaves it off.
+     */
+    animated?: boolean;
 }
 
-export function WaterGlass({ fill, width, complete }: Props) {
+/**
+ * The level as drawn: `fill` itself, or a tween towards it.
+ *
+ * Driven through state rather than an animated SVG prop, because the level feeds the front
+ * wave's path and its gradient as well as the group's offset, and those are computed strings
+ * an `Animated` node cannot reach. A ~400ms tween over one small SVG is a handful of renders.
+ */
+function useShownLevel(level: number, animated: boolean): number {
+    const value = useRef(new Animated.Value(animated ? 0 : level)).current;
+    const [shown, setShown] = useState(animated ? 0 : level);
+
+    useEffect(() => {
+        if (!animated) return undefined;
+        const sub = value.addListener(({ value: v }) => setShown(v));
+        return () => value.removeListener(sub);
+    }, [animated, value]);
+
+    useEffect(() => {
+        if (!animated) return undefined;
+        const run = Animated.timing(value, {
+            toValue: level,
+            duration: 450,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+        });
+        run.start();
+        return () => run.stop();
+    }, [animated, level, value]);
+
+    return animated ? shown : level;
+}
+
+export function WaterGlass({ fill, width, complete, animated = false }: Props) {
     const Palette = usePalette();
     const styles = useStyles();
     const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
-    const level = Math.max(0, Math.min(1, fill));
+    const target = Math.max(0, Math.min(1, fill));
+    const level = useShownLevel(target, animated);
     const height = (width * VIEW.h) / VIEW.w;
     const shift = (EXPORTED_AT - level) * FULL_TRAVEL;
 
     const id = (name: string) => `${name}${uid}`;
 
     return (
-        <View style={{ width, height }} accessibilityLabel={`Glass filled to ${Math.round(level * 100)} per cent`}>
+        <View style={{ width, height }} accessibilityLabel={`Glass filled to ${Math.round(target * 100)} per cent`}>
             <Svg width={width} height={height} viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`}>
                 <Defs>
                     <LinearGradient id={id('cup')} x1="187.486" y1="689.727" x2="187.486" y2="309" gradientUnits="userSpaceOnUse">
@@ -150,7 +189,7 @@ export function WaterGlass({ fill, width, complete }: Props) {
 
                 <Path d={CUP} fill={`url(#${id('cup')})`} />
 
-                {level > 0 && (
+                {level > 0.001 && (
                     <G clipPath={`url(#${id('cut')})`}>
                         <G translateY={shift}>
                             <Path d={WAVE_BACK} fill={`url(#${id('w1')})`} />
