@@ -140,10 +140,15 @@ describe('freeing the band', () => {
         expect(store.__get().heartStreamSince).toBeUndefined();
     });
 
-    it('keeps it when a record landed between the read and the delete', async () => {
+    it('keeps it when a record landed between the read and the delete — and stays in transition', async () => {
         await reader.readSince(null);
         mockStream = [...mockStream, { date: stamp(7, 9, 2), arrayDynamicHR: '81 82' }];
         await acknowledgeSynced({ heartStream: true });
         expect(freed()).not.toContain('getDynamicHr');
+        // Nothing was freed, so the next read is still a full replay and must drop its oldest day.
+        expect(store.__get().heartStreamSince).toBeUndefined();
+        const next = await reader.readSince(null);
+        expect(next.heartStream!.map((r) => r.day)).not.toContain('2026-10-05');
+        await release();
     });
 });

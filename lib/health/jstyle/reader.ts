@@ -540,7 +540,10 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         const sameVersion = paired.incrementalVersion === INCREMENTAL_VERSION;
         const fullRead = !sameVersion || isWrong(clockBefore) || !paired.lastFullReadAt
             || now - Date.parse(paired.lastFullReadAt) > FULL_READ_EVERY_MS;
-        const cursors: Record<string, SeriesCursor> = sameVersion ? { ...(paired.incremental ?? {}) } : {};
+        const cursors: Record<string, SeriesCursor> = sameVersion
+            ? Object.fromEntries(Object.entries(paired.incremental ?? {})
+                .filter(([command]) => INCREMENTAL.includes(command as SeriesCommand)))
+            : {};
 
         const read = async (command: SeriesCommand) => {
             const cursor = cursors[command];
@@ -786,12 +789,6 @@ export const acknowledgeSynced = async (
         // live view taking the bracelet over mid-POST is the case this catches.
         if (!plan || isLive() || transport.connectedId() !== plan.ctx.deviceId) return;
 
-        if (stores.heartStream && !(await getPaired())?.heartStreamSince) {
-            // The transition read is done and the server holds it: from here every read of the
-            // stream is only what was recorded since the band was last freed.
-            await updatePaired({ heartStreamSince: new Date().toISOString() });
-        }
-
         for (const [command, sentIds] of plan.sent) {
             if (!sentIds.size) continue;
             const needs = NEEDS_SERVER_SUPPORT[command];
@@ -807,6 +804,14 @@ export const acknowledgeSynced = async (
             }
             await session.acknowledge(plan.variant, command);
             console.log(`🗑️ ${command}: freed on the bracelet (${sentIds.size} sent)`);
+            // Only now is the stream's transition over: from the next read on, the band holds
+            // only what it recorded since this delete. Marking it when the server merely stored
+            // the stream was wrong — on 2026-10-08 the delete was held back by a record that
+            // landed mid-POST, so the next read was still a full replay, and it posted the
+            // oldest day it should have dropped.
+            if (command === 'getDynamicHr' && !(await getPaired())?.heartStreamSince) {
+                await updatePaired({ heartStreamSince: new Date().toISOString() });
+            }
         }
 
         // Once more after the deletes, so the next sync can say whether this one left the
