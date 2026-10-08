@@ -22,6 +22,7 @@ import { routeForNotification, syncRegistration } from '@/lib/notifications';
 import { hydrateUnits } from '@/lib/units';
 import { hydrateCurrency } from '@/lib/currency';
 import { hydrateHealthSources } from '@/lib/health';
+import { attachAutoSync } from '@/lib/health/autoSync';
 import { ToastHost } from '@/components/ui/AppToast';
 
 import ConnectionBanner from '@/components/errors/ConnectionBanner';
@@ -71,6 +72,10 @@ export default function RootLayout() {
    * what an unpaired phone shows anyway.
    */
   useEffect(() => { hydrateHealthSources().catch(() => { /* nothing paired */ }); }, []);
+
+  // Sync the phone store and a paired bracelet at launch and whenever the app comes back to
+  // the front, rather than only when a tracker screen is opened. See `lib/health/autoSync.ts`.
+  useEffect(() => { attachAutoSync(); }, []);
 
   // A device whose permission was granted but whose token never reached the account gets
   // no reminders at all, and looks identical to one that opted out. Re-register on every

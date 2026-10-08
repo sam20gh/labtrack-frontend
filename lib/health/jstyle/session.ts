@@ -214,7 +214,7 @@ const exchange = async (
 export const readSeries = (
     variant: JstyleVariant,
     command: JstyleCommand,
-    { maxBatches = 50 }: { maxBatches?: number } = {},
+    { maxBatches = 50, startDate }: { maxBatches?: number; startDate?: string } = {},
 ): Promise<ReadResult> => exclusive(async () => {
     if (!supports(variant, command)) {
         // Not an error. The V8 has no axillary-temperature command, and a caller asking for
@@ -228,7 +228,9 @@ export const readSeries = (
         const result = await exchange(
             variant,
             command,
-            { mode: batch === 0 ? 'start' : 'next' },
+            // The start date goes with the first request only. `next` continues from the
+            // band's own position in the series, which the first request already set.
+            batch === 0 ? { mode: 'start', ...(startDate ? { startDate } : {}) } : { mode: 'next' },
             PACKETS_PER_BATCH,
         );
         all.push(...result.packets);

@@ -6,15 +6,17 @@
  * a radio connection and holds a conversation — but none of that reaches the interface,
  * which is the point of the interface.
  *
- * ## The cursor is a date, and it is only an optimisation
+ * ## Where a read starts
  *
  * HealthKit hands back an anchor and Health Connect a changes token; a bracelet has
- * neither. What it has is a ring buffer of a few weeks that it replays from the start every
- * time. So the cursor here is simply the instant of the last successful read, used to drop
- * records older than that before they are posted. Losing it costs bandwidth and nothing
- * else: every row carries a deterministic `externalId`, so the server upserts and a full
- * replay is idempotent.
+ * neither. What it has is a ring buffer of a few weeks. The series a sync deletes are small
+ * by the next sync; the four it never deletes (`INCREMENTAL`) are read from a start date
+ * once the band has proved it honours one, and replayed in full otherwise. Losing any of
+ * that costs time and nothing else: every row carries a deterministic `externalId`, so the
+ * server upserts and a full replay is idempotent.
  */
+import { Platform } from 'react-native';
+
 import {
     capabilities, isAvailable, supports, type JstylePacket, type JstyleVariant,
 } from '@/modules/jstyle-ble';
@@ -25,7 +27,8 @@ import * as transport from './transport';
 import * as session from './session';
 import * as map from './mapping';
 import {
-    getPaired, updatePaired, type ClockReading, type LatestReadings, type PairedBracelet, type Stamped,
+    getPaired, updatePaired, type ClockReading, type LatestReadings, type PairedBracelet,
+    type SeriesCursor, type Stamped,
 } from './store';
 import { isLive } from './live';
 import { checkAndSetClock, isWrong, readClock } from './clock';
@@ -194,6 +197,109 @@ const MAPPERS: Partial<Record<SeriesCommand, (packets: JstylePacket[], ctx: map.
     getAxillaryTemperature: (p, ctx) => map.toTemperature(p, ctx, 'axillary'),
 };
 
+// ── incremental reads ───────────────────────────────────────────────────────
+
+/**
+ * The series a sync never deletes, and so the ones that replay weeks on every read.
+ *
+ * Both SDKs take a start date on every history command, and every demo passes an empty one.
+ * Reading these four from a date is what turns a sync of minutes into seconds. The deletable
+ * series (`MAPPERS`) are deliberately not here: they are emptied by every acknowledged sync,
+ * and `acknowledgeSynced` re-reads them whole before deleting, which a partial read would
+ * make refuse every time.
+ */
+const INCREMENTAL: SeriesCommand[] = ['getTotalActivity', 'getDetailSleep', 'getDynamicHr', 'getHrv'];
+
+/**
+ * Bump to make every band prove its start dates again — after a change to how the date is
+ * written, or to what counts as proof.
+ */
+const INCREMENTAL_VERSION = 1;
+
+/**
+ * A full replay at least this often, whatever the band has proved.
+ *
+ * The safety net under everything below: a record stamped while the band's clock was wrong
+ * can sit before any start date, and a cursor that is wrong for a reason nobody has thought
+ * of yet costs a day at most.
+ */
+const FULL_READ_EVERY_MS = 24 * 60 * 60 * 1000;
+
+/** A stamp later than this past now is a wrong clock, and never becomes the cursor. */
+const FUTURE_SLACK_MS = 10 * 60 * 1000;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Where an incremental read starts: **the local midnight before the newest record held.**
+ *
+ * Whole days, because three of the four series are reduced to one figure per day before
+ * they are posted (`toDays`, `toHeartDays`, `toHrvDays`) and the server `$set`s it. A read
+ * starting at 10:00 would post this morning's average as the whole day's. The day before
+ * as well, so a night that started before midnight comes back whole, and a band clock a few
+ * hours out still lands inside the window.
+ */
+export const incrementalStart = (newestIso: string): Date => {
+    const newestAt = new Date(newestIso);
+    const midnight = new Date(newestAt.getFullYear(), newestAt.getMonth(), newestAt.getDate());
+    return new Date(midnight.getTime() - DAY_MS);
+};
+
+/**
+ * The start date in the form each SDK reads.
+ *
+ * The Android jars split `yyyy-MM-dd HH:mm:ss` and write the numbers as they are — the
+ * band's clock is phone-local, so the string is too. The iOS codec parses ISO 8601 with
+ * `ISO8601DateFormatter`, whose default refuses fractional seconds, so `toISOString()` as it
+ * comes would parse to nil and read everything.
+ */
+export const startDateArg = (at: Date, os: string = Platform.OS): string => {
+    if (os === 'ios') return at.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())} `
+        + `${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`;
+};
+
+/** The newest stamp worth keeping as a cursor, or null. */
+const newestStamp = (stamps: Date[], now: number): string | null => {
+    const ms = stamps.map((d) => d.getTime()).filter((t) => t <= now + FUTURE_SLACK_MS);
+    return ms.length ? new Date(Math.max(...ms)).toISOString() : null;
+};
+
+/**
+ * Did the band honour the start date? Judged against a full read taken seconds earlier.
+ *
+ * - `verified`: the probe returned records, none before the start date, and every record
+ *   the full read had from the start date on. A record newer than the full read's newest is
+ *   allowed — the band can take a reading between the two.
+ * - `unsupported`: the band ignored the date (older records came back) or sent nothing it
+ *   should have. That band stays on full reads.
+ * - `inconclusive`: the full read had nothing older than the start date, so a band that
+ *   ignored it would look identical. The reader does not send a probe then at all, and asks
+ *   again once the band holds more than two days.
+ */
+export const judgeProbe = (
+    full: Date[], probe: Date[], from: Date,
+): 'verified' | 'unsupported' | 'inconclusive' => {
+    const start = from.getTime();
+    const fullMs = full.map((d) => d.getTime());
+    if (!fullMs.some((t) => t < start) || !fullMs.some((t) => t >= start)) return 'inconclusive';
+
+    const probeMs = probe.map((d) => d.getTime());
+    if (!probeMs.length || probeMs.some((t) => t < start)) return 'unsupported';
+
+    const got = new Set(probeMs);
+    const missing = fullMs.filter((t) => t >= start && !got.has(t));
+    return missing.length ? 'unsupported' : 'verified';
+};
+
+/** Cursors this sync read, saved only once the server has the rows — see `acknowledgeSynced`. */
+let pendingCursors: {
+    incremental: Record<string, SeriesCursor>;
+    fullRead: boolean;
+    at: string;
+} | null = null;
+
 /** What one sync read and may delete once the server has it. */
 interface PendingAck {
     variant: JstyleVariant;
@@ -206,6 +312,32 @@ interface PendingAck {
 
 let pending: PendingAck | null = null;
 let watchdog: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Whether a sync holds the bracelet, from the read until `release()`.
+ *
+ * Syncs now start on their own when the app comes to the front, so somebody can open live
+ * view in the middle of one — and `transport.connect` drops whatever is open first, which
+ * would cut the read off. `live.start` waits on `whenIdle` instead.
+ */
+let busy = false;
+let idleWaiters: (() => void)[] = [];
+
+const setIdle = () => {
+    busy = false;
+    const waiting = idleWaiters;
+    idleWaiters = [];
+    waiting.forEach((resolve) => resolve());
+};
+
+/** Resolves once no sync holds the bracelet, or after `maxMs` whatever happens. */
+export const whenIdle = (maxMs = 60_000): Promise<void> => {
+    if (!busy) return Promise.resolve();
+    return new Promise((resolve) => {
+        const timer = setTimeout(resolve, maxMs);
+        idleWaiters.push(() => { clearTimeout(timer); resolve(); });
+    });
+};
 
 /**
  * What the last read heard back.
@@ -225,6 +357,19 @@ export interface ReadReport {
     unreadable: number;
     /** Rows the read produced, across every family. Zero means nothing was posted. */
     rows: number;
+    /** Every series read, how, and how long it took — the record of where a sync's time goes. */
+    series: SeriesTiming[];
+    /** Milliseconds from connecting to the end of the last read. */
+    totalMs: number;
+}
+
+export interface SeriesTiming {
+    command: string;
+    /** `full`: the whole buffer. `since`: from a start date. `probe`: testing one. */
+    how: 'full' | 'since' | 'probe';
+    packets: number;
+    ms: number;
+    complete: boolean;
 }
 
 let lastReport: ReadReport | null = null;
@@ -271,6 +416,9 @@ export const release = async (): Promise<void> => {
     watchdog = null;
     const held = pending;
     pending = null;
+    // Not sent, so not saved: the next read starts where this one did.
+    pendingCursors = null;
+    setIdle();
     // Live view may have taken the connection over meanwhile; it is not this sync's to close.
     if (isLive()) return;
     await transport.disconnect();
@@ -290,8 +438,10 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
     const ctx: map.MapContext = { deviceId: paired.id, variant, device: deviceFor(paired) };
     const readAt = new Date().toISOString();
     lastReport = null;
-    const report: ReadReport = { asked: 0, silent: 0, unreadable: 0, rows: 0 };
     await release();
+    busy = true;
+    const report: ReadReport = { asked: 0, silent: 0, unreadable: 0, rows: 0, series: [], totalMs: 0 };
+    const startedAt = Date.now();
 
     const batch: SyncBatch = {
         platform: 'jstyle_bracelet',
@@ -302,7 +452,7 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         permissions: capabilities(variant).commands,
         devices: [{ ...deviceFor(paired), lastSeenAt: new Date().toISOString() }],
         activities: [], sleep: [], heart: [], days: [],
-        spo2: [], temperature: [], bloodPressure: [], ecg: [],
+        spo2: [], temperature: [], bloodPressure: [], ecg: [], stress: [],
     };
 
     await transport.connect(
@@ -342,12 +492,63 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         }
 
         const sent = new Map<SeriesCommand, Set<string>>();
+        const timed = async (command: SeriesCommand, how: SeriesTiming['how'], startDate?: Date) => {
+            const t0 = Date.now();
+            const result = await session.readSeries(variant, command,
+                startDate ? { startDate: startDateArg(startDate) } : {});
+            if (supports(variant, command)) {
+                report.series.push({
+                    command, how, packets: result.packets.length, ms: Date.now() - t0, complete: result.complete,
+                });
+            }
+            return result;
+        };
+
+        /**
+         * Whether this sync replays the never-deleted series in full. Always after a wrong
+         * clock: what it stamped meanwhile can sit before any start date.
+         */
+        const now = Date.now();
+        const sameVersion = paired.incrementalVersion === INCREMENTAL_VERSION;
+        const fullRead = !sameVersion || isWrong(clockBefore) || !paired.lastFullReadAt
+            || now - Date.parse(paired.lastFullReadAt) > FULL_READ_EVERY_MS;
+        const cursors: Record<string, SeriesCursor> = sameVersion ? { ...(paired.incremental ?? {}) } : {};
+
         const read = async (command: SeriesCommand) => {
-            const result = await session.readSeries(variant, command);
+            const cursor = cursors[command];
+            const incremental = INCREMENTAL.includes(command) && supports(variant, command);
+            const since = incremental && !fullRead && cursor?.verdict === 'verified' && cursor.newest
+                ? incrementalStart(cursor.newest)
+                : undefined;
+
+            const result = await timed(command, since ? 'since' : 'full', since);
             if (supports(variant, command)) {
                 report.asked += 1;
                 if (!result.packets.length) report.silent += 1;
                 report.unreadable += map.unreadable(result.packets);
+            }
+
+            if (incremental && result.complete) {
+                const stamps = map.recordStamps(result.packets);
+                const newestNow = newestStamp(stamps, now);
+                const next: SeriesCursor = { verdict: cursor?.verdict ?? 'unverified' };
+                // A full read is the truth about where the series ends; a partial one can only
+                // move the cursor forward.
+                next.newest = since
+                    ? [cursor?.newest, newestNow].filter((v): v is string => !!v).sort().pop()
+                    : newestNow ?? undefined;
+
+                const from = next.newest ? incrementalStart(next.newest) : null;
+                // With nothing older than the start date, a band that ignored it would answer
+                // exactly as one that honoured it, so a probe could prove nothing.
+                if (!since && next.verdict === 'unverified' && from
+                    && stamps.some((d) => d.getTime() < from.getTime())) {
+                    const probe = await timed(command, 'probe', from);
+                    const verdict = judgeProbe(stamps, map.recordStamps(probe.packets), from);
+                    console.log(`🧪 ${command}: start date ${startDateArg(from)} → ${verdict}`);
+                    if (verdict !== 'inconclusive') next.verdict = verdict;
+                }
+                cursors[command] = next;
             }
             const mapper = MAPPERS[command];
             if (mapper && result.packets.length && trustworthy(result)) {
@@ -365,6 +566,9 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         const hrv = await read('getHrv');
         batch.days.push(...map.toHrvDays(hrv.packets));
         batch.bloodPressure!.push(...map.toBloodPressure(hrv.packets, ctx));
+        // Stress rides in the HRV records. Each is its own row under its own id, but `getHrv`
+        // stays out of `MAPPERS`: deleting the series would also take the day's HRV average.
+        batch.stress!.push(...map.toStress(hrv.packets, ctx));
 
         batch.spo2!.push(...map.toSpo2((await read('getAutoSpo2')).packets, ctx, 'automatic'));
         batch.spo2!.push(...map.toSpo2((await read('getManualSpo2')).packets, ctx, 'manual'));
@@ -380,6 +584,12 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         // answer without a reconnect — and so the only readings that can appear between the
         // read and the delete are ones the bracelet takes in those seconds, which the
         // re-read in `acknowledgeSynced` catches. Two minutes is the ceiling on holding it.
+        report.totalMs = Date.now() - startedAt;
+        console.log(`⌚ Bracelet read in ${(report.totalMs / 1000).toFixed(1)}s — `
+            + report.series.map((t) => `${t.command}${t.how === 'full' ? '' : `[${t.how}]`} `
+                + `${t.packets}p ${(t.ms / 1000).toFixed(1)}s`).join(', '));
+        pendingCursors = { incremental: cursors, fullRead, at: new Date(now).toISOString() };
+
         const afterRead = await readClock(variant);
         // Live view sets the clock too. If it found the clock wrong since the last sync, that
         // reading is the evidence, and this sync's own merely says the set worked.
@@ -407,7 +617,8 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
     await updatePaired({ lastSyncAt: readAt, latest: latestOf(batch, paired.latest) });
     report.rows = batch.activities.length + batch.sleep.length + batch.heart.length
         + batch.days.length + (batch.spo2?.length ?? 0) + (batch.temperature?.length ?? 0)
-        + (batch.bloodPressure?.length ?? 0) + (batch.ecg?.length ?? 0);
+        + (batch.bloodPressure?.length ?? 0) + (batch.ecg?.length ?? 0)
+        + (batch.stress?.length ?? 0);
     lastReport = report;
     return batch;
 };
@@ -472,8 +683,19 @@ const latestOf = (batch: SyncBatch, held: LatestReadings = {}): LatestReadings =
  */
 export const acknowledgeSynced = async (): Promise<void> => {
     const plan = pending;
-    // The POST that carried any clock reading live view kept has landed.
-    await updatePaired({ unreportedClock: undefined });
+    // The POST that carried any clock reading live view kept has landed — and with it every
+    // row behind this read's cursors, which is the only moment they may be saved. Saved
+    // earlier, a failed POST would leave the next read starting past rows nobody received.
+    const cursors = pendingCursors;
+    pendingCursors = null;
+    await updatePaired({
+        unreportedClock: undefined,
+        ...(cursors ? {
+            incremental: cursors.incremental,
+            incrementalVersion: INCREMENTAL_VERSION,
+            ...(cursors.fullRead ? { lastFullReadAt: cursors.at } : {}),
+        } : {}),
+    });
     try {
         // Nothing is deleted over a connection this sync did not open and hold throughout —
         // live view taking the bracelet over mid-POST is the case this catches.

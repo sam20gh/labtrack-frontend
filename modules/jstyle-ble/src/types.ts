@@ -135,7 +135,12 @@ export type JstylePacketType =
 export interface JstyleCommandArgs {
     /** History reads. Defaults to `start`. */
     mode?: JstyleReadMode;
-    /** History reads — ISO instant the device resumes from. */
+    /**
+     * History reads — where the device starts. Platform-specific, because the SDKs are:
+     * Android passes it straight to the jar, which splits `yyyy-MM-dd HH:mm:ss`; iOS parses
+     * ISO 8601 without fractional seconds. `startDateArg` in `lib/health/jstyle/reader.ts`
+     * writes both.
+     */
     startDate?: string;
     /** `setPersonalInfo`. */
     personalInfo?: JstylePersonalInfo;

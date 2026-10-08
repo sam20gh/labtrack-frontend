@@ -19,7 +19,7 @@
 import type { JstylePacket, JstyleVariant } from '@/modules/jstyle-ble';
 import type {
     ActivityRow, BloodPressureRow, DayRow, EcgRow, HeartRow, SleepRow, SleepStage,
-    SourceDevice, Spo2Row, TemperatureRow,
+    SourceDevice, Spo2Row, StressRow, TemperatureRow,
 } from '../types';
 
 /**
@@ -40,6 +40,9 @@ const K = {
     staticHr: 'onceHeartValue', dynamicHr: 'arrayDynamicHR', heartValue: 'heartValue',
     iosStaticHr: 'singleHR', iosDynamicHr: 'arrayHR', iosHeartRate: 'heartRate',
     hrv: 'hrv', stress: 'stress', fatigue: 'fatigueDegree', vascularAging: 'vascularAging',
+    // In the V8's iOS archive beside `stress`; which of the two its HRV records carry has not
+    // been seen on a device, so both are tried.
+    iosStress: 'numberStress',
     highPressure: 'highPressure', lowPressure: 'lowPressure',
     highBp: 'highBP', lowBp: 'lowBP',
     iosSystolic: 'systolicBP', iosDiastolic: 'diastolicBP',
@@ -196,6 +199,19 @@ export const unreadable = (packets: JstylePacket[]): number =>
         && Object.values(r).some((v) =>
             (Array.isArray(v) && v.length > 0) || (typeof v === 'string' && DATEISH.test(v))),
     ).length;
+
+/**
+ * The instant of every record in a reply that carries one, in arrival order.
+ *
+ * What the reader needs to read a series incrementally: the newest stamp is where the next
+ * read can start, and the full set is what proves the band honoured a start date at all.
+ */
+export const recordStamps = (packets: JstylePacket[]): Date[] =>
+    records(packets).flatMap((r) => {
+        const key = STAMP_KEYS.find((k) => r[k]);
+        const at = key ? parseInstant(r[key]) : null;
+        return at ? [at] : [];
+    });
 
 // ── activity ────────────────────────────────────────────────────────────────
 
@@ -434,6 +450,29 @@ export const toBloodPressure = (
             diastolic,
             pulse: positive(r[K.heartValue]) ?? positive(r[K.iosHeartRate]) ?? undefined,
             method: 'optical_estimate',
+            sourceDevice: ctx.device,
+        }];
+    });
+
+/**
+ * The bracelet's stress score, one row per HRV record it rode in on.
+ *
+ * Read from the same packets as `toHrvDays`, so it costs no extra Bluetooth read. A record
+ * counts only when its own HRV is positive: the score is computed from that measurement, and
+ * a failed one reports zeros for both — a zero here would be a calm reading nobody took.
+ * Anything outside 1–100 is dropped as well. The vendor does not publish the scale; every
+ * value seen so far sits inside it, and one that does not is not a reading to put on a chart.
+ */
+export const toStress = (packets: JstylePacket[], ctx: MapContext): StressRow[] =>
+    records(packets).flatMap((r) => {
+        const at = parseInstant(r[K.date]);
+        const score = positive(r[K.stress]) ?? positive(r[K.iosStress]);
+        if (!at || positive(r[K.hrv]) === null || score === null || score > 100) return [];
+
+        return [{
+            externalId: idFor(ctx.deviceId, 'stress', at),
+            measuredAt: at.toISOString(),
+            score: Math.round(score),
             sourceDevice: ctx.device,
         }];
     });

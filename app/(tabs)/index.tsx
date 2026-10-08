@@ -78,6 +78,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { onSynced, runSync } from '@/lib/health/sync';
 import { useRouter, type Router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -470,8 +471,18 @@ export default function HomeScreen() {
         return () => { ageMounted.current = false; };
     }, [loadAge]));
 
+    /**
+     * A sync started when the app came forward (`lib/health/autoSync.ts`) usually lands after
+     * this screen has painted — last night's sleep, this morning's steps. Refetch then, in
+     * place: `load` never swaps a painted page back to a skeleton.
+     */
+    useEffect(() => onSynced(() => { load().catch(() => undefined); }), [load]);
+
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
+        // Pulling down also asks the devices, without holding the spinner on them: a bracelet
+        // read is seconds at best, and `onSynced` above refetches when it lands.
+        runSync(true).catch(() => undefined);
         await Promise.all([load(), loadAge()]);
         setRefreshing(false);
     }, [load, loadAge]);

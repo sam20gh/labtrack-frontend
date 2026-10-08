@@ -47,6 +47,24 @@ let lastRunAt = 0;
 let inFlight: Promise<SyncResult> | null = null;
 
 /**
+ * Told whenever a sync wrote days, whoever started it.
+ *
+ * A screen that started its own sync refetches from the result it awaited. This is for the
+ * ones that did not — home, after the sync `autoSync.ts` starts when the app comes forward,
+ * which nobody on screen is waiting for.
+ */
+type SyncListener = (result: SyncResult) => void;
+const listeners = new Set<SyncListener>();
+
+export const onSynced = (listener: SyncListener): (() => void) => {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
+};
+
+/** Whether a sync is running now. */
+export const isSyncing = (): boolean => inFlight !== null;
+
+/**
  * Sync one source.
  *
  * Never throws. A source that cannot run reports why and the others carry on — which is
@@ -202,6 +220,11 @@ export const runSync = (force = false): Promise<SyncResult> => {
             if (result.ran) {
                 // eslint-disable-next-line @typescript-eslint/no-require-imports
                 (require('../run/enrich') as typeof import('../run/enrich')).fillLiveSteps().catch(() => undefined);
+            }
+            if (result.ran && result.daysUpdated.length) {
+                listeners.forEach((listener) => {
+                    try { listener(result); } catch { /* a screen's refetch is its own problem */ }
+                });
             }
             return result;
         })

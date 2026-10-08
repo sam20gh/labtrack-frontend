@@ -207,8 +207,8 @@ const readingFor = (metric: MetricCard): string => {
         parts.push(`It has held steady, between ${fmt(min)} and ${fmt(max)}.`);
     } else {
         parts.push(
-            `It has ${delta > 0 ? 'risen' : 'fallen'} from ${fmt(first)} to ${fmt(last)} `
-            + `${metric.unit}, ranging between ${fmt(min)} and ${fmt(max)}.`,
+            `It has ${delta > 0 ? 'risen' : 'fallen'} from ${fmt(first)} to ${fmt(last)}`
+            + `${withUnit(metric.unit)}, ranging between ${fmt(min)} and ${fmt(max)}.`,
         );
     }
 
@@ -221,9 +221,12 @@ const readingFor = (metric: MetricCard): string => {
 
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
+/** A unit after a number, or nothing for a unitless score like stress. */
+const withUnit = (unit: string) => (unit ? ` ${unit}` : '');
+
 /** What the assistant is asked, with the metric in hand so the answer is about their data. */
 const promptFor = (metric: MetricCard) =>
-    `My ${metric.label.toLowerCase()} is currently ${metric.value ?? 'not recorded'} ${metric.unit} `
+    `My ${metric.label.toLowerCase()} is currently ${metric.value ?? 'not recorded'}${withUnit(metric.unit)} `
     + `(${metric.status.toLowerCase()}). What does that mean for me, and what should I do about it?`;
 
 const useStyles = makeStyles((Palette) => ({

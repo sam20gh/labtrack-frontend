@@ -52,6 +52,23 @@ export interface PairedBracelet {
      * kept until a sync has reported it, because setting it destroyed the only evidence.
      */
     unreportedClock?: ClockReading & { lastSetAt: string | null };
+    /**
+     * Per never-deleted series (`INCREMENTAL` in `reader.ts`): whether this band honours a
+     * start date, and the newest record the server has. Saved only after the POST lands.
+     */
+    incremental?: Record<string, SeriesCursor>;
+    /** Which `INCREMENTAL_VERSION` wrote `incremental`. A different one starts again. */
+    incrementalVersion?: number;
+    /** The last full replay the server received. One is due every day regardless. */
+    lastFullReadAt?: string;
+}
+
+/** One series' incremental-read state. */
+export interface SeriesCursor {
+    /** Proved by `judgeProbe` against a full read; `unsupported` stays on full reads. */
+    verdict: 'unverified' | 'verified' | 'unsupported';
+    /** The newest record's instant (ISO). The next read starts the local day before it. */
+    newest?: string;
 }
 
 /** The bracelet's clock as read, and the phone's when it answered. */

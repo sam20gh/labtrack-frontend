@@ -290,7 +290,7 @@ export default function SourcesScreen() {
                             // HealthKit refuses to report read-permission status at all, so
                             // the app genuinely cannot tell a refusal from an empty day.
                             ? 'iOS doesn’t tell apps which health data you shared. If something looks missing, check Health → Sharing → Apps.'
-                            : 'Android syncs when you open Predyqt — Health Connect has no way to wake the app in the background.'}
+                            : 'Predyqt syncs when you open it and every time you come back to it. It can’t sync while it is closed yet.'}
                     </Text>
                 </ScrollView>
             )}

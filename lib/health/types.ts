@@ -166,6 +166,22 @@ export interface BloodPressureRow {
 }
 
 /**
+ * The bracelet's own stress score, one per HRV measurement.
+ *
+ * **It is not a second signal.** The vendor works it out from the same pulse-wave capture
+ * as the HRV beside it, on a scale it does not publish, so it is carried as reported and
+ * never recomputed, banded or scored here. What it adds over the day's HRV average is
+ * *when*: one row per reading, so a stressful afternoon is not averaged into a calm day.
+ */
+export interface StressRow {
+    externalId: string;
+    measuredAt: string;
+    /** The vendor's score, as reported. Observed range 1–100; see `toStress`. */
+    score: number;
+    sourceDevice?: SourceDevice;
+}
+
+/**
  * One ECG or PPG measurement the person ran on the bracelet.
  *
  * `samples` is the waveform and it is the reason this is its own row rather than a field:
@@ -247,6 +263,7 @@ export interface SyncBatch {
     temperature?: TemperatureRow[];
     bloodPressure?: BloodPressureRow[];
     ecg?: EcgRow[];
+    stress?: StressRow[];
 
     /**
      * The cycle import. `cycleWindow` is the span the phone re-read in full, and it matters as

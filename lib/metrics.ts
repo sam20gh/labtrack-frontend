@@ -23,14 +23,14 @@ export const today = (): string => {
 };
 
 export type MetricKey =
-    | 'weight' | 'blood_pressure' | 'heart_rate' | 'hrv' | 'spo2' | 'temperature'
+    | 'weight' | 'blood_pressure' | 'heart_rate' | 'hrv' | 'stress' | 'spo2' | 'temperature'
     | 'sleep' | 'hydration' | 'steps';
 
 /** The three that accept a manual entry. The rest are device-fed. */
 export type LoggableKind = 'weight' | 'water' | 'blood-pressure';
 
 /** Every kind `GET /metrics/:kind/history` answers — the route slugs, hyphenated. */
-export type HistoryKind = LoggableKind | 'heart-rate' | 'hrv' | 'spo2' | 'temperature' | 'sleep' | 'steps';
+export type HistoryKind = LoggableKind | 'heart-rate' | 'hrv' | 'stress' | 'spo2' | 'temperature' | 'sleep' | 'steps';
 
 export interface SeriesPoint {
     day: string;
@@ -267,6 +267,8 @@ export const METRIC_ICON: Record<MetricKey, string> = {
     heart_rate: 'heart-outline',
     // The same glyph `DayStats` gives HRV on the activity screen.
     hrv: 'git-compare-outline',
+    // A gauge rather than a face or a cloud: it is the bracelet's reading, not a mood.
+    stress: 'speedometer-outline',
     // Filled, where hydration's drop is an outline: a blood drop, not a glass of water. The
     // colour and the label carry the rest.
     spo2: 'water',
@@ -319,7 +321,7 @@ export const METRIC_ICON: Record<MetricKey, string> = {
  * gives any glyph that is not an action — the skill's "fold it, don't invent a hue". An
  * eighth *hue* would have to come from re-stepping the whole set, not from squeezing one in.
  */
-const METRIC_TINTS: Record<'light' | 'dark', Record<Exclude<MetricKey, 'temperature' | 'hrv'>, string>> = {
+const METRIC_TINTS: Record<'light' | 'dark', Record<Exclude<MetricKey, 'temperature' | 'hrv' | 'stress'>, string>> = {
     light: {
         weight: '#F59E0B', blood_pressure: '#0C6EA0', heart_rate: '#FB7185', spo2: '#911342',
         sleep: '#6366F1', hydration: '#38BDF8', steps: '#10B981',
@@ -340,6 +342,8 @@ export const METRIC_TINT = schemed((Palette, scheme): Record<MetricKey, string> 
     ...METRIC_TINTS[scheme],
     temperature: Palette.textSecondary,
     hrv: Palette.textSecondary,
+    // The tenth card, and HRV re-expressed: it folds for HRV's reason and the glyph carries it.
+    stress: Palette.textSecondary,
 }));
 
 /**
@@ -360,6 +364,7 @@ export const METRIC_ROUTE: Record<MetricKey, string> = {
     hydration: '/metrics/water',
     heart_rate: '/metrics/heart-rate',
     hrv: '/metrics/hrv',
+    stress: '/metrics/stress',
     spo2: '/metrics/spo2',
     temperature: '/metrics/temperature',
     sleep: '/metrics/sleep',
@@ -375,6 +380,7 @@ export const HISTORY_METRIC: Record<Exclude<HistoryKind, 'water'>, MetricKey> = 
     'blood-pressure': 'blood_pressure',
     'heart-rate': 'heart_rate',
     hrv: 'hrv',
+    stress: 'stress',
     spo2: 'spo2',
     temperature: 'temperature',
     sleep: 'sleep',
@@ -402,6 +408,7 @@ export const METRIC_INSIGHT_ROUTE = (key: MetricKey): string => {
 export const METRIC_SOURCE_LINK: Partial<Record<MetricKey, { label: string; route: string; icon: string }>> = {
     heart_rate: { label: 'Open Activity', route: '/activity', icon: 'pulse-outline' },
     hrv: { label: 'Open Activity', route: '/activity', icon: 'pulse-outline' },
+    stress: { label: 'Take a reading on your bracelet', route: '/bracelet', icon: 'watch-outline' },
     steps: { label: 'Open Activity', route: '/activity', icon: 'walk-outline' },
     spo2: { label: 'Take a reading on your bracelet', route: '/bracelet', icon: 'watch-outline' },
     temperature: { label: 'Take a reading on your bracelet', route: '/bracelet', icon: 'watch-outline' },

@@ -24,7 +24,7 @@ jest.mock('../store', () => ({}));
 import { describeSync, type ReadReport } from '../reader';
 
 const report = (patch: Partial<ReadReport>): ReadReport =>
-    ({ asked: 11, silent: 0, unreadable: 0, rows: 0, ...patch });
+    ({ asked: 11, silent: 0, unreadable: 0, rows: 0, series: [], totalMs: 0, ...patch });
 
 describe('describeSync', () => {
     it('reports days updated whatever else happened', () => {

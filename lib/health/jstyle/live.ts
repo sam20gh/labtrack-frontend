@@ -111,6 +111,12 @@ export const start = async (handlers: LiveHandlers): Promise<void> => {
     }
     if (live) return;
 
+    // A sync that started on its own when the app came forward may hold the bracelet, and
+    // connecting would drop it mid-read. Wait for it — they take seconds once incremental.
+    // Required lazily: the reader imports this file.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    await (require('./reader') as typeof import('./reader')).whenIdle();
+
     const { variant } = paired;
     live = true;
     variantInUse = variant;

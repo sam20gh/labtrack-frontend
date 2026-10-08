@@ -54,6 +54,8 @@ const META: Record<string, { title: string; unit: string; logRoute?: string }> =
     'blood-pressure': { title: 'Blood Pressure', unit: 'mmHg', logRoute: '/metrics/log/blood-pressure' },
     'heart-rate': { title: 'Heart Rate', unit: 'bpm' },
     hrv: { title: 'Heart Rate Variability', unit: 'ms' },
+    // Unitless: the bracelet's own score on a scale its maker does not publish.
+    stress: { title: 'Stress', unit: '' },
     spo2: { title: 'Blood Oxygen', unit: '%' },
     temperature: { title: 'Temperature', unit: '°C' },
     sleep: { title: 'Sleep', unit: 'h' },
@@ -68,7 +70,7 @@ const formatValue = (value: number | null | undefined, unit: string): string => 
     if (unit === 'h') return formatMinutes(value * 60);
     if (unit === 'steps') return `${Math.round(value).toLocaleString()} steps`;
     if (unit === '%') return `${value}%`;
-    return `${value} ${unit}`;
+    return unit ? `${value} ${unit}` : String(value);
 };
 
 const formatTime = (iso: string) =>
