@@ -178,6 +178,30 @@ describe('a band that ignores it', () => {
     });
 });
 
+describe('a band that replays everything anyway', () => {
+    it('posts only the window once its verdict is known, and everything on a full read', async () => {
+        mockHonours = false;
+        await sync();
+        mockDays = [1, 2, 3, 4, 5, 6, 7, 8];
+        const batch = await reader.readSince(null);
+        // The cursor was the 7th: the window starts at midnight on the 6th.
+        expect(batch.days.filter((d) => d.avgBpm != null).map((d) => d.day))
+            .toEqual(['2026-10-06', '2026-10-07', '2026-10-08']);
+        expect(batch.days.filter((d) => d.hrvMs != null).map((d) => d.day))
+            .toEqual(['2026-10-06', '2026-10-07', '2026-10-08']);
+        expect(batch.stress!.map((r) => new Date(r.measuredAt).getDate())).toEqual([6, 7, 8]);
+        expect(batch.sleep.length).toBe(3);
+        await acknowledgeSynced();
+        // The cursor moved on with what was read.
+        expect(new Date(store.__get().incremental.getDynamicHr.newest).getDate()).toBe(8);
+
+        store.__set({ ...store.__get(), lastFullReadAt: new Date(Date.now() - 25 * 3600_000).toISOString() });
+        const full = await reader.readSince(null);
+        expect(full.days.filter((d) => d.avgBpm != null)).toHaveLength(8);
+        await release();
+    });
+});
+
 describe('nothing is saved before the server has the rows', () => {
     it('a POST that failed leaves no cursor and no verdict', async () => {
         await reader.readSince(null);

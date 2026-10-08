@@ -213,6 +213,25 @@ export const recordStamps = (packets: JstylePacket[]): Date[] =>
         return at ? [at] : [];
     });
 
+/**
+ * The same reply holding only the records stamped at or after `from`.
+ *
+ * For a series the band replays in full whatever start date it is given: the server already
+ * has everything older, so it is trimmed before it is posted rather than re-ingested. Returned
+ * as one packet in the Android shape, which `records()` reads on either platform. A record
+ * with no stamp is dropped here as every mapper would drop it.
+ */
+export const keepSince = (packets: JstylePacket[], from: Date): JstylePacket[] => {
+    if (!packets.length) return packets;
+    const start = from.getTime();
+    const kept = records(packets).filter((r) => {
+        const key = STAMP_KEYS.find((k) => r[k]);
+        const at = key ? parseInstant(r[key]) : null;
+        return at !== null && at.getTime() >= start;
+    });
+    return [{ ...packets[0], end: true, data: { dicData: kept } } as JstylePacket];
+};
+
 // ── activity ────────────────────────────────────────────────────────────────
 
 /**

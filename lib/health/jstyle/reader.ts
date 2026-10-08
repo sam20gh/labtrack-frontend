@@ -370,6 +370,8 @@ export interface SeriesTiming {
     /** `full`: the whole buffer. `since`: from a start date. `probe`: testing one. */
     how: 'full' | 'since' | 'probe';
     packets: number;
+    /** Records left after trimming a replayed series to the window, when it was trimmed. */
+    kept?: number;
     ms: number;
     complete: boolean;
 }
@@ -538,6 +540,29 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
                 report.unreadable += map.unreadable(result.packets);
             }
 
+            /**
+             * A band that ignores start dates still replays the whole series, but the server
+             * already has everything before the window, so only the window is posted — the
+             * same whole-day window a start date would have given. The read costs the same;
+             * the upload carries two days instead of weeks. Not on a full-read sync, which is
+             * the daily safety net, and not before the band's verdict is known.
+             */
+            const trimFrom = incremental && !fullRead && cursor?.verdict === 'unsupported' && cursor.newest
+                ? incrementalStart(cursor.newest)
+                : null;
+            if (trimFrom) {
+                const trimmed = map.keepSince(result.packets, trimFrom);
+                const timing = report.series[report.series.length - 1];
+                if (timing?.command === command) timing.kept = map.recordStamps(trimmed).length;
+                const stamps = map.recordStamps(result.packets);
+                const newestNow = newestStamp(stamps, now);
+                cursors[command] = {
+                    verdict: 'unsupported',
+                    newest: [cursor?.newest, newestNow].filter((v): v is string => !!v).sort().pop(),
+                };
+                return { ...result, packets: trimmed };
+            }
+
             if (incremental && result.complete) {
                 const stamps = map.recordStamps(result.packets);
                 const newestNow = newestStamp(stamps, now);
@@ -599,7 +624,8 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         console.log(`⌚ Bracelet read in ${sec(report.totalMs)} — connect ${sec(setup.connectMs)}, `
             + `clock ${sec(setup.clockMs)}, battery ${sec(setup.batteryMs)}, settings ${sec(setup.settingsMs)}; `
             + report.series.map((t) => `${t.command}${t.how === 'full' ? '' : `[${t.how}]`} `
-                + `${t.packets}p ${(t.ms / 1000).toFixed(1)}s`).join(', '));
+                + `${t.packets}p ${(t.ms / 1000).toFixed(1)}s${t.kept !== undefined ? ` →${t.kept} posted` : ''}`)
+                .join(', '));
         pendingCursors = { incremental: cursors, fullRead, at: new Date(now).toISOString() };
 
         const afterRead = await readClock(variant);

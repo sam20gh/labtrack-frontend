@@ -258,8 +258,9 @@ export const ask = (
     command: JstyleCommand,
     args: Parameters<typeof buildCommand>[2] = {},
     accepts?: Accepts,
+    firstPacketMs?: number,
 ): Promise<ReadResult> => exclusive(
-    () => exchange(variant, command, args, PACKETS_PER_BATCH, accepts),
+    () => exchange(variant, command, args, PACKETS_PER_BATCH, accepts, firstPacketMs),
 );
 
 /**

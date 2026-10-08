@@ -52,6 +52,9 @@ export const readClock = async (variant: JstyleVariant): Promise<ClockReading> =
     }
 };
 
+/** How long a clock set waits for the band's acknowledgement. Nothing depends on it. */
+const SET_TIME_REPLY_MS = 1_500;
+
 /**
  * Read the clock, then set it. The order is the whole point.
  *
@@ -69,7 +72,11 @@ export const checkAndSetClock = async (
     const lastSetAt = paired?.clockSetAt ?? paired?.lastSyncAt ?? null;
 
     const before = await readClock(variant);
-    await session.ask(variant, 'setDeviceTime');
+    // The band acknowledges a set with a packet type this build has no name for, and an
+    // unnamed packet is ignored unless a filter takes it, so this waited out the full eight
+    // seconds on every sync (measured 2026-10-08: "clock 8.1s"). Any reply ends it, and a
+    // band that sends none costs `SET_TIME_REPLY_MS` rather than the session's default.
+    await session.ask(variant, 'setDeviceTime', {}, () => true, SET_TIME_REPLY_MS);
     await updatePaired({ clockSetAt: new Date().toISOString() });
 
     if (isWrong(before)) {
