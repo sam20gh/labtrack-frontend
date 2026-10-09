@@ -4,8 +4,15 @@
  * Payment is not wired: no provider has been chosen yet. Rather than fake a payment step,
  * orders are placed unpaid and the screen says so plainly — a checkout that pretends to
  * take money and does not would be worse than one that is honest about the gap.
+ *
+ * **Post or a technician visit.** The market the currency belongs to decides what is offered
+ * (`GET /collection/market`); in the UAE that is home collection by default. Choosing it swaps
+ * the postal address for a slot and a visit address shaped for the UAE, and adds the market's
+ * visit price to the total. The slot is held on the server while the payment sheet is open,
+ * and becomes a booking when the payment lands. "Choose a time later" is allowed: the order is
+ * paid now and the journey asks for the visit. See `utils/collectionCentre.js`.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +25,12 @@ import { createOrder } from '@/lib/orders';
 import { getPaymentStatus, createPaymentIntent, confirmPayment, formatMoney } from '@/lib/payments';
 import { ApiError } from '@/lib/api';
 import { CURRENCY_OPTIONS, type CurrencyCode } from '@/lib/currency';
+import {
+    cleanDetails, detailsComplete, EMPTY_DETAILS, getMarket, getSlots,
+    type FulfilmentMethod, type MarketInfo, type SlotDay, type VisitDetails,
+} from '@/lib/collection';
+import { SlotPicker } from '@/components/collection/SlotPicker';
+import { VisitDetailsForm } from '@/components/collection/VisitDetailsForm';
 
 
 import { makeStyles, usePalette } from '@/hooks/useTheme';
@@ -49,13 +62,46 @@ export default function BasketScreen() {
     const [address, setAddress] = useState({ line1: '', line2: '', city: '', postcode: '', country: REGION[currency].name });
     const deliversTo = CURRENCY_OPTIONS.find((o) => o.code === currency)?.deliversTo;
 
+    const [market, setMarket] = useState<MarketInfo | null>(null);
+    const [method, setMethod] = useState<FulfilmentMethod>('post');
+    const [days, setDays] = useState<SlotDay[] | null>(null);
+    const [slotStart, setSlotStart] = useState<string | null>(null);
+    const [later, setLater] = useState(false);
+    const [details, setDetails] = useState<VisitDetails>(EMPTY_DETAILS);
+
     useEffect(() => {
         getPaymentStatus()
             .then((s) => setPayment({ available: s.available, testMode: s.testMode }))
             .catch(() => setPayment({ available: false, testMode: false }));
     }, []);
 
-    const addressComplete = address.line1.trim() && address.city.trim() && address.postcode.trim();
+    // What this currency's market offers. A failure leaves post, which every market offers
+    // today — a checkout that cannot load its options must still be able to send a kit.
+    useEffect(() => {
+        let live = true;
+        getMarket(currency)
+            .then((m) => {
+                if (!live) return;
+                setMarket(m);
+                setMethod(m.options.find((o) => o.default)?.method ?? m.options[0]?.method ?? 'post');
+            })
+            .catch(() => { if (live) { setMarket(null); setMethod('post'); } });
+        return () => { live = false; };
+    }, [currency]);
+
+    const loadSlots = useCallback(() => {
+        getSlots({ currency }).then((r) => setDays(r.days)).catch(() => setDays([]));
+    }, [currency]);
+    useEffect(() => { if (method === 'home_collection') loadSlots(); }, [method, loadSlots]);
+
+    const collecting = method === 'home_collection';
+    const option = market?.options.find((o) => o.method === method);
+    const fee = collecting ? option?.price ?? 0 : 0;
+    const total = estimatedTotal === null ? null : estimatedTotal + fee;
+    const chosenSlot = days?.flatMap((d) => d.slots.map((sl) => ({ ...sl, day: d.label }))).find((sl) => sl.start === slotStart);
+
+    const postReady = Boolean(address.line1.trim() && address.city.trim() && address.postcode.trim());
+    const addressComplete = collecting ? later || Boolean(slotStart && detailsComplete(details)) : postReady;
 
     /**
      * Place the order, then take payment if Stripe is configured.
@@ -67,7 +113,9 @@ export default function BasketScreen() {
      */
     const placeOrder = async () => {
         if (!addressComplete) {
-            Toast.show({ type: 'error', text1: 'Address needed', text2: 'We need somewhere to send your kit' });
+            Toast.show(collecting
+                ? { type: 'error', text1: 'Visit details needed', text2: 'Choose a time and tell us where to come' }
+                : { type: 'error', text1: 'Address needed', text2: 'We need somewhere to send your kit' });
             return;
         }
 
@@ -75,8 +123,11 @@ export default function BasketScreen() {
         try {
             const { order } = await createOrder(
                 lines.map((l) => ({ productId: l.productId, quantity: l.quantity, planItemId: l.planItemId })),
-                address,
+                collecting ? undefined : address,
                 currency,
+                collecting
+                    ? (later ? { method: 'home_collection' } : { method: 'home_collection', slotStart: slotStart!, ...cleanDetails(details) })
+                    : { method: 'post' },
             );
             await clear();
 
@@ -99,13 +150,15 @@ export default function BasketScreen() {
                 paymentIntentClientSecret: bundle.clientSecret,
                 allowsDelayedPaymentMethods: false,
                 defaultBillingDetails: {
-                    address: {
-                        line1: address.line1,
-                        line2: address.line2 || undefined,
-                        city: address.city,
-                        postalCode: address.postcode,
-                        country: REGION[currency].iso,
-                    },
+                    address: collecting && !later
+                        ? { line1: details.address.building, city: details.address.city, country: REGION[currency].iso }
+                        : {
+                            line1: address.line1,
+                            line2: address.line2 || undefined,
+                            city: address.city,
+                            postalCode: address.postcode,
+                            country: REGION[currency].iso,
+                        },
                 },
             });
 
@@ -130,11 +183,18 @@ export default function BasketScreen() {
             Toast.show({
                 type: 'success',
                 text1: 'Payment complete',
-                text2: `${formatMoney(order.total, order.currency)} — we'll send your kit shortly`,
+                text2: collecting
+                    ? chosenSlot && !later ? `Your visit is booked: ${chosenSlot.day}, ${chosenSlot.label}` : 'Now choose a time for your visit'
+                    : `${formatMoney(order.total, order.currency)} — we'll send your kit shortly`,
             });
             if (returnTo) router.dismissTo(returnTo as Href);
             else router.replace({ pathname: '/order-details', params: { orderId: order._id } });
         } catch (error) {
+            // The slot went in the moments since it was chosen: show the fresh times.
+            if (error instanceof ApiError && error.status === 409 && collecting) {
+                setSlotStart(null);
+                loadSlots();
+            }
             Toast.show({
                 type: 'error',
                 text1: 'Could not complete your order',
@@ -227,8 +287,69 @@ export default function BasketScreen() {
                         <Text style={styles.currencyChange}>Change</Text>
                     </TouchableOpacity>
 
-                    <Text style={styles.sectionLabel}>Where should we send your kit?</Text>
-                    {([
+                    {market && market.options.length > 1 ? (
+                        <>
+                            <Text style={styles.sectionLabel}>How would you like your tests?</Text>
+                            {market.options.map((o) => {
+                                const on = o.method === method;
+                                return (
+                                    <TouchableOpacity
+                                        key={o.method}
+                                        style={[styles.option, on && styles.optionOn]}
+                                        onPress={() => setMethod(o.method)}
+                                        accessibilityRole="radio"
+                                        accessibilityState={{ selected: on }}
+                                    >
+                                        <Ionicons
+                                            name={on ? 'radio-button-on' : 'radio-button-off'}
+                                            size={20}
+                                            color={on ? Palette.primary : Palette.textMuted}
+                                        />
+                                        <View style={styles.flex}>
+                                            <View style={styles.optionHead}>
+                                                <Text style={styles.optionTitle}>{o.label}</Text>
+                                                <Text style={styles.optionPrice}>{o.price ? formatMoney(o.price, currency) : 'Free'}</Text>
+                                            </View>
+                                            <Text style={styles.optionBody}>{o.description}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </>
+                    ) : null}
+
+                    {collecting && market?.visits ? (
+                        <>
+                            <Text style={styles.sectionLabel}>When should we visit?</Text>
+                            {later ? (
+                                <Text style={styles.laterText}>
+                                    You will choose a time after paying. We will remind you on your home screen.
+                                </Text>
+                            ) : days === null ? (
+                                <ActivityIndicator color={Palette.primary} style={{ marginVertical: 16 }} />
+                            ) : (
+                                <SlotPicker days={days} value={slotStart} onChange={setSlotStart} clockLabel={`${market.name} time`} />
+                            )}
+                            <TouchableOpacity onPress={() => setLater((v) => !v)} style={styles.laterToggle} accessibilityRole="button">
+                                <Text style={styles.laterLink}>{later ? 'Choose a time now' : 'Choose a time later'}</Text>
+                            </TouchableOpacity>
+
+                            {!later ? (
+                                <>
+                                    <Text style={styles.sectionLabel}>Where should we visit?</Text>
+                                    <VisitDetailsForm
+                                        value={details}
+                                        onChange={setDetails}
+                                        serviceAreas={market.visits.serviceAreas}
+                                        market={market.code}
+                                    />
+                                </>
+                            ) : null}
+                        </>
+                    ) : null}
+
+                    {!collecting ? <Text style={styles.sectionLabel}>Where should we send your kit?</Text> : null}
+                    {!collecting && ([
                         ['line1', 'Address line 1'],
                         ['line2', 'Address line 2 (optional)'],
                         ['city', 'City'],
@@ -267,9 +388,15 @@ export default function BasketScreen() {
                 </ScrollView>
 
                 <View style={styles.footer}>
+                    {fee ? (
+                        <View style={styles.feeRow}>
+                            <Text style={styles.feeLabel}>Home collection</Text>
+                            <Text style={styles.feeLabel}>{formatMoney(fee, currency)}</Text>
+                        </View>
+                    ) : null}
                     <View style={styles.totalRow}>
                         <Text style={styles.totalLabel}>Total</Text>
-                        <Text style={styles.totalValue}>{formatMoney(estimatedTotal, currency)}</Text>
+                        <Text style={styles.totalValue}>{formatMoney(total, currency)}</Text>
                     </View>
                     <TouchableOpacity
                         style={[styles.primaryButton, (!addressComplete || placing) && styles.buttonDisabled]}
@@ -279,7 +406,7 @@ export default function BasketScreen() {
                         {placing
                             ? <ActivityIndicator color={Palette.white} />
                             : <Text style={styles.primaryButtonText}>
-                                {payment?.available && estimatedTotal !== null ? `Pay ${formatMoney(estimatedTotal, currency)}` : payment?.available ? 'Pay' : 'Place order'}
+                                {payment?.available && total !== null ? `Pay ${formatMoney(total, currency)}` : payment?.available ? 'Pay' : 'Place order'}
                             </Text>}
                     </TouchableOpacity>
                 </View>
@@ -321,6 +448,20 @@ const useStyles = makeStyles((Palette) => ({
     },
     qtyValue: { fontSize: 14, fontWeight: '600', color: Palette.text, minWidth: 18, textAlign: 'center' },
     sectionLabel: { fontSize: 15, fontWeight: '700', color: Palette.text, marginTop: 22, marginBottom: 10 },
+    option: {
+        flexDirection: 'row', gap: 12, alignItems: 'flex-start',
+        borderWidth: 1, borderColor: Palette.border, borderRadius: 14, padding: 14, marginBottom: 10,
+    },
+    optionOn: { borderColor: Palette.primary, borderWidth: 1.5 },
+    optionHead: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+    optionTitle: { fontSize: 15, fontWeight: '600', color: Palette.text },
+    optionPrice: { fontSize: 14, fontWeight: '700', color: Palette.text },
+    optionBody: { fontSize: 13, color: Palette.textSecondary, lineHeight: 18, marginTop: 3 },
+    laterToggle: { paddingVertical: 10, alignSelf: 'flex-start' },
+    laterLink: { fontSize: 14, fontWeight: '600', color: Palette.primary },
+    laterText: { fontSize: 14, color: Palette.textSecondary, lineHeight: 20 },
+    feeRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    feeLabel: { fontSize: 13, color: Palette.textSecondary },
     currencyRow: {
         flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16,
         paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, backgroundColor: Palette.surface,

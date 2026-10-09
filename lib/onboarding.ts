@@ -53,6 +53,8 @@ export interface Journey {
     progress: { done: number; total: number };
     profileMore: { title: string; detail: string; route: string } | null;
     kits: JourneyKit[];
+    /** The next technician visit, labelled in its market's clock. Null when none is coming. */
+    visit: { _id: string; status: string; start: string; label: string; route: string } | null;
     analysis: {
         exists: boolean;
         generatedAt: string | null;

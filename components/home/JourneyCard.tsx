@@ -25,6 +25,7 @@ import { BodyFont, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { StepRow } from '@/components/onboarding/StepRow';
 import { KitTracker } from '@/components/onboarding/KitTracker';
+import { VisitRow } from '@/components/onboarding/VisitRow';
 import { learnedLine, type Journey } from '@/lib/onboarding';
 
 interface Props {
@@ -94,6 +95,7 @@ export function JourneyCard({ journey, onOpen, onDismiss }: Props) {
                     </View>
                 ) : null}
 
+                {journey.visit ? <VisitRow visit={journey.visit} onOpen={onOpen} /> : null}
                 <View style={styles.divider} />
                 <KitTracker kits={journey.kits} />
 
@@ -124,6 +126,7 @@ export function JourneyCard({ journey, onOpen, onDismiss }: Props) {
                 <StepRow key={step.key} step={step} index={i} compact onOpen={onOpen} />
             ))}
 
+            {journey.visit ? <VisitRow visit={journey.visit} onOpen={onOpen} /> : null}
             {journey.kits.length ? (
                 <>
                     <View style={styles.divider} />

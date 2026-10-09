@@ -166,7 +166,7 @@ describe('the icons the server can send', () => {
         'calendar-outline', 'medkit-outline', 'moon-outline', 'water-outline',
         'walk-outline', 'restaurant-outline', 'pulse-outline', 'document-text-outline',
         'sparkles-outline', 'time-outline', 'cube-outline', 'trophy-outline',
-        'person-outline', 'flower-outline',
+        'person-outline', 'flower-outline', 'home-outline',
     ];
 
     it('are all real Ionicons glyphs', () => {

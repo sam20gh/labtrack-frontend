@@ -8,7 +8,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -198,6 +198,24 @@ export default function OrderDetailsScreen() {
                     </TouchableOpacity>
                 )}
 
+                {/* A home-collection order is fulfilled by a visit: its time and its changes live
+                    on the visit's own screen, which every visit notification also opens. */}
+                {order.fulfilment?.method === 'home_collection' && !terminal ? (
+                    <TouchableOpacity
+                        style={styles.visitRow}
+                        onPress={() => router.push((order.fulfilment?.visitId
+                            ? `/collection/${order.fulfilment.visitId}`
+                            : `/collection/book?orderId=${order._id}`) as Href)}
+                        accessibilityRole="button"
+                    >
+                        <Ionicons name="home-outline" size={20} color={Palette.textSecondary} />
+                        <Text style={styles.visitText}>
+                            {order.fulfilment?.visitId ? 'Your collection visit' : 'Book your collection visit'}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
+                    </TouchableOpacity>
+                ) : null}
+
                 <Text style={styles.sectionLabel}>Items</Text>
                 {order.items.map((item) => (
                     <View key={item._id ?? item.productId} style={styles.itemRow}>
@@ -209,6 +227,13 @@ export default function OrderDetailsScreen() {
                     </View>
                 ))}
 
+                {order.fulfilment?.fee ? (
+                    <View style={styles.itemRow}>
+                        <View style={styles.flex}><Text style={styles.itemName}>Home sample collection</Text></View>
+                        <Text style={styles.itemPrice}>{formatMoney(order.fulfilment.fee, order.currency)}</Text>
+                    </View>
+                ) : null}
+
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Total</Text>
                     <Text style={styles.totalValue}>{formatMoney(order.total, order.currency)}</Text>
@@ -216,7 +241,7 @@ export default function OrderDetailsScreen() {
 
                 {order.shippingAddress?.line1 ? (
                     <>
-                        <Text style={styles.sectionLabel}>Delivery</Text>
+                        <Text style={styles.sectionLabel}>{order.fulfilment?.method === 'home_collection' ? 'Visit address' : 'Delivery'}</Text>
                         <Text style={styles.address}>
                             {[order.shippingAddress.line1, order.shippingAddress.line2,
                               order.shippingAddress.city, order.shippingAddress.postcode,
@@ -285,6 +310,11 @@ const useStyles = makeStyles((Palette) => ({
     payButtonText: { color: Palette.white, fontSize: 15, fontWeight: '600' },
     paidRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
     paidText: { fontSize: 13, color: Palette.success, fontWeight: '600' },
+    visitRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16,
+        paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12, backgroundColor: Palette.surface,
+    },
+    visitText: { flex: 1, fontSize: 15, fontWeight: '600', color: Palette.text },
     resultBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 10,
         backgroundColor: Palette.successSurface, borderRadius: 12, padding: 14, marginBottom: 20,

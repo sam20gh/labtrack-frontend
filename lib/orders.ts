@@ -6,6 +6,7 @@
  */
 import { api, apiFetch } from './api';
 import type { Order, OrderStatus } from '@/types/api';
+import type { VisitDetails } from './collection';
 import type { CurrencyCode } from './currency';
 import { schemed, tone } from '@/constants/theme';
 
@@ -18,11 +19,20 @@ export interface ShippingAddress {
 }
 
 /** The server prices every line in `currency`; the order then carries it as `order.currency`. */
+/**
+ * How the order reaches the lab. `post` needs `shippingAddress`; `home_collection` carries the
+ * visit — a slot and where to come — or no slot at all, to book the visit after paying.
+ */
+export type OrderFulfilment =
+    | { method: 'post' }
+    | ({ method: 'home_collection'; slotStart?: string } & Partial<VisitDetails>);
+
 export const createOrder = (
     items: { productId: string; quantity: number; planItemId?: string }[],
     shippingAddress: ShippingAddress | undefined,
     currency: CurrencyCode,
-) => apiFetch<{ order: Order }>('/orders', { method: 'POST', body: { items, shippingAddress, currency } });
+    fulfilment?: OrderFulfilment,
+) => apiFetch<{ order: Order }>('/orders', { method: 'POST', body: { items, shippingAddress, currency, fulfilment } });
 
 export const getOrders = () => api.get<{ orders: Order[] }>('/orders');
 export const getOrder = (id: string) => api.get<{ order: Order }>(`/orders/${id}`);

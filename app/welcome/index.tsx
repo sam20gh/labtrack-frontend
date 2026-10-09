@@ -37,6 +37,7 @@ import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { HeroStatusBar } from '@/components/ui/HeroStatusBar';
 import { StepRow } from '@/components/onboarding/StepRow';
 import { KitTracker } from '@/components/onboarding/KitTracker';
+import { VisitRow } from '@/components/onboarding/VisitRow';
 import {
     getJourney, markWelcomed, openStep, resumeStep, skipStep,
     type Journey, type StepKey,
@@ -170,9 +171,10 @@ export default function WelcomeScreen() {
                         />
                     ))}
 
+                    {journey.visit ? <VisitRow visit={journey.visit} onOpen={(route) => openStep(router, route, HERE)} /> : null}
                     {journey.kits.length ? (
                         <View style={styles.kits}>
-                            <Text style={styles.kitsTitle}>Your parcels</Text>
+                            <Text style={styles.kitsTitle}>{journey.visit ? 'Your tests' : 'Your parcels'}</Text>
                             <KitTracker kits={journey.kits} />
                         </View>
                     ) : null}

@@ -383,7 +383,9 @@ export type ComponentKind = 'blood' | 'dna' | 'bracelet';
 export interface OrderComponent {
     _id?: Id;
     kind: ComponentKind;
-    status: 'placed' | 'kit_sent' | 'sample_received' | 'processing' | 'resulted' | 'dispatched' | 'delivered';
+    method?: 'post' | 'home_collection';
+    status: 'placed' | 'kit_sent' | 'sample_received' | 'processing' | 'resulted' | 'dispatched' | 'delivered'
+        | 'visit_booked' | 'collected';
     statusHistory?: { status: string; at: IsoDate; note?: string }[];
     trackingReference?: string;
 }
@@ -410,6 +412,8 @@ export interface Order extends Timestamped {
     subtotal: number;
     total: number;
     status: OrderStatus;
+    /** Absent on orders from before markets existed, which all went by post. */
+    fulfilment?: { method: 'post' | 'home_collection'; market?: string; fee?: number; visitId?: Id };
     payment?: { provider?: string; status?: 'unpaid' | 'paid' | 'refunded' | 'failed'; paidAt?: IsoDate };
     shippingAddress?: {
         line1?: string; line2?: string; city?: string; postcode?: string; country?: string;
