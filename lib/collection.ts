@@ -85,6 +85,7 @@ export interface Visit {
     accessNotes: string | null;
     requiresFasting: boolean;
     assignee: { name: string } | null;
+    identityChecked?: boolean;
     tasks: { _id: string; kind: 'collect_blood' | 'collect_dna' | 'handover_bracelet'; status: 'pending' | 'done' | 'not_done'; orderId: string }[];
     orderIds: string[];
 }
@@ -107,6 +108,10 @@ export const bookVisit = (orderId: string, slotStart: string, details: VisitDeta
 
 export const rescheduleVisit = (id: string, slotStart: string) =>
     apiFetch<{ visit: Visit }>(`/collection/visits/${id}/reschedule`, { method: 'POST', body: { slotStart } });
+
+/** The visit pass: a QR (as SVG) and the same six characters, for the technician to check. */
+export const getVisitPass = (id: string) =>
+    api.get<{ code: string; svg: string; checked: boolean }>(`/collection/visits/${id}/pass`);
 
 export const cancelVisit = (id: string) =>
     apiFetch<{ visit: Visit }>(`/collection/visits/${id}/cancel`, { method: 'POST' });

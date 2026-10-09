@@ -15,10 +15,11 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
-import { BodyFont, Fonts, Radius, Spacing } from '@/constants/theme';
+import { BodyFont, Fonts, Palettes, Radius, Spacing } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import { ApiError } from '@/lib/api';
-import { cancelVisit, getVisit, TASK_LABEL, VISIT_STATUS_LABEL, type Visit } from '@/lib/collection';
+import { SvgXml } from 'react-native-svg';
+import { cancelVisit, getVisit, getVisitPass, TASK_LABEL, VISIT_STATUS_LABEL, type Visit } from '@/lib/collection';
 
 export default function VisitScreen() {
     const Palette = usePalette();
@@ -28,10 +29,20 @@ export default function VisitScreen() {
     const [data, setData] = useState<{ visit: Visit; canChange: boolean; cutoffHours: number } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
+    const [pass, setPass] = useState<{ code: string; svg: string; checked: boolean } | null>(null);
 
     const load = useCallback(() => {
         getVisit(String(id))
-            .then((d) => { setData(d); setError(null); })
+            .then((d) => {
+                setData(d);
+                setError(null);
+                // The pass, while a technician is still coming. Its failure costs the card, never the screen.
+                if (['booked', 'assigned', 'en_route', 'arrived'].includes(d.visit.status)) {
+                    getVisitPass(String(id)).then(setPass).catch(() => setPass(null));
+                } else {
+                    setPass(null);
+                }
+            })
             .catch((e) => {
                 if (e instanceof ApiError && e.isAuthError) { router.replace('/(auth)/loginscreen'); return; }
                 setError(e instanceof ApiError && e.status === 404 ? 'This visit could not be found.' : 'We could not load this visit.');
@@ -98,6 +109,28 @@ export default function VisitScreen() {
                     <Text style={styles.when}>{visit.label}</Text>
                     {visit.assignee ? <Text style={styles.who}>Your technician: {visit.assignee.name}</Text> : null}
                 </View>
+
+                {/*
+                  The visit pass. The technician scans it at the door, which proves they are with
+                  the right person before a single tube is labelled. The characters are the same
+                  code, for reading aloud if the scan will not take.
+                */}
+                {pass && live ? (
+                    <View style={styles.pass} accessible accessibilityLabel={`Visit pass. Code ${pass.code.split('').join(' ')}`}>
+                        <Text style={styles.cardTitle}>{pass.checked ? 'Pass checked' : 'Your visit pass'}</Text>
+                        <Text style={styles.sub}>
+                            {pass.checked
+                                ? 'Your technician has checked this visit in.'
+                                : 'Show this to your technician when they arrive. It confirms they are with the right person.'}
+                        </Text>
+                        {!pass.checked ? (
+                            <View style={styles.qr}>
+                                <SvgXml xml={pass.svg} width={196} height={196} />
+                            </View>
+                        ) : null}
+                        <Text style={styles.passCode}>{pass.code}</Text>
+                    </View>
+                ) : null}
 
                 {visit.requiresFasting && live ? (
                     <View style={styles.fasting}>
@@ -179,6 +212,13 @@ const useStyles = makeStyles((Palette) => ({
     who: { fontSize: 14, ...BodyFont.regular, color: Palette.text, marginTop: 6 },
     fasting: { flexDirection: 'row', gap: Spacing.sm, backgroundColor: Palette.surface, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.md },
     fastingText: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text, lineHeight: 20 },
+    pass: {
+        backgroundColor: Palette.background, borderRadius: Radius.xl, borderWidth: 1.5, borderColor: Palette.primary,
+        padding: Spacing.lg, marginBottom: Spacing.md, alignItems: 'center',
+    },
+    // White behind the code in both schemes: a QR on a dark card does not scan.
+    qr: { backgroundColor: Palettes.light.white, padding: Spacing.sm, borderRadius: Radius.md, marginTop: Spacing.md },
+    passCode: { fontSize: 22, fontFamily: Fonts.bold, color: Palette.text, letterSpacing: 4, marginTop: Spacing.md },
     card: { backgroundColor: Palette.background, borderRadius: Radius.xl, borderWidth: 1, borderColor: Palette.border, padding: Spacing.lg, marginBottom: Spacing.md },
     cardTitle: { fontSize: 15, fontFamily: Fonts.semibold, color: Palette.text, marginBottom: Spacing.sm },
     line: { fontSize: 15, ...BodyFont.regular, color: Palette.text, lineHeight: 21 },
