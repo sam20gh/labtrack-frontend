@@ -17,7 +17,7 @@ import {
     ActivityIndicator, Modal, useWindowDimensions, Alert, RefreshControl,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -61,6 +61,11 @@ export default function NutritionGalleryScreen() {
     const styles = useStyles();
     const router = useRouter();
     const { width } = useWindowDimensions();
+    // Read here, not from a SafeAreaView inside the Modal: on iOS that measures a separate
+    // window and reports a top inset of 0, which put the close button under the status bar
+    // and the Dynamic Island, where iOS does not deliver touches. ProductDetails' viewer
+    // does the same.
+    const insets = useSafeAreaInsets();
 
     const [items, setItems] = useState<NutritionGalleryItem[]>([]);
     const [total, setTotal] = useState(0);
@@ -239,14 +244,24 @@ export default function NutritionGalleryScreen() {
                         <>
                             <Image source={{ uri: viewing.imageUrl }} style={styles.viewerImage} contentFit="cover" />
 
-                            <SafeAreaView style={styles.viewerTop} edges={['top']}>
-                                <TouchableOpacity style={styles.viewerClose} onPress={() => setViewing(null)} hitSlop={8}>
-                                    {/* Dark ink on a white disc in both schemes — the disc is over a photograph. */}
-                                    <Ionicons name="close" size={22} color={Palettes.light.text} />
-                                </TouchableOpacity>
-                            </SafeAreaView>
+                            <TouchableOpacity
+                                style={[
+                                    styles.viewerClose,
+                                    {
+                                        top: insets.top + Spacing.md,
+                                        left: Math.max(insets.left, Spacing.lg) + Spacing.xs,
+                                    },
+                                ]}
+                                onPress={() => setViewing(null)}
+                                hitSlop={8}
+                                accessibilityRole="button"
+                                accessibilityLabel="Close photo"
+                            >
+                                {/* Dark ink on a white disc in both schemes — the disc is over a photograph. */}
+                                <Ionicons name="close" size={24} color={Palettes.light.text} />
+                            </TouchableOpacity>
 
-                            <SafeAreaView style={styles.viewerBottom} edges={['bottom']}>
+                            <View style={[styles.viewerBottom, { paddingBottom: insets.bottom }]}>
                                 <View style={styles.viewerCard}>
                                     <View style={styles.viewerChipRow}>
                                         <View style={styles.typeChip}>
@@ -284,7 +299,7 @@ export default function NutritionGalleryScreen() {
                                         ))}
                                     </View>
                                 </View>
-                            </SafeAreaView>
+                            </View>
                         </>
                     )}
                 </View>
@@ -382,11 +397,14 @@ const useStyles = makeStyles((Palette) => ({
 
     viewer: { flex: 1, backgroundColor: tone('#0B0B0F') },
     viewerImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-    viewerTop: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
     viewerClose: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        // Absolute and last-but-one in paint order, so it sits above the photograph and
+        // nothing laid out after it can cover it. 44pt is the iOS minimum touch target.
+        position: 'absolute',
+        zIndex: 2,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         backgroundColor: 'rgba(255,255,255,0.92)',
         alignItems: 'center',
         justifyContent: 'center',
