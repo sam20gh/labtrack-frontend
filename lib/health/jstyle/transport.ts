@@ -108,6 +108,27 @@ export const isBleBuild = (): boolean => {
     }
 };
 
+/** Resolves true once the radio is on, or false after `timeoutMs` without it. */
+const whenPoweredOn = (timeoutMs = 5_000): Promise<boolean> => new Promise((resolve) => {
+    let done = false;
+    let subscription: { remove: () => void } | null = null;
+    const finish = (on: boolean) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        subscription?.remove();
+        resolve(on);
+    };
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    try {
+        subscription = getManager().onStateChange((state) => {
+            if (state === State.PoweredOn) finish(true);
+        }, true);
+    } catch {
+        finish(false);
+    }
+});
+
 /**
  * Why a scan cannot run, written to be shown to a person.
  *
@@ -248,6 +269,9 @@ export const connect = async (
     onDisconnect?: () => void,
 ): Promise<Connection> => {
     await disconnect();
+    // A manager created seconds ago — always the case when a background task woke the app —
+    // reports `Unknown` until the radio answers, and connecting then fails. Wait for it.
+    if (!(await whenPoweredOn())) throw new Error((await scanBlockedReason()) ?? 'Bluetooth is not ready.');
 
     const device = await getManager().connectToDevice(deviceId, { timeout: 15_000 });
 

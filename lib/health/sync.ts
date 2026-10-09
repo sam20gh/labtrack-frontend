@@ -167,8 +167,8 @@ const runOne = async (platform: HealthPlatform): Promise<SyncResult> => {
  * it with anything else that talks to it is not safe. The phone store is fast enough that
  * running it first costs nothing.
  */
-const run = async (force: boolean): Promise<SyncResult> => {
-    const list = sources();
+const run = async (force: boolean, only?: HealthPlatform[]): Promise<SyncResult> => {
+    const list = sources().filter((p) => !only || only.includes(p));
     if (!list.length) {
         return { ran: false, daysUpdated: [], reason: 'Not a mobile device.', platform: null };
     }
@@ -224,9 +224,12 @@ const run = async (force: boolean): Promise<SyncResult> => {
  * had already sent — harmless, because the server upserts by `externalId`, but it doubles
  * the work on the slowest path in the app.
  */
-export const runSync = (force = false): Promise<SyncResult> => {
+export const runSync = (
+    force = false,
+    { only }: { only?: HealthPlatform[] } = {},
+): Promise<SyncResult> => {
     if (inFlight) return inFlight;
-    inFlight = run(force)
+    inFlight = run(force, only)
         .then((result) => {
             // After the store's rows are in: a live run's steps can now be found in them.
             // Never awaited and never allowed to fail the sync.

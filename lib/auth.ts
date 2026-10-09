@@ -87,6 +87,10 @@ export const syncAccount = async (): Promise<{ ok: boolean; userId?: string; err
 
         const userId = data?.user?._id;
         if (userId) await AsyncStorage.setItem(STORAGE_KEYS.userId, String(userId));
+        // Signed in now, so a paired bracelet can sync in the background. Never awaited, and
+        // required lazily because that module imports this one.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        void (require('./health/backgroundSync') as typeof import('./health/backgroundSync')).ensureBackgroundSync();
         return { ok: true, userId };
     } catch {
         return { ok: false, error: 'Network error. Please try again.' };
@@ -282,4 +286,8 @@ export const signOut = async () => {
         STORAGE_KEYS.legacyToken,
         STORAGE_KEYS.keepSignedIn,
     ]);
+    // Stop the bracelet's background sync: it would read the band for nobody. Required lazily,
+    // because that module imports this one.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    await (require('./health/backgroundSync') as typeof import('./health/backgroundSync')).ensureBackgroundSync();
 };

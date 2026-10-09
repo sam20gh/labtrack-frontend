@@ -34,6 +34,7 @@ import type { JstyleVariant } from '@/modules/jstyle-ble';
 import * as transport from '@/lib/health/jstyle/transport';
 import { VARIANT_LABEL, describeSync, lastReadReport } from '@/lib/health/jstyle/reader';
 import { getPaired, setPaired, clearPaired, type PairedBracelet } from '@/lib/health/jstyle/store';
+import { ensureBackgroundSync } from '@/lib/health/backgroundSync';
 import { runSync, resetSyncThrottle } from '@/lib/health/sync';
 
 import DeviceStage, { type StageState } from '@/components/bracelet/DeviceStage';
@@ -198,6 +199,7 @@ export default function BraceletScreen() {
             };
             await setPaired(record);
             setPairedState(record);
+            void ensureBackgroundSync();
             setFound([]);
             tap(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -249,6 +251,8 @@ export default function BraceletScreen() {
                         await clearPaired();
                         setPairedState(null);
                         setNote(null);
+                        // Nothing left to sync in the background.
+                        void ensureBackgroundSync();
                     },
                 },
             ],
@@ -334,6 +338,17 @@ const relative = (iso?: string): string => {
     return `Synced ${Math.round(hours / 24)} day${Math.round(hours / 24) === 1 ? '' : 's'} ago`;
 };
 
+/**
+ * The background task's last run, so somebody can see it working — or see that their phone is
+ * not letting it run, which on Xiaomi, Huawei and Samsung is the default.
+ */
+const backgroundLine = (last?: PairedBracelet['lastBackgroundSync']): string => {
+    if (!last) return 'Background sync: waiting for its first run (about hourly).';
+    const time = new Date(last.at).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    if (last.ran) return `Background sync ${time} — ${last.days ? `${last.days} day${last.days === 1 ? '' : 's'} updated` : 'nothing new'}.`;
+    return `Background sync ${time} could not run${last.reason ? `: ${last.reason}` : '.'}`;
+};
+
 const Paired = ({
     device, syncing, liveOn, note, onSync, onForget, onLiveChange, onLiveStopped,
 }: {
@@ -363,6 +378,7 @@ const Paired = ({
             <StatusChips battery={device.lastBattery} connected busy={syncing} />
 
             <Text style={styles.timestamp}>{relative(device.lastSyncAt)}</Text>
+            <Text style={styles.timestamp}>{backgroundLine(device.lastBackgroundSync)}</Text>
 
             {note ? <Text style={styles.note}>{note}</Text> : null}
 

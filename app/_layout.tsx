@@ -30,6 +30,8 @@ import ConnectionBanner from '@/components/errors/ConnectionBanner';
 // happen when the bundle loads — before any location event is delivered to a background
 // wake — or the event finds no task and the fix is dropped. See lib/run/recorder.ts.
 import '@/lib/run/recorder';
+// The same for the bracelet's background sync: a woken app runs this module and nothing else.
+import '@/lib/health/backgroundSync';
 import { attachUploadRetry } from '@/lib/run/upload';
 import { hydrateRunSettings } from '@/lib/run/settings';
 import { attachCoach } from '@/lib/run/coach';

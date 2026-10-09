@@ -25,6 +25,7 @@ import { AppState } from 'react-native';
 import { isSignedIn } from '@/lib/auth';
 import { hydrateHealthSources, sources } from './index';
 import { runSync } from './sync';
+import { ensureBackgroundSync } from './backgroundSync';
 
 export const AUTO_INTERVAL_MS = 15 * 60 * 1000;
 
@@ -49,7 +50,9 @@ const maybeSync = async (): Promise<void> => {
 export const attachAutoSync = (): void => {
     if (attached) return;
     attached = true;
-    const kick = () => { maybeSync().catch(() => undefined); };
+    // Each foreground also re-checks the background task: it is registered only for a signed-in
+    // phone with a bracelet, and either can have changed since the app last came forward.
+    const kick = () => { maybeSync().catch(() => undefined); void ensureBackgroundSync(); };
     kick();
     AppState.addEventListener('change', (next) => { if (next === 'active') kick(); });
 };

@@ -21,7 +21,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.labtrack.app"
+      "bundleIdentifier": "com.labtrack.app",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "fetch",
+          "bluetooth-central"
+        ]
+      }
     },
     "android": {
       "package": "com.labtrack.app",
@@ -133,7 +139,8 @@
         {
           "motionPermission": "LabTrack counts your steps and cadence while you are tracking an activity."
         }
-      ]
+      ],
+      "expo-background-task"
     ]
   }
 }

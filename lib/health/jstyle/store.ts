@@ -66,6 +66,8 @@ export interface PairedBracelet {
      * Unset: the next read is the transition replay, which drops its oldest day.
      */
     heartStreamSince?: string;
+    /** The last run of the background task (`lib/health/backgroundSync.ts`), shown on screen. */
+    lastBackgroundSync?: { at: string; ran: boolean; days: number; reason: string | null };
 }
 
 /** One series' incremental-read state. */
