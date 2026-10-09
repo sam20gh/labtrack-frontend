@@ -152,3 +152,12 @@ describe('freeing the band', () => {
         await release();
     });
 });
+
+describe('during a workout', () => {
+    it('does not sync the bracelet while a workout is recording', async () => {
+        jest.doMock('../../../run/journal', () => ({ activeRunId: () => 'run-1' }));
+        await expect(reader.readSince(null)).rejects.toThrow(/workout is recording/);
+        expect(session.readSeries).not.toHaveBeenCalled();
+        jest.dontMock('../../../run/journal');
+    });
+});

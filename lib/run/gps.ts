@@ -17,15 +17,31 @@ import { Palette } from '@/constants/theme';
 
 export const RUN_LOCATION_TASK = 'predyqt-run-location';
 
-export type LocationPermission = 'granted' | 'denied' | 'blocked' | 'services_off';
+export type LocationPermission = 'granted' | 'denied' | 'blocked' | 'services_off' | 'approximate';
+
+/**
+ * Android's approximate location is not a location a route can be drawn from.
+ *
+ * Since Android 12 the prompt offers "Approximate" beside "Precise", and an app can hold
+ * location permission with only the coarse grant. Every fix then arrives 1–3 km wide,
+ * `trackMath` drops every one over `MAX_ACCURACY_M`, and a session records the map standing
+ * still, "Waiting for GPS" throughout, 0.00 km and 0 kcal — with nothing anywhere saying why.
+ * Reported 2026-10-09 on build 29. So a coarse grant is its own state, asked to be upgraded
+ * once, and otherwise refused at Start with the sentence that fixes it.
+ *
+ * iOS's reduced accuracy is not reported by `expo-location`, so this is Android only.
+ */
+const isApproximate = (response: Location.LocationPermissionResponse) =>
+    response.granted && response.android?.accuracy === 'coarse';
 
 export const ensureLocationPermission = async (): Promise<LocationPermission> => {
     if (!(await Location.hasServicesEnabledAsync())) return 'services_off';
     const current = await Location.getForegroundPermissionsAsync();
-    if (current.granted) return 'granted';
-    if (!current.canAskAgain) return 'blocked';
+    if (current.granted && !isApproximate(current)) return 'granted';
+    if (!current.granted && !current.canAskAgain) return 'blocked';
+    // Asking again with only a coarse grant is how Android offers the upgrade to precise.
     const asked = await Location.requestForegroundPermissionsAsync();
-    if (asked.granted) return 'granted';
+    if (asked.granted) return isApproximate(asked) ? 'approximate' : 'granted';
     return asked.canAskAgain ? 'denied' : 'blocked';
 };
 

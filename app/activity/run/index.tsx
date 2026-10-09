@@ -46,6 +46,7 @@ const PERMISSION_COPY: Record<Exclude<LocationPermission, 'granted'>, string> = 
     denied: 'Location is needed to record your route. You can allow it next time you press Start.',
     blocked: 'Location is off for this app. Allow it in Settings to record a route.',
     services_off: 'Location services are off on this phone. Turn them on to record a route.',
+    approximate: 'Predyqt only has approximate location, which is a few kilometres wide — too rough to measure a route. In Settings › Permissions › Location, turn on "Use precise location".',
 };
 
 const M_PER_MILE = 1609.344;
@@ -246,7 +247,7 @@ export default function RunLaunchPad() {
                 </View>
                 <Text style={[styles.lockTitle, { color: hero.white }]} accessibilityLiveRegion="polite">{lockTitle}</Text>
                 <Text style={[styles.lockLine, { color: hero.white }]}>{lockLine}</Text>
-                {permission === 'blocked' && (
+                {(permission === 'blocked' || permission === 'approximate') && (
                     <Pressable onPress={() => Linking.openSettings()} accessibilityRole="link" style={styles.settingsLink}>
                         <Text style={[styles.settingsLinkText, { color: hero.white }]}>Open Settings</Text>
                     </Pressable>

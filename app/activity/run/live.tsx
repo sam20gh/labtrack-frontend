@@ -262,7 +262,13 @@ export default function LiveRunScreen() {
             : { value: pace?.value ?? '—', unit: pace?.unit ?? '', label: paceLabel };
     const nextHero: Record<HeroKind, HeroKind> = { distance: 'time', time: 'pace', pace: 'distance' };
 
-    const statusText = paused ? 'Paused' : autoPaused ? 'Auto-paused' : noFix ? 'Waiting for GPS' : 'Recording';
+    // How far off the signal is, when there is one. "±2 km" is approximate location, which the
+    // launch pad now refuses (`ensureLocationPermission`); "no signal" is the system not
+    // delivering fixes at all. The two have different fixes, so the screen tells them apart.
+    const fixNote = state.accuracyM == null || state.lastFixAt == null
+        ? 'no signal'
+        : state.accuracyM >= 1000 ? `±${(state.accuracyM / 1000).toFixed(1)} km` : `±${Math.round(state.accuracyM)} m`;
+    const statusText = paused ? 'Paused' : autoPaused ? 'Auto-paused' : noFix ? `Waiting for GPS · ${fixNote}` : 'Recording';
     const zone = zoneFor(state.heartRate, state.maxHr);
     const heartLabel = state.heartLink === 'lost' ? 'Bracelet reconnecting…'
         : state.heartLink === 'connecting' ? 'Connecting bracelet…'

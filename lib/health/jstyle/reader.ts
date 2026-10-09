@@ -445,6 +445,17 @@ export const release = async (): Promise<void> => {
     if (held) session.reset(held.variant);
 };
 
+/** Whether a workout is between Start and Finish. Never throws: no journal means no workout. */
+const workoutRecording = (): boolean => {
+    try {
+        // Required lazily: the run journal pulls the file system, which a test may not have.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return !!(require('../../run/journal') as typeof import('../../run/journal')).activeRunId();
+    } catch {
+        return false;
+    }
+};
+
 // The cursor is part of the `HealthReader` contract and filters nothing here — see
 // `CURSOR_VERSION`.
 const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
@@ -453,6 +464,12 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
     // The live view holds the one connection these bracelets allow, and a sync would
     // disconnect it mid-reading. The screen syncs itself when live view closes.
     if (isLive()) throw new Error('Live view is open — it will sync when you close it.');
+    // A workout holds the bracelet for its live heart rate, from Start to Finish. A sync
+    // started meanwhile — by the app coming forward, a tracker screen or the background task —
+    // fought it for the one connection the band allows, and on 2026-10-09 walks recorded with
+    // Bluetooth on came back 0.00 km while the same walk with Bluetooth off recorded. The
+    // bracelet keeps everything until the next sync, so waiting costs nothing.
+    if (workoutRecording()) throw new Error('A workout is recording — your bracelet will sync when it ends.');
 
     const { variant } = paired;
     const ctx: map.MapContext = { deviceId: paired.id, variant, device: deviceFor(paired) };
