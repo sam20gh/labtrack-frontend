@@ -51,6 +51,14 @@ export default function VisitScreen() {
 
     useFocusEffect(useCallback(() => { load(); }, [load]));
 
+    // While the technician is on the way, the arrival estimate moves; refresh it each minute.
+    const enRoute = data?.visit.status === 'en_route';
+    useFocusEffect(useCallback(() => {
+        if (!enRoute) return undefined;
+        const timer = setInterval(load, 60000);
+        return () => clearInterval(timer);
+    }, [enRoute, load]));
+
     const confirmCancel = () => Alert.alert(
         'Cancel this visit?',
         'Your order stays. You can book a new time whenever you are ready.',
@@ -108,6 +116,11 @@ export default function VisitScreen() {
                     <Text style={styles.status}>{VISIT_STATUS_LABEL[visit.status]}</Text>
                     <Text style={styles.when}>{visit.label}</Text>
                     {visit.assignee ? <Text style={styles.who}>Your technician: {visit.assignee.name}</Text> : null}
+                    {visit.eta ? (
+                        <Text style={styles.eta} accessibilityLiveRegion="polite">
+                            {visit.eta.minutes <= 1 ? 'Arriving now' : `Arriving in about ${visit.eta.minutes} min`}
+                        </Text>
+                    ) : null}
                 </View>
 
                 {/*
@@ -210,6 +223,7 @@ const useStyles = makeStyles((Palette) => ({
     status: { fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary },
     when: { fontSize: 24, fontFamily: Fonts.bold, color: Palette.text, marginTop: 4 },
     who: { fontSize: 14, ...BodyFont.regular, color: Palette.text, marginTop: 6 },
+    eta: { fontSize: 16, fontFamily: Fonts.semibold, color: Palette.text, marginTop: 6 },
     fasting: { flexDirection: 'row', gap: Spacing.sm, backgroundColor: Palette.surface, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.md },
     fastingText: { flex: 1, fontSize: 14, ...BodyFont.regular, color: Palette.text, lineHeight: 20 },
     pass: {

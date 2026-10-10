@@ -86,6 +86,12 @@ export interface Visit {
     requiresFasting: boolean;
     assignee: { name: string } | null;
     identityChecked?: boolean;
+    /**
+     * Minutes until the technician arrives, while they are on the way and their phone reported
+     * in the last ten minutes. Never their position — the server does not send one. Absent on
+     * servers that predate it.
+     */
+    eta?: { minutes: number; updatedAt: string } | null;
     tasks: { _id: string; kind: 'collect_blood' | 'collect_dna' | 'handover_bracelet'; status: 'pending' | 'done' | 'not_done'; orderId: string }[];
     orderIds: string[];
 }
