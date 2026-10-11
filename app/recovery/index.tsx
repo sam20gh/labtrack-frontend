@@ -28,6 +28,7 @@ import {
     type RecoveryDetail,
 } from '@/lib/readout';
 import { ErrorState } from '@/components/errors';
+import { metricRoute } from '@/lib/metrics';
 import ReadoutDial from '@/components/readout/ReadoutDial';
 import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
@@ -131,15 +132,27 @@ export default function RecoveryScreen() {
                     </Text>
                 </View>
 
-                {recovery?.held && (
-                    <TouchableOpacity style={styles.note} onPress={() => router.push('/notifications')} accessibilityRole="button">
-                        <Ionicons name="notifications-outline" size={18} color={Palette.text} />
-                        <Text style={[styles.noteText, styles.flex]}>
-                            A reading is waiting for you in your notifications. Look at it before planning a hard day.
+                {/* A fresh urgent reading: what it was, when, and the vital alert's own advice —
+                    which always says when to seek care — then the way to the reading itself. */}
+                {detail?.alert ? (
+                    <TouchableOpacity
+                        style={styles.alertCard}
+                        onPress={() => router.push((metricRoute(detail.alert!.metric) ?? '/metrics') as never)}
+                        accessibilityRole="button"
+                    >
+                        <View style={styles.alertHead}>
+                            <Ionicons name="alert-circle-outline" size={18} color={Palette.text} />
+                            <Text style={[styles.cardTitle, styles.flex]}>
+                                {detail.alert.title ?? `${detail.alert.label} reading`}
+                            </Text>
+                        </View>
+                        <Text style={styles.body}>
+                            {detail.alert.label} read {detail.alert.value} {detail.alert.when}.
                         </Text>
-                        <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
+                        {detail.alert.body ? <Text style={styles.body}>{detail.alert.body}</Text> : null}
+                        <Text style={styles.alertLink}>See the reading</Text>
                     </TouchableOpacity>
-                )}
+                ) : null}
 
                 {signals.length > 0 && (
                     <View style={styles.card}>
@@ -235,11 +248,12 @@ const useStyles = makeStyles((Palette) => ({
     cardTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     body: { fontSize: 14, lineHeight: 20, color: Palette.text, ...BodyFont.regular },
     footnote: { fontSize: 12, lineHeight: 17, color: Palette.textSecondary, ...BodyFont.regular },
-    note: {
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.md,
-        borderRadius: Radius.lg, backgroundColor: Palette.borderLight,
+    alertCard: {
+        padding: Spacing.lg, borderRadius: Radius.xl, gap: Spacing.sm,
+        backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.borderStrong,
     },
-    noteText: { fontSize: 13, lineHeight: 18, color: Palette.text, ...BodyFont.medium },
+    alertHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    alertLink: { fontSize: 14, color: Palette.primary, fontFamily: Fonts.semibold },
     signal: { gap: 6 },
     signalHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm },
     signalLabel: { flexShrink: 1, fontSize: 13, color: Palette.text, ...BodyFont.medium },

@@ -78,7 +78,24 @@ export interface Readout {
     };
     /** Today's meals against the plan. Null when nutrition was never set up and nothing logged. */
     fuel: Fuel | null;
+    /** A fresh urgent reading holding the readout, named. Null almost always. */
+    alert: ReadoutAlert | null;
     sentence: string;
+}
+
+/**
+ * The urgent reading behind a held readout — what it was and when, and the vital alert's own
+ * advice (which always says when to seek care). Only for 24 hours after the reading.
+ */
+export interface ReadoutAlert {
+    metric: string;
+    label: string;
+    value: string;
+    /** "at 02:01 today" / "at 22:10 yesterday", in the person's clock. */
+    when: string;
+    measuredAt: string;
+    title: string | null;
+    body: string | null;
 }
 
 export interface Fuel {
@@ -202,7 +219,7 @@ export const signalPill = (s: RecoverySignal) => {
 /** The word under the Recovery ring, or the reason there is no score. */
 export const recoveryCaption = (r: Readout['recovery']) => {
     if (!r) return 'Wear your band overnight';
-    if (r.held) return 'See your alert';
+    if (r.held) return 'See the reading';
     if (r.state === 'learning' && r.learning) return `Learning · ${r.learning.have} of ${r.learning.need}`;
     return `${RECOVERY_GLYPH[r.state]} ${r.label}`;
 };
@@ -223,6 +240,7 @@ export const signalPosition = (s: RecoverySignal) => {
 export interface RecoveryDetail {
     day: string;
     recovery: Readout['recovery'];
+    alert: ReadoutAlert | null;
     /** Plain sentences: which signals moved, never why. */
     reasons: string[];
     /** The last seven days, oldest first; null where nothing was measured. */

@@ -51,8 +51,8 @@ describe('readout wording', () => {
             .toBe('Learning · 3 of 5');
     });
 
-    it('points at the alert, not the score, while an urgent one is open', () => {
-        expect(recoveryCaption(recovery({ state: 'recharged', label: 'Recharged', held: true }))).toBe('See your alert');
+    it('points at the reading, not the score, while a fresh urgent one holds the card', () => {
+        expect(recoveryCaption(recovery({ state: 'recharged', label: 'Recharged', held: true }))).toBe('See the reading');
     });
 
     it('only makes a pill for a signal off its usual', () => {

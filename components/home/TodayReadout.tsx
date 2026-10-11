@@ -39,9 +39,11 @@ interface Props {
     onFuel: () => void;
     /** Opens the meal logger. */
     onLogMeal: () => void;
+    /** Opens the reading behind a held readout. */
+    onAlert: (metric: string) => void;
 }
 
-export default function TodayReadout({ readout, onSleep, onRecovery, onEffort, onFuel, onLogMeal }: Props) {
+export default function TodayReadout({ readout, onSleep, onRecovery, onEffort, onFuel, onLogMeal, onAlert }: Props) {
     const Palette = usePalette();
     const styles = useStyles();
     const { sleep, recovery, effort } = readout;
@@ -106,7 +108,26 @@ export default function TodayReadout({ readout, onSleep, onRecovery, onEffort, o
             */}
             {readout.fuel ? <FuelRow fuel={readout.fuel} onOpen={onFuel} onLog={onLogMeal} /> : null}
 
-            <Text style={styles.sentence}>{readout.sentence}</Text>
+            {/*
+              A fresh urgent reading turns the sentence into the way to that reading: it names
+              what was measured and when, and opens it. It used to say "a reading is waiting in
+              your notifications" — after the notification had been read, for days.
+            */}
+            {readout.alert ? (
+                <TouchableOpacity
+                    style={[styles.sentenceRow, styles.sentenceBorder]}
+                    onPress={() => onAlert(readout.alert!.metric)}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${readout.sentence} Opens the reading.`}
+                >
+                    <Ionicons name="alert-circle-outline" size={18} color={Palette.text} />
+                    <Text style={[styles.sentenceText, styles.flex]}>{readout.sentence}</Text>
+                    <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
+                </TouchableOpacity>
+            ) : (
+                <Text style={[styles.sentenceText, styles.sentenceBorder]}>{readout.sentence}</Text>
+            )}
 
             {pills.length > 0 && (
                 <View style={styles.pills}>
@@ -254,15 +275,10 @@ const useStyles = makeStyles((Palette) => ({
         paddingHorizontal: Spacing.md, borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
     },
     logText: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.semibold },
-    sentence: {
-        paddingTop: Spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: Palette.borderLight,
-        fontSize: 14,
-        lineHeight: 20,
-        color: Palette.text,
-        ...BodyFont.regular,
-    },
+    sentenceBorder: { paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Palette.borderLight },
+    sentenceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
+    sentenceText: { fontSize: 14, lineHeight: 20, color: Palette.text, ...BodyFont.regular },
+    flex: { flex: 1 },
     pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.pill, backgroundColor: Palette.borderLight },
     pillText: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.medium, fontVariant: ['tabular-nums'] },

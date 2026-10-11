@@ -1025,6 +1025,7 @@ export default function HomeScreen() {
                                             onEffort={openActivity}
                                             onFuel={openNutrition}
                                             onLogMeal={openNutritionLog}
+                                            onAlert={(metric) => router.push((metricRoute(metric) ?? '/metrics') as never)}
                                         />
                                     </View>
                                 ) : null}
