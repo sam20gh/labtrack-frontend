@@ -21,7 +21,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 
 import { ApiError } from '@/lib/api';
 import {
@@ -29,11 +28,9 @@ import {
     type RecoveryDetail,
 } from '@/lib/readout';
 import { ErrorState } from '@/components/errors';
+import ReadoutDial from '@/components/readout/ReadoutDial';
 import { Spacing, Radius, Fonts, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
-
-const RING = 150;
-const STROKE = 13;
 
 export default function RecoveryScreen() {
     const Palette = usePalette();
@@ -105,7 +102,6 @@ export default function RecoveryScreen() {
 
     const recovery = detail?.recovery ?? null;
     const score = recovery?.score ?? null;
-    const c = 2 * Math.PI * ((RING - STROKE) / 2);
     const signals = (recovery?.signals ?? []).filter((s) => s.key !== 'sleep' || s.value != null);
     const peak = Math.max(1, ...(detail?.trend ?? []).map((t) => t.score ?? 0));
 
@@ -116,27 +112,14 @@ export default function RecoveryScreen() {
                 contentContainerStyle={styles.content}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Palette.primary} />}
             >
-                <View style={[styles.card, styles.hero]}>
-                    <Svg width={RING} height={RING} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                        <Circle cx={RING / 2} cy={RING / 2} r={(RING - STROKE) / 2} stroke={Palette.borderLight} strokeWidth={STROKE} fill="none" />
-                        {score != null && score > 0 && (
-                            <Circle
-                                cx={RING / 2} cy={RING / 2} r={(RING - STROKE) / 2}
-                                stroke={Palette.teal} strokeWidth={STROKE} fill="none"
-                                strokeDasharray={`${(c * score) / 100} ${c}`} strokeLinecap="round"
-                                transform={`rotate(-90 ${RING / 2} ${RING / 2})`}
-                            />
-                        )}
-                        <SvgText
-                            x={RING / 2} y={RING / 2 + 12} textAnchor="middle"
-                            fontFamily={Fonts.bold} fontSize={38} fill={Palette.text}
-                        >
-                            {score != null ? String(score) : '--'}
-                        </SvgText>
-                    </Svg>
-                    <Text style={styles.state} accessibilityRole="header">
-                        {score != null ? `Recovery ${score} · ${recoveryCaption(recovery)}` : recoveryCaption(recovery)}
-                    </Text>
+                {/* The same ring the home card draws, at page size — the page opens with what was tapped. */}
+                <View style={styles.hero}>
+                    <ReadoutDial
+                        kind="recovery"
+                        value={score}
+                        caption={score != null ? recoveryCaption(recovery) : null}
+                        emptyLabel={recoveryCaption(recovery)}
+                    />
                     <Text style={styles.sub}>
                         {score != null
                             ? 'Compared with your usual over the last 28 days.'
@@ -247,8 +230,7 @@ const useStyles = makeStyles((Palette) => ({
         padding: Spacing.lg, borderRadius: Radius.xl, gap: Spacing.md,
         backgroundColor: Palette.surface, borderWidth: 1, borderColor: Palette.borderLight,
     },
-    hero: { alignItems: 'center', gap: Spacing.sm },
-    state: { fontSize: 18, color: Palette.text, fontFamily: Fonts.bold, textAlign: 'center' },
+    hero: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.md },
     sub: { fontSize: 14, lineHeight: 20, color: Palette.textSecondary, ...BodyFont.regular, textAlign: 'center' },
     cardTitle: { fontSize: 16, color: Palette.text, fontFamily: Fonts.bold },
     body: { fontSize: 14, lineHeight: 20, color: Palette.text, ...BodyFont.regular },

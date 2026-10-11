@@ -20,7 +20,7 @@
  * 4. **Nothing model-backed is awaited before the first paint.** Everything here is a
  *    database read.
  */
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -32,7 +32,7 @@ import { ErrorState } from '@/components/errors';
 import { RangeTabs, type MetricRange } from '@/components/metric/RangeTabs';
 import { MetricAreaChart } from '@/components/metric/MetricAreaChart';
 import { SourceBanner } from '@/components/metric/SourceBanner';
-import { SleepRing } from '@/components/sleep/SleepRing';
+import ReadoutDial from '@/components/readout/ReadoutDial';
 import { WeekStrip } from '@/components/sleep/WeekStrip';
 import { NightRow } from '@/components/sleep/NightRow';
 import { ScheduleCard } from '@/components/sleep/ScheduleCard';
@@ -40,7 +40,7 @@ import { StageRows } from '@/components/sleep/StageRows';
 import { BedIllustration } from '@/components/sleep/BedIllustration';
 import {
     getOverview, listNights, updateSchedule, formatMinutes, formatClock, splitMinutes,
-    dayLabel, STAGE_ORDER, STAGE_META,
+    dayLabel, nightHasData, STAGE_ORDER, STAGE_META,
     type SleepOverview, type SleepNight,
 } from '@/lib/sleep';
 import { getWearableStatus, type WearableStatus } from '@/lib/activity';
@@ -100,6 +100,14 @@ export default function SleepDashboard() {
     const { width } = useWindowDimensions();
 
     const [range, setRange] = useState<MetricRange>('1w');
+    /**
+     * The night the dial and the cards below describe, by wake day. Null until somebody taps
+     * the week strip: until then it follows the newest night, which is what the page opened on
+     * before the strip worked and is what the home screen's Sleep ring showed.
+     */
+    const [picked, setPicked] = useState<string | null>(null);
+    /** Nights fetched for a picked day — the series carries the figures, not the id or band. */
+    const [nightsByDay, setNightsByDay] = useState<Record<string, SleepNight | null>>({});
     const [overview, setOverview] = useState<SleepOverview | null>(null);
     const [recent, setRecent] = useState<SleepNight[]>([]);
     const [status, setStatus] = useState<WearableStatus | null>(null);
@@ -121,6 +129,8 @@ export default function SleepDashboard() {
         ]);
         if (!mounted.current) return null;
         setOverview(data);
+        // A sync can rewrite any night of the week; read picked nights afresh.
+        setNightsByDay({});
         setRecent(nights.nights);
         setStatus(st);
         setCapability(cap);
@@ -164,12 +174,56 @@ export default function SleepDashboard() {
     }, [load]));
 
     const latest = overview?.latest ?? null;
-    const split = splitMinutes(latest?.asleepMin);
+    const week = useMemo(() => (overview?.series ?? []).slice(-7), [overview]);
 
-    /** Every stage the latest night reported, for the breakdown card. */
+    /**
+     * Which night is on screen. A day the person picked, if it is still in the week; otherwise
+     * the newest night when it falls in the week, otherwise today (drawn empty).
+     */
+    const selectedDay = useMemo(() => {
+        if (picked && week.some((p) => p.day === picked)) return picked;
+        if (latest && week.some((p) => p.day === latest.day)) return latest.day;
+        return overview?.today ?? '';
+    }, [picked, week, latest, overview]);
+
+    const point = week.find((p) => p.day === selectedDay) ?? null;
+    const pointHas = point ? nightHasData(point) : false;
+
+    // The night's own row — for its id (the Details link) and its band. The newest night came
+    // with the overview; any other is one small read, cached per day for this visit.
+    const fetched = nightsByDay[selectedDay];
+    const night: SleepNight | null = latest?.day === selectedDay ? latest : fetched ?? null;
+    useEffect(() => {
+        if (!selectedDay || !pointHas || latest?.day === selectedDay || selectedDay in nightsByDay) return;
+        let alive = true;
+        listNights({ from: selectedDay, to: selectedDay, sort: 'longest', limit: 1 })
+            .then((r) => { if (alive) setNightsByDay((m) => ({ ...m, [selectedDay]: r.nights[0] ?? null })); })
+            .catch(() => { /* the series figures stay on screen; only the Details link waits */ });
+        return () => { alive = false; };
+    }, [selectedDay, pointHas, latest, nightsByDay]);
+
+    /**
+     * What the dial and cards draw: the night's row when there is one, the day's rollup while it
+     * loads. Both come from the same night (`DailyMetrics.sleep` is copied from it), so the
+     * swap is invisible. The band falls back to the ladder the server sent with the overview.
+     */
+    const shownScore = night?.score ?? point?.score ?? null;
+    const shownBand = night?.band
+        ?? (Number.isFinite(shownScore as number)
+            ? (overview?.bands ?? []).find((b) =>
+                (shownScore as number) >= (b.min ?? 0) && (shownScore as number) <= (b.max ?? 100)) ?? null
+            : null);
+    const shownStages = useMemo(() => night?.stages ?? (point ? {
+        deepMin: point.deepMin, remMin: point.remMin, lightMin: point.lightMin, awakeMin: point.awakeMin,
+    } : null), [night, point]);
+    const shownAsleep = night?.asleepMin ?? point?.asleepMin ?? null;
+    const split = splitMinutes(shownAsleep);
+    const isLastNight = selectedDay === overview?.today;
+
+    /** Every stage the selected night reported, for the breakdown card. */
     const stageRows = useMemo(() => STAGE_ORDER.map((stage) => {
-        const minutes = latest?.stages?.[`${stage}Min` as keyof typeof latest.stages] ?? null;
-        const asleep = latest?.asleepMin ?? 0;
+        const minutes = shownStages?.[`${stage}Min` as keyof typeof shownStages] ?? null;
+        const asleep = shownAsleep ?? 0;
         return {
             stage,
             minutes: minutes as number | null,
@@ -177,7 +231,7 @@ export default function SleepDashboard() {
                 ? ((minutes as number) / asleep) * 100
                 : null,
         };
-    }), [latest]);
+    }), [shownStages, shownAsleep]);
 
     const hasStages = stageRows.some((r) => Number.isFinite(r.minutes as number));
     const hasHistory = recent.length > 0;
@@ -251,24 +305,57 @@ export default function SleepDashboard() {
                 </View>
 
                 {overview ? (
-                    <WeekStrip series={overview.series} today={overview.today} />
+                    <WeekStrip
+                        series={overview.series}
+                        today={overview.today}
+                        selected={selectedDay}
+                        onSelect={setPicked}
+                    />
                 ) : null}
 
-                <SleepRing
-                    score={latest?.score ?? null}
-                    band={latest?.band ?? null}
-                    size={Math.min(260, width - Spacing.xl * 2 - 40)}
+                {/* Which night this is, always: the strip names a day, and a night belongs to
+                    the morning it ended. Said plainly when today is shown only because it has
+                    not synced. */}
+                {overview ? (
+                    <Text style={styles.nightLabel}>
+                        {isLastNight
+                            ? (pointHas ? 'Last night' : 'Last night · not synced yet')
+                            : `Night ending ${dayLabel(selectedDay)}`}
+                    </Text>
+                ) : null}
+
+                {/* The home screen's Sleep ring at page size, in the same colour, so the page
+                    opens with what was tapped. It replaced the kit's purple score ring; the goal
+                    and insight buttons and the band's explainer came with it. */}
+                <ReadoutDial
+                    kind="sleep"
+                    value={shownScore}
+                    caption={shownBand?.label ?? null}
+                    emptyLabel="No sleep recorded"
+                    size={Math.min(250, width - Spacing.xl * 2 - 40)}
                     onExplain={() => router.push('/sleep/score')}
-                    onLeftAction={() => router.push('/sleep/goal')}
-                    onRightAction={() => router.push('/sleep/insight')}
+                    left={{ icon: 'moon', label: 'Sleep goal', onPress: () => router.push('/sleep/goal') }}
+                    right={{ icon: 'eye-outline', label: 'Sleep insight', onPress: () => router.push('/sleep/insight') }}
                 />
 
                 {/* Which night this is. Only said when it is not this morning's, because
                     saying "last night" about last night is noise. */}
-                {latest && !overview?.isToday ? (
-                    <Text style={styles.staleNote}>
-                        {`Showing ${dayLabel(latest.day)} — today has not synced yet.`}
-                    </Text>
+                {/* A day with nothing on it says so and offers the fallback, rather than a row of
+                    dashes. Only when the person has any sleep at all; with none, the page's own
+                    empty state below says it once. */}
+                {latest && !pointHas ? (
+                    <Pressable
+                        style={styles.missing}
+                        onPress={() => router.push('/sleep/log')}
+                        accessibilityRole="button"
+                    >
+                        <Text style={styles.missingText}>
+                            {isLastNight
+                                ? 'Nothing from last night yet. Your watch may still be syncing.'
+                                : 'Nothing was recorded for this night.'}
+                        </Text>
+                        <Text style={styles.missingCta}>Add it by hand</Text>
+                    </Pressable>
                 ) : null}
 
                 <View style={styles.figures}>
@@ -284,7 +371,7 @@ export default function SleepDashboard() {
                     <View style={styles.figure}>
                         <View style={styles.figureHead}>
                             <Text style={styles.figureValue}>
-                                {formatMinutes(latest?.stages?.remMin)}
+                                {formatMinutes(shownStages?.remMin)}
                             </Text>
                             <View style={[styles.figureDot, { backgroundColor: STAGE_META.rem.tint }]} />
                         </View>
@@ -406,7 +493,11 @@ export default function SleepDashboard() {
 
                 {/* ------------------------------------------------ the stages */}
                 {hasStages ? (
-                    <Section title="Last night's stages" action="Details" onAction={() => latest && router.push(`/sleep/${latest._id}`)}>
+                    <Section
+                        title={isLastNight ? "Last night's stages" : `Stages · ${dayLabel(selectedDay)}`}
+                        action={night ? 'Details' : undefined}
+                        onAction={night ? () => router.push(`/sleep/${night._id}`) : undefined}
+                    >
                         <View style={styles.card}>
                             <StageRows rows={stageRows} />
                         </View>
@@ -550,10 +641,16 @@ const useStyles = makeStyles((Palette) => ({
         alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.primaryFill,
     },
 
-    staleNote: {
-        fontSize: 12, ...BodyFont.regular, color: Palette.textSecondary,
-        textAlign: 'center', marginTop: -Spacing.sm,
+    nightLabel: {
+        fontSize: 13, ...BodyFont.medium, color: Palette.textSecondary,
+        textAlign: 'center', marginTop: -Spacing.xs,
     },
+    missing: {
+        alignItems: 'center', gap: 4, paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg,
+        borderRadius: Radius.lg, backgroundColor: Palette.surface,
+    },
+    missingText: { fontSize: 13, ...BodyFont.regular, color: Palette.textSecondary, textAlign: 'center' },
+    missingCta: { fontSize: 14, fontFamily: Fonts.semibold, color: Palette.primary },
 
     figures: { flexDirection: 'row', gap: Spacing.md },
     figure: {

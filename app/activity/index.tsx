@@ -62,6 +62,8 @@ import { PeriodCompare } from '@/components/metric/PeriodCompare';
 import { ArtCard } from '@/components/activity/ArtCard';
 import { WelcomeCard } from '@/components/activity/WelcomeCard';
 import { RecordCard } from '@/components/activity/RecordCard';
+import ReadoutDial from '@/components/readout/ReadoutDial';
+import { getReadout, type Readout } from '@/lib/readout';
 import { CyclistArt, TargetArt, FlexArt, FLEX_ART } from '@/components/activity/art';
 import {
     getSummary, getDay, getCalendar, getWearableStatus, today, formatDistance,
@@ -138,6 +140,8 @@ export default function ActivityDashboard() {
     const [range, setRange] = useState<MetricRange>('1w');
     const [metric, setMetric] = useState<ActivityMetricKey>('exerciseMin');
     const [summary, setSummary] = useState<ActivitySummary | null>(null);
+    /** Today's Effort, for the dial — the same figure the home ring showed. */
+    const [readout, setReadout] = useState<Readout | null>(null);
     const [selectedDay, setSelectedDay] = useState<string>(today);
     const [sessions, setSessions] = useState<ActivitySession[]>([]);
     const [dayMetrics, setDayMetrics] = useState<DayMetrics | null>(null);
@@ -155,12 +159,16 @@ export default function ActivityDashboard() {
     const [error, setError] = useState<unknown>(null);
 
     const fetchSummary = useCallback(async () => {
-        const [s, st, cap] = await Promise.all([
+        const [s, st, cap, today] = await Promise.all([
             getSummary(range),
             getWearableStatus(),
             probe(),
+            // The dial is today's whatever range is picked. Quiet on failure: a missing dial
+            // must not take the dashboard down with it.
+            getReadout().catch(() => null),
         ]);
         setSummary(s);
+        setReadout(today);
         setStatus(st);
         setCapability(cap);
         return s;
@@ -592,13 +600,32 @@ export default function ActivityDashboard() {
                       then the hero shows active minutes rather than a zero — a 0 score
                       would be telling someone they failed at a target nobody set.
                     */}
-                    <Text style={styles.score}>
-                        {summary?.score ?? (summary?.totals.sessions ? summary.totals.exerciseMin : 0)}
-                    </Text>
+                    {/*
+                      The home screen's Effort ring at page size, in the same colour: tapping
+                      the ring lands on a page that opens with it. Always today's, whatever
+                      range is picked below. The activity score it displaced is one line under it.
+                    */}
+                    <View style={styles.dial}>
+                        <ReadoutDial
+                            kind="effort"
+                            value={readout?.effort.minutes ?? null}
+                            ratio={readout && readout.effort.minutes != null
+                                ? readout.effort.minutes / Math.max(1, readout.effort.target)
+                                : null}
+                            unitLabel={readout ? `of ${readout.effort.target} min` : 'min'}
+                            emptyLabel={readout?.effort.note === 'needs_age'
+                                ? 'Add your birth date'
+                                : readout ? `Aim for ${readout.effort.target} min` : 'No effort yet'}
+                            caption={readout
+                                ? `${readout.effort.weekMinutes} of ${readout.effort.weekTarget} this week`
+                                : null}
+                            size={Math.min(230, width - Spacing.xl * 2 - 40)}
+                        />
+                    </View>
                     <Text style={styles.scoreLabel}>
                         {summary?.score !== null && summary?.score !== undefined
-                            ? 'Your activity score'
-                            : 'Active minutes'}
+                            ? `Activity score ${summary.score}`
+                            : `${summary?.totals.sessions ? summary.totals.exerciseMin : 0} active minutes`}
                     </Text>
                     <Text style={styles.scoreCaption}>
                         {summary?.band?.label
@@ -990,8 +1017,8 @@ const useStyles = makeStyles((Palette) => ({
     greetingText: { flex: 1, gap: 1 },
     greetingTitle: { fontSize: 18, fontFamily: Fonts.bold, color: Palette.text },
     greetingBody: { fontSize: 12.5, ...BodyFont.regular, color: Palette.textSecondary },
-    score: { fontSize: 54, fontFamily: Fonts.bold, color: Palette.text, lineHeight: 62 },
-    scoreLabel: { fontSize: 20, fontFamily: Fonts.semibold, color: Palette.text },
+    dial: { alignSelf: 'stretch', alignItems: 'center', marginTop: Spacing.lg, marginBottom: Spacing.md },
+    scoreLabel: { fontSize: 16, fontFamily: Fonts.semibold, color: Palette.text },
     scoreCaption: {
         fontSize: 13,
         ...BodyFont.regular,

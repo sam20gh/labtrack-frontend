@@ -14,8 +14,21 @@
  * 3. **Effort is minutes.** "18 of 30 min" — the guideline's own unit, never an index.
  */
 import { api } from './api';
+import { metricTint } from './metrics';
 
 const tzOffset = () => new Date().getTimezoneOffset();
+
+/** The three rings, in the order they happen. */
+export type ReadoutKind = 'sleep' | 'recovery' | 'effort';
+
+/**
+ * Each ring's one colour — the home card and the page dials both read it, so a ring and the
+ * page it opens cannot drift apart. Sleep keeps the metrics tint it has everywhere else.
+ */
+export const readoutTint = (
+    kind: ReadoutKind,
+    palette: { teal: string; orange: string; textSecondary: string },
+): string => (kind === 'sleep' ? metricTint('sleep', palette) : kind === 'recovery' ? palette.teal : palette.orange);
 
 export type RecoveryState = 'recharged' | 'steady' | 'low' | 'learning' | 'insufficient';
 

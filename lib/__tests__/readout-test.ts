@@ -9,7 +9,7 @@
 jest.mock('@/lib/api', () => ({ api: {} }));
 
 import {
-    RECOVERY_GLYPH, VITAL_KEYS, formatSleep, recoveryCaption, signalPill, signalPosition, TARGET_LINE,
+    RECOVERY_GLYPH, VITAL_KEYS, readoutTint, formatSleep, recoveryCaption, signalPill, signalPosition, TARGET_LINE,
     type Readout, type RecoverySignal,
 } from '@/lib/readout';
 
@@ -19,6 +19,24 @@ const signal = (over: Partial<RecoverySignal>): RecoverySignal => ({
 
 const recovery = (over: Partial<NonNullable<Readout['recovery']>>): NonNullable<Readout['recovery']> => ({
     score: 64, state: 'steady', label: 'Steady', learning: null, signals: [], penalty: 0, held: false, ...over,
+});
+
+import { Palettes } from '@/constants/theme';
+import { metricTint } from '@/lib/metrics';
+
+describe('ring colours', () => {
+    it('gives the three rings three colours, in both schemes', () => {
+        for (const palette of [Palettes.light, Palettes.dark]) {
+            const tints = (['sleep', 'recovery', 'effort'] as const).map((k) => readoutTint(k, palette));
+            expect(new Set(tints).size).toBe(3);
+            // None of them is the brand purple, which means "you can act here".
+            expect(tints).not.toContain(palette.primary);
+        }
+    });
+
+    it('keeps sleep the colour it is on every other sleep surface', () => {
+        expect(readoutTint('sleep', Palettes.light)).toBe(metricTint('sleep', Palettes.light));
+    });
 });
 
 describe('readout wording', () => {

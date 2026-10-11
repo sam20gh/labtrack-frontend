@@ -24,8 +24,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
-import { metricTint } from '@/lib/metrics';
-import { formatSleep, recoveryCaption, signalPill, type Readout } from '@/lib/readout';
+import { formatSleep, readoutTint, recoveryCaption, signalPill, type Readout } from '@/lib/readout';
 
 const RING = 76;
 const STROKE = 8;
@@ -42,7 +41,6 @@ export default function TodayReadout({ readout, onSleep, onRecovery, onEffort }:
     const styles = useStyles();
     const { sleep, recovery, effort } = readout;
 
-    const sleepTint = metricTint('sleep', Palette);
     const effortCaption = effort.minutes == null
         ? (effort.note === 'needs_age' ? 'Add your birth date' : `Aim for ${effort.target} min`)
         : `of ${effort.target} min`;
@@ -63,7 +61,7 @@ export default function TodayReadout({ readout, onSleep, onRecovery, onEffort }:
             <View style={styles.rings}>
                 <Ring
                     name="Sleep"
-                    tint={sleepTint}
+                    tint={readoutTint('sleep', Palette)}
                     ratio={sleep?.score != null ? sleep.score / 100 : null}
                     centre={sleep?.score != null ? String(sleep.score) : '--'}
                     caption={formatSleep(sleep?.asleepMin ?? null) ?? 'No night yet'}
@@ -74,7 +72,7 @@ export default function TodayReadout({ readout, onSleep, onRecovery, onEffort }:
                 />
                 <Ring
                     name="Recovery"
-                    tint={Palette.teal}
+                    tint={readoutTint('recovery', Palette)}
                     ratio={recovery?.score != null ? recovery.score / 100 : null}
                     centre={recovery?.score != null ? String(recovery.score) : '--'}
                     caption={recoveryCaption(recovery)}
@@ -85,7 +83,7 @@ export default function TodayReadout({ readout, onSleep, onRecovery, onEffort }:
                 />
                 <Ring
                     name="Effort"
-                    tint={Palette.orange}
+                    tint={readoutTint('effort', Palette)}
                     ratio={effort.minutes != null ? effort.minutes / Math.max(1, effort.target) : null}
                     centre={effort.minutes != null ? String(effort.minutes) : '--'}
                     caption={effortCaption}
