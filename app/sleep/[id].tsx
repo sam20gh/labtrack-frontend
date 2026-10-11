@@ -2,8 +2,9 @@
  * Sleep Details — `Design/sleep.svg` frames 10 and 28.
  *
  * One night: the hypnogram, the stage breakdown, the key stats and how it sat against the
- * goal. The design's "Consult AI Assistant" button is real and routes into the assistant,
- * which already reads this person's biomarkers, plan and history.
+ * goal. The design's "Consult AI Assistant" button is real: it opens the assistant with the
+ * question already asked about this sleep, and the assistant reads the night itself — not
+ * only the fortnight's averages — from its context.
  *
  * Three departures from the kit, all for the same reason — it must not say more than was
  * measured:
@@ -68,6 +69,25 @@ function Stat({
             </View>
         </View>
     );
+}
+
+/**
+ * The question "Ask Predyqt AI about this night" sends. Worded the way somebody would ask it,
+ * with the clock times so a day with a night and a nap cannot be misread.
+ */
+function askAbout(night: SleepNight, isNap: boolean): string {
+    const label = dayLabel(night.day);
+    const span = `${formatClock(night.bedtimeMin)} – ${formatClock(night.wakeMin)}`;
+    if (isNap) {
+        const when = label === 'Today' ? 'today' : label === 'Yesterday' ? 'yesterday' : `on ${label}`;
+        return `Tell me about my nap ${when} (${span}, ${formatMinutes(night.asleepMin)}). How does it fit with the rest of my sleep that day?`;
+    }
+    const when = label === 'Today'
+        ? 'last night'
+        : label === 'Yesterday'
+            ? 'the night before last'
+            : `the night I woke up on ${label}`;
+    return `How was my sleep ${when} (${span})? What stood out, and what would help me sleep better?`;
 }
 
 export default function SleepDetailScreen() {
@@ -278,7 +298,15 @@ export default function SleepDetailScreen() {
 
                 <Pressable
                     style={styles.assistant}
-                    onPress={() => router.push('/(tabs)/assistant')}
+                    onPress={() => router.push({
+                        pathname: '/(tabs)/assistant',
+                        // `prompt` is consumed and cleared on arrival — see the `consuming`
+                        // ref in `(tabs)/assistant.tsx`. The times name the sleep exactly;
+                        // the assistant finds it in its night-by-night context
+                        // (`utils/sleepContext.js` on the server).
+                        params: { prompt: askAbout(night, isNap) },
+                    })}
+                    accessibilityRole="button"
                 >
                     <Ionicons name="chatbubbles-outline" size={18} color={Palette.primary} />
                     <Text style={styles.assistantLabel}>{`Ask Predyqt AI about this ${isNap ? 'nap' : 'night'}`}</Text>

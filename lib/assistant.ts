@@ -119,6 +119,10 @@ type ChatResponse = { message: AssistantMessage; lifetimeMessages: number };
  * `spoken` marks a transcript from Voice Mode. It changes nothing about the answer; it is
  * recorded so the bubble can show the words were spoken, which is what makes a
  * mis-transcription legible rather than baffling.
+ *
+ * `tzOffset` rides on every message so "last night" means the night that ended where the
+ * person is: the server files sleep under the local wake day, and without this it falls back
+ * to the offset a push registration last reported.
  */
 export const sendMessage = (
     message: string,
@@ -127,12 +131,15 @@ export const sendMessage = (
     const { image, spoken } = options;
 
     if (!image) {
-        return api.post<ChatResponse>('/assistant/chat', { message, spoken: Boolean(spoken) });
+        return api.post<ChatResponse>('/assistant/chat', {
+            message, spoken: Boolean(spoken), tzOffset: new Date().getTimezoneOffset(),
+        });
     }
 
     const form = new FormData();
     form.append('message', message);
     if (spoken) form.append('spoken', 'true');
+    form.append('tzOffset', String(new Date().getTimezoneOffset()));
     // React Native's FormData takes this shape for file parts.
     form.append('image', { uri: image.uri, name: image.name, type: image.mimeType } as any);
 
