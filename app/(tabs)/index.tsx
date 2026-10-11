@@ -100,7 +100,7 @@ import { api, ApiError } from '@/lib/api';
 import { getUserId, isSignedIn } from '@/lib/auth';
 import {
     getLatestBiomarkers, byClinicalPriority, describeMovement, medicalName, plainName,
-    formatValue, FLAG_META, isCriticalFlag, hasReturnedToRange,
+    formatValue, FLAG_META, isCriticalFlag, hasReturnedToRange, FAMILY_META, markerFamily,
 } from '@/lib/biomarkers';
 import {
     getPlan, needsAction, planItemsForMedications,
@@ -1522,12 +1522,23 @@ ScoreCard.displayName = 'ScoreCard';
  * movement is good — up is not improvement, it depends on the analyte and on which way it
  * was wrong, which is exactly why that judgement lives in `lib/biomarkers.ts` and not here.
  */
-const BLOOD_DROP = require('@/assets/images/blood-drop.png');
+/* One picture per body system, the same split `FAMILY_META` colours by. The two DNA
+   illustrations are decoration for the families no cell picture fits; they do not imply
+   a genetic result. */
+const FAMILY_ART = {
+    red_cells: require('@/assets/images/red-blood-cells.png'),
+    immune: require('@/assets/images/white-blood-cells.png'),
+    metabolic: require('@/assets/images/dna-green.png'),
+    hormones: require('@/assets/images/dna.png'),
+    chemistry: require('@/assets/images/blood-drop.png'),
+} as const;
 
 const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: () => void }) => {
     const Palette = usePalette();
     const styles = useStyles();
     const meta = FLAG_META[marker.flag];
+    const familyKey = markerFamily(marker.name);
+    const family = FAMILY_META[familyKey];
     const movement = describeMovement(marker);
     const plain = plainName(marker);
     const critical = isCriticalFlag(marker.flag);
@@ -1541,7 +1552,11 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
 
     return (
         <TouchableOpacity
-            style={[styles.markerTile, { borderColor: meta.border }]}
+            /* The family owns the card, the flag owns the pill and the number. The hairline
+               used to follow the flag, but on a tinted card an amber edge round a rose
+               surface reads as two cards fighting. The pill and the value already carry
+               the flag on their own. */
+            style={[styles.markerTile, { backgroundColor: family.surface, borderColor: family.border }]}
             onPress={onPress}
             activeOpacity={0.85}
             accessibilityRole="button"
@@ -1552,14 +1567,18 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
                 `${medicalName(marker)} ${formatValue(marker.value)} ${marker.unit}`,
                 label.toLowerCase(),
                 movement?.label,
+                family.label,
             ].filter(Boolean).join(', ')}
         >
-            {/* A watermark, half of it clipped by the card's edge. Painted first so every
-                line of text sits above it, and hidden from screen readers: it says nothing
-                the tile does not. */}
+            {/* A watermark, clipped by the card's corner. Painted first so every line of
+                text sits above it, and hidden from screen readers: the family is already in
+                the spoken label. */}
             <Image
-                source={BLOOD_DROP}
-                style={styles.markerDrop}
+                source={FAMILY_ART[familyKey]}
+                style={[
+                    familyKey === 'chemistry' ? styles.markerDrop : styles.markerArt,
+                    { opacity: family.art },
+                ]}
                 contentFit="contain"
                 pointerEvents="none"
                 accessible={false}
@@ -1594,7 +1613,7 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
                     <Text style={[styles.markerValue, { color: meta.value }]} numberOfLines={1}>
                         {formatValue(marker.value)}
                     </Text>
-                    <Text style={[styles.unit, styles.markerUnit]} numberOfLines={1}>{marker.unit}</Text>
+                    <Text style={[styles.unit, { color: family.ink }]} numberOfLines={1}>{marker.unit}</Text>
                 </View>
                 {movement && (
                     <Text style={[
@@ -1604,7 +1623,7 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
                                3.7:1 there and `textMuted` 2.5:1 — both under AA — so this
                                row reads the deeper green and the warm muted instead. */
                             color: movement.tone === 'good' ? Palette.successDeep
-                                : movement.tone === 'bad' ? Palette.danger : Palette.textOnWarm,
+                                : movement.tone === 'bad' ? Palette.danger : family.ink,
                         },
                     ]} numberOfLines={1}>
                         {movement.text}
@@ -1624,7 +1643,7 @@ const MarkerTile = ({ marker, onPress }: { marker: BiomarkerSummary; onPress: ()
                     rail's tiles stretch to a common height, so this costs nothing until a
                     long name actually appears. */}
                 <Text style={styles.markerName} numberOfLines={2}>{medicalName(marker)}</Text>
-                {!!plain && <Text style={styles.markerPlain} numberOfLines={2}>{plain}</Text>}
+                {!!plain && <Text style={[styles.markerPlain, { color: family.ink }]} numberOfLines={2}>{plain}</Text>}
             </View>
         </TouchableOpacity>
     );
@@ -2505,10 +2524,10 @@ const useStyles = makeStyles((Palette) => ({
     // Markers to watch -----------------------------------------------------
     markerTile: {
         width: MARKER_CARD_WIDTH, padding: Spacing.lg, borderRadius: Radius.xl,
-        // Warm, not grey: these cards carry amber and red flags, and a neutral-grey card
-        // behind them reads as the colour having landed on the wrong layer. `borderColor`
-        // is set per flag at the call site.
-        backgroundColor: Palette.surfaceWarm, borderWidth: 1,
+        // Surface and hairline come from `FAMILY_META` at the call site. Never grey: these
+        // cards carry amber and red flags, and a neutral-grey card behind them reads as
+        // the colour having landed on the wrong layer.
+        borderWidth: 1,
         gap: Spacing.sm,
         overflow: 'hidden',   // clips the watermark drop to half
     },
@@ -2517,7 +2536,14 @@ const useStyles = makeStyles((Palette) => ({
     // height and ~57% of its width, which is what `right` and `bottom` are measured against.
     markerDrop: {
         position: 'absolute', right: -92, bottom: -56,
-        width: 184, height: 184, opacity: 0.1,
+        width: 184, height: 184,
+    },
+    // The cell and DNA pictures fill their square, unlike the drop, so they sit tucked into
+    // the bottom-right corner: about two thirds of each shows, below the value row and
+    // clear of the movement, behind only the names, whose ink is checked against it.
+    markerArt: {
+        position: 'absolute', right: -34, bottom: -34,
+        width: 124, height: 124,
     },
     markerHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.sm },
     markerFlag: {
@@ -2528,9 +2554,8 @@ const useStyles = makeStyles((Palette) => ({
     markerFlagText: { fontSize: 11, fontFamily: Fonts.bold },
     markerMove: { fontSize: 12, fontFamily: Fonts.bold },
     markerValue: { fontSize: 22, fontFamily: Fonts.bold },   // colour is per flag
-    markerUnit: { color: Palette.textOnWarm },              // over the shared `unit`
     markerName: { fontSize: 13, lineHeight: 17, color: Palette.text, fontFamily: Fonts.semibold },
-    markerPlain: { fontSize: 11.5, lineHeight: 15, color: Palette.textOnWarm, ...BodyFont.regular },
+    markerPlain: { fontSize: 11.5, lineHeight: 15, ...BodyFont.regular },   // ink is per family
 
     // Needs you ------------------------------------------------------------
     actionList: { gap: Spacing.md, marginHorizontal: GUTTER },

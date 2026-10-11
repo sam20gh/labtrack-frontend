@@ -56,6 +56,102 @@ export const FLAG_META: Record<BiomarkerFlag, {
 /** Whether a flag is the crisis tier, which gets an icon as well as a colour. */
 export const isCriticalFlag = (f: BiomarkerFlag) => f === 'critical_low' || f === 'critical_high';
 
+/**
+ * Which body system a marker belongs to: the home rail's card surface and watermark.
+ *
+ * The rail used to draw every card on the same warm surface with the same blood drop, so
+ * five cards about five different systems read as one card printed five times. The family
+ * says *what* is being measured; `FLAG_META` still says *how it came back*. They live on
+ * different layers on purpose. The family owns the card's surface, hairline and
+ * secondary ink. The flag owns the filled pill and the number. So no family colour can be
+ * mistaken for a verdict, and a rose card for haemoglobin is not a red flag.
+ *
+ * Keys are the canonical names `unitNormaliser` emits, plus the uncatalogued slugs
+ * `biomarkerController.canonicalise` falls back to (the differential, MCH/MCHC, the
+ * derived lipids). Anything else is matched by pattern, and failing that it is
+ * `chemistry`, the old warm card. An unknown analyte looks the way every analyte used to.
+ */
+export type MarkerFamily = 'red_cells' | 'immune' | 'metabolic' | 'hormones' | 'chemistry';
+
+const FAMILY_OF: Record<string, MarkerFamily> = {
+    haemoglobin: 'red_cells', rbc: 'red_cells', haematocrit: 'red_cells', mcv: 'red_cells',
+    mch: 'red_cells', mchc: 'red_cells', rdw: 'red_cells', iron: 'red_cells', ferritin: 'red_cells',
+
+    wbc: 'immune', lymphocytes_pct: 'immune', lymphocytes_abs: 'immune', neutrophils: 'immune',
+    monocytes: 'immune', eosinophils: 'immune', basophils: 'immune', platelets: 'immune', crp: 'immune',
+
+    total_cholesterol: 'metabolic', ldl_cholesterol: 'metabolic', hdl_cholesterol: 'metabolic',
+    triglycerides: 'metabolic', nonhdlcholesterol: 'metabolic', cholesteroltohdlratio: 'metabolic',
+    hba1c: 'metabolic', fasting_glucose: 'metabolic', estimatedaverageglucose: 'metabolic',
+    uric_acid: 'metabolic',
+
+    tsh: 'hormones', free_t4: 'hormones', psa: 'hormones', vitamin_d: 'hormones',
+    vitamin_b12: 'hormones', folate: 'hormones',
+};
+
+/** Checked in order, so the specific patterns come first ("haemoglobin a1c" is metabolic). */
+const FAMILY_PATTERNS: [RegExp, MarkerFamily][] = [
+    [/a1c|glucose|cholesterol|lipid|triglycer|\bldl|\bhdl|insulin/, 'metabolic'],
+    [/neutro|lympho|mono|eosino|baso|leuko|white|platelet|\bcrp|reactive/, 'immune'],
+    [/\bhaem|\bhem|erythro|red ?cell|ferrit|transferrin|\biron/, 'red_cells'],
+    [/vitamin|folate|\bt3|\bt4|thyro|tsh|testost|oestr|estr|cortisol|prolactin|psa/, 'hormones'],
+];
+
+export const markerFamily = (name: string): MarkerFamily => {
+    const key = name.toLowerCase();
+    if (FAMILY_OF[key]) return FAMILY_OF[key];
+    const words = key.replace(/_/g, ' ');
+    return FAMILY_PATTERNS.find(([re]) => re.test(words))?.[1] ?? 'chemistry';
+};
+
+/**
+ * Every ink here is checked against its own surface and against that surface under the
+ * watermark's most saturated pixel at its own opacity. `ink` stays at or above 5.3:1 there
+ * in both schemes, and `chemistry` keeps its original 4.6:1. The flag inks drawn on these
+ * cards (`danger`, `warning`, `successDeep`) stay at or above 4.5:1 on every light surface,
+ * the bar `surfaceWarm` was held to. `danger` is the tightest of them, at 4.51 on
+ * `red_cells`. A new surface has to clear the same bar for `danger` before it ships.
+ */
+export const FAMILY_META: Record<MarkerFamily, {
+    /** Spoken after the value, so the grouping the colour shows is also heard. */
+    label: string;
+    surface: string;
+    border: string;
+    /** Unit and lay-name ink, tinted to the family rather than the warm grey. */
+    ink: string;
+    /** The watermark's opacity. Higher in dark, where a coloured PNG on near-black fades. */
+    art: number;
+}> = schemed((Palette, scheme) => {
+    const dark = scheme === 'dark';
+    return {
+        red_cells: {
+            label: 'red cells and iron',
+            surface: dark ? '#2A1B1C' : '#FFF5F3', border: dark ? '#4A2C2C' : '#F7D5CF',
+            ink: dark ? '#E8BDB7' : '#7A4B45', art: dark ? 0.22 : 0.13,
+        },
+        immune: {
+            label: 'immune and inflammation',
+            surface: dark ? '#16262A' : '#F0F9FA', border: dark ? '#24434A' : '#C6E6EA',
+            ink: dark ? '#A9D3D8' : '#3F5F63', art: dark ? 0.22 : 0.15,
+        },
+        metabolic: {
+            label: 'heart and metabolism',
+            surface: dark ? '#1C2618' : '#F5FAEF', border: dark ? '#33452A' : '#D5E8C0',
+            ink: dark ? '#C4D9AE' : '#4E5E3C', art: dark ? 0.22 : 0.14,
+        },
+        hormones: {
+            label: 'hormones and vitamins',
+            surface: dark ? '#1D2033' : '#F6F7FE', border: dark ? '#33395C' : '#D3D9F5',
+            ink: dark ? '#BFC5EC' : '#4C5277', art: dark ? 0.22 : 0.12,
+        },
+        chemistry: {
+            label: 'blood chemistry',
+            surface: Palette.surfaceWarm, border: dark ? '#3A352F' : '#EDE6DA',
+            ink: Palette.textOnWarm, art: dark ? 0.2 : 0.1,
+        },
+    };
+});
+
 /** Out-of-range values sort first: they are what the person needs to see. */
 export const byClinicalPriority = (a: BiomarkerSummary, b: BiomarkerSummary) => {
     const rank: Record<BiomarkerFlag, number> = {

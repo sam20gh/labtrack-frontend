@@ -1,4 +1,6 @@
-import { hasReturnedToRange, plainName, isCriticalFlag, FLAG_META } from '../biomarkers';
+import {
+    hasReturnedToRange, plainName, isCriticalFlag, FLAG_META, FAMILY_META, markerFamily,
+} from '../biomarkers';
 import { Palette } from '@/constants/theme';
 import type { BiomarkerSummary } from '@/types/api';
 
@@ -126,4 +128,40 @@ describe('every tone drawn on a marker tile clears WCAG AA', () => {
     it('does not lean on hue to separate the crisis tier — amber and red are near-identical in luminance', () => {
         expect(contrast(FLAG_META.high.chipBg, FLAG_META.critical_high.chipBg)).toBeLessThan(1.5);
     });
+});
+
+describe('markerFamily', () => {
+    it.each([
+        ['haemoglobin', 'red_cells'], ['mcv', 'red_cells'], ['ferritin', 'red_cells'], ['mchc', 'red_cells'],
+        ['wbc', 'immune'], ['neutrophils', 'immune'], ['lymphocytes_abs', 'immune'], ['crp', 'immune'],
+        ['ldl_cholesterol', 'metabolic'], ['hba1c', 'metabolic'], ['cholesteroltohdlratio', 'metabolic'],
+        ['tsh', 'hormones'], ['vitamin_d', 'hormones'], ['psa', 'hormones'],
+        ['creatinine', 'chemistry'], ['sodium', 'chemistry'], ['alt', 'chemistry'],
+    ])('files %s under %s', (name, family) => {
+        expect(markerFamily(name)).toBe(family);
+    });
+
+    it('places an uncatalogued slug by pattern, glycated haemoglobin before haemoglobin', () => {
+        expect(markerFamily('haemoglobin_a1c')).toBe('metabolic');
+        expect(markerFamily('free_t3')).toBe('hormones');
+        expect(markerFamily('transferrin_saturation')).toBe('red_cells');
+    });
+
+    it('falls back to the plain chemistry card for anything it does not know', () => {
+        expect(markerFamily('zinc')).toBe('chemistry');
+    });
+});
+
+describe('FAMILY_META', () => {
+    // The family is the card, the flag is the verdict on it. A family surface that pushed
+    // `danger` under AA would make the worst result the hardest one to read.
+    it.each(Object.keys(FAMILY_META) as (keyof typeof FAMILY_META)[])(
+        '%s keeps every flag ink and its own ink at AA on its surface', (key) => {
+            const { surface, ink } = FAMILY_META[key];
+            expect(contrast(ink, surface)).toBeGreaterThanOrEqual(4.5);
+            for (const flag of ['critical_high', 'high', 'normal'] as const) {
+                expect(contrast(FLAG_META[flag].value, surface)).toBeGreaterThanOrEqual(4.5);
+            }
+        },
+    );
 });
