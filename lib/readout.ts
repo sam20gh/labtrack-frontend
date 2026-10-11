@@ -73,6 +73,8 @@ export interface Readout {
         steps: number | null;
         source: 'stream' | 'sessions' | 'both' | null;
         note: 'needs_age' | null;
+        /** What counted today. Null on a day nothing measured, or one stored before it existed. */
+        breakdown: EffortBreakdown | null;
     };
     sentence: string;
 }
@@ -83,6 +85,40 @@ export interface Readout {
  * or the same number would be on the home screen twice.
  */
 export const VITAL_KEYS = ['blood_pressure', 'spo2', 'weight', 'stress', 'hydration'] as const;
+
+export type EffortBasis = 'heart_rate' | 'rating' | 'band' | 'type';
+
+export interface EffortSession {
+    id: string | null;
+    type: string;
+    durationMin: number;
+    intensity: 'light' | 'moderate' | 'vigorous';
+    /** What decided the intensity — see `judgeSession` in `utils/effort.js`. */
+    basis: EffortBasis;
+    effortMin: number;
+}
+
+export interface EffortBreakdown {
+    /** Effort the band saw outside every workout; null when no band was worn. */
+    bandMin: number | null;
+    sessions: EffortSession[];
+}
+
+/**
+ * Why a workout counted what it did, in one line. Names the evidence that decided it, because
+ * a swim that counts nothing has to say it was the rating, not the band, that called it light.
+ */
+export const effortReason = (s: EffortSession): string => {
+    const tail = s.intensity === 'light' ? ", so it isn't counted"
+        : s.intensity === 'vigorous' ? ', so it counts double' : '';
+    const level = s.intensity === 'vigorous' && s.basis === 'rating' ? 'high effort' : s.intensity;
+    switch (s.basis) {
+        case 'rating': return `You rated it ${level}${tail}`;
+        case 'heart_rate': return `Its heart rate was ${level}${tail}`;
+        case 'band': return `Your band read it as ${level}${tail}`;
+        default: return `Counted as ${level} for its type${tail}`;
+    }
+};
 
 export const getReadout = () => api.get<Readout>(`/readout?tzOffset=${tzOffset()}`);
 

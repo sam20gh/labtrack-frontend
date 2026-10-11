@@ -9,7 +9,7 @@
 jest.mock('@/lib/api', () => ({ api: {} }));
 
 import {
-    RECOVERY_GLYPH, VITAL_KEYS, readoutTint, formatSleep, recoveryCaption, signalPill, signalPosition, TARGET_LINE,
+    RECOVERY_GLYPH, VITAL_KEYS, readoutTint, effortReason, formatSleep, recoveryCaption, signalPill, signalPosition, TARGET_LINE,
     type Readout, type RecoverySignal,
 } from '@/lib/readout';
 
@@ -84,5 +84,29 @@ describe('readout wording', () => {
         for (const key of ['heart_rate', 'hrv', 'sleep', 'steps', 'temperature']) {
             expect(VITAL_KEYS as readonly string[]).not.toContain(key);
         }
+    });
+});
+
+describe('why a workout counted what it did', () => {
+    const swim = { id: 's', type: 'swimming', durationMin: 30, effortMin: 0 } as const;
+
+    it('names the rating when the rating decided it, and says light is not counted', () => {
+        expect(effortReason({ ...swim, intensity: 'light', basis: 'rating' }))
+            .toBe("You rated it light, so it isn't counted");
+    });
+
+    it('uses the log form\'s own word for a high rating', () => {
+        expect(effortReason({ ...swim, intensity: 'vigorous', basis: 'rating', effortMin: 60 }))
+            .toBe('You rated it high effort, so it counts double');
+    });
+
+    it('names the band when the band decided it', () => {
+        expect(effortReason({ ...swim, type: 'jogging', intensity: 'moderate', basis: 'band', effortMin: 30 }))
+            .toBe('Your band read it as moderate');
+    });
+
+    it('says when only the type was known', () => {
+        expect(effortReason({ ...swim, intensity: 'moderate', basis: 'type', effortMin: 30 }))
+            .toBe('Counted as moderate for its type');
     });
 });

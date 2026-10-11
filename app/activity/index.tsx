@@ -63,6 +63,7 @@ import { ArtCard } from '@/components/activity/ArtCard';
 import { WelcomeCard } from '@/components/activity/WelcomeCard';
 import { RecordCard } from '@/components/activity/RecordCard';
 import ReadoutDial from '@/components/readout/ReadoutDial';
+import EffortBreakdownCard from '@/components/readout/EffortBreakdownCard';
 import { getReadout, type Readout } from '@/lib/readout';
 import { CyclistArt, TargetArt, FlexArt, FLEX_ART } from '@/components/activity/art';
 import {
@@ -622,10 +623,12 @@ export default function ActivityDashboard() {
                             size={Math.min(230, width - Spacing.xl * 2 - 40)}
                         />
                     </View>
+                    {/* Named with its period: it is the range's sessions against the plan, and
+                        beside today's effort an unlabelled "92" reads as a rival to it. */}
                     <Text style={styles.scoreLabel}>
                         {summary?.score !== null && summary?.score !== undefined
-                            ? `Activity score ${summary.score}`
-                            : `${summary?.totals.sessions ? summary.totals.exerciseMin : 0} active minutes`}
+                            ? `Activity score ${summary.score} · ${range === 'all' ? 'all time' : `this ${PERIOD_LABEL[range]}`}`
+                            : `${summary?.totals.sessions ? summary.totals.exerciseMin : 0} active minutes · ${range === 'all' ? 'all time' : `this ${PERIOD_LABEL[range]}`}`}
                     </Text>
                     <Text style={styles.scoreCaption}>
                         {summary?.band?.label
@@ -636,6 +639,17 @@ export default function ActivityDashboard() {
                                     : 'Let’s log your first activity')}
                     </Text>
                 </LinearGradient>
+
+                {/* The dial's working, straight under it: which workouts counted, why, and
+                    what the band saw outside them. */}
+                {readout?.effort.breakdown ? (
+                    <View style={[styles.section, styles.sectionTight, styles.breakdown]}>
+                        <EffortBreakdownCard
+                            effort={readout.effort}
+                            onOpenSession={(id) => router.push({ pathname: '/activity/session/[id]', params: { id } })}
+                        />
+                    </View>
+                ) : null}
 
                 <View style={[styles.section, styles.sectionTight]}>
                     <RangeTabs value={range} onChange={setRange} />
@@ -1029,6 +1043,7 @@ const useStyles = makeStyles((Palette) => ({
 
     section: { paddingHorizontal: Spacing.xl, marginTop: Spacing.xl },
     sectionTight: { marginTop: 0 },
+    breakdown: { marginBottom: Spacing.lg },
     /** A block that continues the one above it rather than starting a new subject. */
     sectionClose: { marginTop: Spacing.md },
     syncing: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.md },
