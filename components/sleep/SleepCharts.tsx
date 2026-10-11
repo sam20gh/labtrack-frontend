@@ -13,12 +13,24 @@
  * `react-native-svg` is used only where a shape needs it; the bars are views, because a bar
  * chart of seven values is a flex row and a charting library would be weight for nothing —
  * the argument `MetricAreaChart` already records.
+ *
+ * `WeekdayBars` reads with a finger like every other chart here: touch a bar, or drag across
+ * the week, and a callout gives that weekday's typical night and how it sits against the
+ * average line.
  */
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { makeStyles } from '@/hooks/useTheme';
+import { useChartScrub } from '@/hooks/useChartScrub';
+import { ChartCallout } from '@/components/charts/ChartCallout';
 import { STAGE_META, formatMinutes, type SleepStageKey } from '@/lib/sleep';
+
+/** The readout names the weekday in full: "Mondays" is a pattern, "Mon" is a date. */
+const WEEKDAY_NAME: Record<string, string> = {
+    Sun: 'Sundays', Mon: 'Mondays', Tue: 'Tuesdays', Wed: 'Wednesdays',
+    Thu: 'Thursdays', Fri: 'Fridays', Sat: 'Saturdays',
+};
 
 export interface WeekdayBucket {
     index: number;
@@ -44,6 +56,20 @@ export function WeekdayBars({
 }) {
     const styles = useStyles();
     const measured = days.filter((d) => Number.isFinite(d.avgMin as number));
+    const describe = (i: number) => {
+        const day = days[i];
+        if (!day) return '';
+        return Number.isFinite(day.avgMin as number)
+            ? `${WEEKDAY_NAME[day.label] ?? day.label}: ${formatMinutes(day.avgMin)} on average over ${day.nights} ${day.nights === 1 ? 'night' : 'nights'}`
+            : `${WEEKDAY_NAME[day.label] ?? day.label}: no nights recorded`;
+    };
+    const scrub = useChartScrub({
+        columns: { count: days.length },
+        resetKey: days.map((d) => d.avgMin).join(','),
+        enabled: measured.length > 0,
+        label: 'Average sleep by weekday',
+        describe,
+    });
     if (!measured.length) return null;
 
     const values = measured.map((d) => d.avgMin as number);
@@ -57,9 +83,19 @@ export function WeekdayBars({
 
     const heightOf = (value: number) => ((value - base) / (top - base)) * 100;
 
+    const active = scrub.index !== null ? days[scrub.index] ?? null : null;
+    const activeMin = active && Number.isFinite(active.avgMin as number) ? (active.avgMin as number) : null;
+    // Against the dashed average, in words and without a colour: a short Tuesday is a fact
+    // about Tuesdays, not a verdict.
+    const versus = activeMin !== null && averageMin !== null
+        ? Math.abs(activeMin - averageMin) < 5
+            ? 'About your average'
+            : `${formatMinutes(Math.round(Math.abs(activeMin - averageMin)))} ${activeMin > averageMin ? 'above' : 'below'} your average`
+        : null;
+
     return (
         <View>
-            <View style={[styles.plot, { height }]}>
+            <View style={[styles.plot, { height }]} {...scrub.containerProps}>
                 {averageMin !== null ? (
                     <View style={[styles.avgLine, { bottom: `${heightOf(averageMin)}%` }]}>
                         <View style={styles.avgDash} />
@@ -68,13 +104,14 @@ export function WeekdayBars({
                 ) : null}
 
                 <View style={styles.bars}>
-                    {days.map((day) => (
+                    {days.map((day, i) => (
                         <View key={day.index} style={styles.barColumn}>
                             <View style={styles.barTrack}>
                                 {Number.isFinite(day.avgMin as number) ? (
                                     <View
                                         style={[
                                             styles.bar,
+                                            scrub.index === i && styles.barActive,
                                             { height: `${Math.max(4, heightOf(day.avgMin as number))}%` },
                                         ]}
                                     />
@@ -83,15 +120,26 @@ export function WeekdayBars({
                         </View>
                     ))}
                 </View>
+
+                {active && scrub.index !== null && scrub.xs[scrub.index] !== undefined ? (
+                    <ChartCallout
+                        x={scrub.xs[scrub.index]}
+                        pointY={activeMin !== null ? height * (1 - Math.max(4, heightOf(activeMin)) / 100) : null}
+                        chartWidth={scrub.width}
+                        title={`${WEEKDAY_NAME[active.label] ?? active.label}${activeMin !== null ? ` · ${active.nights} ${active.nights === 1 ? 'night' : 'nights'}` : ''}`}
+                        value={activeMin !== null ? formatMinutes(Math.round(activeMin)) : 'No nights'}
+                        detail={activeMin !== null ? versus : 'Nothing recorded on this weekday'}
+                    />
+                ) : null}
             </View>
 
             {/* Its own row rather than a reuse of `bars`: that style is `height: '100%'` of
                 the fixed-height plot above, and a percentage height under an auto-height
                 parent collapses the labels to nothing. */}
             <View style={styles.labels}>
-                {days.map((day) => (
+                {days.map((day, i) => (
                     <View key={`label-${day.index}`} style={styles.labelColumn}>
-                        <Text style={styles.barLabel}>{day.label}</Text>
+                        <Text style={[styles.barLabel, scrub.index === i && styles.barLabelActive]}>{day.label}</Text>
                     </View>
                 ))}
             </View>
@@ -183,6 +231,10 @@ const useStyles = makeStyles((Palette) => ({
     barColumn: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
     barTrack: { width: '58%', height: '100%', justifyContent: 'flex-end' },
     bar: { width: '100%', borderRadius: Radius.sm, backgroundColor: Palette.primaryPale },
+    // Selection is state, so it takes the action colour — see **Purple means "you can act
+    // here"** in `CLAUDE.md`.
+    barActive: { backgroundColor: Palette.primaryFill },
+    barLabelActive: { color: Palette.text, ...BodyFont.semibold },
     labels: { flexDirection: 'row' },
     labelColumn: { flex: 1, alignItems: 'center' },
     barLabel: { fontSize: 11, ...BodyFont.medium, color: Palette.textMuted, marginTop: 4 },

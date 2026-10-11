@@ -17,6 +17,10 @@ import type { BiomarkerFlag } from '@/types/api';
 
 
 import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { useChartScrub, useScrubHint } from '@/hooks/useChartScrub';
+import { ChartCallout, ScrubMarker, ScrubHint } from '@/components/charts/ChartCallout';
+import { formatChartNumber } from '@/lib/chartScrub';
+import { FLAG_META } from '@/lib/biomarkers';
 import { activePalette, tone, schemed } from '@/constants/theme';
 export interface TrendPoint {
     value: number;
@@ -44,9 +48,18 @@ const FLAG_COLOR: Record<BiomarkerFlag, string> = schemed((_, scheme) => ({
 
 const PADDING = { top: 16, right: 16, bottom: 28, left: 44 };
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "6 Oct 2025": results are months apart, so the year always matters and the weekday never does. */
+const fullDate = (iso: string) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? '' : `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+};
+
 export default function TrendChart({ points, range, unit, height = 200, width }: Props) {
     const Palette = usePalette();
     const styles = useStyles();
+    const showHint = useScrubHint();
     const chart = useMemo(() => {
         if (points.length === 0) return null;
 
@@ -109,6 +122,21 @@ export default function TrendChart({ points, range, unit, height = 200, width }:
         };
     }, [points, range, width, height]);
 
+    const withUnit = (v: number) => `${formatChartNumber(v)}${unit ? ` ${unit}` : ''}`;
+
+    // Every result is a measurement, so every one is selectable; there are no gaps on a
+    // time axis, only distance.
+    const scrub = useChartScrub({
+        xs: chart?.coords.map((c) => c.cx) ?? [],
+        resetKey: `${points.length}:${points[0]?.measuredAt}:${points[points.length - 1]?.measuredAt}`,
+        enabled: Boolean(chart) && points.length > 0,
+        label: `Results over time${unit ? `, in ${unit}` : ''}`,
+        describe: (i) => {
+            const p = points[i];
+            return p ? `${fullDate(p.measuredAt)}: ${withUnit(p.value)}, ${FLAG_META[p.flag]?.label ?? ''}` : '';
+        },
+    });
+
     if (!chart) {
         return (
             <View style={[styles.empty, { height, width }]}>
@@ -122,63 +150,92 @@ export default function TrendChart({ points, range, unit, height = 200, width }:
 
     const fmtValue = (v: number) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(1));
 
+    const active = scrub.index !== null ? chart.coords[scrub.index] ?? null : null;
+
     return (
         <View>
-            <Svg width={width} height={height}>
-                {/* Reference band */}
-                {chart.band && (
-                    <Rect
-                        x={PADDING.left}
-                        y={chart.band.y}
-                        width={chart.plotW}
-                        height={chart.band.height}
-                        fill={tone('#10B981')}
-                        opacity={0.1}
-                    />
-                )}
-
-                {/* Y gridlines and labels */}
-                {chart.yTicks.map((tick, i) => (
-                    <React.Fragment key={i}>
-                        <Line
-                            x1={PADDING.left} y1={tick.y}
-                            x2={PADDING.left + chart.plotW} y2={tick.y}
-                            stroke={Palette.borderLight} strokeWidth={1}
+            <View {...scrub.containerProps}>
+                <Svg width={width} height={height}>
+                    {/* Reference band */}
+                    {chart.band && (
+                        <Rect
+                            x={PADDING.left}
+                            y={chart.band.y}
+                            width={chart.plotW}
+                            height={chart.band.height}
+                            fill={tone('#10B981')}
+                            opacity={0.1}
                         />
-                        <SvgText
-                            x={PADDING.left - 6} y={tick.y + 3}
-                            fontSize={9} fill={Palette.textMuted} textAnchor="end"
-                        >
-                            {fmtValue(tick.v)}
-                        </SvgText>
-                    </React.Fragment>
-                ))}
+                    )}
 
-                {/* Series */}
-                {chart.path ? (
-                    <Path d={chart.path} stroke={Palette.primary} strokeWidth={2} fill="none" strokeLinejoin="round" />
-                ) : null}
+                    {/* Y gridlines and labels */}
+                    {chart.yTicks.map((tick, i) => (
+                        <React.Fragment key={i}>
+                            <Line
+                                x1={PADDING.left} y1={tick.y}
+                                x2={PADDING.left + chart.plotW} y2={tick.y}
+                                stroke={Palette.borderLight} strokeWidth={1}
+                            />
+                            <SvgText
+                                x={PADDING.left - 6} y={tick.y + 3}
+                                fontSize={9} fill={Palette.textMuted} textAnchor="end"
+                            >
+                                {fmtValue(tick.v)}
+                            </SvgText>
+                        </React.Fragment>
+                    ))}
 
-                {/* Points, coloured by their own verdict at the time */}
-                {chart.coords.map((c, i) => (
-                    <Circle
-                        key={i}
-                        cx={c.cx} cy={c.cy} r={c.flag === 'normal' ? 4 : 5}
-                        fill={FLAG_COLOR[c.flag] ?? activePalette().textMuted}
-                        stroke={Palette.white} strokeWidth={2}
-                    />
-                ))}
+                    {/* Series */}
+                    {chart.path ? (
+                        <Path d={chart.path} stroke={Palette.primary} strokeWidth={2} fill="none" strokeLinejoin="round" />
+                    ) : null}
 
-                {/* X axis labels: only the ends, to avoid crowding */}
-                <SvgText x={PADDING.left} y={height - 8} fontSize={9} fill={Palette.textMuted}>
-                    {fmtDate(chart.firstDate)}
-                </SvgText>
-                {points.length > 1 && (
-                    <SvgText x={PADDING.left + chart.plotW} y={height - 8} fontSize={9} fill={Palette.textMuted} textAnchor="end">
-                        {fmtDate(chart.lastDate)}
+                    {/* Points, coloured by their own verdict at the time */}
+                    {chart.coords.map((c, i) => (
+                        <Circle
+                            key={i}
+                            cx={c.cx} cy={c.cy} r={c.flag === 'normal' ? 4 : 5}
+                            fill={FLAG_COLOR[c.flag] ?? activePalette().textMuted}
+                            stroke={Palette.white} strokeWidth={2}
+                        />
+                    ))}
+
+                    {active && (
+                        <ScrubMarker
+                            x={active.cx}
+                            top={PADDING.top - 4}
+                            bottom={PADDING.top + chart.plotH}
+                            points={[{ y: active.cy, color: FLAG_COLOR[active.flag] ?? activePalette().textMuted }]}
+                        />
+                    )}
+
+                    {/* X axis labels: only the ends, to avoid crowding */}
+                    <SvgText x={PADDING.left} y={height - 8} fontSize={9} fill={Palette.textMuted}>
+                        {fmtDate(chart.firstDate)}
                     </SvgText>
+                    {points.length > 1 && (
+                        <SvgText x={PADDING.left + chart.plotW} y={height - 8} fontSize={9} fill={Palette.textMuted} textAnchor="end">
+                            {fmtDate(chart.lastDate)}
+                        </SvgText>
+                    )}
+                </Svg>
+
+                {active && (
+                    <ChartCallout
+                        x={active.cx}
+                        pointY={active.cy}
+                        chartWidth={width}
+                        title={fullDate(active.measuredAt)}
+                        value={withUnit(active.value)}
+                        detail={FLAG_META[active.flag]?.label}
+                        color={FLAG_COLOR[active.flag] ?? activePalette().textMuted}
+                    />
                 )}
-            </Svg>
+            </View>
+
+            {showHint && !active && points.length > 1 ? (
+                <ScrubHint>Touch and drag the chart to read each result</ScrubHint>
+            ) : null}
 
             {chart.band && (
                 <View style={styles.legend}>

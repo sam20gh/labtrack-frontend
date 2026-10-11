@@ -8,12 +8,18 @@
  * The three series here are not three metrics: they are `low`, `value` and `high` off one
  * forecast. Labelling them Min / Average / Max, as the kit does, is what makes that readable
  * to somebody who has never met a prediction interval.
+ *
+ * Touch and drag reads one day of the projection: all three figures at once, because the
+ * point of the chart is the spread, and a readout of the average alone would throw it away.
  */
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import Svg, { Path, Line, Text as SvgText, Defs, LinearGradient, Stop, G } from 'react-native-svg';
 import { Fonts, BodyFont, schemed, activePalette } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { useChartScrub } from '@/hooks/useChartScrub';
+import { ChartCallout, ScrubMarker } from '@/components/charts/ChartCallout';
+import { scrubDayLabel } from '@/lib/chartScrub';
 import type { SeriesPoint } from '@/lib/prediction';
 
 interface Props {
@@ -23,6 +29,9 @@ interface Props {
 }
 
 const PADDING = { top: 10, right: 8, bottom: 34, left: 30 };
+
+const rangeOf = (p: SeriesPoint) =>
+    `${Math.round(p.low ?? p.value)} to ${Math.round(p.high ?? p.value)}`;
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const SERIES = schemed((Palette) => ([
@@ -80,8 +89,27 @@ export function BandChart({ points, width, height = 190 }: Props) {
                 };
             });
 
-        return { line, fill, ticks, labels };
+        // Every day in screen space, for the scrub — the same `x` and `y` the lines use.
+        const xs = points.map((_, i) => x(i));
+        const ys = points.map((p) => ({
+            low: y((p.low ?? p.value) as number),
+            value: y(p.value),
+            high: y((p.high ?? p.value) as number),
+        }));
+
+        return { line, fill, ticks, labels, xs, ys, plotH };
     }, [points, width, height]);
+
+    const scrub = useChartScrub({
+        xs: chart?.xs ?? [],
+        resetKey: `${points.length}:${points[0]?.day}:${points[points.length - 1]?.day}`,
+        enabled: Boolean(chart),
+        label: 'Predicted score, minimum, average and maximum',
+        describe: (i) => {
+            const p = points[i];
+            return p ? `${scrubDayLabel(p.day)}: average ${Math.round(p.value)}, range ${rangeOf(p)}` : '';
+        },
+    });
 
     if (!chart) {
         return (
@@ -91,51 +119,80 @@ export function BandChart({ points, width, height = 190 }: Props) {
         );
     }
 
+    const active = scrub.index !== null && scrub.index < points.length ? scrub.index : null;
+
     return (
         <View>
-            <Svg width={width} height={height}>
-                <Defs>
-                    <LinearGradient id="bcHigh" x1="0" y1="0" x2="0" y2="1">
-                        <Stop offset="0" stopColor={activePalette().alert} stopOpacity={0.30} />
-                        <Stop offset="1" stopColor={activePalette().alert} stopOpacity={0.04} />
-                    </LinearGradient>
-                    <LinearGradient id="bcLow" x1="0" y1="0" x2="0" y2="1">
-                        <Stop offset="0" stopColor={Palette.primary} stopOpacity={0.30} />
-                        <Stop offset="1" stopColor={Palette.primary} stopOpacity={0.06} />
-                    </LinearGradient>
-                </Defs>
+            <View {...scrub.containerProps}>
+                <Svg width={width} height={height}>
+                    <Defs>
+                        <LinearGradient id="bcHigh" x1="0" y1="0" x2="0" y2="1">
+                            <Stop offset="0" stopColor={activePalette().alert} stopOpacity={0.30} />
+                            <Stop offset="1" stopColor={activePalette().alert} stopOpacity={0.04} />
+                        </LinearGradient>
+                        <LinearGradient id="bcLow" x1="0" y1="0" x2="0" y2="1">
+                            <Stop offset="0" stopColor={Palette.primary} stopOpacity={0.30} />
+                            <Stop offset="1" stopColor={Palette.primary} stopOpacity={0.06} />
+                        </LinearGradient>
+                    </Defs>
 
-                {chart.ticks.map((t, i) => (
-                    <G key={`t${i}`}>
-                        <Line
-                            x1={PADDING.left} x2={width - PADDING.right} y1={t.y} y2={t.y}
-                            stroke={Palette.borderLight} strokeWidth={1}
+                    {chart.ticks.map((t, i) => (
+                        <G key={`t${i}`}>
+                            <Line
+                                x1={PADDING.left} x2={width - PADDING.right} y1={t.y} y2={t.y}
+                                stroke={Palette.borderLight} strokeWidth={1}
+                            />
+                            <SvgText
+                                x={PADDING.left - 5} y={t.y + 4} fontSize={10}
+                                fill={Palette.textMuted} textAnchor="end"
+                            >
+                                {t.label}
+                            </SvgText>
+                        </G>
+                    ))}
+
+                    <Path d={chart.fill('high', 'value')} fill="url(#bcHigh)" />
+                    <Path d={chart.fill('value', 'low')} fill="url(#bcLow)" />
+
+                    {SERIES.map((s) => (
+                        <Path key={s.key} d={chart.line(s.key)} stroke={s.colour} strokeWidth={1.8} fill="none" />
+                    ))}
+
+                    {active !== null && (
+                        <ScrubMarker
+                            x={chart.xs[active]}
+                            top={PADDING.top}
+                            bottom={PADDING.top + chart.plotH}
+                            points={[
+                                { y: chart.ys[active].high, color: SERIES[2].colour, size: 'secondary' as const },
+                                { y: chart.ys[active].low, color: SERIES[0].colour, size: 'secondary' as const },
+                                { y: chart.ys[active].value, color: SERIES[1].colour },
+                            ]}
                         />
+                    )}
+
+                    {chart.labels.map((l, i) => (
                         <SvgText
-                            x={PADDING.left - 5} y={t.y + 4} fontSize={10}
-                            fill={Palette.textMuted} textAnchor="end"
+                            key={`x${i}`} x={l.x} y={height - 16} fontSize={10}
+                            fill={Palette.textMuted} textAnchor={l.anchor as 'start' | 'middle' | 'end'}
                         >
-                            {t.label}
+                            {l.label}
                         </SvgText>
-                    </G>
-                ))}
+                    ))}
+                </Svg>
 
-                <Path d={chart.fill('high', 'value')} fill="url(#bcHigh)" />
-                <Path d={chart.fill('value', 'low')} fill="url(#bcLow)" />
-
-                {SERIES.map((s) => (
-                    <Path key={s.key} d={chart.line(s.key)} stroke={s.colour} strokeWidth={1.8} fill="none" />
-                ))}
-
-                {chart.labels.map((l, i) => (
-                    <SvgText
-                        key={`x${i}`} x={l.x} y={height - 16} fontSize={10}
-                        fill={Palette.textMuted} textAnchor={l.anchor as 'start' | 'middle' | 'end'}
-                    >
-                        {l.label}
-                    </SvgText>
-                ))}
-            </Svg>
+                {active !== null && (
+                    <ChartCallout
+                        x={chart.xs[active]}
+                        pointY={chart.ys[active].high}
+                        chartWidth={width}
+                        title={scrubDayLabel(points[active].day)}
+                        value={`Average ${Math.round(points[active].value)}`}
+                        detail={`Min ${Math.round(points[active].low ?? points[active].value)} · Max ${Math.round(points[active].high ?? points[active].value)}`}
+                        color={SERIES[1].colour}
+                    />
+                )}
+            </View>
 
             <View style={styles.legend}>
                 {SERIES.map((s) => (

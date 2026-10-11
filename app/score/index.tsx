@@ -403,6 +403,7 @@ export default function ScoreBreakdownScreen() {
                             color={Palette.primary}
                             unit="pts"
                             maxXLabels={range === '1w' ? 7 : 6}
+                            accessibilityLabel="Predyqt score trend"
                         />
                     ) : (
                         <Text style={styles.empty}>

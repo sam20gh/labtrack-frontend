@@ -132,6 +132,9 @@ export default function MetricsInsightScreen() {
     );
 }
 
+/** Levels rather than amounts — fitted axis, not a zero floor. See `MetricAreaChart`. */
+const LEVEL_METRICS = new Set<string>(['weight', 'blood_pressure', 'heart_rate', 'hrv', 'stress', 'spo2', 'temperature']);
+
 const InsightCard = ({ metric, width, onOpen, onSuggestion }: {
     metric: MetricCard; width: number; onOpen?: () => void; onSuggestion: () => void;
 }) => {
@@ -162,6 +165,8 @@ const InsightCard = ({ metric, width, onOpen, onSuggestion }: {
                 color={tint}
                 unit={metric.unit}
                 maxXLabels={6}
+                baseline={LEVEL_METRICS.has(metric.key) ? 'auto' : 'zero'}
+                accessibilityLabel={metric.label}
             />
 
             <Text style={styles.reading}>{reading}</Text>

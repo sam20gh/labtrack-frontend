@@ -206,6 +206,7 @@ export default function HydrationScreen() {
                                 color={tone('#2563EB')}
                                 unit="ml"
                                 maxXLabels={6}
+                                accessibilityLabel="Hydration"
                             />
                         ) : (
                             <EmptyNote>Nothing logged in this period yet.</EmptyNote>

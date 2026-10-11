@@ -8,6 +8,9 @@
  *
  * Fixed 0–100 vertical scale, the vendor's, so two days drawn on this chart are comparable.
  * Before there is a usual (five earlier days) nothing is coloured and no dashed line is drawn.
+ *
+ * Touch and drag reads each reading: its time, its value, and its level in words — the words
+ * carry the level, so the readout works for somebody who cannot tell the two colours apart.
  */
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
@@ -16,6 +19,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { BodyFont, Spacing, tone } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { useChartScrub } from '@/hooks/useChartScrub';
+import { ChartCallout, ScrubMarker } from '@/components/charts/ChartCallout';
+import { scrubTimeLabel } from '@/lib/chartScrub';
 import { LEVEL_ICON, type StressLevel, type StressLevelKey, type StressReading } from '@/lib/stress';
 
 const PAD = { left: 26, right: 8, top: 10, bottom: 18 };
@@ -63,9 +69,26 @@ export const StressDayChart = ({ readings, baseline, levels, width, height = 150
             ? `: ${counts.below ?? 0} calmer than usual, ${counts.usual ?? 0} about usual, ${counts.above ?? 0} more stressed than usual.`
             : '. Still learning your usual.');
 
+    const levelLabel = (key: StressLevelKey | null) =>
+        levels.find((l) => l.key === key)?.label ?? (baseline == null ? 'Still learning your usual' : null);
+
+    const scrub = useChartScrub({
+        xs: points.map((p) => p.px),
+        resetKey: `${readings.length}:${readings[0]?.at}:${readings[readings.length - 1]?.at}`,
+        enabled: points.length > 0,
+        label: `Stress today, ${spoken}`,
+        describe: (i) => {
+            const p = points[i];
+            if (!p) return '';
+            const level = levelLabel(p.level);
+            return `${scrubTimeLabel(p.at)}: ${p.value}${level ? `, ${level}` : ''}`;
+        },
+    });
+    const active = scrub.index !== null ? points[scrub.index] ?? null : null;
+
     return (
         <View>
-            <View accessible accessibilityLabel={spoken}>
+            <View {...scrub.containerProps}>
                 <Svg width={width} height={height}>
                     {[0, 50, 100].map((v) => (
                         <React.Fragment key={v}>
@@ -95,7 +118,28 @@ export const StressDayChart = ({ readings, baseline, levels, width, height = 150
                     {points.map((p) => (
                         <Circle key={p.at} cx={p.px} cy={p.py} r={4} fill={colourFor(p.level)} stroke={Palette.background} strokeWidth={1} />
                     ))}
+
+                    {active && (
+                        <ScrubMarker
+                            x={active.px}
+                            top={PAD.top}
+                            bottom={PAD.top + plotH}
+                            points={[{ y: active.py, color: colourFor(active.level) }]}
+                        />
+                    )}
                 </Svg>
+
+                {active && (
+                    <ChartCallout
+                        x={active.px}
+                        pointY={active.py}
+                        chartWidth={width}
+                        title={scrubTimeLabel(active.at)}
+                        value={`Stress ${active.value}`}
+                        detail={levelLabel(active.level)}
+                        color={colourFor(active.level)}
+                    />
+                )}
             </View>
 
             {baseline != null && (

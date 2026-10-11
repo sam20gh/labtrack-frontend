@@ -67,6 +67,28 @@ const META: Record<string, { title: string; unit: string; logRoute?: string }> =
 
 const LOGGABLE = new Set(['weight', 'blood-pressure']);
 
+/**
+ * Kinds that are a level rather than an amount, charted on an axis fitted to the readings.
+ * On a zero floor a blood oxygen of 95–99% is a flat line along the top of the card. See the
+ * header of `MetricAreaChart`.
+ */
+const LEVEL_KINDS = new Set(['weight', 'blood-pressure', 'heart-rate', 'hrv', 'stress', 'spo2', 'temperature']);
+
+/**
+ * The chart readout's line for a blood-pressure day: the category the day was given, by the
+ * label the server sent with the logs. Never classified here — the thresholds live in
+ * `utils/bloodPressure.js` and a second copy would eventually disagree with it.
+ */
+const bpCategoryFor = (history: MetricHistory) => {
+    const labels = new Map<string, string>();
+    for (const log of history.logs) if (log.category) labels.set(log.category.key, log.category.label);
+    const byDay = new Map(history.series.map((p) => [p.day, p.category ?? null]));
+    return (point: { day: string }) => {
+        const key = byDay.get(point.day);
+        return key ? labels.get(key) ?? null : null;
+    };
+};
+
 /** A device-fed value with its unit, the way the list card prints it. */
 const formatValue = (value: number | null | undefined, unit: string): string => {
     if (value === null || value === undefined) return '--';
@@ -316,12 +338,22 @@ export default function MetricDetailScreen() {
                             points={history.series.map((p) => ({
                                 day: p.day,
                                 value: p.value === null ? null : toShown(p.value),
+                                // Diastolic: the server has always sent it, and the chart
+                                // drew systolic alone — half of every reading, and the half
+                                // that decides the category as often as not.
+                                secondary: Number.isFinite(p.secondary as number) ? toShown(p.secondary as number) : null,
+                                min: Number.isFinite(p.min as number) ? toShown(p.min as number) : null,
+                                max: Number.isFinite(p.max as number) ? toShown(p.max as number) : null,
                             }))}
                             width={chartWidth}
-                            height={160}
+                            height={180}
                             color={tint}
                             unit={shownUnit}
                             maxXLabels={days <= 7 ? 7 : 6}
+                            baseline={LEVEL_KINDS.has(kind ?? '') ? 'auto' : 'zero'}
+                            seriesLabels={kind === 'blood-pressure' ? { primary: 'Systolic', secondary: 'Diastolic' } : undefined}
+                            detailFor={kind === 'blood-pressure' ? bpCategoryFor(history) : undefined}
+                            accessibilityLabel={`${history.label ?? meta.title}, last ${days} days`}
                         />
                     ) : (
                         <Text style={styles.empty}>Nothing logged in this period yet.</Text>

@@ -12,11 +12,15 @@
  *    changes every week, which is how a person learns to stop reading a card.
  * 2. **It says nothing about whether that hour is a good one.** There is no chronobiology
  *    engine behind this; it reports when somebody trained, and the copy stops there.
+ *
+ * Touch an hour, or drag along the rail, to read how long was spent training in it.
  */
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { makeStyles } from '@/hooks/useTheme';
+import { useChartScrub } from '@/hooks/useChartScrub';
+import { ChartCallout } from '@/components/charts/ChartCallout';
 import type { ActiveHoursInsight } from '@/lib/activity';
 
 /** "9 AM", "12 PM" — the clock the design's caption is written in. */
@@ -28,14 +32,29 @@ const hourLabel = (h: number): string => {
 };
 
 const RAIL = [0, 6, 12, 18];
+const CHART_HEIGHT = 58;
+const BAR_MAX = 54;
+const SLOT_GAP = 2;
 
 export function ActiveHours({ data }: { data: ActiveHoursInsight }) {
     const styles = useStyles();
     const max = Math.max(...data.hours, 1);
+    const total = data.hours.reduce((sum, m) => sum + m, 0);
+    const barHeight = (minutes: number) => Math.max(4, (minutes / max) * BAR_MAX);
+
+    const scrub = useChartScrub({
+        columns: { count: data.hours.length, gap: SLOT_GAP },
+        resetKey: data.hours.join(','),
+        enabled: total > 0,
+        label: 'Training time by hour of day',
+        describe: (h) => `${hourLabel(h)}: ${data.hours[h] ? `${Math.round(data.hours[h])} minutes` : 'no training'}`,
+    });
+    const picked = scrub.index;
+    const pickedMinutes = picked !== null ? data.hours[picked] ?? 0 : 0;
 
     return (
         <View style={styles.card}>
-            <View style={styles.chart}>
+            <View style={styles.chart} {...scrub.containerProps}>
                 {data.hours.map((minutes, hour) => {
                     const inPeak = data.peak
                         // A window can wrap past midnight, so this is a modular test rather
@@ -51,8 +70,9 @@ export function ActiveHours({ data }: { data: ActiveHoursInsight }) {
                                         styles.bar,
                                         // Floored so a ten-minute walk is a mark rather than a
                                         // hairline nobody can see.
-                                        { height: Math.max(4, (minutes / max) * 54) },
+                                        { height: barHeight(minutes) },
                                         inPeak ? styles.barPeak : styles.barPlain,
+                                        scrub.index === hour && styles.barActive,
                                     ]}
                                 />
                             ) : (
@@ -61,6 +81,19 @@ export function ActiveHours({ data }: { data: ActiveHoursInsight }) {
                         </View>
                     );
                 })}
+
+                {picked !== null && scrub.xs[picked] !== undefined ? (
+                    <ChartCallout
+                        x={scrub.xs[picked]}
+                        pointY={pickedMinutes > 0 ? CHART_HEIGHT - barHeight(pickedMinutes) : null}
+                        chartWidth={scrub.width}
+                        title={`${hourLabel(picked)} – ${hourLabel(picked + 1)}`}
+                        value={pickedMinutes > 0 ? `${Math.round(pickedMinutes)} min` : 'No training'}
+                        detail={pickedMinutes > 0 && total > 0
+                            ? `${Math.round((pickedMinutes / total) * 100)}% of your training time`
+                            : null}
+                    />
+                ) : null}
             </View>
 
             <View style={styles.axis}>
@@ -99,11 +132,12 @@ const useStyles = makeStyles((Palette) => ({
         padding: Spacing.lg,
         gap: 4,
     },
-    chart: { flexDirection: 'row', alignItems: 'flex-end', height: 58, gap: 2 },
+    chart: { flexDirection: 'row', alignItems: 'flex-end', height: CHART_HEIGHT, gap: SLOT_GAP },
     slot: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
     bar: { width: 5, borderRadius: 3 },
     barPeak: { backgroundColor: Palette.primaryFill },
     barPlain: { backgroundColor: Palette.primaryPale },
+    barActive: { backgroundColor: Palette.primary, width: 7 },
     dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Palette.border },
     axis: {
         flexDirection: 'row',

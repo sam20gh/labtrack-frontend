@@ -173,6 +173,8 @@ export default function SleepInsightScreen() {
                                     points={data.series.map((p) => ({ day: p.day, value: p.score }))}
                                     width={chartWidth}
                                     color={Palette.primary}
+                                    formatValue={(v) => `${Math.round(v)} pts`}
+                                    accessibilityLabel="Sleep score"
                                 />
                                 <Text style={styles.cardNote}>
                                     {`Across ${data.nights} ${data.nights === 1 ? 'night' : 'nights'} with data.`}

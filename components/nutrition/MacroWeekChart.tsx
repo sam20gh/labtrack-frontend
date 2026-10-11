@@ -18,7 +18,8 @@
  *    for over. Eating 200 kcal over a derived target is not a finding.
  * 3. **Tapping a column selects it; it does not navigate.** The whole point is comparing
  *    days, and a tap that leaves the screen ends the comparison. The breakdown below
- *    follows the selection.
+ *    follows the selection — and dragging across the week moves it day by day, so the
+ *    comparison can be made without lifting a finger.
  * 4. **The grow-in animation respects Reduce Motion.** It is decoration, and is skipped
  *    rather than slowed for anyone who has asked the phone for less of it.
  */
@@ -27,6 +28,7 @@ import { View, Text, Pressable, Animated, AccessibilityInfo } from 'react-native
 import { LinearGradient } from 'expo-linear-gradient';
 import { Fonts, Spacing, Radius, Shadow, BodyFont, schemed } from '@/constants/theme';
 import { makeStyles } from '@/hooks/useTheme';
+import { useChartScrub } from '@/hooks/useChartScrub';
 import type { NutritionInsight } from '@/types/api';
 
 type MacroKey = 'carbs' | 'protein' | 'fat';
@@ -113,6 +115,17 @@ export function MacroWeekChart({ insight }: Props) {
     }, [week]);
     const [selected, setSelected] = useState(defaultIndex);
     useEffect(() => setSelected(defaultIndex), [defaultIndex]);
+
+    // Every day is selectable, logged or not: "Nothing logged" is an answer the headline
+    // already gives on tap. Taps stay with each column's Pressable.
+    const scrub = useChartScrub({
+        columns: { count: 7 },
+        index: selected,
+        onChange: (i) => { if (i !== null) setSelected(i); },
+        tapToSelect: false,
+        // Each column is its own button for a screen reader already.
+        adjustable: false,
+    });
 
     const peak = Math.max(target ?? 0, ...week.map((w) => w.calories), 1) * HEADROOM;
 
@@ -201,7 +214,7 @@ export function MacroWeekChart({ insight }: Props) {
 
             {/* The chart */}
             <View style={styles.plot}>
-                <View style={styles.columns}>
+                <View style={styles.columns} {...scrub.containerProps}>
                     {week.map((w, i) => {
                         const isSelected = i === selected;
                         const height = Math.max(10, (w.calories / peak) * CHART_HEIGHT);

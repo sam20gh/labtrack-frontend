@@ -331,7 +331,9 @@ export function ForecastChart({
     }, [chart, nearest, onScrub]);
 
     const pan = useMemo(() => PanResponder.create({
-        onStartShouldSetPanResponder: () => scrubbable,
+        // Never on touch-down: claiming there blocks the ScrollView, so a page scroll that
+        // happened to start on the chart went nowhere. `hooks/useChartScrub.ts` has the rule.
+        onStartShouldSetPanResponder: () => false,
         // Horizontal only. This chart lives inside a vertical ScrollView on every screen that
         // draws it, and claiming a vertical drag would make the page impossible to scroll.
         onMoveShouldSetPanResponder: (_e, g) => scrubbable && Math.abs(g.dx) > Math.abs(g.dy),

@@ -703,6 +703,10 @@ export default function ActivityDashboard() {
                                 fillColor={active?.fill}
                                 // A month or a year of days cannot carry a label each.
                                 maxXLabels={range === '1w' || range === '1d' ? 7 : 6}
+                                // Heart rate and HRV are levels; on a zero floor a resting rate
+                                // of 58–64 is a flat line. Amounts keep the zero.
+                                baseline={active && /Bpm$|hrvMs/.test(active.key) ? 'auto' : 'zero'}
+                                accessibilityLabel={active ? `${active.label}, ${range}` : undefined}
                             />
                         </View>
 

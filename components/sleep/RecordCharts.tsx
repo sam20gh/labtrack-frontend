@@ -27,6 +27,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Fonts, Spacing, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
+import { useChartScrub } from '@/hooks/useChartScrub';
 import {
     STAGE_META, NAP_META, UNSTAGED_META, formatMinutes, formatClock,
     type SleepRecordBar, type RecordBucket, type SleepRecord, type SleepStageKey,
@@ -122,6 +123,19 @@ export function StackedSleepBars({
     const ticks = Array.from({ length: ceiling / step + 1 }, (_, i) => i * step);
     const labels = barLabels(bars, bucket);
 
+    // Drag across the bars and the selection follows the finger, so the detail under the
+    // chart reads each night in turn. A tap is still the bar's own Pressable; only the drag
+    // is new, and it skips nights with nothing recorded, as the Pressable does.
+    const scrub = useChartScrub({
+        columns: { count: n, gap },
+        selectable: (i) => Boolean(bars[i] && barHasData(bars[i])),
+        index: selected,
+        onChange: (i) => { if (i !== null) onSelect(i); },
+        tapToSelect: false,
+        // Each bar is its own button for a screen reader already.
+        adjustable: false,
+    });
+
     return (
         <View>
             <View style={styles.plotRow}>
@@ -143,7 +157,7 @@ export function StackedSleepBars({
                         </View>
                     ) : null}
 
-                    <View style={[styles.bars, { gap }]}>
+                    <View style={[styles.bars, { gap }]} {...scrub.containerProps}>
                         {bars.map((bar, i) => {
                             const has = barHasData(bar);
                             const { night, nap } = piecesOf(bar);

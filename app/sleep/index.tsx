@@ -481,6 +481,7 @@ export default function SleepDashboard() {
                                 width={chartWidth}
                                 unit="h"
                                 color={Palette.primary}
+                                accessibilityLabel="Sleep over time"
                             />
                             <Text style={styles.chartNote}>
                                 {overview.averages.nights > 0
