@@ -11,7 +11,8 @@
  *   1. **Header, with the day in one line.** Doses left, an appointment today, calories
  *      remaining — composed from state this screen has already loaded, fetching nothing.
  *      A greeting over a date is a screen that knows who you are and has nothing to say.
- *   2. **Today — Sleep, Recovery, Effort.** Three rings in the order they happen and one
+ *   2. **Today — Sleep, Recovery, Effort, and Fuel.** Three rings in the order they happen,
+ *      a Fuel line for today's meals against the plan (a status, not a fourth ring), and one
  *      sentence connecting them, from `GET /readout` (`utils/dailyReadout.js`). It changes
  *      every morning, so it sits above the score, which changes over weeks. It replaced the
  *      Health Metrics carousel and the Activity and Sleep cards, which reported one body
@@ -54,6 +55,8 @@
  *     the score card now points, and every tracker is in the quick actions. The appointment
  *     row became the card in 8, and the Predyqt Age row became the age line's invitation.
  *   - **Predyqt Age as a section.** Now a line on the score card; the orb lives on `/age`.
+ *   - **Nutrition.** Its card became the readout's Fuel line, with its own Log button; the
+ *     line opens the tracker, where the ring, macros and plan chips still live.
  *   - **Health Metrics, Activity and Sleep.** Folded into the Today readout and Vitals. The
  *     activity card's Record and Log buttons went with it; the Effort ring opens `/activity`,
  *     whose Record card, floating button and quick-action row remain the ways in.
@@ -147,7 +150,6 @@ import {
     getCycleOverview, dismissCycleOffer, editPeriodDays, homeCardLive, homeOfferLive,
     type CycleOverview,
 } from '@/lib/cycle';
-import { CalorieRing } from '@/components/nutrition/CalorieRing';
 import { DoseRow } from '@/components/medications/DoseRow';
 import { Spacing, Radius, Shadow, Fonts, BodyFont, schemed, Palettes } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
@@ -155,7 +157,7 @@ import { HeroStatusBar } from '@/components/ui/HeroStatusBar';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { SkeletonGroup, SkeletonBlock } from '@/components/nutrition/Skeleton';
 import type {
-    BiomarkerSummary, MedicationScheduleDay, NutritionDay, NutritionTargets, Product, User,
+    BiomarkerSummary, MedicationScheduleDay, NutritionDay, Product, User,
     Appointment, PlanItem, Professional,
 } from '@/types/api';
 import { JourneyCard } from '@/components/home/JourneyCard';
@@ -329,6 +331,9 @@ export default function HomeScreen() {
             // the same document. Scoped by the token, so it does not depend on the cached
             // user id the way the old /test-results?user_id= path did.
             getLatestInterpretation(),
+            // No longer drawn as a card — Fuel in the Today readout replaced it — but still read:
+            // it is what rebuilds the plan's diet guidance (`syncGuidance`), which the readout's
+            // Fuel line reads as stored, and the header line's "calories left" comes from it.
             getNutritionDay(),
             // The score is computed server-side — it reads a month of activity, sleep,
             // meals and doses this screen never loads. See the header of `lib/score.ts`.
@@ -838,8 +843,6 @@ export default function HomeScreen() {
      * handlers, so the dependency list would name almost everything in scope and re-run on
      * almost every render anyway.
      */
-    const nutritionTarget = nutrition?.targets && 'calories' in nutrition.targets
-        ? nutrition.targets.calories : 0;
 
     const trackers: { id: string; order: number; node: React.ReactNode }[] = [];
 
@@ -926,22 +929,6 @@ export default function HomeScreen() {
             node: (
                 <Section title="Doctor Appointment" action="See All" onAction={openAppointments}>
                     <AppointmentCard appointments={liveAppointments} onOpen={openAppointments} />
-                </Section>
-            ),
-        });
-    }
-
-    if (nutrition?.plan && nutritionTarget > 0) {
-        trackers.push({
-            id: 'nutrition',
-            order: 3.5,
-            node: (
-                <Section title="Nutrition" action="See All" onAction={() => router.push('/nutrition')}>
-                    <NutritionCard
-                        day={nutrition}
-                        onOpen={openNutrition}
-                        onLog={openNutritionLog}
-                    />
                 </Section>
             ),
         });
@@ -1036,6 +1023,8 @@ export default function HomeScreen() {
                                             onSleep={openSleep}
                                             onRecovery={openRecovery}
                                             onEffort={openActivity}
+                                            onFuel={openNutrition}
+                                            onLogMeal={openNutritionLog}
                                         />
                                     </View>
                                 ) : null}
@@ -1672,175 +1661,6 @@ const ActionRow = ({ action }: { action: HomeAction }) => {
             </View>
             <Ionicons name="chevron-forward" size={18} color={Palette.textMuted} />
         </TouchableOpacity>
-    );
-};
-
-// ---------------------------------------------------------------------------
-// Nutrition
-// ---------------------------------------------------------------------------
-
-/**
- * Nutrition.
- *
- * The kit's ring and macro read-out, using the tracker's own `CalorieRing` rather than a
- * home-screen copy — it already knows how to draw an over-target day as an overshoot arc
- * rather than a ring pinned at 100%.
- *
- * The plan's dietary guidance is named on the card because that is what connects a calorie
- * ring to the interpretation that asked for it; without it this is a widget from a
- * different app. See **Nutrition tracker** in CLAUDE.md.
- *
- * Three things about the layout:
- *
- * 1. **The macros are meters, not three dots and a number.** They used to be a dot beside
- *    "39g" in a `flex: 1` column, which meant a third of the card was blank to the right of
- *    a two-character value — the widest element in that column was the word "Protein". A
- *    gram figure alone also cannot be read: 39g of protein is most of a day for one person
- *    and a third of it for another. The target is what makes the number mean something, and
- *    drawing it as a bar is what makes it fill the width it was already occupying.
- * 2. **The top half is the tracker's own hero, in miniature.** `CalorieRing` already ships
- *    a `dark` tone for exactly this ground, so the card previews the screen it opens rather
- *    than restating it in a different visual language.
- * 3. **The verdict sits on white, under the gradient.** It is the one line that changes
- *    colour with the day — green on track, amber over — and a status colour laid on a
- *    violet gradient stops being a status colour.
- */
-const NutritionCard = React.memo(({ day, onOpen, onLog }: {
-    day: NutritionDay | null; onOpen: () => void; onLog: () => void;
-}) => {
-    const Palette = usePalette();
-    const styles = useStyles();
-    const target = day?.targets && 'calories' in day.targets ? day.targets.calories : 0;
-    const consumed = day?.totals.calories ?? 0;
-    const pattern = day?.plan?.guidance?.find((g) => g.kind === 'pattern')?.label
-        ?? day?.plan?.guidance?.[0]?.label;
-
-    // Gated by the caller: an unconfigured tracker draws no section rather than a card that
-    // is mostly an invitation. The guard keeps the non-null assertions below honest.
-    if (!day?.plan || !target) return null;
-
-    const remaining = Math.max(0, Math.round(target - consumed));
-    const over = consumed > target;
-    const macroTargets = day.targets as NutritionTargets;
-
-    // Nothing logged is not a failure and must not be dressed as one — the same call
-    // `alignment: 'unassessed'` makes. Only a day with meals in it earns a verdict.
-    const verdict = day.meals.length === 0
-        ? { icon: 'restaurant-outline' as const, color: Palette.textSecondary, surface: Palette.borderLight }
-        : over
-            ? { icon: 'trending-up' as const, color: Palette.warning, surface: Palette.warningSurface }
-            : { icon: 'checkmark' as const, color: Palette.success, surface: Palette.successSurface };
-
-    return (
-        <View style={styles.nutritionCard}>
-            <TouchableOpacity onPress={onOpen} activeOpacity={0.9}>
-                <LinearGradient
-                    colors={Palette.heroGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.nutritionHero}
-                >
-                    {/* Two soft highlights, drawn rather than shipped as an asset: a flat
-                        three-stop gradient behind a ring reads as a coloured rectangle. */}
-                    <View style={styles.heroGlowTop} pointerEvents="none" />
-                    <View style={styles.heroGlowBottom} pointerEvents="none" />
-
-                    <View style={styles.heroChipRow}>
-                        <View style={styles.heroChip}>
-                            <Ionicons
-                                name={pattern ? 'leaf-outline' : 'flag-outline'}
-                                size={12}
-                                color={Palettes.light.white}
-                            />
-                            {/* The plan's own words, not a paraphrase. Without this the ring
-                                is a calorie counter that happens to live in a health app. */}
-                            <Text style={styles.heroChipText} numberOfLines={1}>
-                                {pattern ?? 'Your daily target'}
-                            </Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
-                    </View>
-
-                    <View style={styles.nutritionTop}>
-                        <CalorieRing
-                            consumed={consumed}
-                            target={target}
-                            size={124}
-                            stroke={11}
-                            tone="dark"
-                            caption={over
-                                ? `${Math.round(consumed - target).toLocaleString()} over`
-                                : `${remaining.toLocaleString()} left`}
-                        />
-                        <View style={styles.macroList}>
-                            <Macro label="Protein" grams={day.totals.protein} target={macroTargets.protein} tint={Palettes.light.white} />
-                            <Macro label="Fat" grams={day.totals.fat} target={macroTargets.fat} tint="#FDA4AF" />
-                            <Macro label="Carbs" grams={day.totals.carbs} target={macroTargets.carbs} tint="#FCD34D" />
-                        </View>
-                    </View>
-                </LinearGradient>
-            </TouchableOpacity>
-
-            <View style={styles.nutritionBody}>
-                <View style={styles.verdictRow}>
-                    <View style={[styles.verdictIcon, { backgroundColor: verdict.surface }]}>
-                        <Ionicons name={verdict.icon} size={18} color={verdict.color} />
-                    </View>
-                    <View style={styles.flex}>
-                        <Text style={styles.cardTitle}>
-                            {day.meals.length === 0
-                                ? 'Nothing logged yet today'
-                                : over ? "You're over today's target" : "You're on track!"}
-                        </Text>
-                        <Text style={styles.cardBody}>
-                            {day.adherence.assessed > 0
-                                ? `${day.adherence.aligned + day.adherence.partial} of ${day.adherence.assessed} meals moved you towards your plan.`
-                                : pattern
-                                    ? `Your plan asks for a ${pattern.toLowerCase()} pattern. Log a meal and it is scored against that.`
-                                    : `${day.meals.length} ${day.meals.length === 1 ? 'meal' : 'meals'} logged.`}
-                        </Text>
-                    </View>
-                </View>
-
-                <CardFooterAction label="Log Meal" onPress={onLog} />
-            </View>
-        </View>
-    );
-});
-NutritionCard.displayName = 'NutritionCard';
-
-/**
- * One macro as a meter on the hero.
- *
- * The bar is clamped at full but the figure is not: past target the value turns amber and
- * keeps counting, so a bar that has run out still says by how much. A macro with no target
- * — possible only if a plan predates the macro split — draws the grams and no track rather
- * than a bar measured against nothing.
- */
-const Macro = ({ label, grams, target, tint }: {
-    label: string; grams: number; target?: number; tint: string;
-}) => {
-    const styles = useStyles();
-    const value = Math.round(grams);
-    const hasTarget = typeof target === 'number' && target > 0;
-    const ratio = hasTarget ? Math.min(1, grams / target) : 0;
-    const over = hasTarget && grams > target;
-
-    return (
-        <View style={styles.macro}>
-            <View style={styles.macroHead}>
-                <Text style={styles.macroLabel}>{label}</Text>
-                <Text style={[styles.macroValue, over && styles.macroValueOver]}>
-                    {value}
-                    <Text style={styles.macroTarget}>{hasTarget ? ` / ${Math.round(target)}g` : 'g'}</Text>
-                </Text>
-            </View>
-            {hasTarget && (
-                <View style={styles.macroTrack}>
-                    <View style={[styles.macroFill, { width: `${ratio * 100}%`, backgroundColor: tint }]} />
-                </View>
-            )}
-        </View>
     );
 };
 
@@ -2733,53 +2553,6 @@ const useStyles = makeStyles((Palette) => ({
 
     valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
     unit: { fontSize: 12, color: Palette.textMuted, ...BodyFont.regular },
-
-    // Nutrition ------------------------------------------------------------
-    // The gradient runs to the card's edge, so the padding every other card carries on its
-    // container lives on the two blocks inside this one instead.
-    nutritionCard: {
-        marginHorizontal: GUTTER, borderRadius: Radius.xl, overflow: 'hidden',
-        backgroundColor: Palette.surface,
-        borderWidth: 1, borderColor: Palette.borderLight,
-    },
-    nutritionHero: { padding: Spacing.lg, overflow: 'hidden' },
-    heroGlowTop: {
-        position: 'absolute', top: -70, right: -50, width: 190, height: 190,
-        borderRadius: 95, backgroundColor: 'rgba(255,255,255,0.10)',
-    },
-    heroGlowBottom: {
-        position: 'absolute', bottom: -80, left: -60, width: 200, height: 200,
-        borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.06)',
-    },
-    heroChipRow: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        gap: Spacing.sm, marginBottom: Spacing.md,
-    },
-    heroChip: {
-        flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1,
-        backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: Radius.pill,
-        paddingHorizontal: Spacing.md, paddingVertical: 5,
-    },
-    heroChipText: { flexShrink: 1, fontSize: 12, color: Palettes.light.white, ...BodyFont.medium },
-    nutritionTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
-    macroList: { flex: 1, gap: Spacing.lg },
-    macro: { gap: 6 },
-    macroHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.sm },
-    macroLabel: { fontSize: 12, color: 'rgba(255,255,255,0.82)', ...BodyFont.regular },
-    macroValue: { fontSize: 16, color: Palette.white, fontFamily: Fonts.bold },
-    macroValueOver: { color: '#FDE68A' }, // on the deep hero in both schemes
-    macroTarget: { fontSize: 11, color: 'rgba(255,255,255,0.72)', ...BodyFont.regular },
-    macroTrack: {
-        height: 6, borderRadius: Radius.pill,
-        backgroundColor: 'rgba(255,255,255,0.24)', overflow: 'hidden',
-    },
-    macroFill: { height: '100%', borderRadius: Radius.pill },
-    nutritionBody: { padding: Spacing.lg, gap: Spacing.md },
-    verdictRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
-    verdictIcon: {
-        width: 34, height: 34, borderRadius: Radius.md,
-        alignItems: 'center', justifyContent: 'center', marginTop: 2,
-    },
 
     // Latest analysis ------------------------------------------------------
     analysisCard: {

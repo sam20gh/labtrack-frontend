@@ -21,10 +21,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Spacing, Radius, Shadow, Fonts, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
-import { formatSleep, readoutTint, recoveryCaption, signalPill, type Readout } from '@/lib/readout';
+import { formatSleep, fuelLines, readoutTint, recoveryCaption, signalPill, type Readout } from '@/lib/readout';
 
 const RING = 76;
 const STROKE = 8;
@@ -34,9 +35,13 @@ interface Props {
     onSleep: () => void;
     onRecovery: () => void;
     onEffort: () => void;
+    /** Opens the nutrition dashboard. */
+    onFuel: () => void;
+    /** Opens the meal logger. */
+    onLogMeal: () => void;
 }
 
-export default function TodayReadout({ readout, onSleep, onRecovery, onEffort }: Props) {
+export default function TodayReadout({ readout, onSleep, onRecovery, onEffort, onFuel, onLogMeal }: Props) {
     const Palette = usePalette();
     const styles = useStyles();
     const { sleep, recovery, effort } = readout;
@@ -94,6 +99,13 @@ export default function TodayReadout({ readout, onSleep, onRecovery, onEffort }:
                 />
             </View>
 
+            {/*
+              Fuel: a status line, not a fourth ring. Rings fill themselves from the band; this
+              fills only when a meal is logged, so a score here would measure logging, and a
+              ring that fills as you eat is a calorie ring. See `fuelFor` in dailyReadout.js.
+            */}
+            {readout.fuel ? <FuelRow fuel={readout.fuel} onOpen={onFuel} onLog={onLogMeal} /> : null}
+
             <Text style={styles.sentence}>{readout.sentence}</Text>
 
             {pills.length > 0 && (
@@ -106,6 +118,49 @@ export default function TodayReadout({ readout, onSleep, onRecovery, onEffort }:
         </View>
     );
 }
+
+const FuelRow = ({ fuel, onOpen, onLog }: {
+    fuel: NonNullable<Readout['fuel']>;
+    onOpen: () => void;
+    onLog: () => void;
+}) => {
+    const Palette = usePalette();
+    const styles = useStyles();
+    const { main, detail } = fuelLines(fuel);
+
+    return (
+        <View style={styles.fuel}>
+            <TouchableOpacity
+                style={styles.fuelMain}
+                onPress={onOpen}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={`Fuel: ${main}${detail ? `. ${detail}` : ''}. Opens nutrition.`}
+            >
+                <View style={styles.fuelIcon}>
+                    <Ionicons name="restaurant-outline" size={16} color={Palette.textSecondary} />
+                </View>
+                <View style={styles.fuelText}>
+                    <Text style={styles.fuelTitle} numberOfLines={1}>
+                        <Text style={styles.fuelName}>Fuel  </Text>{main}
+                    </Text>
+                    {detail ? <Text style={styles.fuelDetail} numberOfLines={1}>{detail}</Text> : null}
+                </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={styles.logButton}
+                onPress={onLog}
+                activeOpacity={0.8}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel="Log a meal"
+            >
+                <Ionicons name="add" size={16} color={Palette.primary} />
+                <Text style={styles.logText}>Log</Text>
+            </TouchableOpacity>
+        </View>
+    );
+};
 
 /**
  * One ring. `ratio` null draws the track alone with a dash in the middle. Effort can pass its
@@ -181,6 +236,24 @@ const useStyles = makeStyles((Palette) => ({
     ringValue: { fontSize: 20, color: Palette.text, fontFamily: Fonts.bold },
     ringName: { marginTop: Spacing.xs, fontSize: 11, letterSpacing: 0.6, color: Palette.textSecondary, fontFamily: Fonts.semibold, textTransform: 'uppercase' },
     ringCaption: { fontSize: 12, color: Palette.text, ...BodyFont.medium },
+    fuel: {
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+        paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Palette.borderLight,
+    },
+    fuelMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, minHeight: 44 },
+    fuelIcon: {
+        width: 32, height: 32, borderRadius: Radius.md, backgroundColor: Palette.borderLight,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    fuelText: { flex: 1, gap: 1 },
+    fuelTitle: { fontSize: 14, color: Palette.text, ...BodyFont.medium, fontVariant: ['tabular-nums'] },
+    fuelName: { fontFamily: Fonts.semibold, color: Palette.text },
+    fuelDetail: { fontSize: 12, color: Palette.textSecondary, ...BodyFont.regular },
+    logButton: {
+        flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 36,
+        paddingHorizontal: Spacing.md, borderRadius: Radius.pill, backgroundColor: Palette.primarySurface,
+    },
+    logText: { fontSize: 13, color: Palette.primary, fontFamily: Fonts.semibold },
     sentence: {
         paddingTop: Spacing.md,
         borderTopWidth: 1,

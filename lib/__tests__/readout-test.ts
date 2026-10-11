@@ -9,7 +9,7 @@
 jest.mock('@/lib/api', () => ({ api: {} }));
 
 import {
-    RECOVERY_GLYPH, VITAL_KEYS, readoutTint, effortReason, formatSleep, recoveryCaption, signalPill, signalPosition, TARGET_LINE,
+    RECOVERY_GLYPH, VITAL_KEYS, readoutTint, effortReason, fuelLines, type Fuel, formatSleep, recoveryCaption, signalPill, signalPosition, TARGET_LINE,
     type Readout, type RecoverySignal,
 } from '@/lib/readout';
 
@@ -108,5 +108,32 @@ describe('why a workout counted what it did', () => {
     it('says when only the type was known', () => {
         expect(effortReason({ ...swim, intensity: 'moderate', basis: 'type', effortMin: 30 }))
             .toBe('Counted as moderate for its type');
+    });
+});
+
+describe('the Fuel line', () => {
+    const fuel = (over: Partial<Fuel> = {}): Fuel => ({
+        meals: 2, mealsPerDay: 3, calories: 1240, target: 2100, protein: 50, proteinTarget: 120,
+        hasGuidance: true, onPlan: null, allowance: null, ...over,
+    });
+
+    it('reads as logged against the target, with the meal count', () => {
+        expect(fuelLines(fuel())).toEqual({ main: '1,240 of 2,100 kcal · 2 meals', detail: null });
+    });
+
+    it('says nothing is logged rather than drawing zero', () => {
+        expect(fuelLines(fuel({ meals: 0, calories: 0 })).main).toBe('Nothing logged yet · 2,100 kcal today');
+    });
+
+    it('adds plan alignment and the allowance only when there is something to say', () => {
+        const { detail } = fuelLines(fuel({ onPlan: { assessed: 3, aligned: 2, partial: 1, offPlan: 0 }, allowance: 180 }));
+        expect(detail).toBe('2 of 3 on plan, 1 partly · +180 kcal for a harder day than usual');
+    });
+
+    it('never words an amount to cut', () => {
+        for (const f of [fuel({ calories: 3200 }), fuel({ allowance: null }), fuel({ meals: 0, calories: 0 })]) {
+            const { main, detail } = fuelLines(f);
+            expect(`${main} ${detail ?? ''}`).not.toMatch(/over|too much|cut|less|reduce|-\d/i);
+        }
     });
 });

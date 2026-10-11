@@ -76,8 +76,43 @@ export interface Readout {
         /** What counted today. Null on a day nothing measured, or one stored before it existed. */
         breakdown: EffortBreakdown | null;
     };
+    /** Today's meals against the plan. Null when nutrition was never set up and nothing logged. */
+    fuel: Fuel | null;
     sentence: string;
 }
+
+export interface Fuel {
+    meals: number;
+    mealsPerDay: number | null;
+    calories: number;
+    target: number | null;
+    protein: number;
+    proteinTarget: number | null;
+    /** Whether the plan carries diet advice — "on plan" is only ever said when it does. */
+    hasGuidance: boolean;
+    onPlan: { assessed: number; aligned: number; partial: number; offPlan: number } | null;
+    /** Extra kcal for a day more active than usual; null when it is not. Never negative. */
+    allowance: number | null;
+}
+
+/**
+ * The Fuel row's two lines. A status, not a score: what was logged against the target, and —
+ * only when there is something to say — how the meals sat with the plan and any allowance for
+ * a harder day than usual.
+ */
+export const fuelLines = (f: Fuel): { main: string; detail: string | null } => {
+    const main = f.meals === 0
+        ? (f.target != null ? `Nothing logged yet · ${f.target.toLocaleString()} kcal today` : 'Nothing logged yet')
+        : `${f.calories.toLocaleString()}${f.target != null ? ` of ${f.target.toLocaleString()}` : ''} kcal · ${f.meals} ${f.meals === 1 ? 'meal' : 'meals'}`;
+
+    const parts: string[] = [];
+    if (f.onPlan) {
+        const partly = f.onPlan.partial ? `, ${f.onPlan.partial} partly` : '';
+        parts.push(`${f.onPlan.aligned} of ${f.onPlan.assessed} on plan${partly}`);
+    }
+    if (f.allowance) parts.push(`+${f.allowance} kcal for a harder day than usual`);
+    return { main, detail: parts.length ? parts.join(' · ') : null };
+};
 
 /**
  * The Vitals grid under the readout, in the order it draws: the clinical readings first, the
