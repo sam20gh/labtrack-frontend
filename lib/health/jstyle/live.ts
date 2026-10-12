@@ -23,6 +23,7 @@ import * as transport from './transport';
 import * as session from './session';
 import { getPaired, updatePaired, type PairedBracelet } from './store';
 import { checkAndSetClock } from './clock';
+import { reach } from './presence';
 
 export interface LiveReading {
     heartRate: number | null;
@@ -145,7 +146,7 @@ export const start = async (handlers: LiveHandlers): Promise<void> => {
     });
 
     try {
-        await transport.connect(paired.id, session.makePacketHandler(variant), () => {
+        await reach(paired.id, session.makePacketHandler(variant), () => {
             const wasLive = live;
             cleanUp(variant);
             if (wasLive) handlers.onLost();

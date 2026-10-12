@@ -21,10 +21,10 @@
  * to exactly one bracelet at a time (`modules/jstyle-ble/README.md`). A list of one is a
  * screen pretending to be a manager.
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
@@ -33,9 +33,13 @@ import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { JstyleVariant } from '@/modules/jstyle-ble';
 import * as transport from '@/lib/health/jstyle/transport';
 import { VARIANT_LABEL, describeSync, lastReadReport } from '@/lib/health/jstyle/reader';
-import { getPaired, setPaired, clearPaired, type PairedBracelet } from '@/lib/health/jstyle/store';
+import { setPaired, clearPaired, type PairedBracelet } from '@/lib/health/jstyle/store';
+import { braceletStatus, ago, type BraceletStatus } from '@/lib/health/jstyle/status';
+import { lookFor, UNREACHABLE } from '@/lib/health/jstyle/presence';
+import { isLive } from '@/lib/health/jstyle/live';
 import { ensureBackgroundSync } from '@/lib/health/backgroundSync';
-import { runSync, resetSyncThrottle } from '@/lib/health/sync';
+import { runSync, resetSyncThrottle, isSyncing } from '@/lib/health/sync';
+import { useBracelet } from '@/hooks/useBracelet';
 
 import DeviceStage, { type StageState } from '@/components/bracelet/DeviceStage';
 import BraceletArt from '@/components/bracelet/BraceletArt';
@@ -65,8 +69,12 @@ export default function BraceletScreen() {
     const styles = useStyles();
     const router = useRouter();
 
-    const [paired, setPairedState] = useState<PairedBracelet | null>(null);
-    const [loading, setLoading] = useState(true);
+    // From the store, and redrawn whenever anything writes it — a sync `autoSync.ts` started,
+    // the background task, a failed connection. See `hooks/useBracelet.ts`.
+    const { paired: stored, syncing: syncingElsewhere } = useBracelet();
+    const paired = stored ?? null;
+    const [blockedLoaded, setBlockedLoaded] = useState(false);
+    const loading = stored === undefined || !blockedLoaded;
     const [scanning, setScanning] = useState(false);
     const [found, setFound] = useState<transport.DiscoveredBracelet[]>([]);
     const [blocked, setBlocked] = useState<string | null>(null);
@@ -74,6 +82,10 @@ export default function BraceletScreen() {
     const [syncing, setSyncing] = useState(false);
     const [note, setNote] = useState<string | null>(null);
     const [liveOn, setLiveOn] = useState(false);
+    const [linked, setLinked] = useState(transport.isConnected());
+    /** Heard advertising on this visit: true, false, or not listened yet. */
+    const [nearby, setNearby] = useState<boolean | undefined>(undefined);
+    const [checking, setChecking] = useState(false);
 
     const stopScan = useRef<(() => void) | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,14 +101,51 @@ export default function BraceletScreen() {
 
     useEffect(() => {
         (async () => {
-            setPairedState(await getPaired());
             setBlocked(await transport.scanBlockedReason());
-            setLoading(false);
+            setBlockedLoaded(true);
         })();
+        const off = transport.onLinkChange(setLinked);
         // A scan must not outlive the screen — it holds the radio open for a page nobody
         // is looking at.
-        return endScan;
+        return () => { off(); endScan(); };
     }, [endScan]);
+
+    const busy = syncing || syncingElsewhere;
+
+    /**
+     * Listen for it on every visit, so the status is something heard rather than remembered.
+     * Not while a sync or live view holds it — a connected band does not advertise, and a scan
+     * then would report it missing while it sits in a conversation with this phone.
+     */
+    const pairedId = paired?.id;
+    useFocusEffect(useCallback(() => {
+        if (!pairedId) return undefined;
+        let live = true;
+        (async () => {
+            const reason = await transport.scanBlockedReason();
+            if (!live) return;
+            setBlocked(reason);
+            if (reason || isSyncing() || isLive() || transport.isConnected()) return;
+            setChecking(true);
+            try {
+                const seen = await lookFor();
+                if (live) setNearby(seen);
+            } finally {
+                if (live) setChecking(false);
+            }
+        })().catch(() => undefined);
+        return () => { live = false; };
+    }, [pairedId]));
+
+    // What a scan heard is overtaken by what a sync found: after one, its outcome is the truth.
+    useEffect(() => { if (busy) setNearby(undefined); }, [busy]);
+
+    const status = useMemo(
+        () => (paired ? braceletStatus(paired, {
+            syncing: busy, checking, connected: linked && !busy, nearby, bluetoothBlocked: blocked,
+        }) : null),
+        [paired, busy, checking, linked, nearby, blocked],
+    );
 
     const startScan = useCallback(async () => {
         if (!(await transport.requestScanPermission())) {
@@ -151,12 +200,15 @@ export default function BraceletScreen() {
             const result = await runSync(true);
             const bracelet = result.perSource?.find((s) => s.platform === 'jstyle_bracelet');
 
+            // An unanswered connection is already the notice above the button, with the
+            // battery it last reported — repeating it here as one grey line said less, twice.
             setNote(
                 bracelet?.ran
                     ? describeSync(bracelet.days, lastReadReport())
-                    : bracelet?.reason ?? 'Could not reach the bracelet.',
+                    : bracelet?.reason === UNREACHABLE
+                        ? null
+                        : bracelet?.reason ?? UNREACHABLE,
             );
-            setPairedState(await getPaired());
         } finally {
             setSyncing(false);
         }
@@ -180,7 +232,10 @@ export default function BraceletScreen() {
             const session = await import('@/lib/health/jstyle/session');
             const map = await import('@/lib/health/jstyle/mapping');
 
-            await transport.connect(device.id, session.makePacketHandler(variant));
+            // Through `reach` for its wording: a band that never answers should say so, not
+            // "Operation timed out". Nothing is recorded — there is no pairing yet to record on.
+            const presence = await import('@/lib/health/jstyle/presence');
+            await presence.reach(device.id, session.makePacketHandler(variant));
             const reply = await session.ask(variant, 'getBattery');
 
             if (!reply.packets.length) {
@@ -189,16 +244,19 @@ export default function BraceletScreen() {
                 );
             }
 
+            const now = new Date().toISOString();
+            const battery = map.readBattery(reply.packets);
             const record: PairedBracelet = {
                 id: device.id,
                 variant,
                 // A V8 is ours whatever it is advertising; the first sync renames the band too.
                 label: variant === 'v8' ? VARIANT_LABEL.v8 : device.name || VARIANT_LABEL[variant],
-                pairedAt: new Date().toISOString(),
-                lastBattery: map.readBattery(reply.packets) ?? undefined,
+                pairedAt: now,
+                lastSeenAt: now,
+                lastAttempt: { at: now, outcome: 'ok' },
+                ...(battery !== null ? { lastBattery: battery, batteryAt: now } : {}),
             };
             await setPaired(record);
-            setPairedState(record);
             void ensureBackgroundSync();
             setFound([]);
             tap(Haptics.ImpactFeedbackStyle.Medium);
@@ -249,8 +307,8 @@ export default function BraceletScreen() {
                     onPress: async () => {
                         await transport.disconnect();
                         await clearPaired();
-                        setPairedState(null);
                         setNote(null);
+                        setNearby(undefined);
                         // Nothing left to sync in the background.
                         void ensureBackgroundSync();
                     },
@@ -259,7 +317,16 @@ export default function BraceletScreen() {
         );
     }, []);
 
-    const stage: StageState = paired ? 'connected' : scanning ? 'scanning' : 'idle';
+    /**
+     * The stage tells the same story as the chips. Sonar only while the radio really listens
+     * (pairing scan, or the visit's check); the bracelet floats only while it is answering;
+     * a bracelet that is not stands still on a dimmed floor.
+     */
+    const stage: StageState = !paired
+        ? (scanning ? 'scanning' : 'idle')
+        : checking ? 'scanning'
+            : status && ['unreachable', 'not_seen', 'bluetooth'].includes(status.reach) ? 'idle'
+                : 'connected';
 
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
@@ -283,7 +350,7 @@ export default function BraceletScreen() {
                     contentContainerStyle={styles.content}
                     showsVerticalScrollIndicator={false}
                 >
-                    <DeviceStage state={stage} battery={paired?.lastBattery}>
+                    <DeviceStage state={stage} battery={status?.battery?.pct}>
                         {/*
                           * The device is on the plinth in every state, so the screen shows
                           * what it is for before anything is paired. The V8 is drawn from
@@ -298,10 +365,12 @@ export default function BraceletScreen() {
                         )}
                     </DeviceStage>
 
-                    {paired
+                    {paired && status
                         ? <Paired
                             device={paired}
-                            syncing={syncing}
+                            status={status}
+                            checking={checking}
+                            syncing={busy}
                             liveOn={liveOn}
                             note={note}
                             onSync={() => sync()}
@@ -328,31 +397,35 @@ export default function BraceletScreen() {
 
 // ── paired ──────────────────────────────────────────────────────────────────
 
-const relative = (iso?: string): string => {
-    if (!iso) return 'Not synced yet';
-    const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
-    if (mins < 2) return 'Synced just now';
-    if (mins < 60) return `Synced ${mins} minutes ago`;
-    const hours = Math.round(mins / 60);
-    if (hours < 24) return `Synced ${hours} hour${hours === 1 ? '' : 's'} ago`;
-    return `Synced ${Math.round(hours / 24)} day${Math.round(hours / 24) === 1 ? '' : 's'} ago`;
-};
+const lastSynced = (iso?: string): string => (iso ? `Last synced ${ago(iso)}` : 'Not synced yet');
 
 /**
  * The background task's last run, so somebody can see it working — or see that their phone is
- * not letting it run, which on Xiaomi, Huawei and Samsung is the default.
+ * not letting it run, which on Xiaomi, Huawei and Samsung is the default. A failure says what
+ * failed in words; the library's own error ("Operation timed out") is not something anybody
+ * can act on.
  */
 const backgroundLine = (last?: PairedBracelet['lastBackgroundSync']): string => {
     if (!last) return 'Background sync: waiting for its first run (about hourly).';
-    const time = new Date(last.at).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
-    if (last.ran) return `Background sync ${time} — ${last.days ? `${last.days} day${last.days === 1 ? '' : 's'} updated` : 'nothing new'}.`;
-    return `Background sync ${time} could not run${last.reason ? `: ${last.reason}` : '.'}`;
+    const when = ago(last.at);
+    if (last.ran) return `Background sync ${when} — ${last.days ? `${last.days} day${last.days === 1 ? '' : 's'} updated` : 'nothing new'}.`;
+    const reason = !last.reason || /timed out/i.test(last.reason) ? UNREACHABLE : last.reason;
+    return `Background sync ${when} didn't finish. ${reason}`;
+};
+
+const ADVICE_ICON = (status: BraceletStatus): keyof typeof Ionicons.glyphMap => {
+    if (status.reach === 'bluetooth') return 'bluetooth';
+    if (status.likelyFlat) return 'battery-charging-outline';
+    if (status.reach === 'unreachable') return 'alert-circle-outline';
+    return 'battery-dead-outline';
 };
 
 const Paired = ({
-    device, syncing, liveOn, note, onSync, onForget, onLiveChange, onLiveStopped,
+    device, status, checking, syncing, liveOn, note, onSync, onForget, onLiveChange, onLiveStopped,
 }: {
     device: PairedBracelet;
+    status: BraceletStatus;
+    checking: boolean;
     syncing: boolean;
     liveOn: boolean;
     note: string | null;
@@ -375,9 +448,32 @@ const Paired = ({
                 <Text style={styles.deviceSub}>{VARIANT_LABEL[device.variant]}</Text>
             ) : null}
 
-            <StatusChips battery={device.lastBattery} connected busy={syncing} />
+            <StatusChips
+                battery={status.battery}
+                reach={status.reach}
+                reachLabel={status.reachLabel}
+                checking={checking}
+            />
 
-            <Text style={styles.timestamp}>{relative(device.lastSyncAt)}</Text>
+            {status.advice ? (
+                <View
+                    style={[styles.advice, status.chip.tone === 'alert' && styles.adviceAlert]}
+                    accessibilityRole="alert"
+                >
+                    <Ionicons
+                        name={ADVICE_ICON(status)}
+                        size={22}
+                        color={status.chip.tone === 'alert' ? Palette.alert
+                            : status.reach === 'bluetooth' ? Palette.textSecondary : Palette.amber}
+                    />
+                    <View style={styles.adviceText}>
+                        <Text style={styles.adviceTitle}>{status.advice.title}</Text>
+                        <Text style={styles.adviceBody}>{status.advice.body}</Text>
+                    </View>
+                </View>
+            ) : null}
+
+            <Text style={styles.timestamp}>{lastSynced(device.lastSyncAt)}</Text>
             <Text style={styles.timestamp}>{backgroundLine(device.lastBackgroundSync)}</Text>
 
             {note ? <Text style={styles.note}>{note}</Text> : null}
@@ -395,7 +491,9 @@ const Paired = ({
                 {syncing
                     ? <ActivityIndicator color={Palette.white} />
                     : <Ionicons name="sync" size={18} color={Palette.white} />}
-                <Text style={styles.primaryLabel}>{syncing ? 'Syncing…' : 'Sync now'}</Text>
+                <Text style={styles.primaryLabel}>
+                    {syncing ? 'Syncing…' : status.reach === 'unreachable' ? 'Try again' : 'Sync now'}
+                </Text>
             </Pressable>
 
             <LatestReadings latest={device.latest} />
@@ -558,7 +656,20 @@ const useStyles = makeStyles((Palette) => ({
         ...BodyFont.regular, fontSize: 15, color: Palette.textSecondary,
         textAlign: 'center', marginBottom: Spacing.xs,
     },
-    timestamp: { ...BodyFont.regular, fontSize: 13, color: Palette.textMuted },
+    timestamp: { ...BodyFont.regular, fontSize: 13, color: Palette.textMuted, textAlign: 'center' },
+
+    advice: {
+        flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start',
+        backgroundColor: Palette.background, borderRadius: Radius.md,
+        borderWidth: 1, borderColor: Palette.borderLight,
+        padding: Spacing.md, marginVertical: Spacing.sm, width: '100%',
+    },
+    // The kit's rose, never `danger`: a bracelet that will not answer is the app's problem to
+    // report, not a verdict on anybody's health.
+    adviceAlert: { backgroundColor: Palette.alertSurface, borderColor: Palette.alertSurface },
+    adviceText: { flex: 1, gap: 2 },
+    adviceTitle: { fontFamily: Fonts.semibold, fontSize: 15, color: Palette.text },
+    adviceBody: { ...BodyFont.regular, fontSize: 14, lineHeight: 20, color: Palette.textSecondary },
     note: {
         ...BodyFont.medium, fontSize: 13, color: Palette.textSecondary,
         textAlign: 'center', marginTop: 2,

@@ -94,6 +94,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/Avatar';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import BraceletChip from '@/components/home/BraceletChip';
 import Toast from 'react-native-toast-message';
 
 import { api, ApiError } from '@/lib/api';
@@ -1314,6 +1315,10 @@ const HomeHeader = ({
                                 </Text>
                             </TouchableOpacity>
                         )}
+                        {/* The paired bracelet: a watch and the one fact worth a glance —
+                            battery, or that it needs charging, or that it cannot be reached.
+                            Draws nothing without a bracelet. See `BraceletChip.tsx`. */}
+                        <BraceletChip />
                     </View>
                     {loading ? (
                         <SkeletonGroup>
@@ -2410,7 +2415,9 @@ const useStyles = makeStyles((Palette) => ({
         paddingBottom: Spacing.xxxl + Spacing.xxl,
     },
     headerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    dateRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    // Wraps rather than clips: the date, the streak and the bracelet chip outgrow the column
+    // beside three header buttons on a 320–375pt phone.
+    dateRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.sm, rowGap: 4 },
     headerDate: { fontSize: 13, color: 'rgba(255,255,255,0.85)', ...BodyFont.medium },
     streakChip: {
         flexDirection: 'row', alignItems: 'center', gap: 3,

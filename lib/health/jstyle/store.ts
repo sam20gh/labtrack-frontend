@@ -27,6 +27,18 @@ export interface PairedBracelet {
     /** Last successful read, so a screen can say "synced 2h ago" without a round trip. */
     lastSyncAt?: string;
     lastBattery?: number;
+    /** When `lastBattery` was read. Without it a day-old figure draws like a fresh one. */
+    batteryAt?: string;
+    /**
+     * The last time the bracelet answered anything — a connection, or an advertisement heard on
+     * the bracelet screen. Distinct from `lastSyncAt`: a band can answer and then fail mid-read.
+     */
+    lastSeenAt?: string;
+    /**
+     * The last time anything tried to reach it, and how that went. `unreachable` is a connection
+     * nobody answered — flat, out of range, or held by another phone. `status.ts` reads these.
+     */
+    lastAttempt?: { at: string; outcome: 'ok' | 'unreachable' | 'failed'; reason?: string };
     /** The bracelet's MAC, which *is* stable and identifies the hardware across phones. */
     mac?: string;
     /**
@@ -110,6 +122,23 @@ export interface LatestReadings {
 
 let cached: PairedBracelet | null | undefined;
 
+/**
+ * Told whenever the pairing changes — a sync writing its battery, a failed connection, a
+ * forget. The home header's device chip reads the pairing without a round trip and has to
+ * redraw when a sync it did not start lands.
+ */
+type Listener = (paired: PairedBracelet | null) => void;
+const listeners = new Set<Listener>();
+
+export const onPairedChange = (listener: Listener): (() => void) => {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
+};
+
+const announce = () => listeners.forEach((listener) => {
+    try { listener(cached ?? null); } catch { /* a screen's redraw is its own problem */ }
+});
+
 export const getPaired = async (): Promise<PairedBracelet | null> => {
     if (cached !== undefined) return cached;
     try {
@@ -135,6 +164,7 @@ export const hydrate = async (): Promise<void> => { await getPaired(); };
 
 export const setPaired = async (device: PairedBracelet): Promise<void> => {
     cached = device;
+    announce();
     await AsyncStorage.setItem(KEY, JSON.stringify(device));
 };
 
@@ -154,5 +184,6 @@ export const updatePaired = async (patch: Partial<PairedBracelet>): Promise<void
  */
 export const clearPaired = async (): Promise<void> => {
     cached = null;
+    announce();
     await AsyncStorage.removeItem(KEY);
 };

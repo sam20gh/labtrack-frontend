@@ -65,6 +65,22 @@ export const onSynced = (listener: SyncListener): (() => void) => {
 export const isSyncing = (): boolean => inFlight !== null;
 
 /**
+ * Told when a sync starts and when it ends, whoever started it — the home header's device
+ * chip says "Syncing" for the one `autoSync.ts` runs on its own.
+ */
+type SyncingListener = (syncing: boolean) => void;
+const syncingListeners = new Set<SyncingListener>();
+
+export const onSyncingChange = (listener: SyncingListener): (() => void) => {
+    syncingListeners.add(listener);
+    return () => { syncingListeners.delete(listener); };
+};
+
+const announceSyncing = (syncing: boolean) => syncingListeners.forEach((listener) => {
+    try { listener(syncing); } catch { /* a screen's redraw is its own problem */ }
+});
+
+/**
  * Sync one source.
  *
  * Never throws. A source that cannot run reports why and the others carry on — which is
@@ -244,7 +260,9 @@ export const runSync = (
             }
             return result;
         })
-        .finally(() => { inFlight = null; });
+        .finally(() => { inFlight = null; announceSyncing(false); });
+    // After `inFlight` is set, so a listener asking `isSyncing()` hears the truth.
+    announceSyncing(true);
     return inFlight;
 };
 

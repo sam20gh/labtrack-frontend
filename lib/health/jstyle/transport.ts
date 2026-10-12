@@ -245,6 +245,18 @@ export interface Connection {
 
 let connection: Connection | null = null;
 let notifySubscription: Subscription | null = null;
+let disconnectSubscription: Subscription | null = null;
+
+/**
+ * `react-native-ble-plx` error codes that mean "nobody answered": the connection request timed
+ * out and was cancelled (3), failed (200), dropped while being set up (201), or names a
+ * peripheral this phone no longer knows (204). Read by `presence.ts` to say so in words —
+ * "Operation timed out" is the library talking, not something a person can act on.
+ */
+const UNANSWERED = new Set([3, 200, 201, 204]);
+
+export const isUnreachable = (err: unknown): boolean =>
+    UNANSWERED.has((err as { errorCode?: number } | null)?.errorCode ?? -1);
 
 /**
  * Connect, and leave the connection ready to talk.
@@ -262,6 +274,12 @@ let notifySubscription: Subscription | null = null;
  * 4. **Subscribe before writing.** The bracelet answers fast enough that a command written
  *    before the subscription is live loses its reply, and the session then waits out a
  *    timeout on a device that already answered.
+ *
+ * **A failure after the link is up closes the link.** Before 2026-10-12 a bracelet that went
+ * quiet during discovery stayed connected at the OS level with nothing here tracking it — and
+ * a connected band stops advertising, so every later attempt waited out its timeout against a
+ * device this phone was itself holding. For the same reason a link this module has lost track
+ * of (a sync the system suspended mid-read) is closed before a new one is asked for.
  */
 export const connect = async (
     deviceId: string,
@@ -273,40 +291,103 @@ export const connect = async (
     // reports `Unknown` until the radio answers, and connecting then fails. Wait for it.
     if (!(await whenPoweredOn())) throw new Error((await scanBlockedReason()) ?? 'Bluetooth is not ready.');
 
+    try {
+        if (await getManager().isDeviceConnected(deviceId)) {
+            await getManager().cancelDeviceConnection(deviceId);
+        }
+    } catch { /* not connected, or not known — either way, nothing to close */ }
+
     const device = await getManager().connectToDevice(deviceId, { timeout: 15_000 });
 
-    if (Platform.OS === 'android') {
-        // 185 rather than the maximum: some of this vendor's firmware refuses 512 outright
-        // and the failure is a rejected connection rather than a smaller MTU.
-        try { await device.requestMTU(185); } catch { /* the default may still work */ }
-    }
+    try {
+        if (Platform.OS === 'android') {
+            // 185 rather than the maximum: some of this vendor's firmware refuses 512 outright
+            // and the failure is a rejected connection rather than a smaller MTU.
+            try { await device.requestMTU(185); } catch { /* the default may still work */ }
+        }
 
-    await device.discoverAllServicesAndCharacteristics();
+        await device.discoverAllServicesAndCharacteristics();
 
-    const characteristics = await device.characteristicsForService(GATT.service);
-    const write = characteristics.find((c) => c.uuid.toLowerCase() === GATT.write);
-    const notify = characteristics.find((c) => c.uuid.toLowerCase() === GATT.notify);
+        const characteristics = await device.characteristicsForService(GATT.service);
+        const write = characteristics.find((c) => c.uuid.toLowerCase() === GATT.write);
+        const notify = characteristics.find((c) => c.uuid.toLowerCase() === GATT.notify);
 
-    if (!write || !notify) {
+        if (!write || !notify) {
+            throw new Error('That device is not a J-Style bracelet — it has no data channel.');
+        }
+
+        const subscription = notify.monitor((error, characteristic) => {
+            if (error || !characteristic?.value) return;
+            onPacket(characteristic.value);
+        });
+
+        const opened: Connection = { device, write, notify };
+        disconnectSubscription = device.onDisconnected(() => {
+            // An earlier link closing late must not tear down the one that replaced it.
+            if (connection !== opened) return;
+            connection = null;
+            subscription.remove();
+            notifySubscription = null;
+            disconnectSubscription?.remove();
+            disconnectSubscription = null;
+            announceLink();
+            onDisconnect?.();
+        });
+
+        notifySubscription = subscription;
+        connection = opened;
+        announceLink();
+        return opened;
+    } catch (err) {
         await device.cancelConnection().catch(() => undefined);
-        throw new Error('That device is not a J-Style bracelet — it has no data channel.');
+        throw err;
     }
-
-    notifySubscription = notify.monitor((error, characteristic) => {
-        if (error || !characteristic?.value) return;
-        onPacket(characteristic.value);
-    });
-
-    device.onDisconnected(() => {
-        connection = null;
-        notifySubscription?.remove();
-        notifySubscription = null;
-        onDisconnect?.();
-    });
-
-    connection = { device, write, notify };
-    return connection;
 };
+
+/**
+ * Listen for the paired bracelet without connecting to it.
+ *
+ * What the bracelet screen asks on open, so its status is something heard rather than
+ * remembered. Passive on the bracelet's side — it advertises whether or not anyone listens —
+ * and short, because a scan is the phone's battery.
+ *
+ * Not hearing it is not proof it is gone: a band already connected to another phone (or the
+ * maker's app) stops advertising. On this phone that case is caught first, by asking which
+ * peripherals with the vendor service are connected right now.
+ */
+export const seek = (deviceId: string, timeoutMs = 6_000): Promise<{ seen: boolean; rssi: number | null }> =>
+    new Promise((resolve) => {
+        if (connection?.device.id === deviceId) {
+            resolve({ seen: true, rssi: null });
+            return;
+        }
+        let done = false;
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        const finish = (seen: boolean, rssi: number | null = null) => {
+            if (done) return;
+            done = true;
+            if (timer) clearTimeout(timer);
+            try { getManager().stopDeviceScan(); } catch { /* already stopped */ }
+            resolve({ seen, rssi });
+        };
+
+        (async () => {
+            try {
+                const held = await getManager().connectedDevices([GATT.service]);
+                if (held.some((d) => d.id === deviceId)) { finish(true); return; }
+            } catch { /* fall through to listening */ }
+            if (done) return;
+            timer = setTimeout(() => finish(false), timeoutMs);
+            try {
+                getManager().startDeviceScan(null, { allowDuplicates: false }, (error, device) => {
+                    if (error) { finish(false); return; }
+                    if (device?.id === deviceId) finish(true, device.rssi ?? null);
+                });
+            } catch {
+                finish(false);
+            }
+        })();
+    });
 
 /**
  * Write one command.
@@ -325,13 +406,32 @@ export const write = async (base64: string): Promise<void> => {
 export const isConnected = (): boolean => connection !== null;
 export const connectedId = (): string | null => connection?.device.id ?? null;
 
+/**
+ * Told when a link opens or closes, so the bracelet screen can say "Connected" only while it is
+ * true. Never the device id: the screen asks `connectedId` if it needs it.
+ */
+type LinkListener = (connected: boolean) => void;
+const linkListeners = new Set<LinkListener>();
+
+export const onLinkChange = (listener: LinkListener): (() => void) => {
+    linkListeners.add(listener);
+    return () => { linkListeners.delete(listener); };
+};
+
+const announceLink = () => linkListeners.forEach((listener) => {
+    try { listener(connection !== null); } catch { /* a screen's redraw is its own problem */ }
+});
+
 export const disconnect = async (): Promise<void> => {
     notifySubscription?.remove();
     notifySubscription = null;
+    disconnectSubscription?.remove();
+    disconnectSubscription = null;
 
     const open = connection;
     connection = null;
     if (!open) return;
+    announceLink();
 
     try { await open.device.cancelConnection(); } catch { /* already gone */ }
 };
@@ -340,6 +440,8 @@ export const disconnect = async (): Promise<void> => {
 export const destroy = (): void => {
     notifySubscription?.remove();
     notifySubscription = null;
+    disconnectSubscription?.remove();
+    disconnectSubscription = null;
     connection = null;
     manager?.destroy();
     manager = null;

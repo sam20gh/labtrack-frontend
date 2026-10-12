@@ -32,6 +32,7 @@ import {
 } from './store';
 import { isLive } from './live';
 import { checkAndSetClock, isWrong, readClock } from './clock';
+import { reach, recordBattery } from './presence';
 
 /**
  * The bracelet's own timed readings, switched on once per pairing.
@@ -492,7 +493,9 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         spo2: [], temperature: [], bloodPressure: [], ecg: [], stress: [], heartStream: [],
     };
 
-    await transport.connect(
+    // Recorded either way, and an unanswered connection is rethrown in words — see
+    // `presence.ts`. The 15-second wait is inside `transport.connect`.
+    await reach(
         paired.id,
         session.makePacketHandler(variant),
         () => session.reset(variant),
@@ -513,7 +516,7 @@ const readSince = async (_cursor: string | null): Promise<SyncBatch> => {
         setup.clockMs = lap();
 
         const battery = map.readBattery((await session.ask(variant, 'getBattery')).packets);
-        if (battery !== null) await updatePaired({ lastBattery: battery });
+        if (battery !== null) await recordBattery(battery);
         setup.batteryMs = lap();
 
         const monitoringVersion = paired.monitoringVersion ?? (paired.monitoringSetAt ? 1 : 0);
