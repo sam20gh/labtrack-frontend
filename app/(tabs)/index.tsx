@@ -1315,10 +1315,6 @@ const HomeHeader = ({
                                 </Text>
                             </TouchableOpacity>
                         )}
-                        {/* The paired bracelet: a watch and the one fact worth a glance —
-                            battery, or that it needs charging, or that it cannot be reached.
-                            Draws nothing without a bracelet. See `BraceletChip.tsx`. */}
-                        <BraceletChip />
                     </View>
                     {loading ? (
                         <SkeletonGroup>
@@ -1357,15 +1353,24 @@ const HomeHeader = ({
                 to tell you; a person who opens the app twice before lunch needs the second
                 visit to differ from the first.
             */}
-            {loading ? (
-                <SkeletonGroup>
-                    <SkeletonBlock width="84%" height={14} radius={Radius.sm} style={styles.headerTodaySkeleton} />
-                </SkeletonGroup>
-            ) : (
-                <FadeIn rise={4}>
-                    <Text style={styles.headerToday} numberOfLines={2}>{today}</Text>
-                </FadeIn>
-            )}
+            <View style={styles.todayRow}>
+                <View style={styles.flex}>
+                    {loading ? (
+                        <SkeletonGroup>
+                            <SkeletonBlock width="84%" height={14} radius={Radius.sm} style={styles.headerTodaySkeleton} />
+                        </SkeletonGroup>
+                    ) : (
+                        <FadeIn rise={4}>
+                            <Text style={styles.headerToday} numberOfLines={2}>{today}</Text>
+                        </FadeIn>
+                    )}
+                </View>
+                {/* The paired bracelet, on the right edge under the avatar and just above the
+                    Today card: a watch and the one fact worth a glance — battery, or that it
+                    needs charging, or that it cannot be reached. Draws nothing without a
+                    bracelet, and the day line then takes the full width. See `BraceletChip.tsx`. */}
+                <BraceletChip />
+            </View>
         </LinearGradient>
     );
 };
@@ -2415,9 +2420,7 @@ const useStyles = makeStyles((Palette) => ({
         paddingBottom: Spacing.xxxl + Spacing.xxl,
     },
     headerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    // Wraps rather than clips: the date, the streak and the bracelet chip outgrow the column
-    // beside three header buttons on a 320–375pt phone.
-    dateRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.sm, rowGap: 4 },
+    dateRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     headerDate: { fontSize: 13, color: 'rgba(255,255,255,0.85)', ...BodyFont.medium },
     streakChip: {
         flexDirection: 'row', alignItems: 'center', gap: 3,
@@ -2429,8 +2432,11 @@ const useStyles = makeStyles((Palette) => ({
     streakChipIdle: { backgroundColor: 'rgba(255,255,255,0.22)' },
     streakText: { fontSize: 12, color: Palettes.light.white, fontFamily: Fonts.bold },
     headerGreeting: { fontSize: 26, color: Palettes.light.white, fontFamily: Fonts.bold, marginTop: 6 },
+    // The day line and the bracelet chip. The chip is top-aligned with the line's first row and
+    // flush right, so it sits under the avatar whether the line runs to one row or two.
+    todayRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, marginTop: Spacing.sm },
     headerToday: {
-        fontSize: 14, lineHeight: 20, marginTop: Spacing.sm,
+        fontSize: 14, lineHeight: 20,
         color: 'rgba(255,255,255,0.92)', ...BodyFont.medium,
     },
     headerSearch: {
@@ -2442,7 +2448,8 @@ const useStyles = makeStyles((Palette) => ({
     // Placeholders on the deep hero. Translucent white rather than `borderLight`, which is
     // a surface colour and would sit on the violet as an opaque grey bar.
     headerGreetingSkeleton: { marginTop: 8, backgroundColor: 'rgba(255,255,255,0.22)' },
-    headerTodaySkeleton: { marginTop: Spacing.md, backgroundColor: 'rgba(255,255,255,0.16)' },
+    // `todayRow` carries the first 8pt, so this adds the rest of the 12 it always had.
+    headerTodaySkeleton: { marginTop: Spacing.xs, backgroundColor: 'rgba(255,255,255,0.16)' },
 
     // Skeleton ------------------------------------------------------------
     skeletonLines: { gap: 8 },

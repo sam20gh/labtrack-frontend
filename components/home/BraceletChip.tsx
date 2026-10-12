@@ -1,13 +1,12 @@
 /**
- * The bracelet, in the home header's date row: a watch, and the one fact worth a glance.
+ * The bracelet, under the avatar in the home header: a watch, and the one fact worth a glance.
  *
  * Four decisions:
  *
- * 1. **In the date row, not a fourth 44pt circle.** The header row already holds search, the
- *    bell and the avatar; a fourth button leaves the greeting about 120pt on a 375pt phone.
- *    The date row already carries the streak chip, and a status beside the date is a status
- *    bar — the day, the streak, the device. The row wraps on narrow phones rather than
- *    clipping.
+ * 1. **Under the avatar, beside the day line — not a fourth 44pt circle.** The header row
+ *    already holds search, the bell and the avatar; a fourth button leaves the greeting about
+ *    120pt on a 375pt phone. Flush right on the day line's row, it sits directly below the
+ *    avatar and just above the Today card, and the day line keeps the rest of the width.
  * 2. **Earned, like every home card.** Nothing is drawn without a paired bracelet. A "pair a
  *    device" chip would be the empty-state row this screen deliberately does not carry.
  * 3. **One fact, chosen by consequence.** Syncing, then "Charge" (silent after a low reading),
