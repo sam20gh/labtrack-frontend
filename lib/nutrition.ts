@@ -125,6 +125,18 @@ export const analysePhoto = async (
 export const estimateFromDescription = (description: string) =>
     api.post<AnalysisResult>('/nutrition/estimate', { description });
 
+/**
+ * Re-estimate a draft the person corrected — "fat-free, not full-fat". Their item list is
+ * taken as fact; the figures, the plan verdict and the swap all come back new. Saves
+ * nothing. The answer carries no `imageUrl`: keep the one the photo's analysis returned.
+ */
+export const reviseEstimate = (body: {
+    items: { name: string; quantity?: string }[];
+    /** Only when the person renamed the meal themselves; otherwise the model names it. */
+    name?: string;
+    source?: 'photo' | 'description';
+}) => api.post<AnalysisResult>('/nutrition/revise', body);
+
 /** The only call that writes a meal to the record. */
 export const logMeal = (meal: Partial<MealLog> & { name: string; calories: number }) =>
     api.post<{ meal: MealLog }>('/nutrition/meals', {

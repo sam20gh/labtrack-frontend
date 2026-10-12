@@ -600,6 +600,8 @@ export interface MealAnalysis {
         fat: number;
     };
     model?: string;
+    /** The person corrected what was identified and the figures were re-estimated. */
+    corrected?: boolean;
 }
 
 export interface MealLog extends Timestamped {

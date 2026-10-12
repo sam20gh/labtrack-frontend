@@ -6,6 +6,14 @@
  * medical record. Every number here is editable, because a photograph cannot show how much
  * oil went in the pan and the person can.
  *
+ * So is what the food *is*. A pot of yoghurt photographs the same full-fat and fat-free, and
+ * the person can read the label. Correcting an item and pressing Recalculate re-costs the
+ * meal from their list (`POST /nutrition/revise`, which also saves nothing), and the plan
+ * verdict and swap come back with it, judged against the corrected meal.
+ *
+ * Leaving without saving asks first. The draft lives only in this screen, so one tap on the
+ * back chevron used to throw away the estimate and every correction with no way back.
+ *
  * A draft with no verdict says why (`verdict` on the analyse response) rather than leaving a
  * gap where the card was.
  *
@@ -13,46 +21,113 @@
  * was estimated, and letting them be edited would produce coaching text attached to numbers
  * it never described.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
+import { usePreventRemove } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { logMeal, ALIGNMENT_META, MEAL_TYPE_LABEL, mealTypeForNow } from '@/lib/nutrition';
+import { logMeal, reviseEstimate, ALIGNMENT_META, MEAL_TYPE_LABEL, mealTypeForNow } from '@/lib/nutrition';
 import { Fonts, Spacing, Radius, BodyFont } from '@/constants/theme';
 import { makeStyles, usePalette } from '@/hooks/useTheme';
 import type { AnalysisResult } from '@/lib/nutrition';
-import type { MealType } from '@/types/api';
+import type { MealDraft, MealItem, MealType } from '@/types/api';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+/** An item row as edited. `estimate` is the row the analyser returned; absent for one added here. */
+interface ItemRow {
+    key: string;
+    name: string;
+    quantity: string;
+    estimate?: MealItem;
+}
+
+let rowSeq = 0;
+const rowsOf = (draft?: MealDraft): ItemRow[] =>
+    (draft?.items || []).map((item) => ({
+        key: `r${rowSeq++}`,
+        name: item.name,
+        quantity: item.quantity || '',
+        estimate: item,
+    }));
+
+const macrosOf = (draft?: MealDraft) => ({
+    calories: String(Math.round(draft?.calories ?? 0)),
+    protein: String(Math.round(draft?.protein ?? 0)),
+    carbs: String(Math.round(draft?.carbs ?? 0)),
+    fat: String(Math.round(draft?.fat ?? 0)),
+});
+
+/** Whether a row no longer says what the analyser costed — its figures are then stale. */
+const rowChanged = (row: ItemRow) =>
+    !row.estimate
+    || row.name.trim() !== row.estimate.name
+    || row.quantity.trim() !== (row.estimate.quantity || '');
+
+/** What a list of items says, ignoring blank rows and stray spaces. */
+const signature = (list: { name: string; quantity?: string }[]) =>
+    JSON.stringify(
+        list.filter((i) => i.name.trim()).map((i) => [i.name.trim(), (i.quantity || '').trim()])
+    );
 
 export default function ReviewMealScreen() {
     const Palette = usePalette();
     const styles = useStyles();
     const router = useRouter();
+    const navigation = useNavigation();
     const params = useLocalSearchParams<{ payload?: string; imageUri?: string }>();
 
-    const parsed: AnalysisResult | null = (() => {
+    const parsed: AnalysisResult | null = useMemo(() => {
         try {
             return params.payload ? JSON.parse(params.payload) : null;
         } catch {
             return null;
         }
-    })();
+    }, [params.payload]);
 
-    const draft = parsed?.draft;
-    const [name, setName] = useState(draft?.name || '');
-    const [mealType, setMealType] = useState<MealType>((draft?.mealType as MealType) || mealTypeForNow());
-    const [macros, setMacros] = useState({
-        calories: String(Math.round(draft?.calories ?? 0)),
-        protein: String(Math.round(draft?.protein ?? 0)),
-        carbs: String(Math.round(draft?.carbs ?? 0)),
-        fat: String(Math.round(draft?.fat ?? 0)),
-    });
+    // The estimate in force: the analyser's first, then each recalculation's.
+    const [result, setResult] = useState<AnalysisResult | null>(parsed);
+    const draft = result?.draft;
+    const [name, setName] = useState(parsed?.draft?.name || '');
+    // A name the person typed survives a recalculation; one the model chose is replaced.
+    const [nameEdited, setNameEdited] = useState(false);
+    const [mealType, setMealType] = useState<MealType>((parsed?.draft?.mealType as MealType) || mealTypeForNow());
+    const [macros, setMacros] = useState(() => macrosOf(parsed?.draft));
+    const [rows, setRows] = useState<ItemRow[]>(() => rowsOf(parsed?.draft));
+    const [recalculating, setRecalculating] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
 
-    if (!draft) {
+    const mounted = useRef(true);
+    useEffect(() => () => { mounted.current = false; }, []);
+
+    /*
+      Nothing here is saved until "Save to today", so leaving asks first — the back chevron,
+      Android's back button and the iOS swipe alike. `usePreventRemove` is what reaches the
+      native gesture; a `beforeRemove` listener alone does not stop it on a native stack.
+    */
+    usePreventRemove(!!draft && !saved, ({ data }) => {
+        Alert.alert(
+            'Discard this meal?',
+            "It hasn't been saved to today. If you leave now, the estimate and any changes you made are lost.",
+            [
+                { text: 'Keep editing', style: 'cancel' },
+                { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+            ]
+        );
+    });
+
+    // Navigating in the same tick as `setSaved` would still meet the guard, which only lifts
+    // once the screen re-renders. The log screen `replace`d itself with this one, so the
+    // stack is [dashboard, review] and a single back lands on the dashboard — which reloads
+    // on focus and shows the meal that was just saved.
+    useEffect(() => {
+        if (saved) router.back();
+    }, [saved, router]);
+
+    if (!draft || !result) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.centred}>
@@ -67,10 +142,48 @@ export default function ReviewMealScreen() {
 
     const alignment = ALIGNMENT_META[draft.analysis?.alignment || 'unassessed'];
     const swap = draft.analysis?.swap;
+    const itemsDirty = signature(rows) !== signature(draft.items || []);
+    const busy = saving || recalculating;
 
-    const save = async (useSwap = false) => {
+    const editRow = (key: string, field: 'name' | 'quantity', value: string) =>
+        setRows((list) => list.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
+    const removeRow = (key: string) => setRows((list) => list.filter((r) => r.key !== key));
+    const addRow = () => setRows((list) => [...list, { key: `r${rowSeq++}`, name: '', quantity: '' }]);
+
+    const recalculate = async () => {
+        const items = rows
+            .filter((r) => r.name.trim())
+            .map((r) => ({ name: r.name.trim(), quantity: r.quantity.trim() }));
+        if (items.length === 0) {
+            Alert.alert('Nothing to recalculate', 'Name at least one thing in the meal.');
+            return;
+        }
+        setRecalculating(true);
+        try {
+            const next = await reviseEstimate({
+                items,
+                name: nameEdited && name.trim() ? name.trim() : undefined,
+                source: draft.source === 'photo' ? 'photo' : 'description',
+            });
+            if (!mounted.current) return;
+            // The photograph was stored by the first analysis; a recalculation sends no picture.
+            setResult({ ...next, imageUrl: result.imageUrl });
+            setRows(rowsOf(next.draft));
+            setMacros(macrosOf(next.draft));
+            if (!nameEdited && next.draft.name) setName(next.draft.name);
+        } catch (error) {
+            Alert.alert(
+                "Couldn't recalculate",
+                `${error instanceof Error ? error.message : 'Please try again.'} You can still edit the figures by hand.`
+            );
+        } finally {
+            if (mounted.current) setRecalculating(false);
+        }
+    };
+
+    const commit = async (useSwap: boolean) => {
         const calories = Number(macros.calories);
-        if (!name.trim() || !Number.isFinite(calories) || calories <= 0) {
+        if (!useSwap && (!name.trim() || !Number.isFinite(calories) || calories <= 0)) {
             Alert.alert('Missing details', 'A name and a calorie figure are needed.');
             return;
         }
@@ -106,34 +219,58 @@ export default function ReviewMealScreen() {
                         protein: Math.round(Number(macros.protein) || 0),
                         carbs: Math.round(Number(macros.carbs) || 0),
                         fat: Math.round(Number(macros.fat) || 0),
+                        // The rows as the person left them. A row they changed without
+                        // recalculating keeps its words and drops the figures, which
+                        // described something else.
+                        items: rows
+                            .filter((r) => r.name.trim())
+                            .map((r) => (rowChanged(r) || !r.estimate
+                                ? { name: r.name.trim(), quantity: r.quantity.trim() || undefined }
+                                : r.estimate)),
                         /*
                           The stored copy, not `params.imageUri`.
                           
                           `imageUri` is a `file://` path into this app's cache — it renders
                           on this screen and is gone by next week, so writing it to the
                           record would fill the gallery with tiles that load on the device
-                          that took them and nowhere else. `parsed.imageUrl` is the
+                          that took them and nowhere else. `result.imageUrl` is the
                           Cloudflare delivery URL the analyse call returned, and is null
                           when there was no photograph or storage was unavailable.
                         */
-                        imageUrl: parsed.imageUrl ?? null,
+                        imageUrl: result.imageUrl ?? null,
                     }
             );
-            // The log screen `replace`d itself with this one, so the stack is
-            // [dashboard, review] and a single back lands on the dashboard — which reloads
-            // on focus and shows the meal that was just saved.
-            router.back();
+            setSaved(true);
         } catch (error) {
             Alert.alert('Could not save', error instanceof Error ? error.message : 'Please try again.');
         } finally {
-            setSaving(false);
+            if (mounted.current) setSaving(false);
         }
+    };
+
+    const save = () => {
+        // Saving a corrected list under the old figures is the mistake this screen now
+        // lets people fix, so it is offered, not assumed. "Save as it is" stays for when
+        // the analyser is down or the person has typed the figures themselves.
+        if (itemsDirty) {
+            Alert.alert(
+                'Recalculate first?',
+                "You changed what's in this meal, but the figures are still from the first estimate.",
+                [
+                    { text: 'Recalculate', onPress: recalculate },
+                    { text: 'Save as it is', onPress: () => commit(false) },
+                    { text: 'Cancel', style: 'cancel' },
+                ]
+            );
+            return;
+        }
+        commit(false);
     };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
+                <TouchableOpacity onPress={() => router.back()} hitSlop={8} accessibilityLabel="Back">
                     <Ionicons name="chevron-back" size={24} color={Palette.text} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Check this meal</Text>
@@ -147,7 +284,7 @@ export default function ReviewMealScreen() {
                     )}
 
                     {/* Low confidence is stated plainly rather than hidden behind a number */}
-                    {parsed.needsConfirmation && (
+                    {result.needsConfirmation && (
                         <View style={styles.notice}>
                             <Ionicons name="alert-circle-outline" size={18} color={Palette.warning} />
                             <Text style={styles.noticeText}>
@@ -156,9 +293,20 @@ export default function ReviewMealScreen() {
                         </View>
                     )}
 
+                    {draft.analysis?.corrected && !itemsDirty && (
+                        <View style={styles.unjudged}>
+                            <Ionicons name="checkmark-circle-outline" size={18} color={Palette.textSecondary} />
+                            <Text style={styles.unjudgedText}>Recalculated from your changes.</Text>
+                        </View>
+                    )}
+
                     <View style={styles.card}>
                         <Text style={styles.fieldLabel}>Meal</Text>
-                        <TextInput style={styles.input} value={name} onChangeText={setName} />
+                        <TextInput
+                            style={styles.input}
+                            value={name}
+                            onChangeText={(v) => { setName(v); setNameEdited(true); }}
+                        />
 
                         <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>When</Text>
                         <View style={styles.chipRow}>
@@ -175,13 +323,14 @@ export default function ReviewMealScreen() {
                             ))}
                         </View>
 
-                        <View style={styles.numberRow}>
+                        <View style={[styles.numberRow, itemsDirty && styles.stale]}>
                             {(['calories', 'protein', 'carbs', 'fat'] as const).map((field) => (
                                 <View key={field} style={styles.numberField}>
                                     <TextInput
                                         style={[styles.input, styles.numberInput]}
                                         keyboardType="numeric"
                                         value={macros[field]}
+                                        editable={!recalculating}
                                         onChangeText={(v) => setMacros((m) => ({ ...m, [field]: v }))}
                                     />
                                     <Text style={styles.numberLabel}>
@@ -192,24 +341,85 @@ export default function ReviewMealScreen() {
                         </View>
                     </View>
 
-                    {!!draft.items?.length && (
-                        <View style={styles.card}>
-                            <Text style={styles.cardTitle}>What we identified</Text>
-                            {draft.items.map((item, i) => (
-                                <View key={i} style={styles.itemRow}>
-                                    <Text style={styles.itemName}>{item.name}</Text>
-                                    <Text style={styles.itemMeta}>
-                                        {item.quantity}{item.calories ? ` · ${Math.round(item.calories)} kcal` : ''}
-                                    </Text>
+                    {/*
+                      What was identified, editable. Correct a name or a portion, remove what is
+                      not there, add what was missed — then Recalculate costs the list as written.
+                    */}
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>What&apos;s in it</Text>
+                        <Text style={styles.cardHint}>
+                            Something wrong — fat-free rather than full-fat, or a different portion? Correct it here and recalculate.
+                        </Text>
+                        {rows.map((row) => {
+                            const changed = rowChanged(row);
+                            return (
+                                <View key={row.key} style={styles.itemRow}>
+                                    <View style={{ flex: 1, gap: Spacing.xs }}>
+                                        <TextInput
+                                            style={styles.itemNameInput}
+                                            value={row.name}
+                                            onChangeText={(v) => editRow(row.key, 'name', v)}
+                                            placeholder="e.g. fat-free Greek yoghurt"
+                                            placeholderTextColor={Palette.textMuted}
+                                            editable={!recalculating}
+                                            accessibilityLabel="Item"
+                                        />
+                                        <View style={styles.itemMetaRow}>
+                                            <TextInput
+                                                style={styles.itemQtyInput}
+                                                value={row.quantity}
+                                                onChangeText={(v) => editRow(row.key, 'quantity', v)}
+                                                placeholder="Portion, e.g. 150 g"
+                                                placeholderTextColor={Palette.textMuted}
+                                                editable={!recalculating}
+                                                accessibilityLabel={`Portion of ${row.name || 'item'}`}
+                                            />
+                                            <Text style={styles.itemMeta}>
+                                                {changed
+                                                    ? 'Changed'
+                                                    : row.estimate?.calories ? `${Math.round(row.estimate.calories)} kcal` : ''}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => removeRow(row.key)}
+                                        hitSlop={8}
+                                        disabled={recalculating}
+                                        accessibilityLabel={`Remove ${row.name || 'item'}`}
+                                    >
+                                        <Ionicons name="close-circle-outline" size={20} color={Palette.textMuted} />
+                                    </TouchableOpacity>
                                 </View>
-                            ))}
-                        </View>
-                    )}
+                            );
+                        })}
 
-                    {!!parsed.uncertainties?.length && (
+                        <TouchableOpacity style={styles.addItem} onPress={addRow} disabled={recalculating}>
+                            <Ionicons name="add" size={16} color={Palette.primary} />
+                            <Text style={styles.addItemText}>Add an item</Text>
+                        </TouchableOpacity>
+
+                        {itemsDirty && (
+                            <TouchableOpacity
+                                style={[styles.secondaryButton, styles.recalcButton]}
+                                onPress={recalculate}
+                                disabled={busy}
+                            >
+                                {recalculating ? (
+                                    <ActivityIndicator size="small" color={Palette.primary} />
+                                ) : (
+                                    <>
+                                        <Ionicons name="refresh" size={16} color={Palette.primary} />
+                                        <Text style={styles.secondaryButtonText}>Recalculate</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    {!!result.uncertainties?.length && (
                         <View style={styles.card}>
                             <Text style={styles.cardTitle}>What we had to assume</Text>
-                            {parsed.uncertainties.map((u, i) => (
+                            {result.uncertainties.map((u, i) => (
                                 <Text key={i} style={styles.uncertainty}>• {u}</Text>
                             ))}
                         </View>
@@ -235,7 +445,7 @@ export default function ReviewMealScreen() {
                       Nothing is drawn when an older server sends no reason — guessing one
                       would be the lie this line exists to avoid.
                     */}
-                    {draft.analysis?.alignment === 'unassessed' && parsed.verdict === 'no_guidance' && (
+                    {draft.analysis?.alignment === 'unassessed' && result.verdict === 'no_guidance' && (
                         <TouchableOpacity style={styles.unjudged} onPress={() => router.push('/myplans')} activeOpacity={0.8}>
                             <Ionicons name="information-circle-outline" size={18} color={Palette.textSecondary} />
                             <Text style={styles.unjudgedText}>
@@ -245,7 +455,7 @@ export default function ReviewMealScreen() {
                             <Ionicons name="chevron-forward" size={16} color={Palette.textMuted} />
                         </TouchableOpacity>
                     )}
-                    {draft.analysis?.alignment === 'unassessed' && parsed.verdict === 'not_judged' && (
+                    {draft.analysis?.alignment === 'unassessed' && result.verdict === 'not_judged' && (
                         <View style={styles.unjudged}>
                             <Ionicons name="information-circle-outline" size={18} color={Palette.textSecondary} />
                             <Text style={styles.unjudgedText}>
@@ -271,8 +481,8 @@ export default function ReviewMealScreen() {
                             </View>
                             <TouchableOpacity
                                 style={styles.secondaryButton}
-                                onPress={() => save(true)}
-                                disabled={saving}
+                                onPress={() => commit(true)}
+                                disabled={busy}
                             >
                                 <Text style={styles.secondaryButtonText}>Log this instead</Text>
                             </TouchableOpacity>
@@ -282,7 +492,7 @@ export default function ReviewMealScreen() {
             </KeyboardAvoidingView>
 
             <View style={styles.footer}>
-                <TouchableOpacity style={styles.primaryButton} onPress={() => save(false)} disabled={saving}>
+                <TouchableOpacity style={[styles.primaryButton, busy && styles.buttonDisabled]} onPress={save} disabled={busy}>
                     {saving
                         ? <ActivityIndicator size="small" color={Palette.white} />
                         : <Text style={styles.primaryButtonText}>Save to today</Text>}
@@ -368,9 +578,51 @@ const useStyles = makeStyles((Palette) => ({
         marginTop: Spacing.xs,
     },
 
-    itemRow: { paddingVertical: Spacing.sm },
-    itemName: { ...BodyFont.medium, fontSize: 13, color: Palette.text },
-    itemMeta: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary },
+    cardHint: {
+        ...BodyFont.regular,
+        fontSize: 12,
+        color: Palette.textSecondary,
+        lineHeight: 17,
+        marginBottom: Spacing.sm,
+    },
+    itemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        paddingVertical: Spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: Palette.borderLight,
+    },
+    itemNameInput: {
+        ...BodyFont.medium,
+        fontSize: 13,
+        color: Palette.text,
+        backgroundColor: Palette.canvas,
+        borderRadius: Radius.sm,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs + 2,
+    },
+    itemMetaRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    itemQtyInput: {
+        flex: 1,
+        ...BodyFont.regular,
+        fontSize: 12,
+        color: Palette.textSecondary,
+        backgroundColor: Palette.canvas,
+        borderRadius: Radius.sm,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs,
+    },
+    itemMeta: { ...BodyFont.regular, fontSize: 11, color: Palette.textSecondary, fontVariant: ['tabular-nums'] },
+    addItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+        paddingVertical: Spacing.md,
+        alignSelf: 'flex-start',
+    },
+    addItemText: { fontFamily: Fonts.semibold, fontSize: 13, color: Palette.primary },
+    stale: { opacity: 0.55 },
     uncertainty: {
         ...BodyFont.regular,
         fontSize: 12,
@@ -419,6 +671,8 @@ const useStyles = makeStyles((Palette) => ({
         marginTop: Spacing.md,
     },
     secondaryButtonText: { fontFamily: Fonts.semibold, fontSize: 14, color: Palette.primary },
+    recalcButton: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
+    buttonDisabled: { opacity: 0.5 },
 
     footer: {
         padding: Spacing.lg,
