@@ -241,21 +241,49 @@ export const keepSince = (packets: JstylePacket[], from: Date): JstylePacket[] =
  * `lib/health/types.ts` already draws: steps are a day's figure the device reports
  * directly, never the sum of workouts. Filing them as sessions would double every step
  * taken during a recorded walk.
+ *
+ * **Two of the history fields are not in the unit their names say.** Read from both Android
+ * jars' `getTotalStepData` bytecode (2026-10-13): `exerciseMinutes` is the raw counter in
+ * *seconds* (the live parser divides the same counter by 60; the history one does not), and
+ * `distance` is the counter ÷ 100, i.e. *kilometres*. Stored as named, a V8 day of 7,766
+ * steps read 3,925 exercise minutes, more than a day holds, and the activity pillar printed
+ * "17495 active minutes over 30 days". Android replies are told apart by their `dicData`
+ * shape. The iOS archives use the same key names and their unit cannot be read from a `.a`;
+ * there a figure over a day's 1,440 minutes can only be seconds, and distance is judged by
+ * steps per unit (about 1–2 per metre, 1,500 per kilometre).
  */
+const MINUTES_IN_DAY = 1440;
+
+const isAndroidReply = (p: JstylePacket) =>
+    Array.isArray((p.data as Record<string, unknown> | undefined)?.dicData);
+
+const exerciseMinutesFrom = (value: number | null, android: boolean): number | null => {
+    if (value === null) return null;
+    if (android || value > MINUTES_IN_DAY) return Math.round(value / 60);
+    return value;
+};
+
+const metresFrom = (distance: number | null, steps: number | null, android: boolean): number | null => {
+    if (distance === null) return null;
+    const kilometres = android || (steps !== null && distance > 0 && steps / distance > 100);
+    return kilometres ? Math.round(distance * 1000) : distance;
+};
+
 export const toDays = (packets: JstylePacket[]): DayRow[] => {
     const byDay = new Map<string, DayRow>();
 
-    records(packets).forEach((r) => {
+    packets.forEach((p) => records([p]).forEach((r) => {
         const at = parseInstant(r[K.date]);
         if (!at) return;
 
         const day = localDay(at);
         const row: DayRow = byDay.get(day) ?? { day };
+        const android = isAndroidReply(p);
 
         const steps = num(r[K.step]);
         const kcal = num(r[K.calories]);
-        const distance = num(r[K.distance]);
-        const exercise = num(r[K.exerciseMinutes]) ?? num(r[K.activeMinutes]);
+        const distance = metresFrom(num(r[K.distance]), steps, android);
+        const exercise = exerciseMinutesFrom(num(r[K.exerciseMinutes]) ?? num(r[K.activeMinutes]), android);
 
         // A bracelet reports a day's totals more than once as the day goes on, and the
         // later report is the fuller one. Taking the max rather than the last also survives
@@ -266,7 +294,7 @@ export const toDays = (packets: JstylePacket[]): DayRow[] => {
         if (exercise !== null) row.exerciseMin = Math.max(row.exerciseMin ?? 0, exercise);
 
         byDay.set(day, row);
-    });
+    }));
 
     return [...byDay.values()];
 };
